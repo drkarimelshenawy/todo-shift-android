@@ -1,5 +1,9 @@
 package com.todoshift.app
 
+import com.todoshift.app.data.DayCenterV2
+import com.todoshift.app.data.MonthLockEngine
+import com.todoshift.app.data.PaymentStatus
+import com.todoshift.app.data.FinanceV2
 import com.todoshift.app.data.RotationPresetEngine
 import com.todoshift.app.data.ShiftTemplate
 import com.todoshift.app.data.TemplateEngine
@@ -1194,6 +1198,13 @@ private fun FinanceScreen(
             "الحساب الشهري للشيفتات"
         )
 
+        V10FinanceSettlementCard(
+            data = data,
+            month = month,
+            onSaveData = onSaveData
+        )
+
+
         Spacer(Modifier.height(12.dp))
 
         MonthSelector(
@@ -1527,6 +1538,329 @@ private fun PaymentDialog(
             }
         }
     )
+}
+
+
+
+@Composable
+private fun V10DaySummaryCard(
+    data: AppData,
+    date: LocalDate
+) {
+    val summary =
+        DayCenterV2.summary(
+            data,
+            date
+        )
+
+    Card(
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(12.dp)
+        ) {
+            Text(
+                "ملخص اليوم",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                if (
+                    summary.shift == null
+                )
+                    "لا يوجد شيفت مسجل"
+                else
+                    summary.workplaceNames
+                        .joinToString(" / ")
+                        .ifBlank {
+                            "شيفت مسجل"
+                        },
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End
+            )
+
+            if (
+                summary.amount != 0.0
+            ) {
+                Text(
+                    "المستحق: ${money(summary.amount)} ج",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (
+                summary.note.isNotBlank()
+            ) {
+                Spacer(Modifier.height(5.dp))
+
+                Text(
+                    summary.note,
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End,
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun V10FinanceSettlementCard(
+    data: AppData,
+    month: YearMonth,
+    onSaveData: (AppData) -> Unit
+) {
+    val context =
+        LocalContext.current
+
+    val lockEngine =
+        remember {
+            MonthLockEngine(context)
+        }
+
+    var locked by remember(month) {
+        mutableStateOf(
+            lockEngine.isLocked(month)
+        )
+    }
+
+    val settlement =
+        FinanceV2.settlement(
+            data,
+            month
+        )
+
+    val payments =
+        FinanceV2.payments(
+            data,
+            month
+        )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(14.dp)
+        ) {
+            Text(
+                "تسوية الشهر",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            V10FinanceLine(
+                "المستحق",
+                "${money(settlement.expected)} ج"
+            )
+
+            V10FinanceLine(
+                "تم استلامه",
+                "${money(settlement.received)} ج"
+            )
+
+            V10FinanceLine(
+                if (
+                    settlement.difference >= 0
+                )
+                    "الزيادة"
+                else
+                    "المتبقي",
+                "${money(kotlin.math.abs(settlement.difference))} ج"
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                FinanceV2.statusArabic(
+                    settlement.status
+                ),
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
+                fontWeight = FontWeight.Bold,
+                color =
+                    when (
+                        settlement.status
+                    ) {
+                        PaymentStatus.PAID ->
+                            Color(0xFF15803D)
+
+                        PaymentStatus.OVERPAID ->
+                            Color(0xFF2563EB)
+
+                        PaymentStatus.PARTIALLY_PAID ->
+                            Color(0xFFD97706)
+
+                        PaymentStatus.NOT_PAID ->
+                            Color(0xFFB42318)
+                    }
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Switch(
+                    checked = locked,
+                    onCheckedChange = {
+                        locked = it
+
+                        lockEngine.setLocked(
+                            month,
+                            it
+                        )
+                    }
+                )
+
+                Spacer(Modifier.weight(1f))
+
+                Column(
+                    horizontalAlignment =
+                        Alignment.End
+                ) {
+                    Text(
+                        "إغلاق الشهر",
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+
+                    Text(
+                        if (locked)
+                            "الشهر مغلق بعد التسوية"
+                        else
+                            "الشهر مفتوح للتعديل",
+                        fontSize = 10.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            if (payments.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    "الدفعات المسجلة",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End,
+                    fontWeight = FontWeight.Bold
+                )
+
+                payments.forEach { payment ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    vertical = 4.dp
+                                ),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        if (!locked) {
+                            TextButton(
+                                onClick = {
+                                    onSaveData(
+                                        FinanceV2
+                                            .deletePayment(
+                                                data,
+                                                payment.id
+                                            )
+                                    )
+                                }
+                            ) {
+                                Text(
+                                    "حذف",
+                                    color =
+                                        Color(
+                                            0xFFB42318
+                                        )
+                                )
+                            }
+                        }
+
+                        Spacer(
+                            Modifier.weight(1f)
+                        )
+
+                        Column(
+                            horizontalAlignment =
+                                Alignment.End
+                        ) {
+                            Text(
+                                "${money(payment.amount)} ج",
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            Text(
+                                payment.date +
+                                    if (
+                                        payment.note
+                                            .isNotBlank()
+                                    )
+                                        " • ${payment.note}"
+                                    else
+                                        "",
+                                fontSize = 10.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun V10FinanceLine(
+    title: String,
+    value: String
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 3.dp)
+    ) {
+        Text(
+            value,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        Text(
+            title,
+            color = Color(0xFF6B7280)
+        )
+    }
 }
 
 @Composable

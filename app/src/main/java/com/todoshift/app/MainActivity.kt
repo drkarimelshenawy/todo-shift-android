@@ -1,5 +1,8 @@
 package com.todoshift.app
 
+import com.todoshift.app.data.RotationPresetEngine
+import com.todoshift.app.data.ShiftTemplate
+import com.todoshift.app.data.TemplateEngine
 import com.todoshift.app.data.Workplace
 import com.todoshift.app.data.RotationStep
 import java.time.DayOfWeek
@@ -1818,6 +1821,20 @@ private fun V10SmartToolsPanel(
                 Spacer(Modifier.height(10.dp))
 
                 V10ToolButton(
+                    title = "قوالب الشيفتات",
+                    subtitle = "احفظ الشيفتات المتكررة واستخدمها بسرعة"
+                ) {
+                    activeMode = null
+                }
+
+                V10TemplatesSection(
+                    data = data,
+                    onSaveData = onSaveData
+                )
+
+                Spacer(Modifier.height(6.dp))
+
+                V10ToolButton(
                     title = "توزيع على فترة",
                     subtitle = "ضع نفس الشيفت من تاريخ إلى تاريخ"
                 ) {
@@ -1875,6 +1892,345 @@ private fun V10SmartToolsPanel(
             }
         )
     }
+}
+
+
+@Composable
+private fun V10TemplatesSection(
+    data: AppData,
+    onSaveData: (AppData) -> Unit
+) {
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    var creating by remember {
+        mutableStateOf(false)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedButton(
+            onClick = {
+                expanded = !expanded
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                if (expanded)
+                    "إخفاء القوالب"
+                else
+                    "عرض القوالب (${data.templates.size})"
+            )
+        }
+
+        if (expanded) {
+            Spacer(Modifier.height(6.dp))
+
+            Button(
+                onClick = {
+                    creating = true
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("+ قالب جديد")
+            }
+
+            if (data.templates.isEmpty()) {
+                Spacer(Modifier.height(6.dp))
+
+                Text(
+                    "لا توجد قوالب محفوظة بعد.",
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End
+                )
+            }
+
+            data.templates.forEach { template ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = {
+                                onSaveData(
+                                    TemplateEngine.delete(
+                                        data,
+                                        template.id
+                                    )
+                                )
+                            }
+                        ) {
+                            Text(
+                                "حذف",
+                                color = Color(0xFFB42318)
+                            )
+                        }
+
+                        Spacer(Modifier.weight(1f))
+
+                        Column(
+                            horizontalAlignment =
+                                Alignment.End
+                        ) {
+                            Text(
+                                template.name,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            Text(
+                                V10TemplateDescription(
+                                    template,
+                                    data.workplaces
+                                ),
+                                fontSize = 10.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (creating) {
+        V10CreateTemplateDialog(
+            data = data,
+            onDismiss = {
+                creating = false
+            },
+            onCreate = { name, selection ->
+                onSaveData(
+                    TemplateEngine.create(
+                        data = data,
+                        name = name,
+                        selection = selection
+                    )
+                )
+
+                creating = false
+            }
+        )
+    }
+}
+
+private fun V10TemplateDescription(
+    template: ShiftTemplate,
+    workplaces: List<Workplace>
+): String {
+
+    val type =
+        when (template.type) {
+            ShiftType.FULL_DAY ->
+                "24 ساعة"
+
+            ShiftType.LONG_NIGHT ->
+                "Long / Night"
+
+            ShiftType.THREE_SHIFTS ->
+                "3 شيفتات"
+
+            ShiftType.OFF ->
+                "إجازة"
+        }
+
+    val places =
+        template.workplaceIds
+            .filterNotNull()
+            .mapNotNull { id ->
+                workplaces
+                    .firstOrNull {
+                        it.id == id
+                    }
+                    ?.name
+            }
+
+    return if (places.isEmpty())
+        type
+    else
+        "$type • ${places.joinToString(" / ")}"
+}
+
+@Composable
+private fun V10CreateTemplateDialog(
+    data: AppData,
+    onDismiss: () -> Unit,
+    onCreate: (
+        String,
+        PainterSelection
+    ) -> Unit
+) {
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    var type by remember {
+        mutableStateOf(
+            ShiftType.FULL_DAY
+        )
+    }
+
+    var place1 by remember {
+        mutableStateOf(
+            data.workplaces
+                .firstOrNull()
+                ?.id
+        )
+    }
+
+    var place2 by remember {
+        mutableStateOf(
+            data.workplaces
+                .getOrNull(1)
+                ?.id
+                ?: place1
+        )
+    }
+
+    var place3 by remember {
+        mutableStateOf(
+            data.workplaces
+                .getOrNull(2)
+                ?.id
+                ?: place1
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("قالب شيفت جديد")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    label = {
+                        Text("اسم القالب")
+                    },
+                    singleLine = true
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                V10ShiftTypeSelector(
+                    selected = type,
+                    onSelected = {
+                        type = it
+                    }
+                )
+
+                if (type != ShiftType.OFF) {
+                    V10WorkplaceSelector(
+                        title = "المكان الأول",
+                        workplaces =
+                            data.workplaces,
+                        selectedId = place1,
+                        onSelected = {
+                            place1 = it
+                        }
+                    )
+                }
+
+                if (
+                    type == ShiftType.LONG_NIGHT ||
+                    type == ShiftType.THREE_SHIFTS
+                ) {
+                    V10WorkplaceSelector(
+                        title = "المكان الثاني",
+                        workplaces =
+                            data.workplaces,
+                        selectedId = place2,
+                        onSelected = {
+                            place2 = it
+                        }
+                    )
+                }
+
+                if (
+                    type ==
+                        ShiftType.THREE_SHIFTS
+                ) {
+                    V10WorkplaceSelector(
+                        title = "المكان الثالث",
+                        workplaces =
+                            data.workplaces,
+                        selectedId = place3,
+                        onSelected = {
+                            place3 = it
+                        }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val ids =
+                        when (type) {
+                            ShiftType.FULL_DAY ->
+                                listOf(place1)
+
+                            ShiftType.LONG_NIGHT ->
+                                listOf(
+                                    place1,
+                                    place2
+                                )
+
+                            ShiftType.THREE_SHIFTS ->
+                                listOf(
+                                    place1,
+                                    place2,
+                                    place3
+                                )
+
+                            ShiftType.OFF ->
+                                emptyList()
+                        }
+
+                    onCreate(
+                        name.trim(),
+                        PainterSelection(
+                            type = type,
+                            workplaceIds = ids,
+                            customAmount = null
+                        )
+                    )
+                },
+                enabled =
+                    name.isNotBlank()
+            ) {
+                Text("حفظ القالب")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("إلغاء")
+            }
+        }
+    )
 }
 
 @Composable
@@ -1966,6 +2322,14 @@ private fun V10SmartToolDialog(
         mutableStateOf<String?>(null)
     }
 
+    var rotationWorkDays by remember(mode) {
+        mutableStateOf("1")
+    }
+
+    var rotationOffDays by remember(mode) {
+        mutableStateOf("1")
+    }
+
     fun selection(): PainterSelection {
         val ids =
             when (selectedType) {
@@ -2030,19 +2394,40 @@ private fun V10SmartToolDialog(
                     }
 
                     SmartToolMode.ROTATION -> {
+                        val workDays =
+                            rotationWorkDays
+                                .toIntOrNull()
+                                ?.coerceIn(1, 31)
+                                ?: 1
+
+                        val offDays =
+                            rotationOffDays
+                                .toIntOrNull()
+                                ?.coerceIn(0, 31)
+                                ?: 1
+
                         val steps =
-                            listOf(
-                                RotationStep(
-                                    type = selectedType,
-                                    workplaceIds =
-                                        selection().workplaceIds
-                                ),
-                                RotationStep(
-                                    type = ShiftType.OFF,
-                                    workplaceIds =
-                                        emptyList()
-                                )
-                            )
+                            buildList {
+                                repeat(workDays) {
+                                    add(
+                                        RotationStep(
+                                            type = selectedType,
+                                            workplaceIds =
+                                                selection().workplaceIds
+                                        )
+                                    )
+                                }
+
+                                repeat(offDays) {
+                                    add(
+                                        RotationStep(
+                                            type = ShiftType.OFF,
+                                            workplaceIds =
+                                                emptyList()
+                                        )
+                                    )
+                                }
+                            }
 
                         SmartToolsController.applyRotation(
                             data = data,
@@ -2301,8 +2686,42 @@ private fun V10SmartToolDialog(
                 ) {
                     Spacer(Modifier.height(8.dp))
 
+                    OutlinedTextField(
+                        value = rotationWorkDays,
+                        onValueChange = {
+                            rotationWorkDays =
+                                it.filter { ch ->
+                                    ch.isDigit()
+                                }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = {
+                            Text("عدد أيام الشيفت المتتالية")
+                        },
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
+                    OutlinedTextField(
+                        value = rotationOffDays,
+                        onValueChange = {
+                            rotationOffDays =
+                                it.filter { ch ->
+                                    ch.isDigit()
+                                }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = {
+                            Text("عدد أيام الإجازة")
+                        },
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
                     InfoBox(
-                        "الدورة الحالية: يوم شيفت ثم يوم إجازة بالتبادل. محرر الدورات المتعددة سيُضاف في المرحلة التالية."
+                        "الدورة ستكرر الخطوات بالترتيب خلال الفترة المحددة. يمكنك اختيار عدد أيام العمل المتتالية وعدد أيام الإجازة."
                     )
                 }
 

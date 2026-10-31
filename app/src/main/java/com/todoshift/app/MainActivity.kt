@@ -917,7 +917,7 @@ private fun SchedulesDashboard(
             }
         }
 
-    val finance = FinanceEngine.month(month, data)
+    val finance = FinanceEngine.month(data, month)
 
     val nextShift = data.shifts
         .filter {
@@ -1145,7 +1145,7 @@ private fun FinanceScreen(
         mutableStateOf(false)
     }
 
-    val finance = FinanceEngine.month(month, data)
+    val finance = FinanceEngine.month(data, month)
 
     val monthPayments = data.payments
         .filter {

@@ -26,6 +26,21 @@ data class ShiftEntry(
     val customAmount: Double? = null
 )
 
+data class DayTask(
+    val id: String,
+    val date: String,
+    val title: String,
+    val completed: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+data class DayDetails(
+    val date: String,
+    val note: String = "",
+    val tasks: List<DayTask> = emptyList(),
+    val extraAmount: Double = 0.0
+)
+
 data class Payment(
     val id: String,
     val date: String,
@@ -33,8 +48,18 @@ data class Payment(
     val note: String = ""
 )
 
+data class ShiftTemplate(
+    val id: String,
+    val name: String,
+    val type: ShiftType,
+    val workplaceIds: List<String?>,
+    val customAmount: Double? = null
+)
+
 data class AppData(
     val workplaces: List<Workplace>,
     val shifts: List<ShiftEntry>,
-    val payments: List<Payment>
+    val payments: List<Payment>,
+    val dayDetails: List<DayDetails> = emptyList(),
+    val templates: List<ShiftTemplate> = emptyList()
 )

@@ -1,5 +1,10 @@
 package com.todoshift.app
 
+import com.todoshift.app.data.Workplace
+import com.todoshift.app.data.RotationStep
+import java.time.DayOfWeek
+import com.todoshift.app.data.SmartToolsState
+import com.todoshift.app.data.SmartToolsController
 import com.todoshift.app.data.SmartToolsLabels
 import com.todoshift.app.data.SmartToolMode
 import android.graphics.Color as AndroidColor
@@ -1540,7 +1545,10 @@ private fun MoreScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        V10SmartToolsPreview()
+        V10SmartToolsPanel(
+            data = data,
+            onSaveData = onSaveData
+        )
 
         AppHeader(
             "المزيد",
@@ -1700,7 +1708,7 @@ private fun MoreScreen(
         Spacer(Modifier.height(10.dp))
 
         Text(
-            "ToDo Shift • V0.5",
+            "ToDo Shift • V1.0 Development",
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = Color.Gray,
@@ -1751,72 +1759,702 @@ private fun MoreScreen(
 }
 
 
-@Composable
-private fun V10SmartToolsPreview() {
 
-    val modes =
-        listOf(
-            SmartToolMode.RANGE,
-            SmartToolMode.WEEKDAYS,
-            SmartToolMode.ROTATION,
-            SmartToolMode.COPY_DAY,
-            SmartToolMode.COPY_WEEK,
-            SmartToolMode.COPY_MONTH
-        )
+@Composable
+private fun V10SmartToolsPanel(
+    data: AppData,
+    onSaveData: (AppData) -> Unit
+) {
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    var activeMode by remember {
+        mutableStateOf<SmartToolMode?>(null)
+    }
 
     Card(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                )
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 14.dp)
     ) {
         Column(
-            modifier =
-                Modifier.padding(16.dp)
+            modifier = Modifier.padding(14.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = {
+                        expanded = !expanded
+                    }
+                ) {
+                    Text(
+                        if (expanded) "إخفاء" else "فتح"
+                    )
+                }
 
+                Spacer(Modifier.weight(1f))
+
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        "أدوات الجدول الذكية",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+
+                    Text(
+                        "توزيع ونسخ الشيفتات تلقائيًا",
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            if (expanded) {
+                Spacer(Modifier.height(10.dp))
+
+                V10ToolButton(
+                    title = "توزيع على فترة",
+                    subtitle = "ضع نفس الشيفت من تاريخ إلى تاريخ"
+                ) {
+                    activeMode = SmartToolMode.RANGE
+                }
+
+                V10ToolButton(
+                    title = "أيام أسبوع محددة",
+                    subtitle = "مثال: كل سبت وثلاثاء خلال فترة"
+                ) {
+                    activeMode = SmartToolMode.WEEKDAYS
+                }
+
+                V10ToolButton(
+                    title = "دورة عمل",
+                    subtitle = "تكرار دورة شيفتات تلقائيًا"
+                ) {
+                    activeMode = SmartToolMode.ROTATION
+                }
+
+                V10ToolButton(
+                    title = "نسخ يوم",
+                    subtitle = "انسخ شيفت يوم إلى يوم آخر"
+                ) {
+                    activeMode = SmartToolMode.COPY_DAY
+                }
+
+                V10ToolButton(
+                    title = "نسخ أسبوع",
+                    subtitle = "انسخ 7 أيام إلى أسبوع آخر"
+                ) {
+                    activeMode = SmartToolMode.COPY_WEEK
+                }
+
+                V10ToolButton(
+                    title = "نسخ شهر",
+                    subtitle = "انسخ جدول شهر إلى شهر آخر"
+                ) {
+                    activeMode = SmartToolMode.COPY_MONTH
+                }
+            }
+        }
+    }
+
+    activeMode?.let { mode ->
+        V10SmartToolDialog(
+            mode = mode,
+            data = data,
+            onDismiss = {
+                activeMode = null
+            },
+            onSaveData = {
+                onSaveData(it)
+                activeMode = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun V10ToolButton(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.End
+        ) {
             Text(
-                text = "أدوات الجدول الذكية",
+                title,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(
-                Modifier.height(8.dp)
-            )
-
             Text(
-                text =
-                    "محرك V1.0 جاهز للتوزيع والنسخ والدورات",
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodySmall
+                subtitle,
+                fontSize = 10.sp,
+                color = Color.Gray
             )
-
-            Spacer(
-                Modifier.height(10.dp)
-            )
-
-            modes.forEach { mode ->
-
-                Text(
-                    text =
-                        "• " +
-                            SmartToolsLabels
-                                .mode(mode),
-                    modifier =
-                        Modifier.padding(
-                            vertical = 2.dp
-                        )
-                )
-            }
         }
     }
 }
 
+@Composable
+private fun V10SmartToolDialog(
+    mode: SmartToolMode,
+    data: AppData,
+    onDismiss: () -> Unit,
+    onSaveData: (AppData) -> Unit
+) {
+    val today = LocalDate.now()
+
+    var startText by remember(mode) {
+        mutableStateOf(today.toString())
+    }
+
+    var endText by remember(mode) {
+        mutableStateOf(today.plusDays(7).toString())
+    }
+
+    var targetText by remember(mode) {
+        mutableStateOf(today.plusDays(1).toString())
+    }
+
+    var overwrite by remember(mode) {
+        mutableStateOf(true)
+    }
+
+    var selectedType by remember(mode) {
+        mutableStateOf(ShiftType.FULL_DAY)
+    }
+
+    var place1 by remember(mode) {
+        mutableStateOf(
+            data.workplaces.firstOrNull()?.id
+        )
+    }
+
+    var place2 by remember(mode) {
+        mutableStateOf(
+            data.workplaces.getOrNull(1)?.id
+                ?: data.workplaces.firstOrNull()?.id
+        )
+    }
+
+    var place3 by remember(mode) {
+        mutableStateOf(
+            data.workplaces.getOrNull(2)?.id
+                ?: data.workplaces.firstOrNull()?.id
+        )
+    }
+
+    var selectedWeekdays by remember(mode) {
+        mutableStateOf(
+            setOf<DayOfWeek>()
+        )
+    }
+
+    var error by remember(mode) {
+        mutableStateOf<String?>(null)
+    }
+
+    fun selection(): PainterSelection {
+        val ids =
+            when (selectedType) {
+                ShiftType.FULL_DAY ->
+                    listOf(place1)
+
+                ShiftType.LONG_NIGHT ->
+                    listOf(place1, place2)
+
+                ShiftType.THREE_SHIFTS ->
+                    listOf(place1, place2, place3)
+
+                ShiftType.OFF ->
+                    emptyList()
+            }
+
+        return PainterSelection(
+            type = selectedType,
+            workplaceIds = ids,
+            customAmount = null
+        )
+    }
+
+    fun execute() {
+        try {
+            val start =
+                LocalDate.parse(startText)
+
+            val end =
+                LocalDate.parse(endText)
+
+            val result =
+                when (mode) {
+                    SmartToolMode.RANGE -> {
+                        SmartToolsController.applyRange(
+                            data = data,
+                            state = SmartToolsState(
+                                startDate = start,
+                                endDate = end,
+                                overwrite = overwrite
+                            ),
+                            selection = selection()
+                        )
+                    }
+
+                    SmartToolMode.WEEKDAYS -> {
+                        if (selectedWeekdays.isEmpty()) {
+                            error = "اختر يومًا واحدًا على الأقل"
+                            return
+                        }
+
+                        SmartToolsController.applyWeekdays(
+                            data = data,
+                            state = SmartToolsState(
+                                startDate = start,
+                                endDate = end,
+                                selectedWeekdays = selectedWeekdays,
+                                overwrite = overwrite
+                            ),
+                            selection = selection()
+                        )
+                    }
+
+                    SmartToolMode.ROTATION -> {
+                        val steps =
+                            listOf(
+                                RotationStep(
+                                    type = selectedType,
+                                    workplaceIds =
+                                        selection().workplaceIds
+                                ),
+                                RotationStep(
+                                    type = ShiftType.OFF,
+                                    workplaceIds =
+                                        emptyList()
+                                )
+                            )
+
+                        SmartToolsController.applyRotation(
+                            data = data,
+                            state = SmartToolsState(
+                                startDate = start,
+                                endDate = end,
+                                overwrite = overwrite
+                            ),
+                            steps = steps
+                        )
+                    }
+
+                    SmartToolMode.COPY_DAY -> {
+                        SmartToolsController.copyDay(
+                            data = data,
+                            source = start,
+                            target =
+                                LocalDate.parse(targetText),
+                            overwrite = overwrite
+                        )
+                    }
+
+                    SmartToolMode.COPY_WEEK -> {
+                        SmartToolsController.copyWeek(
+                            data = data,
+                            source = start,
+                            target =
+                                LocalDate.parse(targetText),
+                            overwrite = overwrite
+                        )
+                    }
+
+                    SmartToolMode.COPY_MONTH -> {
+                        SmartToolsController.copyMonth(
+                            data = data,
+                            source = YearMonth.from(start),
+                            target =
+                                YearMonth.from(
+                                    LocalDate.parse(targetText)
+                                ),
+                            overwrite = overwrite
+                        )
+                    }
+                }
+
+            onSaveData(result.data)
+
+        } catch (_: Exception) {
+            error =
+                "راجع التاريخ. استخدم الصيغة 2026-11-01"
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                SmartToolsLabels.mode(mode)
+            )
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                if (
+                    mode == SmartToolMode.RANGE ||
+                    mode == SmartToolMode.WEEKDAYS ||
+                    mode == SmartToolMode.ROTATION
+                ) {
+                    V10DateField(
+                        label = "من تاريخ",
+                        value = startText,
+                        onValueChange = {
+                            startText = it
+                            error = null
+                        }
+                    )
+
+                    V10DateField(
+                        label = "إلى تاريخ",
+                        value = endText,
+                        onValueChange = {
+                            endText = it
+                            error = null
+                        }
+                    )
+                } else {
+                    V10DateField(
+                        label =
+                            when (mode) {
+                                SmartToolMode.COPY_MONTH ->
+                                    "أي يوم من الشهر المصدر"
+
+                                SmartToolMode.COPY_WEEK ->
+                                    "بداية الأسبوع المصدر"
+
+                                else ->
+                                    "اليوم المصدر"
+                            },
+                        value = startText,
+                        onValueChange = {
+                            startText = it
+                            error = null
+                        }
+                    )
+
+                    V10DateField(
+                        label =
+                            when (mode) {
+                                SmartToolMode.COPY_MONTH ->
+                                    "أي يوم من الشهر الهدف"
+
+                                SmartToolMode.COPY_WEEK ->
+                                    "بداية الأسبوع الهدف"
+
+                                else ->
+                                    "اليوم الهدف"
+                            },
+                        value = targetText,
+                        onValueChange = {
+                            targetText = it
+                            error = null
+                        }
+                    )
+                }
+
+                if (
+                    mode == SmartToolMode.RANGE ||
+                    mode == SmartToolMode.WEEKDAYS ||
+                    mode == SmartToolMode.ROTATION
+                ) {
+                    Spacer(Modifier.height(10.dp))
+
+                    Text(
+                        "نوع الشيفت",
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    V10ShiftTypeSelector(
+                        selected = selectedType,
+                        onSelected = {
+                            selectedType = it
+                        }
+                    )
+
+                    if (
+                        selectedType != ShiftType.OFF
+                    ) {
+                        Spacer(Modifier.height(8.dp))
+
+                        V10WorkplaceSelector(
+                            title =
+                                when (selectedType) {
+                                    ShiftType.FULL_DAY ->
+                                        "مكان العمل"
+
+                                    else ->
+                                        "المكان الأول"
+                                },
+                            workplaces = data.workplaces,
+                            selectedId = place1,
+                            onSelected = {
+                                place1 = it
+                            }
+                        )
+                    }
+
+                    if (
+                        selectedType ==
+                            ShiftType.LONG_NIGHT ||
+                        selectedType ==
+                            ShiftType.THREE_SHIFTS
+                    ) {
+                        V10WorkplaceSelector(
+                            title =
+                                if (
+                                    selectedType ==
+                                        ShiftType.LONG_NIGHT
+                                )
+                                    "مكان Night"
+                                else
+                                    "مكان Evening",
+                            workplaces = data.workplaces,
+                            selectedId = place2,
+                            onSelected = {
+                                place2 = it
+                            }
+                        )
+                    }
+
+                    if (
+                        selectedType ==
+                            ShiftType.THREE_SHIFTS
+                    ) {
+                        V10WorkplaceSelector(
+                            title = "مكان Night",
+                            workplaces = data.workplaces,
+                            selectedId = place3,
+                            onSelected = {
+                                place3 = it
+                            }
+                        )
+                    }
+                }
+
+                if (
+                    mode == SmartToolMode.WEEKDAYS
+                ) {
+                    Spacer(Modifier.height(10.dp))
+
+                    Text(
+                        "أيام الأسبوع",
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    val days =
+                        listOf(
+                            DayOfWeek.SATURDAY,
+                            DayOfWeek.SUNDAY,
+                            DayOfWeek.MONDAY,
+                            DayOfWeek.TUESDAY,
+                            DayOfWeek.WEDNESDAY,
+                            DayOfWeek.THURSDAY,
+                            DayOfWeek.FRIDAY
+                        )
+
+                    days.forEach { day ->
+                        Row(
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked =
+                                    day in selectedWeekdays,
+                                onCheckedChange = { checked ->
+                                    selectedWeekdays =
+                                        if (checked)
+                                            selectedWeekdays + day
+                                        else
+                                            selectedWeekdays - day
+                                }
+                            )
+
+                            Text(
+                                SmartToolsLabels.weekday(day)
+                            )
+                        }
+                    }
+                }
+
+                if (
+                    mode == SmartToolMode.ROTATION
+                ) {
+                    Spacer(Modifier.height(8.dp))
+
+                    InfoBox(
+                        "الدورة الحالية: يوم شيفت ثم يوم إجازة بالتبادل. محرر الدورات المتعددة سيُضاف في المرحلة التالية."
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = overwrite,
+                        onCheckedChange = {
+                            overwrite = it
+                        }
+                    )
+
+                    Text(
+                        "استبدال الشيفت الموجود"
+                    )
+                }
+
+                error?.let {
+                    Spacer(Modifier.height(6.dp))
+
+                    Text(
+                        it,
+                        color = Color(0xFFB42318),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    execute()
+                }
+            ) {
+                Text("تنفيذ")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("إلغاء")
+            }
+        }
+    )
+}
+
+@Composable
+private fun V10DateField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        label = {
+            Text(label)
+        },
+        placeholder = {
+            Text("2026-11-01")
+        },
+        singleLine = true
+    )
+}
+
+@Composable
+private fun V10ShiftTypeSelector(
+    selected: ShiftType,
+    onSelected: (ShiftType) -> Unit
+) {
+    val options =
+        listOf(
+            ShiftType.FULL_DAY to "24 ساعة",
+            ShiftType.LONG_NIGHT to "Long / Night",
+            ShiftType.THREE_SHIFTS to "3 شيفتات",
+            ShiftType.OFF to "إجازة"
+        )
+
+    options.forEach { option ->
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected =
+                    selected == option.first,
+                onClick = {
+                    onSelected(option.first)
+                }
+            )
+
+            Text(option.second)
+        }
+    }
+}
+
+@Composable
+private fun V10WorkplaceSelector(
+    title: String,
+    workplaces: List<Workplace>,
+    selectedId: String?,
+    onSelected: (String) -> Unit
+) {
+    Text(
+        title,
+        fontWeight = FontWeight.Bold,
+        modifier =
+            Modifier.padding(top = 6.dp)
+    )
+
+    workplaces.forEach { place ->
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected =
+                    selectedId == place.id,
+                onClick = {
+                    onSelected(place.id)
+                }
+            )
+
+            Box(
+                modifier =
+                    Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(
+                            hexColor(place.colorHex)
+                        )
+            )
+
+            Spacer(Modifier.width(7.dp))
+
+            Text(place.name)
+        }
+    }
+}
 
 @Composable
 private fun WorkplaceEditorDialog(

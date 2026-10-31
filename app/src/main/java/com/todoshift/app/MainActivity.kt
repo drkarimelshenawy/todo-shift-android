@@ -31,6 +31,34 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.filled.Notes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import com.todoshift.app.data.DayEngine
+import com.todoshift.app.data.PainterSelection
+import com.todoshift.app.data.ShiftPainterEngine
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,13 +136,11 @@ fun ToDoShiftApp() {
                 .statusBarsPadding()
         ) {
             when (currentTab) {
-                0 -> CalendarScreen(
-                    month = currentMonth,
+                0 -> V09CalendarScreen(
                     data = appData,
-                    onPrevious = { currentMonth = currentMonth.minusMonths(1) },
-                    onNext = { currentMonth = currentMonth.plusMonths(1) },
-                    onToday = { currentMonth = YearMonth.now() },
-                    onDayClick = { editingDate = it }
+                    currentMonth = currentMonth,
+                    onMonthChange = { currentMonth = it },
+                    onDataChange = { updateData(it) }
                 )
 
                 1 -> SchedulesDashboard(
@@ -2080,4 +2106,1478 @@ private fun arabicMonth(month: Int): String {
         "نوفمبر",
         "ديسمبر"
     )[month - 1]
+}
+
+
+// ============================================================
+// TODO SHIFT V0.9 - SHIFT PAINTER + DAY CENTER
+// ============================================================
+
+private data class V09PainterState(
+    val selection: PainterSelection,
+    val selectedDates: Set<LocalDate> = emptySet()
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun V09CalendarScreen(
+    data: AppData,
+    currentMonth: YearMonth,
+    onMonthChange: (YearMonth) -> Unit,
+    onDataChange: (AppData) -> Unit
+) {
+    var painterState by remember {
+        mutableStateOf<V09PainterState?>(null)
+    }
+
+    var showShiftChooser by remember {
+        mutableStateOf(false)
+    }
+
+    var selectedDay by remember {
+        mutableStateOf<LocalDate?>(null)
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 110.dp)
+        ) {
+
+            AppHeader(
+                title = "ToDo Shift",
+                subtitle =
+                    if (painterState == null)
+                        "اضغط على + لإضافة الشيفتات"
+                    else
+                        "وضع توزيع الشيفتات"
+            )
+
+            MonthSelector(
+                currentMonth = currentMonth,
+                onPrevious = {
+                    onMonthChange(
+                        currentMonth.minusMonths(1)
+                    )
+                },
+                onNext = {
+                    onMonthChange(
+                        currentMonth.plusMonths(1)
+                    )
+                },
+                onToday = {
+                    onMonthChange(
+                        YearMonth.now()
+                    )
+                }
+            )
+
+            if (painterState != null) {
+                V09PainterBanner(
+                    data = data,
+                    state = painterState!!,
+                    onCancel = {
+                        painterState = null
+                    }
+                )
+            }
+
+            WeekHeader()
+
+            V09MonthGrid(
+                month = currentMonth,
+                data = data,
+                painterState = painterState,
+                onDayClick = { date ->
+
+                    val state = painterState
+
+                    if (state == null) {
+                        selectedDay = date
+                    } else {
+                        val dates =
+                            state.selectedDates.toMutableSet()
+
+                        if (date in dates) {
+                            dates.remove(date)
+                        } else {
+                            dates.add(date)
+                        }
+
+                        painterState =
+                            state.copy(
+                                selectedDates = dates
+                            )
+                    }
+                }
+            )
+
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
+
+            WorkplaceLegend(
+                workplaces = data.workplaces
+            )
+
+            if (painterState != null) {
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+
+                Text(
+                    text =
+                        "تم تحديد ${painterState!!.selectedDates.size} يوم",
+                    modifier =
+                        Modifier.padding(horizontal = 20.dp),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(
+                    start = 20.dp,
+                    end = 20.dp,
+                    bottom = 22.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement.spacedBy(12.dp)
+        ) {
+
+            if (painterState != null) {
+                FloatingActionButton(
+                    onClick = {
+                        painterState = null
+                    },
+                    containerColor =
+                        MaterialTheme.colorScheme.errorContainer
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "إلغاء"
+                    )
+                }
+            }
+
+            FloatingActionButton(
+                onClick = {
+
+                    val state = painterState
+
+                    if (state == null) {
+                        showShiftChooser = true
+                    } else {
+                        if (state.selectedDates.isNotEmpty()) {
+                            val updated =
+                                ShiftPainterEngine.apply(
+                                    data = data,
+                                    dates =
+                                        state.selectedDates,
+                                    selection =
+                                        state.selection
+                                )
+
+                            onDataChange(updated)
+                            painterState = null
+                        }
+                    }
+                },
+                containerColor =
+                    if (painterState == null)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.tertiary
+            ) {
+                Icon(
+                    if (painterState == null)
+                        Icons.Default.Add
+                    else
+                        Icons.Default.Check,
+                    contentDescription =
+                        if (painterState == null)
+                            "إضافة شيفت"
+                        else
+                            "حفظ الشيفتات"
+                )
+            }
+        }
+    }
+
+    if (showShiftChooser) {
+        V09ShiftChooserSheet(
+            data = data,
+            onDismiss = {
+                showShiftChooser = false
+            },
+            onChoose = { selection ->
+                painterState =
+                    V09PainterState(
+                        selection = selection
+                    )
+
+                showShiftChooser = false
+            }
+        )
+    }
+
+    selectedDay?.let { date ->
+        V09DayCenterDialog(
+            date = date,
+            data = data,
+            onDismiss = {
+                selectedDay = null
+            },
+            onDataChange = onDataChange
+        )
+    }
+}
+
+@Composable
+private fun V09PainterBanner(
+    data: AppData,
+    state: V09PainterState,
+    onCancel: () -> Unit
+) {
+    val names =
+        state.selection.workplaceIds
+            .mapNotNull { id ->
+                data.workplaces
+                    .firstOrNull {
+                        it.id == id
+                    }
+                    ?.name
+            }
+            .distinct()
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
+            ),
+        shape =
+            RoundedCornerShape(18.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement.SpaceBetween
+        ) {
+
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "جاري توزيع الشيفت",
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        "${v09ShiftName(state.selection.type)} • " +
+                        names.joinToString(" / "),
+                    fontSize = 13.sp
+                )
+            }
+
+            IconButton(
+                onClick = onCancel
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "إلغاء"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun V09MonthGrid(
+    month: YearMonth,
+    data: AppData,
+    painterState: V09PainterState?,
+    onDayClick: (LocalDate) -> Unit
+) {
+    val first = month.atDay(1)
+
+    // Saturday = 0
+    val startOffset =
+        (first.dayOfWeek.value + 1) % 7
+
+    val totalDays =
+        month.lengthOfMonth()
+
+    val totalCells =
+        ((startOffset + totalDays + 6) / 7) * 7
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+    ) {
+
+        for (week in 0 until totalCells / 7) {
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+
+                for (dayIndex in 0 until 7) {
+
+                    val cell =
+                        week * 7 + dayIndex
+
+                    val dayNumber =
+                        cell - startOffset + 1
+
+                    Box(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(2.dp)
+                    ) {
+
+                        if (
+                            dayNumber in 1..totalDays
+                        ) {
+                            val date =
+                                month.atDay(dayNumber)
+
+                            val shift =
+                                data.shifts
+                                    .firstOrNull {
+                                        it.date ==
+                                            date.toString()
+                                    }
+
+                            val selected =
+                                painterState
+                                    ?.selectedDates
+                                    ?.contains(date)
+                                    == true
+
+                            val details =
+                                DayEngine.detailsFor(
+                                    data,
+                                    date.toString()
+                                )
+
+                            V09DayCell(
+                                date = date,
+                                shift = shift,
+                                workplaces =
+                                    data.workplaces,
+                                selected = selected,
+                                hasNote =
+                                    details.note
+                                        .isNotBlank(),
+                                pendingTasks =
+                                    details.tasks
+                                        .count {
+                                            !it.completed
+                                        },
+                                onClick = {
+                                    onDayClick(date)
+                                }
+                            )
+                        } else {
+                            Spacer(
+                                modifier =
+                                    Modifier.height(64.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun V09DayCell(
+    date: LocalDate,
+    shift: ShiftEntry?,
+    workplaces: List<Workplace>,
+    selected: Boolean,
+    hasNote: Boolean,
+    pendingTasks: Int,
+    onClick: () -> Unit
+) {
+    val today =
+        date == LocalDate.now()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(
+                RoundedCornerShape(12.dp)
+            )
+            .then(
+                if (selected) {
+                    Modifier.border(
+                        width = 3.dp,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .primary,
+                        shape =
+                            RoundedCornerShape(
+                                12.dp
+                            )
+                    )
+                } else if (today) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .tertiary,
+                        shape =
+                            RoundedCornerShape(
+                                12.dp
+                            )
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .clickable(onClick = onClick)
+    ) {
+
+        if (shift == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+                            .copy(alpha = 0.35f)
+                    )
+            )
+        } else {
+            V09ShiftBackground(
+                shift = shift,
+                workplaces = workplaces
+            )
+        }
+
+        Text(
+            text = date.dayOfMonth.toString(),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(6.dp),
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp
+        )
+
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .align(
+                        Alignment.Center
+                    )
+                    .size(26.dp)
+                    .background(
+                        MaterialTheme
+                            .colorScheme
+                            .primary,
+                        CircleShape
+                    ),
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier =
+                        Modifier.size(17.dp)
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .align(
+                    Alignment.BottomEnd
+                )
+                .padding(4.dp),
+            horizontalArrangement =
+                Arrangement.spacedBy(3.dp)
+        ) {
+
+            if (hasNote) {
+                Text(
+                    text = "●",
+                    fontSize = 9.sp,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+                )
+            }
+
+            if (pendingTasks > 0) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme
+                                .colorScheme
+                                .errorContainer,
+                            CircleShape
+                        )
+                        .padding(
+                            horizontal = 5.dp,
+                            vertical = 1.dp
+                        )
+                ) {
+                    Text(
+                        text =
+                            pendingTasks.toString(),
+                        fontSize = 9.sp,
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun V09ShiftBackground(
+    shift: ShiftEntry,
+    workplaces: List<Workplace>
+) {
+
+    fun colorFor(
+        index: Int
+    ): Color {
+        val id =
+            shift.workplaceIds
+                .getOrNull(index)
+
+        val place =
+            workplaces.firstOrNull {
+                it.id == id
+            }
+
+        return if (place != null) {
+            hexColor(place.colorHex)
+        } else {
+            Color.LightGray
+        }
+    }
+
+    when (shift.type) {
+
+        ShiftType.FULL_DAY -> {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        colorFor(0)
+                    )
+            )
+        }
+
+        ShiftType.LONG_NIGHT -> {
+            Column(
+                Modifier.fillMaxSize()
+            ) {
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(
+                            colorFor(0)
+                        )
+                )
+
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(
+                            colorFor(1)
+                        )
+                )
+            }
+        }
+
+        ShiftType.THREE_SHIFTS -> {
+            Column(
+                Modifier.fillMaxSize()
+            ) {
+                repeat(3) { index ->
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .background(
+                                colorFor(index)
+                            )
+                    )
+                }
+            }
+        }
+
+        ShiftType.OFF -> {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Color.LightGray
+                    )
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun V09ShiftChooserSheet(
+    data: AppData,
+    onDismiss: () -> Unit,
+    onChoose:
+        (PainterSelection) -> Unit
+) {
+    var type by remember {
+        mutableStateOf(
+            ShiftType.FULL_DAY
+        )
+    }
+
+    var place1 by remember {
+        mutableStateOf<String?>(
+            data.workplaces
+                .firstOrNull()
+                ?.id
+        )
+    }
+
+    var place2 by remember {
+        mutableStateOf<String?>(
+            data.workplaces
+                .firstOrNull()
+                ?.id
+        )
+    }
+
+    var place3 by remember {
+        mutableStateOf<String?>(
+            data.workplaces
+                .firstOrNull()
+                ?.id
+        )
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(
+                    start = 20.dp,
+                    end = 20.dp,
+                    bottom = 32.dp
+                )
+        ) {
+
+            Text(
+                text = "إضافة شيفت",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text =
+                    "اختر نوع الشيفت ومكان العمل ثم علّم الأيام على التقويم.",
+                fontSize = 13.sp
+            )
+
+            Spacer(
+                Modifier.height(18.dp)
+            )
+
+            Text(
+                "نوع الشيفت",
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            listOf(
+                ShiftType.FULL_DAY,
+                ShiftType.LONG_NIGHT,
+                ShiftType.THREE_SHIFTS,
+                ShiftType.OFF
+            ).forEach { item ->
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable {
+                            type = item
+                        },
+                    shape =
+                        RoundedCornerShape(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+
+                        RadioButton(
+                            selected =
+                                type == item,
+                            onClick = {
+                                type = item
+                            }
+                        )
+
+                        Spacer(
+                            Modifier.width(8.dp)
+                        )
+
+                        Text(
+                            text =
+                                v09ShiftName(item),
+                            fontWeight =
+                                if (type == item)
+                                    FontWeight.Bold
+                                else
+                                    FontWeight.Normal
+                        )
+                    }
+                }
+            }
+
+            if (type != ShiftType.OFF) {
+
+                Spacer(
+                    Modifier.height(18.dp)
+                )
+
+                Text(
+                    "مكان العمل",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                V09WorkplacePicker(
+                    title =
+                        when (type) {
+                            ShiftType.FULL_DAY ->
+                                "24 ساعة"
+                            ShiftType.LONG_NIGHT ->
+                                "Long"
+                            ShiftType.THREE_SHIFTS ->
+                                "Morning"
+                            else -> ""
+                        },
+                    workplaces =
+                        data.workplaces,
+                    selectedId = place1,
+                    onSelect = {
+                        place1 = it
+                    }
+                )
+
+                if (
+                    type ==
+                    ShiftType.LONG_NIGHT
+                ) {
+                    V09WorkplacePicker(
+                        title = "Night",
+                        workplaces =
+                            data.workplaces,
+                        selectedId =
+                            place2,
+                        onSelect = {
+                            place2 = it
+                        }
+                    )
+                }
+
+                if (
+                    type ==
+                    ShiftType.THREE_SHIFTS
+                ) {
+                    V09WorkplacePicker(
+                        title = "Evening",
+                        workplaces =
+                            data.workplaces,
+                        selectedId =
+                            place2,
+                        onSelect = {
+                            place2 = it
+                        }
+                    )
+
+                    V09WorkplacePicker(
+                        title = "Night",
+                        workplaces =
+                            data.workplaces,
+                        selectedId =
+                            place3,
+                        onSelect = {
+                            place3 = it
+                        }
+                    )
+                }
+            }
+
+            Spacer(
+                Modifier.height(22.dp)
+            )
+
+            Button(
+                onClick = {
+
+                    val ids =
+                        when (type) {
+                            ShiftType.FULL_DAY ->
+                                listOf(place1)
+
+                            ShiftType.LONG_NIGHT ->
+                                listOf(
+                                    place1,
+                                    place2
+                                )
+
+                            ShiftType.THREE_SHIFTS ->
+                                listOf(
+                                    place1,
+                                    place2,
+                                    place3
+                                )
+
+                            ShiftType.OFF ->
+                                emptyList()
+                        }
+
+                    onChoose(
+                        PainterSelection(
+                            type = type,
+                            workplaceIds = ids
+                        )
+                    )
+                },
+                modifier =
+                    Modifier.fillMaxWidth(),
+                enabled =
+                    type == ShiftType.OFF ||
+                    data.workplaces.isNotEmpty()
+            ) {
+                Text(
+                    "ابدأ تحديد الأيام"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun V09WorkplacePicker(
+    title: String,
+    workplaces: List<Workplace>,
+    selectedId: String?,
+    onSelect: (String) -> Unit
+) {
+    Column(
+        modifier =
+            Modifier.padding(
+                vertical = 8.dp
+            )
+    ) {
+
+        Text(
+            text = title,
+            fontSize = 13.sp,
+            fontWeight =
+                FontWeight.SemiBold
+        )
+
+        Spacer(
+            Modifier.height(6.dp)
+        )
+
+        workplaces.forEach { place ->
+
+            val selected =
+                place.id == selectedId
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(
+                        RoundedCornerShape(
+                            12.dp
+                        )
+                    )
+                    .clickable {
+                        onSelect(place.id)
+                    }
+                    .padding(
+                        vertical = 8.dp
+                    ),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                RadioButton(
+                    selected = selected,
+                    onClick = {
+                        onSelect(place.id)
+                    }
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(
+                            hexColor(
+                                place.colorHex
+                            ),
+                            CircleShape
+                        )
+                )
+
+                Spacer(
+                    Modifier.width(10.dp)
+                )
+
+                Text(
+                    text = place.name,
+                    fontWeight =
+                        if (selected)
+                            FontWeight.Bold
+                        else
+                            FontWeight.Normal
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun V09DayCenterDialog(
+    date: LocalDate,
+    data: AppData,
+    onDismiss: () -> Unit,
+    onDataChange: (AppData) -> Unit
+) {
+    val dateString =
+        date.toString()
+
+    val shift =
+        data.shifts.firstOrNull {
+            it.date == dateString
+        }
+
+    val details =
+        DayEngine.detailsFor(
+            data,
+            dateString
+        )
+
+    var note by remember(
+        dateString,
+        details.note
+    ) {
+        mutableStateOf(
+            details.note
+        )
+    }
+
+    var newTask by remember(
+        dateString
+    ) {
+        mutableStateOf("")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    var updated =
+                        DayEngine.saveNote(
+                            data,
+                            dateString,
+                            note
+                        )
+
+                    onDataChange(updated)
+                    onDismiss()
+                }
+            ) {
+                Text("حفظ وإغلاق")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("إغلاق")
+            }
+        },
+        title = {
+            Column {
+                Text(
+                    text =
+                        "${date.dayOfMonth} " +
+                        arabicMonth(
+                            YearMonth.from(
+                                date
+                            )
+                        ),
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        v09ArabicDay(
+                            date
+                        ),
+                    fontSize = 13.sp,
+                    fontWeight =
+                        FontWeight.Normal
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+
+                Text(
+                    "الشيفت",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.height(6.dp)
+                )
+
+                if (shift == null) {
+                    Text(
+                        "لا يوجد شيفت مسجل لهذا اليوم.",
+                        fontSize = 13.sp
+                    )
+                } else {
+
+                    val names =
+                        shift.workplaceIds
+                            .mapNotNull { id ->
+                                data.workplaces
+                                    .firstOrNull {
+                                        it.id == id
+                                    }
+                                    ?.name
+                            }
+
+                    Card(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(
+                                14.dp
+                            )
+                    ) {
+                        Column(
+                            modifier =
+                                Modifier.padding(
+                                    12.dp
+                                )
+                        ) {
+                            Text(
+                                v09ShiftName(
+                                    shift.type
+                                ),
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            if (
+                                names.isNotEmpty()
+                            ) {
+                                Text(
+                                    names.joinToString(
+                                        " / "
+                                    ),
+                                    fontSize = 13.sp
+                                )
+                            }
+
+                            Text(
+                                text =
+                                    "القيمة: ${
+                                        money(
+                                            FinanceEngine
+                                                .shiftAmount(
+                                                    shift,
+                                                    data.workplaces
+                                                )
+                                        )
+                                    }",
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+
+                    TextButton(
+                        onClick = {
+                            val updated =
+                                data.copy(
+                                    shifts =
+                                        data.shifts
+                                            .filterNot {
+                                                it.date ==
+                                                    dateString
+                                            }
+                                )
+
+                            onDataChange(
+                                updated
+                            )
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription =
+                                null
+                        )
+
+                        Spacer(
+                            Modifier.width(
+                                4.dp
+                            )
+                        )
+
+                        Text(
+                            "حذف شيفت اليوم"
+                        )
+                    }
+                }
+
+                HorizontalDivider()
+
+                Spacer(
+                    Modifier.height(14.dp)
+                )
+
+                Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Notes,
+                        contentDescription =
+                            null
+                    )
+
+                    Spacer(
+                        Modifier.width(6.dp)
+                    )
+
+                    Text(
+                        "ملاحظات اليوم",
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = {
+                        note = it
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            "اكتب أي ملاحظة تخص اليوم..."
+                        )
+                    },
+                    minLines = 3
+                )
+
+                Spacer(
+                    Modifier.height(18.dp)
+                )
+
+                Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.TaskAlt,
+                        contentDescription =
+                            null
+                    )
+
+                    Spacer(
+                        Modifier.width(6.dp)
+                    )
+
+                    Text(
+                        "طلبات ومهام اليوم",
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+
+                    OutlinedTextField(
+                        value = newTask,
+                        onValueChange = {
+                            newTask = it
+                        },
+                        modifier =
+                            Modifier.weight(1f),
+                        singleLine = true,
+                        placeholder = {
+                            Text(
+                                "مهمة جديدة"
+                            )
+                        }
+                    )
+
+                    Spacer(
+                        Modifier.width(6.dp)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (
+                                newTask
+                                    .isNotBlank()
+                            ) {
+                                val withNote =
+                                    DayEngine
+                                        .saveNote(
+                                            data,
+                                            dateString,
+                                            note
+                                        )
+
+                                val updated =
+                                    DayEngine
+                                        .addTask(
+                                            withNote,
+                                            dateString,
+                                            newTask
+                                        )
+
+                                onDataChange(
+                                    updated
+                                )
+
+                                newTask = ""
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription =
+                                "إضافة مهمة"
+                        )
+                    }
+                }
+
+                val currentDetails =
+                    DayEngine.detailsFor(
+                        data,
+                        dateString
+                    )
+
+                if (
+                    currentDetails
+                        .tasks
+                        .isEmpty()
+                ) {
+                    Text(
+                        text =
+                            "لا توجد مهام لهذا اليوم.",
+                        fontSize = 13.sp,
+                        modifier =
+                            Modifier.padding(
+                                vertical = 10.dp
+                            )
+                    )
+                } else {
+                    currentDetails
+                        .tasks
+                        .forEach { task ->
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        vertical = 4.dp
+                                    ),
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+
+                                Checkbox(
+                                    checked =
+                                        task.completed,
+                                    onCheckedChange = {
+                                        val updated =
+                                            DayEngine
+                                                .toggleTask(
+                                                    data,
+                                                    dateString,
+                                                    task.id
+                                                )
+
+                                        onDataChange(
+                                            updated
+                                        )
+                                    }
+                                )
+
+                                Text(
+                                    text =
+                                        task.title,
+                                    modifier =
+                                        Modifier.weight(
+                                            1f
+                                        ),
+                                    fontSize =
+                                        14.sp
+                                )
+
+                                IconButton(
+                                    onClick = {
+                                        val updated =
+                                            DayEngine
+                                                .deleteTask(
+                                                    data,
+                                                    dateString,
+                                                    task.id
+                                                )
+
+                                        onDataChange(
+                                            updated
+                                        )
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription =
+                                            "حذف"
+                                    )
+                                }
+                            }
+                        }
+                }
+            }
+        }
+    )
+}
+
+private fun v09ShiftName(
+    type: ShiftType
+): String {
+    return when (type) {
+        ShiftType.FULL_DAY ->
+            "24 ساعة"
+
+        ShiftType.LONG_NIGHT ->
+            "Long / Night"
+
+        ShiftType.THREE_SHIFTS ->
+            "Morning / Evening / Night"
+
+        ShiftType.OFF ->
+            "إجازة"
+    }
+}
+
+private fun v09ArabicDay(
+    date: LocalDate
+): String {
+    return when (
+        date.dayOfWeek
+    ) {
+        java.time.DayOfWeek.SATURDAY ->
+            "السبت"
+
+        java.time.DayOfWeek.SUNDAY ->
+            "الأحد"
+
+        java.time.DayOfWeek.MONDAY ->
+            "الاثنين"
+
+        java.time.DayOfWeek.TUESDAY ->
+            "الثلاثاء"
+
+        java.time.DayOfWeek.WEDNESDAY ->
+            "الأربعاء"
+
+        java.time.DayOfWeek.THURSDAY ->
+            "الخميس"
+
+        java.time.DayOfWeek.FRIDAY ->
+            "الجمعة"
+    }
 }

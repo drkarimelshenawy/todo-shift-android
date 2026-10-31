@@ -12,8 +12,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "0.9.0-dev"
+        versionCode = 10
+        versionName = "1.0.0-dev"
     }
 
     compileOptions {

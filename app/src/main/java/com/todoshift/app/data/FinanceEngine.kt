@@ -3,11 +3,24 @@ package com.todoshift.app.data
 import java.time.LocalDate
 import java.time.YearMonth
 
-data class MonthlyFinance(
+data class MonthFinance(
     val shiftCount: Int,
     val expected: Double,
     val received: Double,
     val balance: Double
+)
+
+data class WorkplaceFinance(
+    val workplaceId: String,
+    val workplaceName: String,
+    val shiftParts: Int,
+    val amount: Double
+)
+
+data class ShiftTypeFinance(
+    val label: String,
+    val count: Int,
+    val amount: Double
 )
 
 object FinanceEngine {
@@ -17,77 +30,296 @@ object FinanceEngine {
         workplaces: List<Workplace>
     ): Double {
 
-        shift.customAmount?.let { return it }
+        shift.customAmount
+            ?.let {
+                return it
+            }
 
-        fun workplace(id: String?): Workplace? =
-            workplaces.firstOrNull { it.id == id }
+        return shiftParts(
+            shift,
+            workplaces
+        ).sumOf {
+            it.second
+        }
+    }
 
-        return when (shift.type) {
+    fun shiftParts(
+        shift: ShiftEntry,
+        workplaces: List<Workplace>
+    ): List<Pair<String, Double>> {
 
-            ShiftType.FULL_DAY ->
-                workplace(shift.workplaceIds.getOrNull(0))
-                    ?.fullDayRate ?: 0.0
+        fun place(
+            index: Int
+        ): Workplace? {
+
+            val id =
+                shift.workplaceIds
+                    .getOrNull(index)
+
+            return workplaces
+                .firstOrNull {
+                    it.id == id
+                }
+        }
+
+        if (
+            shift.customAmount != null
+        ) {
+            val ids =
+                shift.workplaceIds
+                    .filterNotNull()
+
+            if (
+                ids.isEmpty()
+            ) {
+                return emptyList()
+            }
+
+            val amountEach =
+                shift.customAmount /
+                    ids.size
+
+            return ids.map {
+                it to amountEach
+            }
+        }
+
+        return when (
+            shift.type
+        ) {
+
+            ShiftType.FULL_DAY -> {
+
+                val p =
+                    place(0)
+                        ?: return emptyList()
+
+                listOf(
+                    p.id to
+                        p.fullDayRate
+                )
+            }
 
             ShiftType.LONG_NIGHT -> {
-                val long =
-                    workplace(shift.workplaceIds.getOrNull(0))
-                        ?.longRate ?: 0.0
 
-                val night =
-                    workplace(shift.workplaceIds.getOrNull(1))
-                        ?.nightRate ?: 0.0
+                buildList {
 
-                long + night
+                    place(0)?.let {
+                        add(
+                            it.id to
+                                it.longRate
+                        )
+                    }
+
+                    place(1)?.let {
+                        add(
+                            it.id to
+                                it.nightRate
+                        )
+                    }
+                }
             }
 
             ShiftType.THREE_SHIFTS -> {
-                val morning =
-                    workplace(shift.workplaceIds.getOrNull(0))
-                        ?.morningRate ?: 0.0
 
-                val evening =
-                    workplace(shift.workplaceIds.getOrNull(1))
-                        ?.eveningRate ?: 0.0
+                buildList {
 
-                val night =
-                    workplace(shift.workplaceIds.getOrNull(2))
-                        ?.nightRate ?: 0.0
+                    place(0)?.let {
+                        add(
+                            it.id to
+                                it.morningRate
+                        )
+                    }
 
-                morning + evening + night
+                    place(1)?.let {
+                        add(
+                            it.id to
+                                it.eveningRate
+                        )
+                    }
+
+                    place(2)?.let {
+                        add(
+                            it.id to
+                                it.nightRate
+                        )
+                    }
+                }
             }
 
-            ShiftType.OFF -> 0.0
+            ShiftType.OFF ->
+                emptyList()
         }
     }
 
     fun month(
-        month: YearMonth,
-        data: AppData
-    ): MonthlyFinance {
+        data: AppData,
+        month: YearMonth
+    ): MonthFinance {
 
         val monthShifts =
             data.shifts.filter {
-                YearMonth.from(LocalDate.parse(it.date)) == month &&
-                    it.type != ShiftType.OFF
+                YearMonth.from(
+                    LocalDate.parse(
+                        it.date
+                    )
+                ) == month
+            }
+
+        val workShifts =
+            monthShifts.filter {
+                it.type !=
+                    ShiftType.OFF
             }
 
         val expected =
-            monthShifts.sumOf {
-                shiftAmount(it, data.workplaces)
+            workShifts.sumOf {
+                shiftAmount(
+                    it,
+                    data.workplaces
+                )
             }
 
         val received =
             data.payments
                 .filter {
-                    YearMonth.from(LocalDate.parse(it.date)) == month
+                    YearMonth.from(
+                        LocalDate.parse(
+                            it.date
+                        )
+                    ) == month
                 }
-                .sumOf { it.amount }
+                .sumOf {
+                    it.amount
+                }
 
-        return MonthlyFinance(
-            shiftCount = monthShifts.size,
-            expected = expected,
-            received = received,
-            balance = expected - received
+        return MonthFinance(
+            shiftCount =
+                workShifts.size,
+            expected =
+                expected,
+            received =
+                received,
+            balance =
+                expected -
+                    received
         )
+    }
+
+    fun byWorkplace(
+        data: AppData,
+        month: YearMonth
+    ): List<WorkplaceFinance> {
+
+        val monthShifts =
+            data.shifts.filter {
+                YearMonth.from(
+                    LocalDate.parse(
+                        it.date
+                    )
+                ) == month &&
+                it.type !=
+                    ShiftType.OFF
+            }
+
+        return data.workplaces
+            .mapNotNull {
+                workplace ->
+
+                var parts = 0
+                var amount = 0.0
+
+                monthShifts.forEach {
+                    shift ->
+
+                    shiftParts(
+                        shift,
+                        data.workplaces
+                    )
+                        .filter {
+                            it.first ==
+                                workplace.id
+                        }
+                        .forEach {
+                            part ->
+
+                            parts++
+                            amount +=
+                                part.second
+                        }
+                }
+
+                if (
+                    parts == 0
+                ) {
+                    null
+                } else {
+                    WorkplaceFinance(
+                        workplaceId =
+                            workplace.id,
+                        workplaceName =
+                            workplace.name,
+                        shiftParts =
+                            parts,
+                        amount =
+                            amount
+                    )
+                }
+            }
+    }
+
+    fun byShiftType(
+        data: AppData,
+        month: YearMonth
+    ): List<ShiftTypeFinance> {
+
+        val shifts =
+            data.shifts.filter {
+                YearMonth.from(
+                    LocalDate.parse(
+                        it.date
+                    )
+                ) == month
+            }
+
+        fun result(
+            type: ShiftType,
+            label: String
+        ): ShiftTypeFinance {
+
+            val list =
+                shifts.filter {
+                    it.type == type
+                }
+
+            return ShiftTypeFinance(
+                label = label,
+                count = list.size,
+                amount =
+                    list.sumOf {
+                        shiftAmount(
+                            it,
+                            data.workplaces
+                        )
+                    }
+            )
+        }
+
+        return listOf(
+            result(
+                ShiftType.FULL_DAY,
+                "24 ساعة"
+            ),
+            result(
+                ShiftType.LONG_NIGHT,
+                "Long / Night"
+            ),
+            result(
+                ShiftType.THREE_SHIFTS,
+                "Morning / Evening / Night"
+            )
+        ).filter {
+            it.count > 0
+        }
     }
 }

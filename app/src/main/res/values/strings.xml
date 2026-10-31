@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ToDo Shift</string>
+    <string name="notification_channel_name">تذكيرات الشيفتات</string>
+    <string name="notification_channel_description">تنبيهات الشيفتات والمهام القادمة</string>
+</resources>

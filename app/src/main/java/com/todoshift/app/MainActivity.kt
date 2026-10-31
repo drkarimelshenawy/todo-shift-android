@@ -1,5 +1,10 @@
 package com.todoshift.app
 
+import com.todoshift.app.system.TodaySnapshotEngine
+import com.todoshift.app.system.ShiftNotificationEngine
+import com.todoshift.app.system.OnboardingStore
+import com.todoshift.app.data.MigrationEngine
+import com.todoshift.app.data.DataHealthEngine
 import com.todoshift.app.data.UserSettings
 import com.todoshift.app.data.SettingsStore
 import com.todoshift.app.data.BackupEngine
@@ -2310,6 +2315,202 @@ private fun V10BackupSettingsPanel(
     }
 }
 
+
+@Composable
+private fun V10ReleaseStatusPanel(
+    data: AppData
+) {
+    val context =
+        LocalContext.current
+
+    val health =
+        remember(data) {
+            DataHealthEngine
+                .inspect(data)
+        }
+
+    val today =
+        remember(data) {
+            TodaySnapshotEngine
+                .build(data)
+        }
+
+    LaunchedEffect(Unit) {
+        ShiftNotificationEngine
+            .ensureChannel(
+                context
+            )
+    }
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    vertical = 8.dp
+                )
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    14.dp
+                )
+        ) {
+
+            Text(
+                "ToDo Shift V1.0 RC",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign =
+                    TextAlign.End,
+                fontSize = 20.sp,
+                fontWeight =
+                    FontWeight.Bold
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            Text(
+                if (health.healthy)
+                    "فحص البيانات: سليم"
+                else
+                    "فحص البيانات: يحتاج مراجعة",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign =
+                    TextAlign.End,
+                fontWeight =
+                    FontWeight.Bold,
+                color =
+                    if (health.healthy)
+                        Color(0xFF15803D)
+                    else
+                        Color(0xFFB42318)
+            )
+
+            V10FinanceLine(
+                "أخطاء البيانات",
+                health.errors.size
+                    .toString()
+            )
+
+            V10FinanceLine(
+                "تحذيرات البيانات",
+                health.warnings.size
+                    .toString()
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            Text(
+                "اليوم",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign =
+                    TextAlign.End,
+                fontWeight =
+                    FontWeight.Bold
+            )
+
+            Text(
+                today.title,
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign =
+                    TextAlign.End
+            )
+
+            if (
+                today.workplaces
+                    .isNotBlank()
+            ) {
+                Text(
+                    today.workplaces,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(),
+                    textAlign =
+                        TextAlign.End,
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
+
+            if (
+                today.expectedAmount >
+                0.0
+            ) {
+                Text(
+                    "المستحق اليوم: ${money(today.expectedAmount)} ج",
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(),
+                    textAlign =
+                        TextAlign.End,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+
+            if (
+                health.errors
+                    .isNotEmpty()
+            ) {
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                health.errors
+                    .take(5)
+                    .forEach {
+                        Text(
+                            "• $it",
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(),
+                            textAlign =
+                                TextAlign.End,
+                            fontSize = 10.sp,
+                            color =
+                                Color(
+                                    0xFFB42318
+                                )
+                        )
+                    }
+            }
+
+            if (
+                health.warnings
+                    .isNotEmpty()
+            ) {
+
+                health.warnings
+                    .take(5)
+                    .forEach {
+                        Text(
+                            "• $it",
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(),
+                            textAlign =
+                                TextAlign.End,
+                            fontSize = 10.sp,
+                            color =
+                                Color(
+                                    0xFFD97706
+                                )
+                        )
+                    }
+            }
+        }
+    }
+}
+
 @Composable
 private fun MoreScreen(
     data: AppData,
@@ -2329,6 +2530,10 @@ private fun MoreScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        V10ReleaseStatusPanel(
+            data = data
+        )
+
         V10ReportsPanel(
             data = data
         )
@@ -2504,7 +2709,7 @@ private fun MoreScreen(
         Spacer(Modifier.height(10.dp))
 
         Text(
-            "ToDo Shift • V1.0 Development",
+            "ToDo Shift • V1.0 RC1",
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = Color.Gray,

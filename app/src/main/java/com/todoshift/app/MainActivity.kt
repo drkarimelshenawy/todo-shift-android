@@ -1,5 +1,7 @@
 package com.todoshift.app
 
+import com.todoshift.app.data.SmartToolsLabels
+import com.todoshift.app.data.SmartToolMode
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -1538,6 +1540,8 @@ private fun MoreScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        V10SmartToolsPreview()
+
         AppHeader(
             "المزيد",
             "إعدادات ToDo Shift"
@@ -1745,6 +1749,74 @@ private fun MoreScreen(
         )
     }
 }
+
+
+@Composable
+private fun V10SmartToolsPreview() {
+
+    val modes =
+        listOf(
+            SmartToolMode.RANGE,
+            SmartToolMode.WEEKDAYS,
+            SmartToolMode.ROTATION,
+            SmartToolMode.COPY_DAY,
+            SmartToolMode.COPY_WEEK,
+            SmartToolMode.COPY_MONTH
+        )
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 8.dp
+                )
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(16.dp)
+        ) {
+
+            Text(
+                text = "أدوات الجدول الذكية",
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            Text(
+                text =
+                    "محرك V1.0 جاهز للتوزيع والنسخ والدورات",
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall
+            )
+
+            Spacer(
+                Modifier.height(10.dp)
+            )
+
+            modes.forEach { mode ->
+
+                Text(
+                    text =
+                        "• " +
+                            SmartToolsLabels
+                                .mode(mode),
+                    modifier =
+                        Modifier.padding(
+                            vertical = 2.dp
+                        )
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun WorkplaceEditorDialog(

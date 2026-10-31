@@ -2159,7 +2159,7 @@ private fun V09CalendarScreen(
             )
 
             MonthSelector(
-                currentMonth = currentMonth,
+                month = currentMonth,
                 onPrevious = {
                     onMonthChange(
                         currentMonth.minusMonths(1)
@@ -2221,9 +2221,10 @@ private fun V09CalendarScreen(
                 modifier = Modifier.height(14.dp)
             )
 
-            WorkplaceLegend(
-                workplaces = data.workplaces
-            )
+            data.workplaces.forEach { place ->
+                WorkplaceLegend(place)
+                Spacer(Modifier.height(5.dp))
+            }
 
             if (painterState != null) {
                 Spacer(
@@ -2468,11 +2469,11 @@ private fun V09MonthGrid(
                                             date.toString()
                                     }
 
-                            val selected =
+                            val selected: Boolean =
                                 painterState
                                     ?.selectedDates
                                     ?.contains(date)
-                                    == true
+                                    ?: false
 
                             val details =
                                 DayEngine.detailsFor(
@@ -3164,9 +3165,7 @@ private fun V09DayCenterDialog(
                     text =
                         "${date.dayOfMonth} " +
                         arabicMonth(
-                            YearMonth.from(
-                                date
-                            )
+                            date.monthValue
                         ),
                     fontWeight =
                         FontWeight.Bold

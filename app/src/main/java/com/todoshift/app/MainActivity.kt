@@ -5,10 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,6 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.TextStyle
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,150 +34,225 @@ class MainActivity : ComponentActivity() {
 }
 
 data class WorkPlace(
+    val id: Int,
     val name: String,
     val color: Color
 )
 
-data class DayPart(
-    val place: WorkPlace
+enum class ShiftLayout {
+    FULL_DAY,
+    LONG_NIGHT,
+    THREE_SHIFTS,
+    OFF
+}
+
+data class DaySchedule(
+    val layout: ShiftLayout,
+    val places: List<Int?>
 )
 
-data class ShiftDay(
-    val day: Int,
-    val parts: List<DayPart> = emptyList()
-)
-
-private val matamir = WorkPlace("مطامير", Color(0xFF9ED7B1))
-private val shamla = WorkPlace("الشاملة", Color(0xFFFFE58A))
-private val banna = WorkPlace("البنا", Color(0xFFD6B4E8))
-private val master = WorkPlace("الماستر", Color(0xFF9CC8F5))
-
-private val demoDays = listOf(
-    ShiftDay(1, listOf(DayPart(matamir))),
-    ShiftDay(2, listOf(DayPart(shamla), DayPart(banna))),
-    ShiftDay(3),
-    ShiftDay(4, listOf(DayPart(master))),
-    ShiftDay(5, listOf(DayPart(matamir), DayPart(shamla), DayPart(banna))),
-    ShiftDay(6, listOf(DayPart(matamir))),
-    ShiftDay(7, listOf(DayPart(matamir))),
-    ShiftDay(8),
-    ShiftDay(9, listOf(DayPart(shamla))),
-    ShiftDay(10),
-    ShiftDay(11, listOf(DayPart(banna), DayPart(master))),
-    ShiftDay(12),
-    ShiftDay(13, listOf(DayPart(matamir))),
-    ShiftDay(14, listOf(DayPart(matamir))),
-    ShiftDay(15, listOf(DayPart(master))),
-    ShiftDay(16, listOf(DayPart(shamla))),
-    ShiftDay(17, listOf(DayPart(matamir), DayPart(banna))),
-    ShiftDay(18),
-    ShiftDay(19),
-    ShiftDay(20, listOf(DayPart(matamir))),
-    ShiftDay(21, listOf(DayPart(matamir))),
-    ShiftDay(22, listOf(DayPart(shamla), DayPart(master))),
-    ShiftDay(23),
-    ShiftDay(24),
-    ShiftDay(25, listOf(DayPart(banna), DayPart(master), DayPart(matamir))),
-    ShiftDay(26),
-    ShiftDay(27, listOf(DayPart(matamir))),
-    ShiftDay(28, listOf(DayPart(matamir))),
-    ShiftDay(29, listOf(DayPart(master))),
-    ShiftDay(30, listOf(DayPart(shamla))),
-    ShiftDay(31)
+private val defaultPlaces = listOf(
+    WorkPlace(1, "مطامير", Color(0xFF9DD8AE)),
+    WorkPlace(2, "الشاملة", Color(0xFFFFE28A)),
+    WorkPlace(3, "البنا", Color(0xFFD7ACE8)),
+    WorkPlace(4, "الماستر", Color(0xFF91C1EE))
 )
 
 @Composable
 fun ToDoShiftApp() {
+    var currentTab by remember { mutableIntStateOf(0) }
+    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+    var schedules by remember { mutableStateOf(mapOf<LocalDate, DaySchedule>()) }
+    var editingDate by remember { mutableStateOf<LocalDate?>(null) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF7F8FA)
+        color = Color(0xFFF7F8FB)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp)
-        ) {
+        Scaffold(
+            containerColor = Color(0xFFF7F8FB),
+            bottomBar = {
+                BottomNavigation(
+                    selected = currentTab,
+                    onSelect = { currentTab = it }
+                )
+            }
+        ) { padding ->
 
-            Spacer(Modifier.height(18.dp))
-
-            Text(
-                text = "ToDo Shift",
-                fontSize = 25.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF171A21)
-            )
-
-            Text(
-                text = "جدول الشيفتات",
-                fontSize = 14.sp,
-                color = Color(0xFF747982)
-            )
-
-            Spacer(Modifier.height(20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .statusBarsPadding()
             ) {
-                TextButton(onClick = {}) {
-                    Text("‹", fontSize = 32.sp)
-                }
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "أكتوبر",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
+                when (currentTab) {
+                    0 -> CalendarScreen(
+                        month = currentMonth,
+                        schedules = schedules,
+                        onPrevious = {
+                            currentMonth = currentMonth.minusMonths(1)
+                        },
+                        onNext = {
+                            currentMonth = currentMonth.plusMonths(1)
+                        },
+                        onDayClick = {
+                            editingDate = it
+                        }
                     )
-                    Text(
-                        "2026",
-                        color = Color.Gray,
-                        fontSize = 13.sp
-                    )
-                }
 
-                TextButton(onClick = {}) {
-                    Text("›", fontSize = 32.sp)
+                    1 -> SimplePage(
+                        title = "جداولي",
+                        description = "إدارة جداول العمل والتكليفات"
+                    )
+
+                    2 -> SimplePage(
+                        title = "المالية",
+                        description = "المستحقات والقبض والتقارير المالية"
+                    )
+
+                    3 -> SimplePage(
+                        title = "المزيد",
+                        description = "أماكن العمل والتخصيص والإعدادات"
+                    )
                 }
             }
+        }
 
-            Spacer(Modifier.height(8.dp))
+        editingDate?.let { date ->
+            DayEditorDialog(
+                date = date,
+                existing = schedules[date],
+                places = defaultPlaces,
+                onDismiss = {
+                    editingDate = null
+                },
+                onDelete = {
+                    schedules = schedules - date
+                    editingDate = null
+                },
+                onSave = { schedule ->
+                    schedules = schedules + (date to schedule)
+                    editingDate = null
+                }
+            )
+        }
+    }
+}
 
-            WeekHeader()
+@Composable
+fun CalendarScreen(
+    month: YearMonth,
+    schedules: Map<LocalDate, DaySchedule>,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onDayClick: (LocalDate) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 12.dp)
+    ) {
 
-            Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(10.dp))
 
-            CalendarGrid()
+        Text(
+            "ToDo Shift",
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold
+        )
 
-            Spacer(Modifier.height(14.dp))
+        Text(
+            "جدول الشيفتات",
+            fontSize = 14.sp,
+            color = Color(0xFF7A7E86)
+        )
 
-            Legend()
+        Spacer(Modifier.height(14.dp))
 
-            Spacer(Modifier.weight(1f))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
 
-            NavigationBar()
+            FilledTonalButton(
+                onClick = onPrevious,
+                contentPadding = PaddingValues(horizontal = 14.dp)
+            ) {
+                Text("‹", fontSize = 28.sp)
+            }
 
-            Spacer(Modifier.height(10.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    arabicMonth(month.monthValue),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    month.year.toString(),
+                    color = Color.Gray
+                )
+            }
+
+            FilledTonalButton(
+                onClick = onNext,
+                contentPadding = PaddingValues(horizontal = 14.dp)
+            ) {
+                Text("›", fontSize = 28.sp)
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        WeekHeader()
+
+        Spacer(Modifier.height(6.dp))
+
+        MonthGrid(
+            month = month,
+            schedules = schedules,
+            onDayClick = onDayClick
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        Text(
+            "أماكن العمل",
+            fontWeight = FontWeight.Bold,
+            fontSize = 17.sp
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            defaultPlaces.forEach {
+                LegendItem(it)
+            }
         }
     }
 }
 
 @Composable
 fun WeekHeader() {
-    val names = listOf("سبت", "أحد", "اثن", "ثلا", "أرب", "خمي", "جمع")
+    val days = listOf(
+        "سبت", "أحد", "اثن", "ثلا", "أرب", "خمي", "جمع"
+    )
 
     Row(Modifier.fillMaxWidth()) {
-        names.forEach {
+        days.forEach {
             Box(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = it,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF777C85)
+                    it,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
                 )
             }
         }
@@ -180,24 +260,56 @@ fun WeekHeader() {
 }
 
 @Composable
-fun CalendarGrid() {
+fun MonthGrid(
+    month: YearMonth,
+    schedules: Map<LocalDate, DaySchedule>,
+    onDayClick: (LocalDate) -> Unit
+) {
+    val first = month.atDay(1)
+
+    val offset = when (first.dayOfWeek.value) {
+        6 -> 0
+        7 -> 1
+        1 -> 2
+        2 -> 3
+        3 -> 4
+        4 -> 5
+        else -> 6
+    }
+
+    val cells = offset + month.lengthOfMonth()
+    val rows = (cells + 6) / 7
+
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        demoDays.chunked(7).forEach { week ->
+        repeat(rows) { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                week.forEach { day ->
-                    DayCell(
-                        day = day,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                repeat(7) { column ->
+                    val cell = row * 7 + column
+                    val day = cell - offset + 1
 
-                repeat(7 - week.size) {
-                    Spacer(Modifier.weight(1f))
+                    if (day in 1..month.lengthOfMonth()) {
+                        val date = month.atDay(day)
+
+                        DayCell(
+                            day = day,
+                            schedule = schedules[date],
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                onDayClick(date)
+                            }
+                        )
+                    } else {
+                        Spacer(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(74.dp)
+                        )
+                    }
                 }
             }
         }
@@ -206,36 +318,76 @@ fun CalendarGrid() {
 
 @Composable
 fun DayCell(
-    day: ShiftDay,
-    modifier: Modifier = Modifier
+    day: Int,
+    schedule: DaySchedule?,
+    modifier: Modifier,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
-            .height(76.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .height(74.dp)
+            .clip(RoundedCornerShape(12.dp))
             .background(Color.White)
             .border(
                 1.dp,
-                Color(0xFFE2E4E8),
-                RoundedCornerShape(10.dp)
+                Color(0xFFE1E3E7),
+                RoundedCornerShape(12.dp)
             )
+            .clickable { onClick() }
     ) {
 
-        if (day.parts.isNotEmpty()) {
-            Column(Modifier.fillMaxSize()) {
-                day.parts.forEach { part ->
+        schedule?.let {
+            when (it.layout) {
+
+                ShiftLayout.FULL_DAY -> {
+                    SchedulePart(
+                        placeId = it.places.getOrNull(0),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                ShiftLayout.LONG_NIGHT -> {
+                    Column(Modifier.fillMaxSize()) {
+                        SchedulePart(
+                            placeId = it.places.getOrNull(0),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+
+                        SchedulePart(
+                            placeId = it.places.getOrNull(1),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    }
+                }
+
+                ShiftLayout.THREE_SHIFTS -> {
+                    Column(Modifier.fillMaxSize()) {
+                        repeat(3) { index ->
+                            SchedulePart(
+                                placeId = it.places.getOrNull(index),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                ShiftLayout.OFF -> {
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .background(part.place.color),
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFF1F2F4)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = part.place.name,
-                            fontSize = if (day.parts.size == 3) 8.sp else 9.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF20242A)
+                            "إجازة",
+                            fontSize = 10.sp,
+                            color = Color.Gray
                         )
                     }
                 }
@@ -245,41 +397,285 @@ fun DayCell(
         Box(
             modifier = Modifier
                 .padding(5.dp)
-                .size(20.dp)
+                .size(22.dp)
                 .clip(RoundedCornerShape(7.dp))
-                .background(Color.White.copy(alpha = 0.88f)),
+                .background(Color.White.copy(alpha = 0.92f)),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = day.day.toString(),
+                day.toString(),
                 fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF20242A)
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
 
 @Composable
-fun Legend() {
-    Column {
+fun SchedulePart(
+    placeId: Int?,
+    modifier: Modifier
+) {
+    val place = defaultPlaces.firstOrNull { it.id == placeId }
+
+    Box(
+        modifier = modifier.background(
+            place?.color ?: Color(0xFFF1F2F4)
+        ),
+        contentAlignment = Alignment.Center
+    ) {
         Text(
-            "أماكن العمل",
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
+            place?.name ?: "غير محدد",
+            fontSize = 8.sp,
+            color = Color(0xFF24272B)
+        )
+    }
+}
+
+@Composable
+fun DayEditorDialog(
+    date: LocalDate,
+    existing: DaySchedule?,
+    places: List<WorkPlace>,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit,
+    onSave: (DaySchedule) -> Unit
+) {
+    var layout by remember(date) {
+        mutableStateOf(existing?.layout ?: ShiftLayout.FULL_DAY)
+    }
+
+    var selections by remember(date) {
+        mutableStateOf(
+            existing?.places ?: listOf<Int?>(places.first().id)
+        )
+    }
+
+    fun partCount(): Int =
+        when (layout) {
+            ShiftLayout.FULL_DAY -> 1
+            ShiftLayout.LONG_NIGHT -> 2
+            ShiftLayout.THREE_SHIFTS -> 3
+            ShiftLayout.OFF -> 0
+        }
+
+    fun normalize() {
+        val count = partCount()
+
+        selections =
+            if (count == 0) {
+                emptyList()
+            } else {
+                List(count) { index ->
+                    selections.getOrNull(index) ?: places.first().id
+                }
+            }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(
+                    "تعديل اليوم",
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "${date.dayOfMonth} ${arabicMonth(date.monthValue)} ${date.year}",
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            }
+        },
+
+        text = {
+            Column {
+
+                Text(
+                    "تقسيم اليوم",
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                LayoutOption(
+                    title = "24 ساعة",
+                    selected = layout == ShiftLayout.FULL_DAY
+                ) {
+                    layout = ShiftLayout.FULL_DAY
+                    normalize()
+                }
+
+                LayoutOption(
+                    title = "Long / Night",
+                    selected = layout == ShiftLayout.LONG_NIGHT
+                ) {
+                    layout = ShiftLayout.LONG_NIGHT
+                    normalize()
+                }
+
+                LayoutOption(
+                    title = "Morning / Evening / Night",
+                    selected = layout == ShiftLayout.THREE_SHIFTS
+                ) {
+                    layout = ShiftLayout.THREE_SHIFTS
+                    normalize()
+                }
+
+                LayoutOption(
+                    title = "إجازة",
+                    selected = layout == ShiftLayout.OFF
+                ) {
+                    layout = ShiftLayout.OFF
+                    normalize()
+                }
+
+                if (partCount() > 0) {
+
+                    Spacer(Modifier.height(14.dp))
+
+                    Text(
+                        "مكان العمل",
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    repeat(partCount()) { index ->
+
+                        val label =
+                            when (layout) {
+                                ShiftLayout.FULL_DAY ->
+                                    "اليوم بالكامل"
+
+                                ShiftLayout.LONG_NIGHT ->
+                                    if (index == 0) "Long" else "Night"
+
+                                ShiftLayout.THREE_SHIFTS ->
+                                    listOf(
+                                        "Morning",
+                                        "Evening",
+                                        "Night"
+                                    )[index]
+
+                                else -> ""
+                            }
+
+                        Text(
+                            label,
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+
+                        Spacer(Modifier.height(5.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(5.dp)
+                        ) {
+                            places.forEach { place ->
+
+                                val selected =
+                                    selections.getOrNull(index) == place.id
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(9.dp))
+                                        .background(place.color)
+                                        .border(
+                                            if (selected) 3.dp else 1.dp,
+                                            if (selected)
+                                                Color.Black
+                                            else
+                                                Color.Transparent,
+                                            RoundedCornerShape(9.dp)
+                                        )
+                                        .clickable {
+                                            val newList =
+                                                selections.toMutableList()
+
+                                            while (newList.size < partCount()) {
+                                                newList.add(places.first().id)
+                                            }
+
+                                            newList[index] = place.id
+                                            selections = newList
+                                        }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        place.name,
+                                        fontSize = 9.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+        },
+
+        confirmButton = {
+            Button(
+                onClick = {
+                    normalize()
+
+                    onSave(
+                        DaySchedule(
+                            layout = layout,
+                            places = selections
+                        )
+                    )
+                }
+            ) {
+                Text("حفظ")
+            }
+        },
+
+        dismissButton = {
+            Row {
+                if (existing != null) {
+                    TextButton(onClick = onDelete) {
+                        Text(
+                            "حذف",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                TextButton(onClick = onDismiss) {
+                    Text("إلغاء")
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun LayoutOption(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick
         )
 
-        Spacer(Modifier.height(8.dp))
-
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            LegendItem(matamir)
-            LegendItem(shamla)
-            LegendItem(banna)
-            LegendItem(master)
-        }
+        Text(title)
     }
 }
 
@@ -290,7 +686,7 @@ fun LegendItem(place: WorkPlace) {
     ) {
         Box(
             Modifier
-                .size(10.dp)
+                .size(11.dp)
                 .clip(RoundedCornerShape(3.dp))
                 .background(place.color)
         )
@@ -299,30 +695,102 @@ fun LegendItem(place: WorkPlace) {
 
         Text(
             place.name,
-            fontSize = 10.sp,
-            color = Color(0xFF555A62)
+            fontSize = 9.sp,
+            color = Color.Gray
         )
     }
 }
 
 @Composable
-fun NavigationBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
-            .padding(vertical = 13.dp),
-        horizontalArrangement = Arrangement.SpaceAround
+fun BottomNavigation(
+    selected: Int,
+    onSelect: (Int) -> Unit
+) {
+    NavigationBar(
+        containerColor = Color.White
     ) {
-        Text(
+        val labels = listOf(
             "التقويم",
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF246BFD)
+            "جداولي",
+            "المالية",
+            "المزيد"
         )
 
-        Text("جداولي", color = Color.Gray)
-        Text("المالية", color = Color.Gray)
-        Text("المزيد", color = Color.Gray)
+        labels.forEachIndexed { index, label ->
+            NavigationBarItem(
+                selected = selected == index,
+                onClick = {
+                    onSelect(index)
+                },
+                icon = {
+                    Text(
+                        when (index) {
+                            0 -> "▦"
+                            1 -> "☷"
+                            2 -> "£"
+                            else -> "⚙"
+                        },
+                        fontSize = 18.sp
+                    )
+                },
+                label = {
+                    Text(label)
+                }
+            )
+        }
     }
 }
+
+@Composable
+fun SimplePage(
+    title: String,
+    description: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(22.dp)
+    ) {
+        Spacer(Modifier.height(10.dp))
+
+        Text(
+            title,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            description,
+            color = Color.Gray
+        )
+
+        Spacer(Modifier.height(30.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "هذه الشاشة أصبحت جزءًا فعليًا من التنقل، وسيتم بناء وظائفها في المرحلة التالية.",
+                modifier = Modifier.padding(20.dp)
+            )
+        }
+    }
+}
+
+fun arabicMonth(month: Int): String =
+    listOf(
+        "يناير",
+        "فبراير",
+        "مارس",
+        "أبريل",
+        "مايو",
+        "يونيو",
+        "يوليو",
+        "أغسطس",
+        "سبتمبر",
+        "أكتوبر",
+        "نوفمبر",
+        "ديسمبر"
+    )[month - 1]

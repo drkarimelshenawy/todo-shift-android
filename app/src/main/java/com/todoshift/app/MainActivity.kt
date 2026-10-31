@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -881,9 +881,9 @@ private fun SchedulesDashboard(
     val offCount =
         monthEntries.count { it.type == ShiftType.OFF }
 
-    val segmentCount =
-        workEntries.sumOf {
-            when (it.type) {
+    val segmentCount: Int =
+        workEntries.fold(0) { total, entry ->
+            total + when (entry.type) {
                 ShiftType.FULL_DAY -> 1
                 ShiftType.LONG_NIGHT -> 2
                 ShiftType.THREE_SHIFTS -> 3

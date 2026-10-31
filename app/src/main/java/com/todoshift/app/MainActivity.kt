@@ -1,5 +1,10 @@
 package com.todoshift.app
 
+import com.todoshift.app.data.UserSettings
+import com.todoshift.app.data.SettingsStore
+import com.todoshift.app.data.BackupEngine
+import com.todoshift.app.data.SearchEngine
+import com.todoshift.app.data.ReportsEngine
 import com.todoshift.app.data.DayCenterV2
 import com.todoshift.app.data.MonthLockEngine
 import com.todoshift.app.data.PaymentStatus
@@ -1863,6 +1868,448 @@ private fun V10FinanceLine(
     }
 }
 
+
+@Composable
+private fun V10ReportsPanel(
+    data: AppData
+) {
+    var month by remember {
+        mutableStateOf(
+            YearMonth.now()
+        )
+    }
+
+    val report =
+        ReportsEngine.month(
+            data,
+            month
+        )
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(14.dp)
+        ) {
+            Text(
+                "التقارير والإحصائيات",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = {
+                        month =
+                            month.minusMonths(1)
+                    }
+                ) {
+                    Text("السابق")
+                }
+
+                Spacer(
+                    Modifier.weight(1f)
+                )
+
+                Text(
+                    "${month.monthValue}/${month.year}",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.weight(1f)
+                )
+
+                TextButton(
+                    onClick = {
+                        month =
+                            month.plusMonths(1)
+                    }
+                ) {
+                    Text("التالي")
+                }
+            }
+
+            V10FinanceLine(
+                "أيام العمل",
+                report.workingDays
+                    .toString()
+            )
+
+            V10FinanceLine(
+                "الإجازات",
+                report.offDays
+                    .toString()
+            )
+
+            V10FinanceLine(
+                "24 ساعة",
+                report.fullDayCount
+                    .toString()
+            )
+
+            V10FinanceLine(
+                "Long / Night",
+                report.longNightCount
+                    .toString()
+            )
+
+            V10FinanceLine(
+                "3 شيفتات",
+                report.threeShiftCount
+                    .toString()
+            )
+
+            Spacer(
+                Modifier.height(6.dp)
+            )
+
+            V10FinanceLine(
+                "المستحق",
+                "${money(report.expected)} ج"
+            )
+
+            V10FinanceLine(
+                "المستلم",
+                "${money(report.received)} ج"
+            )
+
+            V10FinanceLine(
+                "المتبقي",
+                "${money(report.balance)} ج"
+            )
+        }
+    }
+}
+
+@Composable
+private fun V10SearchPanel(
+    data: AppData
+) {
+    var query by remember {
+        mutableStateOf("")
+    }
+
+    val results =
+        remember(
+            query,
+            data
+        ) {
+            SearchEngine.search(
+                data,
+                query
+            )
+        }
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(14.dp)
+        ) {
+            Text(
+                "البحث",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            OutlinedTextField(
+                value = query,
+                onValueChange = {
+                    query = it
+                },
+                modifier =
+                    Modifier.fillMaxWidth(),
+                label = {
+                    Text(
+                        "تاريخ، مكان عمل أو ملاحظة"
+                    )
+                },
+                singleLine = true
+            )
+
+            if (
+                query.isNotBlank()
+            ) {
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    "النتائج: ${results.size}",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    textAlign =
+                        TextAlign.End,
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+
+                results
+                    .take(20)
+                    .forEach { result ->
+
+                        Card(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        top = 5.dp
+                                    )
+                        ) {
+                            Column(
+                                modifier =
+                                    Modifier.padding(
+                                        9.dp
+                                    )
+                            ) {
+                                Text(
+                                    result.shift.date,
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth(),
+                                    textAlign =
+                                        TextAlign.End,
+                                    fontWeight =
+                                        FontWeight.Bold
+                                )
+
+                                Text(
+                                    result
+                                        .workplaceNames
+                                        .joinToString(
+                                            " / "
+                                        )
+                                        .ifBlank {
+                                            result
+                                                .shift
+                                                .type
+                                                .name
+                                        },
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth(),
+                                    textAlign =
+                                        TextAlign.End,
+                                    fontSize = 11.sp
+                                )
+
+                                if (
+                                    result
+                                        .shift
+                                        .note
+                                        .isNotBlank()
+                                ) {
+                                    Text(
+                                        result
+                                            .shift
+                                            .note,
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth(),
+                                        textAlign =
+                                            TextAlign.End,
+                                        fontSize = 10.sp,
+                                        color =
+                                            Color.Gray
+                                    )
+                                }
+                            }
+                        }
+                    }
+            }
+        }
+    }
+}
+
+@Composable
+private fun V10BackupSettingsPanel(
+    data: AppData
+) {
+    val context =
+        LocalContext.current
+
+    val store =
+        remember {
+            SettingsStore(
+                context
+            )
+        }
+
+    var settings by remember {
+        mutableStateOf(
+            store.load()
+        )
+    }
+
+    var backupMessage by remember {
+        mutableStateOf("")
+    }
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(14.dp)
+        ) {
+            Text(
+                "النسخ الاحتياطي والإعدادات",
+                modifier =
+                    Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            Button(
+                onClick = {
+                    runCatching {
+                        BackupEngine
+                            .saveInternalBackup(
+                                context,
+                                data
+                            )
+                    }.onSuccess {
+                        backupMessage =
+                            "تم إنشاء نسخة احتياطية"
+                    }.onFailure {
+                        backupMessage =
+                            "تعذر إنشاء النسخة الاحتياطية"
+                    }
+                },
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "إنشاء Backup الآن"
+                )
+            }
+
+            if (
+                backupMessage.isNotBlank()
+            ) {
+                Text(
+                    backupMessage,
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    textAlign =
+                        TextAlign.Center,
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+            }
+
+            Spacer(
+                Modifier.height(10.dp)
+            )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Switch(
+                    checked =
+                        settings
+                            .notificationsEnabled,
+                    onCheckedChange = {
+                        settings =
+                            settings.copy(
+                                notificationsEnabled =
+                                    it
+                            )
+
+                        store.save(
+                            settings
+                        )
+                    }
+                )
+
+                Spacer(
+                    Modifier.weight(1f)
+                )
+
+                Text(
+                    "التنبيهات",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Switch(
+                    checked =
+                        settings
+                            .weekStartsSaturday,
+                    onCheckedChange = {
+                        settings =
+                            settings.copy(
+                                weekStartsSaturday =
+                                    it
+                            )
+
+                        store.save(
+                            settings
+                        )
+                    }
+                )
+
+                Spacer(
+                    Modifier.weight(1f)
+                )
+
+                Text(
+                    "بداية الأسبوع السبت",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun MoreScreen(
     data: AppData,
@@ -1882,6 +2329,18 @@ private fun MoreScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        V10ReportsPanel(
+            data = data
+        )
+
+        V10SearchPanel(
+            data = data
+        )
+
+        V10BackupSettingsPanel(
+            data = data
+        )
+
         V10SmartToolsPanel(
             data = data,
             onSaveData = onSaveData

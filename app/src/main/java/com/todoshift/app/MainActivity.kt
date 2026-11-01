@@ -1,5 +1,7 @@
 package com.todoshift.app
 
+import com.todoshift.app.v11.ui.V11Home
+
 import com.todoshift.app.system.TodaySnapshotEngine
 import com.todoshift.app.system.ShiftNotificationEngine
 import com.todoshift.app.system.OnboardingStore
@@ -96,7 +98,7 @@ class MainActivity : ComponentActivity() {
                     surface = Color.White
                 )
             ) {
-                ToDoShiftApp()
+                V11Home()
             }
         }
     }

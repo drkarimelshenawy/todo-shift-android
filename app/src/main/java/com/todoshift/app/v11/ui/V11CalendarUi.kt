@@ -1161,9 +1161,10 @@ private fun V11PaletteShiftRow(
                 .size(25.dp)
                 .clip(CircleShape)
                 .background(v11Color(colorHex)),
-            contentAlignment =
-                Alignment.Center
-        )
+            contentAlignment = Alignment.Center
+        ) {
+            // Workplace colour indicator.
+        }
 
         Spacer(Modifier.width(9.dp))
 

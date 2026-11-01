@@ -43,9 +43,10 @@ class V11Runtime(context: Context) {
         )
     }
 
-    fun save(db: V11Database) =
+    fun save(db: V11Database) {
         storage.save(db)
-        ToDoShiftWidget.refreshAll(context)
+        ToDoShiftWidget.refreshAll(appContext)
+    }
 
     fun exportJson(db: V11Database): String =
         storage.exportJson(db)

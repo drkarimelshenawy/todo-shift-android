@@ -77,6 +77,8 @@ fun V11CalendarScreen(
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by remember { mutableStateOf(false) }
     var paintDates by remember { mutableStateOf(setOf<LocalDate>()) }
+    var openDay by remember { mutableStateOf<LocalDate?>(null) }
+    var showCalendarManager by remember { mutableStateOf(false) }
 
     val visibleCalendarIds = remember(db.calendars) {
         db.calendars
@@ -147,7 +149,7 @@ fun V11CalendarScreen(
                                     .sorted()
                                     .forEach { date ->
                                         updated =
-                                            V11DayController.addSegment(
+                                            V11PaintConflictController.apply(
                                                 db = updated,
                                                 date = date.toString(),
                                                 calendarId = calendarId,
@@ -234,6 +236,7 @@ fun V11CalendarScreen(
                                 paintDates + date
                     } else {
                         selectedDate = date
+                        openDay = date
                     }
                 },
                 onMonthChange = onMonthChange,
@@ -246,25 +249,7 @@ fun V11CalendarScreen(
 
             Spacer(Modifier.height(6.dp))
 
-            if (!paintMode) {
-                V11SelectedDayPanel(
-                    date = selectedDate,
-                    db = db,
-                    workplaces = workplaces,
-                    visibleCalendarIds = visibleCalendarIds,
-                    onAdd = {
-                        paletteOpen = true
-                    },
-                    onDeleteSegment = { segmentId ->
-                        onDatabaseChange(
-                            V11DayController.deleteSegment(
-                                db,
-                                segmentId
-                            )
-                        )
-                    }
-                )
-            } else {
+            if (paintMode) {
                 V11PaintStatusBar(
                     workplace = selectedWorkplace,
                     kind = selectedPaintKind,
@@ -277,11 +262,43 @@ fun V11CalendarScreen(
                         paletteOpen = false
                     }
                 )
+            } else {
+                TextButton(
+                    onClick = {
+                        showCalendarManager = true
+                    },
+                    modifier = Modifier.align(
+                        Alignment.End
+                    )
+                ) {
+                    Text("إدارة التقاويم")
+                }
             }
         }
     }
 
+    openDay?.let { day ->
+        V11DayDetailsScreen(
+            initialDate = day,
+            db = db,
+            workplaces = workplaces,
+            onBack = {
+                openDay = null
+            },
+            onDatabaseChange = onDatabaseChange
+        )
+    }
 
+    if (showCalendarManager) {
+        V11CalendarManagerSheet(
+            db = db,
+            onDismiss = {
+                showCalendarManager = false
+            },
+            onDatabaseChange =
+                onDatabaseChange
+        )
+    }
 }
 
 @Composable
@@ -683,55 +700,92 @@ private fun V11DayCell(
         )
     ) {
         if (segments.isNotEmpty()) {
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier.fillMaxSize()
             ) {
-                segments
-                    .take(4)
-                    .forEach { segment ->
-                        val place =
-                            workplaces.firstOrNull {
-                                it.id ==
-                                    segment.workplaceId
-                            }
+                val totalHeight = maxHeight
 
-                        val bg =
-                            if (
-                                segment.kind ==
-                                ShiftKind.OFF
+                segments.forEach { segment ->
+                    val place =
+                        workplaces.firstOrNull {
+                            it.id ==
+                                segment.workplaceId
+                        }
+
+                    val bg =
+                        if (
+                            segment.kind ==
+                            ShiftKind.OFF
+                        )
+                            Color(0xFFECEFF1)
+                        else
+                            place?.let {
+                                v11Color(it.colorHex)
+                            } ?: Color(0xFFE5E7EB)
+
+                    val range =
+                        segment.timeRange()
+
+                    val startFraction =
+                        if (range == null)
+                            0f
+                        else
+                            range.startMinute / 1440f
+
+                    val heightFraction =
+                        if (range == null)
+                            1f
+                        else
+                            range.durationMinutes / 1440f
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(
+                                totalHeight *
+                                    heightFraction
                             )
-                                Color(0xFFECEFF1)
-                            else
-                                place?.let {
-                                    v11Color(it.colorHex)
-                                } ?: Color(0xFFE5E7EB)
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .background(bg),
-                            contentAlignment =
-                                Alignment.Center
+                            .offset(
+                                y = totalHeight *
+                                    startFraction
+                            )
+                            .background(bg),
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        if (
+                            uiSettings
+                                .showWorkplaceNames
                         ) {
-                            if (
-                                uiSettings
-                                    .showWorkplaceNames
-                            ) {
-                                Text(
-                                    if (
-                                        segment.kind ==
-                                        ShiftKind.OFF
-                                    )
-                                        "إجازة"
-                                    else
-                                        place?.name ?: "",
-                                    fontSize = 7.sp,
-                                    maxLines = 1
+                            Text(
+                                if (
+                                    segment.kind ==
+                                    ShiftKind.OFF
                                 )
-                            }
+                                    "إجازة"
+                                else
+                                    place?.name ?: "",
+                                fontSize =
+                                    if (
+                                        heightFraction >=
+                                        0.45f
+                                    )
+                                        9.sp
+                                    else
+                                        7.sp,
+                                fontWeight =
+                                    FontWeight.Bold,
+                                textAlign =
+                                    TextAlign.Center,
+                                maxLines = 2,
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal = 2.dp
+                                    )
+                            )
                         }
                     }
+                }
             }
         }
 

@@ -1,0 +1,365 @@
+package com.todoshift.app.widget
+
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.RemoteViews
+import com.todoshift.app.MainActivity
+import com.todoshift.app.R
+import com.todoshift.app.v11.V11Runtime
+import java.time.YearMonth
+
+class ToDoShiftWidget :
+    AppWidgetProvider() {
+
+    companion object {
+        const val ACTION_PREV =
+            "com.todoshift.app.widget.PREV"
+
+        const val ACTION_NEXT =
+            "com.todoshift.app.widget.NEXT"
+
+        const val EXTRA_OPEN_DATE =
+            "todo_shift_open_date"
+
+        fun refreshAll(
+            context: Context
+        ) {
+            val manager =
+                AppWidgetManager
+                    .getInstance(context)
+
+            val component =
+                ComponentName(
+                    context,
+                    ToDoShiftWidget::class.java
+                )
+
+            val ids =
+                manager.getAppWidgetIds(
+                    component
+                )
+
+            ids.forEach {
+                updateWidget(
+                    context,
+                    manager,
+                    it
+                )
+            }
+
+            manager.notifyAppWidgetViewDataChanged(
+                ids,
+                R.id.widget_grid
+            )
+        }
+
+        private fun updateWidget(
+            context: Context,
+            manager: AppWidgetManager,
+            widgetId: Int
+        ) {
+            val month =
+                CalendarWidgetState.month(
+                    context,
+                    widgetId
+                )
+
+            val db =
+                runCatching {
+                    V11Runtime(context)
+                        .start()
+                }.getOrNull()
+
+            val count =
+                db?.days
+                    ?.filter {
+                        it.date.startsWith(
+                            month.toString()
+                        )
+                    }
+                    ?.flatMap {
+                        it.segments
+                    }
+                    ?.count {
+                        it.kind.name != "OFF"
+                    }
+                    ?: 0
+
+            val views =
+                RemoteViews(
+                    context.packageName,
+                    R.layout.widget_calendar
+                )
+
+            views.setTextViewText(
+                R.id.widget_title,
+                arabicMonth(month)
+            )
+
+            views.setTextViewText(
+                R.id.widget_summary,
+                if (count == 0)
+                    "لا توجد شيفتات"
+                else
+                    "$count شيفت"
+            )
+
+            val serviceIntent =
+                Intent(
+                    context,
+                    CalendarWidgetService::
+                        class.java
+                ).apply {
+                    putExtra(
+                        AppWidgetManager
+                            .EXTRA_APPWIDGET_ID,
+                        widgetId
+                    )
+
+                    data = Uri.parse(
+                        "todoshift://widget/" +
+                            widgetId +
+                            "/" +
+                            month
+                    )
+                }
+
+            views.setRemoteAdapter(
+                R.id.widget_grid,
+                serviceIntent
+            )
+
+            val prevIntent =
+                Intent(
+                    context,
+                    ToDoShiftWidget::
+                        class.java
+                ).apply {
+                    action = ACTION_PREV
+                    putExtra(
+                        AppWidgetManager
+                            .EXTRA_APPWIDGET_ID,
+                        widgetId
+                    )
+                }
+
+            val nextIntent =
+                Intent(
+                    context,
+                    ToDoShiftWidget::
+                        class.java
+                ).apply {
+                    action = ACTION_NEXT
+                    putExtra(
+                        AppWidgetManager
+                            .EXTRA_APPWIDGET_ID,
+                        widgetId
+                    )
+                }
+
+            views.setOnClickPendingIntent(
+                R.id.widget_prev,
+                PendingIntent.getBroadcast(
+                    context,
+                    widgetId * 10 + 1,
+                    prevIntent,
+                    PendingIntent
+                        .FLAG_UPDATE_CURRENT or
+                        PendingIntent
+                            .FLAG_IMMUTABLE
+                )
+            )
+
+            views.setOnClickPendingIntent(
+                R.id.widget_next,
+                PendingIntent.getBroadcast(
+                    context,
+                    widgetId * 10 + 2,
+                    nextIntent,
+                    PendingIntent
+                        .FLAG_UPDATE_CURRENT or
+                        PendingIntent
+                            .FLAG_IMMUTABLE
+                )
+            )
+
+            val openApp =
+                Intent(
+                    context,
+                    MainActivity::class.java
+                )
+
+            views.setOnClickPendingIntent(
+                R.id.widget_title,
+                PendingIntent.getActivity(
+                    context,
+                    widgetId * 10 + 3,
+                    openApp,
+                    PendingIntent
+                        .FLAG_UPDATE_CURRENT or
+                        PendingIntent
+                            .FLAG_IMMUTABLE
+                )
+            )
+
+            val templateIntent =
+                Intent(
+                    context,
+                    MainActivity::class.java
+                ).apply {
+                    action =
+                        "com.todoshift.app.OPEN_DATE"
+                }
+
+            val template =
+                PendingIntent.getActivity(
+                    context,
+                    widgetId * 10 + 4,
+                    templateIntent,
+                    PendingIntent
+                        .FLAG_UPDATE_CURRENT or
+                        PendingIntent
+                            .FLAG_MUTABLE
+                )
+
+            views.setPendingIntentTemplate(
+                R.id.widget_grid,
+                template
+            )
+
+            manager.updateAppWidget(
+                widgetId,
+                views
+            )
+
+            manager
+                .notifyAppWidgetViewDataChanged(
+                    widgetId,
+                    R.id.widget_grid
+                )
+        }
+
+        private fun arabicMonth(
+            month: YearMonth
+        ): String {
+            val names = listOf(
+                "يناير",
+                "فبراير",
+                "مارس",
+                "أبريل",
+                "مايو",
+                "يونيو",
+                "يوليو",
+                "أغسطس",
+                "سبتمبر",
+                "أكتوبر",
+                "نوفمبر",
+                "ديسمبر"
+            )
+
+            return "${
+                names[
+                    month.monthValue - 1
+                ]
+            } ${month.year}"
+        }
+    }
+
+    override fun onUpdate(
+        context: Context,
+        manager: AppWidgetManager,
+        ids: IntArray
+    ) {
+        ids.forEach {
+            updateWidget(
+                context,
+                manager,
+                it
+            )
+        }
+    }
+
+    override fun onReceive(
+        context: Context,
+        intent: Intent
+    ) {
+        super.onReceive(
+            context,
+            intent
+        )
+
+        if (
+            intent.action != ACTION_PREV &&
+            intent.action != ACTION_NEXT
+        ) {
+            return
+        }
+
+        val widgetId =
+            intent.getIntExtra(
+                AppWidgetManager
+                    .EXTRA_APPWIDGET_ID,
+                AppWidgetManager
+                    .INVALID_APPWIDGET_ID
+            )
+
+        if (
+            widgetId ==
+            AppWidgetManager
+                .INVALID_APPWIDGET_ID
+        ) {
+            return
+        }
+
+        val current =
+            CalendarWidgetState.month(
+                context,
+                widgetId
+            )
+
+        val target =
+            if (
+                intent.action ==
+                ACTION_PREV
+            ) {
+                current.minusMonths(1)
+            } else {
+                current.plusMonths(1)
+            }
+
+        CalendarWidgetState.saveMonth(
+            context,
+            widgetId,
+            target
+        )
+
+        updateWidget(
+            context,
+            AppWidgetManager
+                .getInstance(context),
+            widgetId
+        )
+    }
+
+    override fun onDeleted(
+        context: Context,
+        appWidgetIds: IntArray
+    ) {
+        appWidgetIds.forEach {
+            CalendarWidgetState.delete(
+                context,
+                it
+            )
+        }
+
+        super.onDeleted(
+            context,
+            appWidgetIds
+        )
+    }
+}

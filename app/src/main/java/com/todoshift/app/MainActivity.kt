@@ -89,6 +89,20 @@ import com.todoshift.app.data.ShiftPainterEngine
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        intent?.getStringExtra(
+            "todo_shift_open_date"
+        )?.let { date ->
+            getSharedPreferences(
+                "todo_shift_navigation",
+                MODE_PRIVATE
+            ).edit()
+                .putString(
+                    "open_date",
+                    date
+                )
+                .apply()
+        }
+
         setContent {
             MaterialTheme(
                 colorScheme = lightColorScheme(

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/day_root"
+    android:layout_width="match_parent"
+    android:layout_height="52dp"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="2dp">
+
+    <TextView
+        android:id="@+id/day_number"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:gravity="center"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#172033" />
+
+    <TextView
+        android:id="@+id/day_shift"
+        android:layout_width="match_parent"
+        android:layout_height="16dp"
+        android:gravity="center"
+        android:textSize="8sp"
+        android:textColor="#475569"
+        android:maxLines="1" />
+
+</LinearLayout>

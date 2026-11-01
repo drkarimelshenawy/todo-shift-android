@@ -1,5 +1,7 @@
 package com.todoshift.app.v11
 
+import com.todoshift.app.widget.ToDoShiftWidget
+
 import android.content.Context
 import com.todoshift.app.data.AppStorage
 import java.time.LocalDate
@@ -43,6 +45,7 @@ class V11Runtime(context: Context) {
 
     fun save(db: V11Database) =
         storage.save(db)
+        ToDoShiftWidget.refreshAll(context)
 
     fun exportJson(db: V11Database): String =
         storage.exportJson(db)

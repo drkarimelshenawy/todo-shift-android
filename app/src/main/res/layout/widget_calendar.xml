@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:background="@drawable/widget_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_prev"
+            android:layout_width="44dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="‹"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#17365D" />
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="ToDo Shift"
+            android:textColor="#0D2344"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:maxLines="1" />
+
+        <TextView
+            android:id="@+id/widget_next"
+            android:layout_width="44dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="›"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#17365D" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_summary"
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:gravity="center"
+        android:text=""
+        android:textColor="#64748B"
+        android:textSize="10sp"
+        android:maxLines="1" />
+
+    <GridView
+        android:id="@+id/widget_grid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:numColumns="7"
+        android:verticalSpacing="2dp"
+        android:horizontalSpacing="2dp"
+        android:gravity="center"
+        android:stretchMode="columnWidth"
+        android:scrollbars="none" />
+
+</LinearLayout>

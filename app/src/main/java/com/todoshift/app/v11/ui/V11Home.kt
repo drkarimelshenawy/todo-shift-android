@@ -44,7 +44,7 @@ fun V11Home(
         mutableStateOf(runtime.start())
     }
 
-    val oldData by remember {
+    var oldData by remember {
         mutableStateOf(
             oldStorage.load()
         )
@@ -58,6 +58,10 @@ fun V11Home(
 
     var tab by remember {
         mutableIntStateOf(0)
+    }
+
+    var showWorkplaces by remember {
+        mutableStateOf(false)
     }
 
     val launchDate =
@@ -166,7 +170,23 @@ fun V11Home(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (tab) {
+            if (showWorkplaces) {
+                V11WorkplacesScreen(
+                    workplaces = oldData.workplaces,
+                    onBack = {
+                        showWorkplaces = false
+                    },
+                    onSaveWorkplaces = { workplaces ->
+                        val updated =
+                            oldData.copy(
+                                workplaces = workplaces
+                            )
+                        oldStorage.save(updated)
+                        oldData = updated
+                    }
+                )
+            } else {
+                when (tab) {
                 0 ->
                     V11CalendarScreen(
                         month = month,
@@ -236,8 +256,12 @@ fun V11Home(
                         onToggleMoney = {
                             moneyVisible =
                                 !moneyVisible
+                        },
+                        onOpenWorkplaces = {
+                            showWorkplaces = true
                         }
                     )
+                }
             }
         }
     }

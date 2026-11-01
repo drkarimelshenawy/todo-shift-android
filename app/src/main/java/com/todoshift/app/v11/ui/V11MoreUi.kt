@@ -19,7 +19,8 @@ fun V11MoreScreen(
     moneyVisible: Boolean,
     onUiSettingsChange:
         (V11UiSettings) -> Unit,
-    onToggleMoney: () -> Unit
+    onToggleMoney: () -> Unit,
+    onOpenWorkplaces: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -41,7 +42,8 @@ fun V11MoreScreen(
 
         MoreSection(
             "أماكن العمل والشيفتات",
-            "إدارة الأماكن، أنواع الشيفتات والأسعار"
+            "إدارة الأماكن، الألوان وأسعار الشيفتات",
+            onClick = onOpenWorkplaces
         )
 
         MoreSection(

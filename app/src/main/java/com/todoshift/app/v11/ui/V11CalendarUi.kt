@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Visibility
@@ -71,7 +72,11 @@ fun V11CalendarScreen(
     var selectedDate by remember(initialDate) {
         mutableStateOf(initialDate)
     }
-    var quickAddOpen by remember { mutableStateOf(false) }
+    var paletteOpen by remember { mutableStateOf(false) }
+    var selectedWorkplace by remember { mutableStateOf<Workplace?>(null) }
+    var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
+    var paintMode by remember { mutableStateOf(false) }
+    var paintDates by remember { mutableStateOf(setOf<LocalDate>()) }
 
     val visibleCalendarIds = remember(db.calendars) {
         db.calendars
@@ -88,20 +93,113 @@ fun V11CalendarScreen(
             else
                 FabPosition.End,
         floatingActionButton = {
-            SmallFloatingActionButton(
-                onClick = { quickAddOpen = true },
-                shape = CircleShape,
-                containerColor = Color(0xFF213555),
-                contentColor = Color.White,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .size(48.dp)
+            Column(
+                horizontalAlignment =
+                    if (uiSettings.fabSide == FabSide.LEFT)
+                        Alignment.Start
+                    else
+                        Alignment.End
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "إضافة",
-                    modifier = Modifier.size(25.dp)
-                )
+                if (paletteOpen && !paintMode) {
+                    V11PaintPalette(
+                        workplaces = workplaces,
+                        selectedWorkplace = selectedWorkplace,
+                        onWorkplace = {
+                            selectedWorkplace = it
+                        },
+                        onShiftKind = { kind ->
+                            selectedPaintKind = kind
+                            paintDates = emptySet()
+                            paintMode = true
+                            paletteOpen = false
+                        },
+                        onClose = {
+                            paletteOpen = false
+                            selectedWorkplace = null
+                        }
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                SmallFloatingActionButton(
+                    onClick = {
+                        if (paintMode) {
+                            val kind = selectedPaintKind
+                            val calendarId =
+                                db.calendars
+                                    .sortedBy { it.order }
+                                    .firstOrNull { it.visible }
+                                    ?.id
+                                    ?: db.calendars
+                                        .sortedBy { it.order }
+                                        .firstOrNull()
+                                        ?.id
+
+                            if (
+                                kind != null &&
+                                calendarId != null &&
+                                paintDates.isNotEmpty()
+                            ) {
+                                var updated = db
+
+                                paintDates
+                                    .sorted()
+                                    .forEach { date ->
+                                        updated =
+                                            V11DayController.addSegment(
+                                                db = updated,
+                                                date = date.toString(),
+                                                calendarId = calendarId,
+                                                kind = kind,
+                                                workplaceId =
+                                                    if (kind == ShiftKind.OFF)
+                                                        null
+                                                    else
+                                                        selectedWorkplace?.id
+                                            )
+                                    }
+
+                                onDatabaseChange(updated)
+                            }
+
+                            paintMode = false
+                            paintDates = emptySet()
+                            selectedPaintKind = null
+                            selectedWorkplace = null
+                            paletteOpen = false
+                        } else {
+                            paletteOpen = !paletteOpen
+
+                            if (!paletteOpen) {
+                                selectedWorkplace = null
+                            }
+                        }
+                    },
+                    shape = CircleShape,
+                    containerColor =
+                        if (paintMode)
+                            Color(0xFF2E7D32)
+                        else
+                            Color(0xFF213555),
+                    contentColor = Color.White,
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .size(48.dp)
+                ) {
+                    Icon(
+                        if (paintMode)
+                            Icons.Default.Check
+                        else
+                            Icons.Default.Add,
+                        contentDescription =
+                            if (paintMode)
+                                "حفظ"
+                            else
+                                "إضافة",
+                        modifier = Modifier.size(25.dp)
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -125,7 +223,19 @@ fun V11CalendarScreen(
                 uiSettings = uiSettings,
                 visibleCalendarIds = visibleCalendarIds,
                 selectedDate = selectedDate,
-                onSelectedDate = { selectedDate = it },
+                paintMode = paintMode,
+                paintDates = paintDates,
+                onSelectedDate = { date ->
+                    if (paintMode) {
+                        paintDates =
+                            if (date in paintDates)
+                                paintDates - date
+                            else
+                                paintDates + date
+                    } else {
+                        selectedDate = date
+                    }
+                },
                 onMonthChange = onMonthChange,
                 onToday = {
                     val today = LocalDate.now()
@@ -136,37 +246,44 @@ fun V11CalendarScreen(
 
             Spacer(Modifier.height(6.dp))
 
-            V11SelectedDayPanel(
-                date = selectedDate,
-                db = db,
-                workplaces = workplaces,
-                visibleCalendarIds = visibleCalendarIds,
-                onAdd = { quickAddOpen = true },
-                onDeleteSegment = { segmentId ->
-                    onDatabaseChange(
-                        V11DayController.deleteSegment(
-                            db,
-                            segmentId
+            if (!paintMode) {
+                V11SelectedDayPanel(
+                    date = selectedDate,
+                    db = db,
+                    workplaces = workplaces,
+                    visibleCalendarIds = visibleCalendarIds,
+                    onAdd = {
+                        paletteOpen = true
+                    },
+                    onDeleteSegment = { segmentId ->
+                        onDatabaseChange(
+                            V11DayController.deleteSegment(
+                                db,
+                                segmentId
+                            )
                         )
-                    )
-                }
-            )
+                    }
+                )
+            } else {
+                V11PaintStatusBar(
+                    workplace = selectedWorkplace,
+                    kind = selectedPaintKind,
+                    count = paintDates.size,
+                    onCancel = {
+                        paintMode = false
+                        paintDates = emptySet()
+                        selectedPaintKind = null
+                        selectedWorkplace = null
+                        paletteOpen = false
+                    }
+                )
+            }
         }
     }
 
-    if (quickAddOpen) {
-        V11QuickAddSheet(
-            date = selectedDate,
-            db = db,
-            workplaces = workplaces,
-            onDismiss = { quickAddOpen = false },
-            onSave = {
-                onDatabaseChange(it)
-                quickAddOpen = false
-            }
-        )
-    }
+
 }
+
 @Composable
 private fun V11CompactHeader() {
     Row(
@@ -269,6 +386,8 @@ private fun V11AnimatedCalendarArea(
     uiSettings: V11UiSettings,
     visibleCalendarIds: Set<String>,
     selectedDate: LocalDate,
+    paintMode: Boolean,
+    paintDates: Set<LocalDate>,
     onSelectedDate: (LocalDate) -> Unit,
     onMonthChange: (YearMonth) -> Unit,
     onToday: () -> Unit
@@ -343,6 +462,8 @@ private fun V11AnimatedCalendarArea(
                 uiSettings = uiSettings,
                 visibleCalendarIds = visibleCalendarIds,
                 selectedDate = selectedDate,
+                paintMode = paintMode,
+                paintDates = paintDates,
                 onSelectedDate = onSelectedDate,
                 onPrevious = {
                     onMonthChange(
@@ -366,6 +487,8 @@ private fun V11CalendarGrid(
     uiSettings: V11UiSettings,
     visibleCalendarIds: Set<String>,
     selectedDate: LocalDate,
+    paintMode: Boolean,
+    paintDates: Set<LocalDate>,
     onSelectedDate: (LocalDate) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit
@@ -460,6 +583,9 @@ private fun V11CalendarGrid(
                                 uiSettings = uiSettings,
                                 selected =
                                     date == selectedDate,
+                                paintSelected =
+                                    paintMode &&
+                                        date in paintDates,
                                 onClick = {
                                     onSelectedDate(date)
                                 }
@@ -485,6 +611,7 @@ private fun V11DayCell(
     workplaces: List<Workplace>,
     uiSettings: V11UiSettings,
     selected: Boolean,
+    paintSelected: Boolean,
     onClick: () -> Unit
 ) {
     val today = date == LocalDate.now()
@@ -515,7 +642,13 @@ private fun V11DayCell(
             }
         )
 
-    if (
+    if (paintSelected) {
+        modifier = modifier.border(
+            3.dp,
+            Color(0xFF213555),
+            shape
+        )
+    } else if (
         today &&
         uiSettings.todayHighlightStyle in
         listOf(
@@ -827,300 +960,351 @@ private fun V11SelectedDayPanel(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-private fun V11QuickAddSheet(
-    date: LocalDate,
-    db: V11Database,
+private fun V11PaintPalette(
     workplaces: List<Workplace>,
-    onDismiss: () -> Unit,
-    onSave: (V11Database) -> Unit
+    selectedWorkplace: Workplace?,
+    onWorkplace: (Workplace) -> Unit,
+    onShiftKind: (ShiftKind) -> Unit,
+    onClose: () -> Unit
 ) {
-    val calendars =
-        db.calendars.sortedBy { it.order }
-
-    var calendarId by remember {
-        mutableStateOf(
-            calendars.firstOrNull {
-                it.visible
-            }?.id
-                ?: calendars.firstOrNull()?.id
-                ?: ""
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp
         )
-    }
-
-    var workplaceId by remember {
-        mutableStateOf(
-            workplaces.firstOrNull()?.id
-        )
-    }
-
-    var kind by remember {
-        mutableStateOf(
-            ShiftKind.FULL_DAY
-        )
-    }
-
-    var exceptional by remember {
-        mutableStateOf("")
-    }
-
-    var note by remember {
-        mutableStateOf("")
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(
-                    rememberScrollState()
-                )
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 28.dp
-                )
+                .widthIn(min = 190.dp, max = 245.dp)
+                .padding(10.dp),
+            horizontalAlignment = Alignment.End
         ) {
-            Text(
-                "إضافة سريعة",
-                fontSize = 21.sp,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.End
-            )
+            if (selectedWorkplace == null) {
+                Text(
+                    "مكان العمل",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF6B7280),
+                    modifier = Modifier.padding(
+                        horizontal = 6.dp,
+                        vertical = 3.dp
+                    )
+                )
 
-            Text(
-                "${date.dayOfMonth} ${
-                    monthName(date.monthValue)
-                } ${date.year}",
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.End,
-                color = Color.Gray
-            )
+                workplaces.forEach { place ->
+                    V11PaletteWorkplaceRow(
+                        workplace = place,
+                        onClick = {
+                            onWorkplace(place)
+                        }
+                    )
+                }
 
-            Spacer(Modifier.height(14.dp))
-
-            Text(
-                "التقويم",
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(6.dp))
-
-            calendars.forEach { calendar ->
+                V11PaletteAddRow(
+                    text = "إضافة مكان"
+                )
+            } else {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            calendarId =
-                                calendar.id
-                        }
-                        .padding(vertical = 5.dp),
+                        .padding(
+                            horizontal = 5.dp,
+                            vertical = 4.dp
+                        ),
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
-                    RadioButton(
-                        selected =
-                            calendarId ==
-                                calendar.id,
-                        onClick = {
-                            calendarId =
-                                calendar.id
-                        }
-                    )
+                    TextButton(
+                        onClick = onClose,
+                        contentPadding =
+                            PaddingValues(
+                                horizontal = 5.dp,
+                                vertical = 0.dp
+                            )
+                    ) {
+                        Text(
+                            "إلغاء",
+                            fontSize = 10.sp
+                        )
+                    }
 
                     Spacer(Modifier.weight(1f))
 
-                    Text(calendar.name)
+                    Text(
+                        selectedWorkplace.name,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp
+                    )
 
                     Spacer(Modifier.width(7.dp))
 
                     Box(
                         Modifier
-                            .size(14.dp)
+                            .size(19.dp)
                             .clip(CircleShape)
                             .background(
                                 v11Color(
-                                    calendar.colorHex
+                                    selectedWorkplace.colorHex
                                 )
                             )
                     )
                 }
-            }
 
-            Spacer(Modifier.height(12.dp))
+                HorizontalDivider(
+                    modifier =
+                        Modifier.padding(vertical = 3.dp)
+                )
 
-            Text(
-                "نوع الشيفت",
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(6.dp))
-
-            ShiftKind.entries.forEach {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            kind = it
-                        }
-                        .padding(vertical = 3.dp),
-                    verticalAlignment =
-                        Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = kind == it,
+                listOf(
+                    ShiftKind.FULL_DAY,
+                    ShiftKind.LONG,
+                    ShiftKind.NIGHT,
+                    ShiftKind.MORNING,
+                    ShiftKind.EVENING
+                ).forEach { kind ->
+                    V11PaletteShiftRow(
+                        label = V11Labels.shift(kind),
+                        colorHex =
+                            selectedWorkplace.colorHex,
                         onClick = {
-                            kind = it
+                            onShiftKind(kind)
                         }
-                    )
-
-                    Spacer(Modifier.weight(1f))
-
-                    Text(
-                        V11Labels.shift(it)
                     )
                 }
+
+                V11PaletteAddRow(
+                    text = "إضافة نوع شيفت"
+                )
+
+                HorizontalDivider(
+                    modifier =
+                        Modifier.padding(vertical = 3.dp)
+                )
+
+                V11PaletteShiftRow(
+                    label = V11Labels.shift(
+                        ShiftKind.OFF
+                    ),
+                    colorHex = "#ECEFF1",
+                    onClick = {
+                        onShiftKind(
+                            ShiftKind.OFF
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun V11PaletteWorkplaceRow(
+    workplace: Workplace,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(
+                horizontal = 7.dp,
+                vertical = 7.dp
+            ),
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(31.dp)
+                .clip(CircleShape)
+                .background(
+                    v11Color(workplace.colorHex)
+                )
+        )
+
+        Spacer(Modifier.width(9.dp))
+
+        Text(
+            workplace.name,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun V11PaletteShiftRow(
+    label: String,
+    colorHex: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(
+                horizontal = 7.dp,
+                vertical = 6.dp
+            ),
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(25.dp)
+                .clip(CircleShape)
+                .background(v11Color(colorHex)),
+            contentAlignment =
+                Alignment.Center
+        )
+
+        Spacer(Modifier.width(9.dp))
+
+        Text(
+            label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun V11PaletteAddRow(
+    text: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = 7.dp,
+                vertical = 6.dp
+            ),
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .border(
+                    1.dp,
+                    Color(0xFF9CA3AF),
+                    CircleShape
+                ),
+            contentAlignment =
+                Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(17.dp),
+                tint = Color(0xFF4B5563)
+            )
+        }
+
+        Spacer(Modifier.width(9.dp))
+
+        Text(
+            text,
+            fontSize = 12.sp,
+            color = Color(0xFF4B5563)
+        )
+    }
+}
+
+@Composable
+private fun V11PaintStatusBar(
+    workplace: Workplace?,
+    kind: ShiftKind?,
+    count: Int,
+    onCancel: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(13.dp),
+        color = Color.White,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = 10.dp,
+                vertical = 7.dp
+            ),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            TextButton(
+                onClick = onCancel,
+                contentPadding = PaddingValues(
+                    horizontal = 7.dp,
+                    vertical = 0.dp
+                )
+            ) {
+                Text(
+                    "إلغاء",
+                    fontSize = 11.sp
+                )
             }
 
-            if (kind != ShiftKind.OFF) {
-                Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.weight(1f))
 
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
                 Text(
-                    "مكان العمل",
+                    buildString {
+                        append(
+                            kind?.let {
+                                V11Labels.shift(it)
+                            } ?: ""
+                        )
+
+                        if (
+                            kind != ShiftKind.OFF &&
+                            workplace != null
+                        ) {
+                            append(" • ")
+                            append(workplace.name)
+                        }
+                    },
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(Modifier.height(5.dp))
-
-                workplaces.forEach { place ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                workplaceId =
-                                    place.id
-                            }
-                            .padding(
-                                vertical = 4.dp
-                            ),
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected =
-                                workplaceId ==
-                                    place.id,
-                            onClick = {
-                                workplaceId =
-                                    place.id
-                            }
-                        )
-
-                        Spacer(
-                            Modifier.weight(1f)
-                        )
-
-                        Text(place.name)
-
-                        Spacer(
-                            Modifier.width(8.dp)
-                        )
-
-                        Box(
-                            Modifier
-                                .size(15.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    v11Color(
-                                        place.colorHex
-                                    )
-                                )
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                OutlinedTextField(
-                    value = exceptional,
-                    onValueChange = {
-                        exceptional = it
-                            .filter { c ->
-                                c.isDigit() ||
-                                    c == '.'
-                            }
-                    },
-                    label = {
-                        Text(
-                            "سعر استثنائي (اختياري)"
-                        )
-                    },
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    singleLine = true
+                Text(
+                    if (count == 0)
+                        "حدد الأيام ثم اضغط ✓"
+                    else
+                        "تم تحديد $count يوم",
+                    fontSize = 10.sp,
+                    color = Color(0xFF6B7280)
                 )
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.width(8.dp))
 
-            OutlinedTextField(
-                value = note,
-                onValueChange = {
-                    note = it
-                },
-                label = {
-                    Text("ملاحظة")
-                },
-                modifier =
-                    Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(18.dp))
-
-            Button(
-                onClick = {
-                    if (calendarId.isBlank())
-                        return@Button
-
-                    val amount =
-                        exceptional
-                            .toDoubleOrNull()
-
-                    onSave(
-                        V11DayController
-                            .addSegment(
-                                db = db,
-                                date =
-                                    date.toString(),
-                                calendarId =
-                                    calendarId,
-                                kind = kind,
-                                workplaceId =
-                                    workplaceId,
-                                exceptionalAmount =
-                                    amount,
-                                note = note
+            Box(
+                Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (
+                            kind == ShiftKind.OFF ||
+                            workplace == null
+                        )
+                            Color(0xFFECEFF1)
+                        else
+                            v11Color(
+                                workplace.colorHex
                             )
                     )
-                },
-                modifier =
-                    Modifier.fillMaxWidth()
-            ) {
-                Text("حفظ الشيفت")
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                "يمكن إضافة شيفت آخر لنفس اليوم بعد الحفظ.",
-                fontSize = 11.sp,
-                color = Color.Gray,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
             )
         }
     }

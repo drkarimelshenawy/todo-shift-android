@@ -77,10 +77,16 @@ class ToDoShiftWidget :
 
             val count =
                 db?.days
-                    ?.filter {
-                        it.date.startsWith(
+                    ?.filter { entry ->
+                        entry.date.startsWith(
                             month.toString()
-                        )
+                        ) &&
+                        db.calendars
+                            .firstOrNull { calendar ->
+                                calendar.id ==
+                                    entry.calendarId
+                            }
+                            ?.visible != false
                     }
                     ?.flatMap {
                         it.segments

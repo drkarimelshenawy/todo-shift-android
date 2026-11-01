@@ -3,27 +3,68 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/day_root"
     android:layout_width="match_parent"
-    android:layout_height="52dp"
+    android:layout_height="54dp"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="2dp">
+    android:padding="1dp">
 
     <TextView
         android:id="@+id/day_number"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
         android:gravity="center"
-        android:textSize="13sp"
+        android:textSize="12sp"
         android:textStyle="bold"
         android:textColor="#172033" />
 
     <TextView
         android:id="@+id/day_shift"
         android:layout_width="match_parent"
-        android:layout_height="16dp"
+        android:layout_height="13dp"
         android:gravity="center"
-        android:textSize="8sp"
+        android:textSize="7sp"
         android:textColor="#475569"
         android:maxLines="1" />
+
+    <LinearLayout
+        android:id="@+id/day_colors"
+        android:layout_width="match_parent"
+        android:layout_height="7dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/day_color_1"
+            android:layout_width="0dp"
+            android:layout_height="5dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="1dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/day_color_2"
+            android:layout_width="0dp"
+            android:layout_height="5dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="1dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/day_color_3"
+            android:layout_width="0dp"
+            android:layout_height="5dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="1dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/day_color_4"
+            android:layout_width="0dp"
+            android:layout_height="5dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="1dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
 
 </LinearLayout>

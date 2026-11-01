@@ -112,6 +112,16 @@ class V11Storage(context: Context) {
                                         )
 
                                     put("note", segment.note)
+
+                                    if (segment.startMinute == null)
+                                        put("startMinute", JSONObject.NULL)
+                                    else
+                                        put("startMinute", segment.startMinute)
+
+                                    if (segment.endMinute == null)
+                                        put("endMinute", JSONObject.NULL)
+                                    else
+                                        put("endMinute", segment.endMinute)
                                 })
                             }
                         })
@@ -149,6 +159,16 @@ class V11Storage(context: Context) {
                             put("calendarId", source.calendarId)
 
                         put("active", source.active)
+
+                        if (source.fixedMonthlyAmount == null)
+                            put("fixedMonthlyAmount", JSONObject.NULL)
+                        else
+                            put(
+                                "fixedMonthlyAmount",
+                                source.fixedMonthlyAmount
+                            )
+
+                        put("order", source.order)
                     })
                 }
             })
@@ -159,6 +179,7 @@ class V11Storage(context: Context) {
                         put("id", method.id)
                         put("name", method.name)
                         put("active", method.active)
+                        put("order", method.order)
                     })
                 }
             })
@@ -188,6 +209,34 @@ class V11Storage(context: Context) {
 
                         put("linkedShiftIds", JSONArray().apply {
                             payment.linkedShiftIds.forEach { put(it) }
+                        })
+
+                        put("allocations", JSONArray().apply {
+                            payment.allocations.forEach { allocation ->
+                                put(JSONObject().apply {
+                                    put("id", allocation.id)
+                                    put(
+                                        "accrualMonth",
+                                        allocation.accrualMonth
+                                    )
+
+                                    if (allocation.sourceId == null)
+                                        put(
+                                            "sourceId",
+                                            JSONObject.NULL
+                                        )
+                                    else
+                                        put(
+                                            "sourceId",
+                                            allocation.sourceId
+                                        )
+
+                                    put(
+                                        "amount",
+                                        allocation.amount
+                                    )
+                                })
+                            }
                         })
                     })
                 }
@@ -260,6 +309,117 @@ class V11Storage(context: Context) {
                     })
                 }
             })
+
+
+            put("dayItems", JSONArray().apply {
+                db.dayItems.forEach { item ->
+                    put(JSONObject().apply {
+                        put("id", item.id)
+                        put("date", item.date)
+
+                        if (item.calendarId == null)
+                            put("calendarId", JSONObject.NULL)
+                        else
+                            put("calendarId", item.calendarId)
+
+                        put("type", item.type.name)
+                        put("title", item.title)
+                        put("details", item.details)
+                        put("completed", item.completed)
+
+                        if (item.reminderAt == null)
+                            put("reminderAt", JSONObject.NULL)
+                        else
+                            put("reminderAt", item.reminderAt)
+
+                        put("createdAt", item.createdAt)
+                    })
+                }
+            })
+
+            put("obligations", JSONArray().apply {
+                db.obligations.forEach { item ->
+                    put(JSONObject().apply {
+                        put("id", item.id)
+                        put("name", item.name)
+                        put("type", item.type.name)
+
+                        if (item.totalAmount == null)
+                            put("totalAmount", JSONObject.NULL)
+                        else
+                            put("totalAmount", item.totalAmount)
+
+                        if (item.installmentAmount == null)
+                            put(
+                                "installmentAmount",
+                                JSONObject.NULL
+                            )
+                        else
+                            put(
+                                "installmentAmount",
+                                item.installmentAmount
+                            )
+
+                        put("startDate", item.startDate)
+
+                        if (item.endDate == null)
+                            put("endDate", JSONObject.NULL)
+                        else
+                            put("endDate", item.endDate)
+
+                        if (item.dueDay == null)
+                            put("dueDay", JSONObject.NULL)
+                        else
+                            put("dueDay", item.dueDay)
+
+                        if (item.installmentCount == null)
+                            put(
+                                "installmentCount",
+                                JSONObject.NULL
+                            )
+                        else
+                            put(
+                                "installmentCount",
+                                item.installmentCount
+                            )
+
+                        put(
+                            "reminderDaysBefore",
+                            item.reminderDaysBefore
+                        )
+                        put("status", item.status.name)
+                        put("note", item.note)
+                    })
+                }
+            })
+
+            put("obligationPayments", JSONArray().apply {
+                db.obligationPayments.forEach { item ->
+                    put(JSONObject().apply {
+                        put("id", item.id)
+                        put(
+                            "obligationId",
+                            item.obligationId
+                        )
+                        put("dueMonth", item.dueMonth)
+                        put("amount", item.amount)
+                        put("paidDate", item.paidDate)
+
+                        if (item.paymentMethodId == null)
+                            put(
+                                "paymentMethodId",
+                                JSONObject.NULL
+                            )
+                        else
+                            put(
+                                "paymentMethodId",
+                                item.paymentMethodId
+                            )
+
+                        put("note", item.note)
+                    })
+                }
+            })
         }
 
     private fun fromJson(root: JSONObject): V11Database {
@@ -319,7 +479,19 @@ class V11Storage(context: Context) {
                             !s.isNull("exceptionalAmount")
                         ) s.optDouble("exceptionalAmount")
                         else null,
-                    note = s.optString("note", "")
+                    note = s.optString("note", ""),
+                    startMinute =
+                        if (
+                            s.has("startMinute") &&
+                            !s.isNull("startMinute")
+                        ) s.optInt("startMinute")
+                        else null,
+                    endMinute =
+                        if (
+                            s.has("endMinute") &&
+                            !s.isNull("endMinute")
+                        ) s.optInt("endMinute")
+                        else null
                 )
             }
 
@@ -380,7 +552,14 @@ class V11Storage(context: Context) {
                     nullableString(o, "workplaceId"),
                 calendarId =
                     nullableString(o, "calendarId"),
-                active = o.optBoolean("active", true)
+                active = o.optBoolean("active", true),
+                fixedMonthlyAmount =
+                    if (
+                        o.has("fixedMonthlyAmount") &&
+                        !o.isNull("fixedMonthlyAmount")
+                    ) o.optDouble("fixedMonthlyAmount")
+                    else null,
+                order = o.optInt("order", i)
             )
         }
 
@@ -394,7 +573,8 @@ class V11Storage(context: Context) {
             methods += PaymentMethodV11(
                 id = o.optString("id"),
                 name = o.optString("name"),
-                active = o.optBoolean("active", true)
+                active = o.optBoolean("active", true),
+                order = o.optInt("order", i)
             )
         }
 
@@ -412,6 +592,31 @@ class V11Storage(context: Context) {
                 linked += linkedArray.optString(j)
             }
 
+            val allocations =
+                mutableListOf<PaymentAllocationV11>()
+
+            val allocationArray =
+                o.optJSONArray("allocations") ?: JSONArray()
+
+            for (j in 0 until allocationArray.length()) {
+                val a = allocationArray.getJSONObject(j)
+
+                allocations += PaymentAllocationV11(
+                    id = a.optString("id"),
+                    accrualMonth =
+                        a.optString("accrualMonth"),
+                    sourceId =
+                        nullableString(a, "sourceId"),
+                    amount =
+                        a.optDouble("amount", 0.0)
+                )
+            }
+
+            /*
+             * Schema 11 payments had only one accrualMonth.
+             * We keep that value untouched. New payments may
+             * additionally contain explicit allocations.
+             */
             payments += PaymentV11(
                 id = o.optString("id"),
                 amount = o.optDouble("amount", 0.0),
@@ -421,7 +626,8 @@ class V11Storage(context: Context) {
                 paymentMethodId =
                     nullableString(o, "paymentMethodId"),
                 note = o.optString("note", ""),
-                linkedShiftIds = linked
+                linkedShiftIds = linked,
+                allocations = allocations
             )
         }
 
@@ -502,8 +708,147 @@ class V11Storage(context: Context) {
             )
         }
 
+        val dayItems = mutableListOf<DayItemV11>()
+        val dayItemArray =
+            root.optJSONArray("dayItems") ?: JSONArray()
+
+        for (i in 0 until dayItemArray.length()) {
+            val o = dayItemArray.getJSONObject(i)
+
+            val type = runCatching {
+                DayItemTypeV11.valueOf(
+                    o.optString(
+                        "type",
+                        DayItemTypeV11.NOTE.name
+                    )
+                )
+            }.getOrDefault(DayItemTypeV11.NOTE)
+
+            dayItems += DayItemV11(
+                id = o.optString("id"),
+                date = o.optString("date"),
+                calendarId =
+                    nullableString(o, "calendarId"),
+                type = type,
+                title = o.optString("title"),
+                details = o.optString("details", ""),
+                completed =
+                    o.optBoolean("completed", false),
+                reminderAt =
+                    if (
+                        o.has("reminderAt") &&
+                        !o.isNull("reminderAt")
+                    ) o.optLong("reminderAt")
+                    else null,
+                createdAt =
+                    o.optLong(
+                        "createdAt",
+                        System.currentTimeMillis()
+                    )
+            )
+        }
+
+        val obligations =
+            mutableListOf<ObligationV11>()
+
+        val obligationArray =
+            root.optJSONArray("obligations") ?: JSONArray()
+
+        for (i in 0 until obligationArray.length()) {
+            val o = obligationArray.getJSONObject(i)
+
+            val type = runCatching {
+                ObligationTypeV11.valueOf(
+                    o.optString(
+                        "type",
+                        ObligationTypeV11.OTHER.name
+                    )
+                )
+            }.getOrDefault(ObligationTypeV11.OTHER)
+
+            val status = runCatching {
+                ObligationStatusV11.valueOf(
+                    o.optString(
+                        "status",
+                        ObligationStatusV11.ACTIVE.name
+                    )
+                )
+            }.getOrDefault(
+                ObligationStatusV11.ACTIVE
+            )
+
+            obligations += ObligationV11(
+                id = o.optString("id"),
+                name = o.optString("name"),
+                type = type,
+                totalAmount =
+                    if (
+                        o.has("totalAmount") &&
+                        !o.isNull("totalAmount")
+                    ) o.optDouble("totalAmount")
+                    else null,
+                installmentAmount =
+                    if (
+                        o.has("installmentAmount") &&
+                        !o.isNull("installmentAmount")
+                    ) o.optDouble("installmentAmount")
+                    else null,
+                startDate = o.optString("startDate"),
+                endDate =
+                    nullableString(o, "endDate"),
+                dueDay =
+                    if (
+                        o.has("dueDay") &&
+                        !o.isNull("dueDay")
+                    ) o.optInt("dueDay")
+                    else null,
+                installmentCount =
+                    if (
+                        o.has("installmentCount") &&
+                        !o.isNull("installmentCount")
+                    ) o.optInt("installmentCount")
+                    else null,
+                reminderDaysBefore =
+                    o.optInt("reminderDaysBefore", 3),
+                status = status,
+                note = o.optString("note", "")
+            )
+        }
+
+        val obligationPayments =
+            mutableListOf<ObligationPaymentV11>()
+
+        val obligationPaymentArray =
+            root.optJSONArray("obligationPayments")
+                ?: JSONArray()
+
+        for (i in 0 until obligationPaymentArray.length()) {
+            val o =
+                obligationPaymentArray.getJSONObject(i)
+
+            obligationPayments +=
+                ObligationPaymentV11(
+                    id = o.optString("id"),
+                    obligationId =
+                        o.optString("obligationId"),
+                    dueMonth =
+                        o.optString("dueMonth"),
+                    amount =
+                        o.optDouble("amount", 0.0),
+                    paidDate =
+                        o.optString("paidDate"),
+                    paymentMethodId =
+                        nullableString(
+                            o,
+                            "paymentMethodId"
+                        ),
+                    note =
+                        o.optString("note", "")
+                )
+        }
+
         return V11Database(
-            schemaVersion = root.optInt("schemaVersion", 11),
+            schemaVersion = 12,
             calendars = calendars,
             days = days,
             rates = rates,
@@ -512,7 +857,10 @@ class V11Storage(context: Context) {
             payments = payments,
             settlements = settlements,
             monthSnapshots = snapshots,
-            auditLog = audit
+            auditLog = audit,
+            dayItems = dayItems,
+            obligations = obligations,
+            obligationPayments = obligationPayments
         )
     }
 }

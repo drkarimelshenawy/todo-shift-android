@@ -1,6 +1,16 @@
 package com.todoshift.app.v11.ui
 
 import android.graphics.Color as AndroidColor
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Visibility
@@ -24,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.todoshift.app.R
 import com.todoshift.app.data.Workplace
 import com.todoshift.app.v11.*
 import java.time.LocalDate
@@ -61,7 +72,6 @@ fun V11CalendarScreen(
         mutableStateOf(initialDate)
     }
     var quickAddOpen by remember { mutableStateOf(false) }
-    var calendarManagerOpen by remember { mutableStateOf(false) }
 
     val visibleCalendarIds = remember(db.calendars) {
         db.calendars
@@ -78,15 +88,19 @@ fun V11CalendarScreen(
             else
                 FabPosition.End,
         floatingActionButton = {
-            FloatingActionButton(
+            SmallFloatingActionButton(
                 onClick = { quickAddOpen = true },
                 shape = CircleShape,
                 containerColor = Color(0xFF213555),
-                contentColor = Color.White
+                contentColor = Color.White,
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .size(48.dp)
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = "إضافة"
+                    contentDescription = "إضافة",
+                    modifier = Modifier.size(25.dp)
                 )
             }
         }
@@ -96,73 +110,38 @@ fun V11CalendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 10.dp)
         ) {
+            Spacer(Modifier.height(4.dp))
 
-            Spacer(Modifier.height(8.dp))
+            V11CompactHeader()
 
-            V11CompactHeader(
-                onCalendars = {
-                    calendarManagerOpen = true
-                }
-            )
+            Spacer(Modifier.height(5.dp))
 
-            Spacer(Modifier.height(10.dp))
-
-            V11TodayDashboard(
-                db = db,
-                workplaces = workplaces,
-                visibleCalendarIds = visibleCalendarIds
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            V11MonthSelector(
-                month = month,
-                onPrevious = {
-                    onMonthChange(month.minusMonths(1))
-                },
-                onNext = {
-                    onMonthChange(month.plusMonths(1))
-                },
-                onToday = {
-                    selectedDate = LocalDate.now()
-                    onMonthChange(
-                        YearMonth.from(LocalDate.now())
-                    )
-                }
-            )
-
-            Spacer(Modifier.height(7.dp))
-
-            V11CalendarGrid(
+            V11AnimatedCalendarArea(
                 month = month,
                 db = db,
                 workplaces = workplaces,
                 uiSettings = uiSettings,
                 visibleCalendarIds = visibleCalendarIds,
                 selectedDate = selectedDate,
-                onSelectedDate = {
-                    selectedDate = it
-                },
-                onPrevious = {
-                    onMonthChange(month.minusMonths(1))
-                },
-                onNext = {
-                    onMonthChange(month.plusMonths(1))
+                onSelectedDate = { selectedDate = it },
+                onMonthChange = onMonthChange,
+                onToday = {
+                    val today = LocalDate.now()
+                    selectedDate = today
+                    onMonthChange(YearMonth.from(today))
                 }
             )
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(6.dp))
 
             V11SelectedDayPanel(
                 date = selectedDate,
                 db = db,
                 workplaces = workplaces,
                 visibleCalendarIds = visibleCalendarIds,
-                onAdd = {
-                    quickAddOpen = true
-                },
+                onAdd = { quickAddOpen = true },
                 onDeleteSegment = { segmentId ->
                     onDatabaseChange(
                         V11DayController.deleteSegment(
@@ -180,204 +159,38 @@ fun V11CalendarScreen(
             date = selectedDate,
             db = db,
             workplaces = workplaces,
-            onDismiss = {
-                quickAddOpen = false
-            },
+            onDismiss = { quickAddOpen = false },
             onSave = {
                 onDatabaseChange(it)
                 quickAddOpen = false
             }
         )
     }
-
-    if (calendarManagerOpen) {
-        V11CalendarManagerSheet(
-            db = db,
-            onDismiss = {
-                calendarManagerOpen = false
-            },
-            onDatabaseChange = onDatabaseChange
-        )
-    }
 }
-
 @Composable
-private fun V11CompactHeader(
-    onCalendars: () -> Unit
-) {
+private fun V11CompactHeader() {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF162A46)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.CalendarMonth,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(23.dp)
-                )
-            }
-
-            Spacer(Modifier.width(8.dp))
-
-            Column {
-                Text(
-                    "ToDo Shift",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF162A46)
-                )
-                Text(
-                    "تقويم الشيفتات",
-                    fontSize = 10.sp,
-                    color = Color(0xFF6B7280)
-                )
-            }
-        }
-
-        FilledTonalButton(
-            onClick = onCalendars,
-            contentPadding = PaddingValues(
-                horizontal = 12.dp,
-                vertical = 6.dp
-            )
-        ) {
-            Icon(
-                Icons.Default.CalendarMonth,
-                null,
-                modifier = Modifier.size(17.dp)
-            )
-            Spacer(Modifier.width(5.dp))
-            Text("التقاويم", fontSize = 12.sp)
-        }
-    }
-}
-
-@Composable
-private fun V11TodayDashboard(
-    db: V11Database,
-    workplaces: List<Workplace>,
-    visibleCalendarIds: Set<String>
-) {
-    val today = LocalDate.now()
-    val tomorrow = today.plusDays(1)
-
-    fun labels(date: LocalDate): String {
-        val segments = db.days
-            .filter {
-                it.date == date.toString() &&
-                    it.calendarId in visibleCalendarIds
-            }
-            .flatMap { it.segments }
-
-        if (segments.isEmpty())
-            return "لا يوجد"
-
-        return segments.joinToString(" • ") { segment ->
-            val place = workplaces.firstOrNull {
-                it.id == segment.workplaceId
-            }?.name
-
-            if (place.isNullOrBlank())
-                V11Labels.shift(segment.kind)
-            else
-                "${V11Labels.shift(segment.kind)} - $place"
-        }
-    }
-
-    val next = db.days
-        .filter {
-            runCatching {
-                LocalDate.parse(it.date)
-            }.getOrNull()?.isAfter(today) == true &&
-                it.calendarId in visibleCalendarIds &&
-                it.segments.any { s ->
-                    s.kind != ShiftKind.OFF
-                }
-        }
-        .minByOrNull { it.date }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
+        Image(
+            painter = painterResource(R.mipmap.ic_launcher),
+            contentDescription = "ToDo Shift",
+            modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(11.dp))
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Text(
-                "اليوم",
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-                color = Color(0xFF4F709C)
-            )
-            Text(
-                labels(today),
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
 
-            Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.width(9.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        "غدا",
-                        fontSize = 10.sp,
-                        color = Color.Gray
-                    )
-                    Text(
-                        labels(tomorrow),
-                        fontSize = 12.sp
-                    )
-                }
-
-                Spacer(Modifier.width(10.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Text(
-                        "القادم",
-                        fontSize = 10.sp,
-                        color = Color.Gray
-                    )
-                    Text(
-                        next?.let {
-                            "${it.date} • ${
-                                it.segments
-                                    .filter { s ->
-                                        s.kind != ShiftKind.OFF
-                                    }
-                                    .joinToString("/") { s ->
-                                        V11Labels.shift(s.kind)
-                                    }
-                            }"
-                        } ?: "لا يوجد",
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.End
-                    )
-                }
-            }
-        }
+        Text(
+            "ToDo Shift",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Black,
+            color = Color(0xFF162A46)
+        )
     }
 }
 
@@ -389,66 +202,162 @@ private fun V11MonthSelector(
     onToday: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement =
-            Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        FilledTonalButton(
+        FilledTonalIconButton(
             onClick = onPrevious,
-            modifier = Modifier.size(
-                width = 58.dp,
-                height = 46.dp
-            ),
-            contentPadding = PaddingValues(0.dp)
+            modifier = Modifier.size(38.dp)
         ) {
             Text(
                 "‹",
-                fontSize = 32.sp,
+                fontSize = 27.sp,
                 fontWeight = FontWeight.Bold
             )
         }
 
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             Text(
                 "${monthName(month.monthValue)} ${month.year}",
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Black
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF16181D)
             )
 
             TextButton(
                 onClick = onToday,
+                modifier = Modifier.height(25.dp),
                 contentPadding = PaddingValues(
-                    horizontal = 8.dp,
+                    horizontal = 6.dp,
                     vertical = 0.dp
                 )
             ) {
                 Text(
-                    "اليوم",
-                    fontSize = 11.sp
+                    "انتقل لتاريخ اليوم",
+                    fontSize = 9.sp,
+                    color = Color(0xFF4F709C)
                 )
             }
         }
 
-        FilledTonalButton(
+        FilledTonalIconButton(
             onClick = onNext,
-            modifier = Modifier.size(
-                width = 58.dp,
-                height = 46.dp
-            ),
-            contentPadding = PaddingValues(0.dp)
+            modifier = Modifier.size(38.dp)
         ) {
             Text(
                 "›",
-                fontSize = 32.sp,
+                fontSize = 27.sp,
                 fontWeight = FontWeight.Bold
             )
         }
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+private fun V11AnimatedCalendarArea(
+    month: YearMonth,
+    db: V11Database,
+    workplaces: List<Workplace>,
+    uiSettings: V11UiSettings,
+    visibleCalendarIds: Set<String>,
+    selectedDate: LocalDate,
+    onSelectedDate: (LocalDate) -> Unit,
+    onMonthChange: (YearMonth) -> Unit,
+    onToday: () -> Unit
+) {
+    var previousMonth by remember { mutableStateOf(month) }
+
+    val direction = remember(month) {
+        when {
+            month > previousMonth -> 1
+            month < previousMonth -> -1
+            else -> 0
+        }
+    }
+
+    LaunchedEffect(month) {
+        previousMonth = month
+    }
+
+    AnimatedContent(
+        targetState = month,
+        transitionSpec = {
+            val forward = targetState > initialState
+
+            ContentTransform(
+                targetContentEnter =
+                    slideInHorizontally(
+                        animationSpec = tween(280),
+                        initialOffsetX = { width ->
+                            if (forward) width else -width
+                        }
+                    ) + fadeIn(
+                        animationSpec = tween(220)
+                    ),
+                initialContentExit =
+                    slideOutHorizontally(
+                        animationSpec = tween(280),
+                        targetOffsetX = { width ->
+                            if (forward) -width else width
+                        }
+                    ) + fadeOut(
+                        animationSpec = tween(180)
+                    )
+            )
+        },
+        label = "monthTransition"
+    ) { shownMonth ->
+
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            V11MonthSelector(
+                month = shownMonth,
+                onPrevious = {
+                    onMonthChange(
+                        shownMonth.minusMonths(1)
+                    )
+                },
+                onNext = {
+                    onMonthChange(
+                        shownMonth.plusMonths(1)
+                    )
+                },
+                onToday = onToday
+            )
+
+            Spacer(Modifier.height(2.dp))
+
+            V11CalendarGrid(
+                month = shownMonth,
+                db = db,
+                workplaces = workplaces,
+                uiSettings = uiSettings,
+                visibleCalendarIds = visibleCalendarIds,
+                selectedDate = selectedDate,
+                onSelectedDate = onSelectedDate,
+                onPrevious = {
+                    onMonthChange(
+                        shownMonth.minusMonths(1)
+                    )
+                },
+                onNext = {
+                    onMonthChange(
+                        shownMonth.plusMonths(1)
+                    )
+                }
+            )
+        }
+    }
+}
 @Composable
 private fun V11CalendarGrid(
     month: YearMonth,
@@ -527,7 +436,7 @@ private fun V11CalendarGrid(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(2.dp)
+                            .padding(1.5.dp)
                     ) {
                         if (
                             day in
@@ -559,7 +468,7 @@ private fun V11CalendarGrid(
                             Spacer(
                                 Modifier
                                     .fillMaxWidth()
-                                    .height(64.dp)
+                                    .height(58.dp)
                             )
                         }
                     }
@@ -584,11 +493,11 @@ private fun V11DayCell(
         it.segments
     }
 
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(9.dp)
 
     var modifier = Modifier
         .fillMaxWidth()
-        .height(64.dp)
+        .height(58.dp)
         .clip(shape)
         .background(
             when {
@@ -763,7 +672,7 @@ private fun V11SelectedDayPanel(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 210.dp),
+            .heightIn(max = 150.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         )

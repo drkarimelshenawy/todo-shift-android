@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -153,12 +153,12 @@ fun V11Home(
                     icon = {
                         Icon(
                             Icons.Default
-                                .MoreHoriz,
+                                .Settings,
                             null
                         )
                     },
                     label = {
-                        Text("المزيد")
+                        Text("الإعدادات")
                     }
                 )
             }

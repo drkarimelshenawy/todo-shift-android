@@ -3,18 +3,20 @@ package com.todoshift.app.v11.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.todoshift.app.data.Workplace
 import com.todoshift.app.v11.*
+import java.time.LocalDate
 import java.time.YearMonth
-import java.util.UUID
 
 @Composable
 fun V11FinanceScreen(
@@ -38,18 +40,41 @@ fun V11FinanceScreen(
         mutableStateOf(false)
     }
 
+    var obligationOpen by remember {
+        mutableStateOf(false)
+    }
+
+    var sourceManagerOpen by remember {
+        mutableStateOf(false)
+    }
+
+    var methodManagerOpen by remember {
+        mutableStateOf(false)
+    }
+
+    val obligationDue =
+        V11AccountsController
+            .monthObligationDue(
+                db,
+                month
+            )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(
+                rememberScrollState()
+            )
             .padding(14.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
-            TextButton(onClick = onToggleMoney) {
+            TextButton(
+                onClick = onToggleMoney
+            ) {
                 Text(
                     if (moneyVisible)
                         "إخفاء المبالغ"
@@ -58,17 +83,24 @@ fun V11FinanceScreen(
                 )
             }
 
+            Spacer(Modifier.weight(1f))
+
             Column(
-                horizontalAlignment = Alignment.End
+                horizontalAlignment =
+                    Alignment.End
             ) {
                 Text(
-                    "المالية",
+                    "الحسابات",
                     fontSize = 25.sp,
-                    fontWeight = FontWeight.Black
+                    fontWeight =
+                        FontWeight.Black
                 )
+
                 Text(
-                    "Finance Center V2",
-                    fontSize = 11.sp
+                    "المستحقات والمدفوعات والالتزامات",
+                    style =
+                        MaterialTheme.typography
+                            .labelSmall
                 )
             }
         }
@@ -77,10 +109,10 @@ fun V11FinanceScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.SpaceBetween,
             verticalAlignment =
-                Alignment.CenterVertically
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement.SpaceBetween
         ) {
             FilledTonalButton(
                 onClick = onPrevious
@@ -105,69 +137,84 @@ fun V11FinanceScreen(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement =
-                Arrangement.spacedBy(8.dp)
+                Arrangement.spacedBy(7.dp)
         ) {
-            FinanceCard(
-                title = "المتبقي",
-                value = result.difference,
-                visible = moneyVisible,
-                modifier = Modifier.weight(1f)
+            AccountCard(
+                "المتبقي",
+                result.difference,
+                moneyVisible,
+                Modifier.weight(1f)
             )
-            FinanceCard(
-                title = "المستلم",
-                value = result.received,
-                visible = moneyVisible,
-                modifier = Modifier.weight(1f)
+
+            AccountCard(
+                "المستلم",
+                result.received,
+                moneyVisible,
+                Modifier.weight(1f)
             )
-            FinanceCard(
-                title = "المتوقع",
-                value = result.expected,
-                visible = moneyVisible,
-                modifier = Modifier.weight(1f)
+
+            AccountCard(
+                "المستحق",
+                result.expected,
+                moneyVisible,
+                Modifier.weight(1f)
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(14.dp)
+                modifier =
+                    Modifier.padding(14.dp)
             ) {
                 Text(
-                    "الحالة",
-                    fontWeight = FontWeight.Bold
+                    "ملخص الشهر",
+                    fontWeight =
+                        FontWeight.Black
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
+
+                Spacer(
+                    Modifier.height(6.dp)
+                )
+
+                AccountLine(
+                    "عدد الشيفتات",
+                    result.shiftCount.toString()
+                )
+
+                AccountLine(
+                    "حالة المستحقات",
                     when {
-                        result.received <= 0.0 &&
-                            result.expected > 0.0 ->
-                            "غير مدفوع"
-
-                        result.received > 0.0 &&
-                            result.received <
-                            result.expected ->
-                            "مدفوع جزئيا"
-
-                        result.received >
-                            result.expected ->
+                        result.difference > 0 ->
+                            "متبقي"
+                        result.difference < 0 ->
                             "دفع زائد"
-
-                        result.expected > 0.0 &&
-                            result.received >=
-                            result.expected ->
-                            "مدفوع بالكامل"
-
-                        else -> "لا توجد مستحقات"
+                        result.expected > 0 ->
+                            "مسدد"
+                        else ->
+                            "لا توجد مستحقات"
                     }
                 )
 
-                Spacer(Modifier.height(6.dp))
+                AccountLine(
+                    "التزامات الشهر",
+                    money(
+                        obligationDue,
+                        moneyVisible
+                    )
+                )
 
-                Text(
-                    "عدد الشيفتات: ${result.shiftCount}"
+                AccountLine(
+                    "الصافي بعد الالتزامات",
+                    money(
+                        result.expected -
+                            obligationDue,
+                        moneyVisible
+                    )
                 )
             }
         }
@@ -178,116 +225,371 @@ fun V11FinanceScreen(
             onClick = {
                 paymentOpen = true
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
-            Text("إضافة دفعة")
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Text(
-            "حسب نوع الشيفت",
-            fontWeight = FontWeight.Black,
-            fontSize = 17.sp,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.End
-        )
-
-        result.byShiftKind.forEach { summary ->
-            FinanceLine(
-                title = "${V11Labels.shift(summary.kind)} (${summary.count})",
-                value = summary.amount,
-                visible = moneyVisible
+            Icon(
+                Icons.Default.Add,
+                null
             )
+            Spacer(Modifier.width(5.dp))
+            Text("تسجيل مبلغ مستلم")
         }
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(8.dp))
 
-        Text(
-            "حسب مكان العمل",
-            fontWeight = FontWeight.Black,
-            fontSize = 17.sp,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.End
-        )
-
-        result.byWorkplace.forEach { summary ->
-            FinanceLine(
-                title = workplaces.firstOrNull {
-                    it.id == summary.workplaceId
-                }?.name ?: "غير محدد",
-                value = summary.amount,
-                visible = moneyVisible
-            )
-        }
-
-        Spacer(Modifier.height(14.dp))
-
-        Text(
-            "الدفعات",
-            fontWeight = FontWeight.Black,
-            fontSize = 17.sp,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.End
-        )
-
-        db.payments
-            .filter {
-                it.accrualMonth ==
-                    month.toString()
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
+        ) {
+            FilledTonalButton(
+                onClick = {
+                    sourceManagerOpen = true
+                },
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+                Text("مصادر الدخل")
             }
+
+            FilledTonalButton(
+                onClick = {
+                    methodManagerOpen = true
+                },
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+                Text("طرق الدفع")
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            "المستحق حسب مكان العمل",
+            fontWeight = FontWeight.Black,
+            fontSize = 17.sp
+        )
+
+        result.byWorkplace
+            .forEach { summary ->
+                val name =
+                    workplaces
+                        .firstOrNull {
+                            it.id ==
+                                summary
+                                    .workplaceId
+                        }
+                        ?.name
+                        ?: "غير محدد"
+
+                AccountLine(
+                    name,
+                    money(
+                        summary.amount,
+                        moneyVisible
+                    )
+                )
+            }
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            "المبالغ المستلمة",
+            fontWeight = FontWeight.Black,
+            fontSize = 17.sp
+        )
+
+        val monthPayments =
+            db.payments.filter { payment ->
+                payment.accrualMonth ==
+                    month.toString() ||
+                    payment.allocations.any {
+                        it.accrualMonth ==
+                            month.toString()
+                    }
+            }
+
+        if (monthPayments.isEmpty()) {
+            Text(
+                "لا توجد دفعات مسجلة",
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant,
+                modifier =
+                    Modifier.padding(
+                        vertical = 10.dp
+                    )
+            )
+        }
+
+        monthPayments
             .sortedByDescending {
                 it.receivedDate
             }
             .forEach { payment ->
+                val source =
+                    db.incomeSources
+                        .firstOrNull {
+                            it.id ==
+                                payment.sourceId
+                        }
+
+                val method =
+                    db.paymentMethods
+                        .firstOrNull {
+                            it.id ==
+                                payment
+                                    .paymentMethodId
+                        }
 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement =
-                            Arrangement.SpaceBetween
+                    Column(
+                        modifier =
+                            Modifier.padding(12.dp)
                     ) {
-                        Text(
-                            if (moneyVisible)
-                                "${payment.amount} ج"
-                            else
-                                "••••••"
-                        )
-
-                        Column(
-                            horizontalAlignment =
-                                Alignment.End
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement
+                                    .SpaceBetween
                         ) {
+                            Text(
+                                money(
+                                    payment.amount,
+                                    moneyVisible
+                                ),
+                                fontWeight =
+                                    FontWeight.Black
+                            )
+
                             Text(
                                 payment.receivedDate,
                                 fontWeight =
                                     FontWeight.Bold
                             )
-                            if (
-                                payment.note
-                                    .isNotBlank()
-                            ) {
-                                Text(
-                                    payment.note,
-                                    fontSize = 11.sp
-                                )
-                            }
+                        }
+
+                        Text(
+                            listOfNotNull(
+                                source?.name,
+                                method?.name
+                            ).joinToString(" • "),
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall
+                        )
+
+                        if (
+                            payment.note
+                                .isNotBlank()
+                        ) {
+                            Text(
+                                payment.note,
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodySmall
+                            )
                         }
                     }
                 }
             }
 
+        Spacer(Modifier.height(22.dp))
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            FilledTonalButton(
+                onClick = {
+                    obligationOpen = true
+                }
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    null
+                )
+                Text("إضافة")
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            Column(
+                horizontalAlignment =
+                    Alignment.End
+            ) {
+                Text(
+                    "الالتزامات",
+                    fontSize = 19.sp,
+                    fontWeight =
+                        FontWeight.Black
+                )
+
+                Text(
+                    "أقساط • ديون • مدفوعات دورية",
+                    style =
+                        MaterialTheme.typography
+                            .labelSmall
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        if (db.obligations.isEmpty()) {
+            Card(
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "لا توجد التزامات مسجلة",
+                    modifier =
+                        Modifier.padding(14.dp)
+                )
+            }
+        }
+
+        db.obligations.forEach {
+            obligation ->
+
+            val paid =
+                V11AccountsController
+                    .obligationPaid(
+                        db,
+                        obligation.id
+                    )
+
+            val remaining =
+                V11AccountsController
+                    .obligationRemaining(
+                        db,
+                        obligation
+                    )
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(
+                    modifier =
+                        Modifier.padding(12.dp)
+                ) {
+                    Text(
+                        obligation.name,
+                        fontWeight =
+                            FontWeight.Black
+                    )
+
+                    Text(
+                        obligationLabel(
+                            obligation.type
+                        ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall
+                    )
+
+                    Spacer(
+                        Modifier.height(6.dp)
+                    )
+
+                    if (
+                        obligation
+                            .installmentAmount !=
+                        null
+                    ) {
+                        AccountLine(
+                            "القسط",
+                            money(
+                                obligation
+                                    .installmentAmount,
+                                moneyVisible
+                            )
+                        )
+                    }
+
+                    AccountLine(
+                        "المدفوع",
+                        money(
+                            paid,
+                            moneyVisible
+                        )
+                    )
+
+                    remaining?.let {
+                        AccountLine(
+                            "المتبقي",
+                            money(
+                                it,
+                                moneyVisible
+                            )
+                        )
+                    }
+
+                    obligation.dueDay
+                        ?.let {
+                            AccountLine(
+                                "موعد الاستحقاق",
+                                "يوم $it"
+                            )
+                        }
+
+                    Button(
+                        onClick = {
+                            val amount =
+                                obligation
+                                    .installmentAmount
+                                    ?: remaining
+                                    ?: 0.0
+
+                            if (amount > 0) {
+                                onDatabaseChange(
+                                    V11AccountsController
+                                        .payObligation(
+                                            db,
+                                            obligation.id,
+                                            month.toString(),
+                                            amount,
+                                            db.paymentMethods
+                                                .firstOrNull()
+                                                ?.id
+                                        )
+                                )
+                            }
+                        },
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        enabled =
+                            obligation.status ==
+                                ObligationStatusV11
+                                    .ACTIVE
+                    ) {
+                        Text("تسجيل سداد القسط")
+                    }
+                }
+            }
+        }
+
         Spacer(Modifier.height(30.dp))
     }
 
     if (paymentOpen) {
-        PaymentDialog(
+        V11PaymentDialog(
             month = month,
             db = db,
             onDismiss = {
@@ -299,20 +601,57 @@ fun V11FinanceScreen(
             }
         )
     }
+
+    if (obligationOpen) {
+        V11ObligationDialog(
+            db = db,
+            onDismiss = {
+                obligationOpen = false
+            },
+            onSave = {
+                onDatabaseChange(it)
+                obligationOpen = false
+            }
+        )
+    }
+
+    if (sourceManagerOpen) {
+        V11IncomeSourcesDialog(
+            db = db,
+            onDismiss = {
+                sourceManagerOpen = false
+            },
+            onDatabaseChange =
+                onDatabaseChange
+        )
+    }
+
+    if (methodManagerOpen) {
+        V11PaymentMethodsDialog(
+            db = db,
+            onDismiss = {
+                methodManagerOpen = false
+            },
+            onDatabaseChange =
+                onDatabaseChange
+        )
+    }
 }
 
 @Composable
-private fun FinanceCard(
+private fun AccountCard(
     title: String,
     value: Double,
     visible: Boolean,
     modifier: Modifier
 ) {
-    Card(modifier = modifier) {
+    Card(
+        modifier = modifier
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(9.dp),
             horizontalAlignment =
                 Alignment.CenterHorizontally
         ) {
@@ -320,48 +659,55 @@ private fun FinanceCard(
                 title,
                 fontSize = 11.sp
             )
-            Spacer(Modifier.height(4.dp))
+
             Text(
-                if (visible)
-                    "${"%.2f".format(value)} ج"
-                else
-                    "••••••",
-                fontWeight = FontWeight.Black,
-                fontSize = 14.sp
+                money(
+                    value,
+                    visible
+                ),
+                fontWeight =
+                    FontWeight.Black,
+                fontSize = 13.sp
             )
         }
     }
 }
 
 @Composable
-private fun FinanceLine(
+private fun AccountLine(
     title: String,
-    value: Double,
-    visible: Boolean
+    value: String
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 7.dp),
+            .padding(vertical = 5.dp),
         horizontalArrangement =
             Arrangement.SpaceBetween
     ) {
-        Text(
-            if (visible)
-                "${"%.2f".format(value)} ج"
-            else
-                "••••••"
-        )
+        Text(value)
+
         Text(
             title,
-            fontWeight = FontWeight.Bold
+            fontWeight =
+                FontWeight.Bold
         )
     }
+
     HorizontalDivider()
 }
 
+private fun money(
+    value: Double,
+    visible: Boolean
+): String =
+    if (visible)
+        "${"%.2f".format(value)} ج"
+    else
+        "••••••"
+
 @Composable
-private fun PaymentDialog(
+private fun V11PaymentDialog(
     month: YearMonth,
     db: V11Database,
     onDismiss: () -> Unit,
@@ -370,55 +716,62 @@ private fun PaymentDialog(
     var amount by remember {
         mutableStateOf("")
     }
+
     var date by remember {
         mutableStateOf(
-            java.time.LocalDate.now()
+            LocalDate.now()
                 .toString()
         )
     }
+
     var note by remember {
         mutableStateOf("")
     }
+
     var sourceId by remember {
         mutableStateOf(
             db.incomeSources
-                .firstOrNull()?.id
+                .firstOrNull {
+                    it.active
+                }?.id
         )
     }
+
     var methodId by remember {
         mutableStateOf(
             db.paymentMethods
-                .firstOrNull()?.id
+                .firstOrNull {
+                    it.active
+                }?.id
         )
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("إضافة دفعة")
+            Text("تسجيل مبلغ مستلم")
         },
         text = {
             Column(
-                modifier = Modifier
-                    .verticalScroll(
+                modifier =
+                    Modifier.verticalScroll(
                         rememberScrollState()
                     )
             ) {
                 OutlinedTextField(
                     value = amount,
                     onValueChange = {
-                        amount = it.filter { c ->
-                            c.isDigit() ||
-                                c == '.'
-                        }
+                        amount =
+                            it.filter { c ->
+                                c.isDigit() ||
+                                    c == '.'
+                            }
                     },
                     label = {
                         Text("المبلغ")
                     },
                     singleLine = true
                 )
-
-                Spacer(Modifier.height(8.dp))
 
                 OutlinedTextField(
                     value = date,
@@ -431,57 +784,65 @@ private fun PaymentDialog(
                     singleLine = true
                 )
 
-                Spacer(Modifier.height(10.dp))
-
-                Text(
-                    "مصدر الدخل",
-                    fontWeight = FontWeight.Bold
-                )
-
-                db.incomeSources.forEach {
-                    source ->
-                    Row(
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected =
-                                sourceId ==
-                                    source.id,
-                            onClick = {
-                                sourceId =
-                                    source.id
-                            }
-                        )
-                        Text(source.name)
-                    }
-                }
-
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    "طريقة الدفع",
-                    fontWeight = FontWeight.Bold
+                    "مصدر الدخل",
+                    fontWeight =
+                        FontWeight.Bold
                 )
 
-                db.paymentMethods.forEach {
-                    method ->
-                    Row(
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected =
-                                methodId ==
-                                    method.id,
-                            onClick = {
-                                methodId =
-                                    method.id
-                            }
-                        )
-                        Text(method.name)
+                db.incomeSources
+                    .filter { it.active }
+                    .sortedBy { it.order }
+                    .forEach { source ->
+                        Row(
+                            verticalAlignment =
+                                Alignment
+                                    .CenterVertically
+                        ) {
+                            RadioButton(
+                                selected =
+                                    sourceId ==
+                                        source.id,
+                                onClick = {
+                                    sourceId =
+                                        source.id
+                                }
+                            )
+
+                            Text(source.name)
+                        }
                     }
-                }
+
+                Text(
+                    "طريقة الدفع",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                db.paymentMethods
+                    .filter { it.active }
+                    .sortedBy { it.order }
+                    .forEach { method ->
+                        Row(
+                            verticalAlignment =
+                                Alignment
+                                    .CenterVertically
+                        ) {
+                            RadioButton(
+                                selected =
+                                    methodId ==
+                                        method.id,
+                                onClick = {
+                                    methodId =
+                                        method.id
+                                }
+                            )
+
+                            Text(method.name)
+                        }
+                    }
 
                 OutlinedTextField(
                     value = note,
@@ -501,43 +862,21 @@ private fun PaymentDialog(
                         amount.toDoubleOrNull()
                             ?: return@Button
 
-                    val payment = PaymentV11(
-                        id = UUID.randomUUID()
-                            .toString(),
-                        amount = value,
-                        receivedDate = date,
-                        accrualMonth =
-                            month.toString(),
-                        sourceId = sourceId,
-                        paymentMethodId =
-                            methodId,
-                        note = note
-                    )
-
                     onSave(
-                        db.copy(
-                            payments =
-                                db.payments +
-                                    payment,
-                            auditLog =
-                                db.auditLog +
-                                    AuditEntryV11(
-                                        id = UUID
-                                            .randomUUID()
-                                            .toString(),
-                                        action =
-                                            "PAYMENT_ADD",
-                                        entityType =
-                                            "payment",
-                                        entityId =
-                                            payment.id,
-                                        description =
-                                            "إضافة دفعة ${payment.amount}",
-                                        createdAt =
-                                            System
-                                                .currentTimeMillis()
-                                    )
-                        )
+                        V11AccountsController
+                            .addPayment(
+                                db = db,
+                                amount = value,
+                                receivedDate =
+                                    date,
+                                accrualMonth =
+                                    month.toString(),
+                                sourceId =
+                                    sourceId,
+                                paymentMethodId =
+                                    methodId,
+                                note = note
+                            )
                     )
                 }
             ) {
@@ -545,9 +884,451 @@ private fun PaymentDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss
+            ) {
                 Text("إلغاء")
             }
         }
     )
 }
+
+@Composable
+private fun V11IncomeSourcesDialog(
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onDatabaseChange:
+        (V11Database) -> Unit
+) {
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    var fixed by remember {
+        mutableStateOf("")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("مصادر الدخل")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                db.incomeSources
+                    .sortedBy { it.order }
+                    .forEach { source ->
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11AccountsController
+                                            .deleteIncomeSource(
+                                                db,
+                                                source.id
+                                            )
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    "حذف"
+                                )
+                            }
+
+                            Spacer(
+                                Modifier.weight(1f)
+                            )
+
+                            Text(
+                                source.name,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+                        }
+                    }
+
+                HorizontalDivider()
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = {
+                        Text("مصدر جديد")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = fixed,
+                    onValueChange = {
+                        fixed =
+                            it.filter { c ->
+                                c.isDigit() ||
+                                    c == '.'
+                            }
+                    },
+                    label = {
+                        Text(
+                            "مرتب ثابت شهري - اختياري"
+                        )
+                    }
+                )
+
+                Button(
+                    onClick = {
+                        onDatabaseChange(
+                            V11AccountsController
+                                .addIncomeSource(
+                                    db,
+                                    name,
+                                    if (
+                                        fixed
+                                            .toDoubleOrNull() !=
+                                        null
+                                    )
+                                        IncomeSourceTypeV11
+                                            .FIXED_SALARY
+                                    else
+                                        IncomeSourceTypeV11
+                                            .OTHER,
+                                    fixed
+                                        .toDoubleOrNull()
+                                )
+                        )
+
+                        name = ""
+                        fixed = ""
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth()
+                ) {
+                    Text("إضافة المصدر")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("تم")
+            }
+        }
+    )
+}
+
+@Composable
+private fun V11PaymentMethodsDialog(
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onDatabaseChange:
+        (V11Database) -> Unit
+) {
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("طرق الدفع")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                db.paymentMethods
+                    .sortedBy { it.order }
+                    .forEach { method ->
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11AccountsController
+                                            .deletePaymentMethod(
+                                                db,
+                                                method.id
+                                            )
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    "حذف"
+                                )
+                            }
+
+                            Spacer(
+                                Modifier.weight(1f)
+                            )
+
+                            Text(
+                                method.name,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+                        }
+                    }
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = {
+                        Text("طريقة دفع جديدة")
+                    }
+                )
+
+                Button(
+                    onClick = {
+                        onDatabaseChange(
+                            V11AccountsController
+                                .addPaymentMethod(
+                                    db,
+                                    name
+                                )
+                        )
+
+                        name = ""
+                    },
+                    modifier =
+                        Modifier.fillMaxWidth()
+                ) {
+                    Text("إضافة")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("تم")
+            }
+        }
+    )
+}
+
+@Composable
+private fun V11ObligationDialog(
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onSave: (V11Database) -> Unit
+) {
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    var total by remember {
+        mutableStateOf("")
+    }
+
+    var installment by remember {
+        mutableStateOf("")
+    }
+
+    var dueDay by remember {
+        mutableStateOf("")
+    }
+
+    var count by remember {
+        mutableStateOf("")
+    }
+
+    var type by remember {
+        mutableStateOf(
+            ObligationTypeV11.INSTALLMENT
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("إضافة التزام")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = {
+                        Text("اسم الالتزام")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = total,
+                    onValueChange = {
+                        total =
+                            it.filter { c ->
+                                c.isDigit() ||
+                                    c == '.'
+                            }
+                    },
+                    label = {
+                        Text("إجمالي المبلغ")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = installment,
+                    onValueChange = {
+                        installment =
+                            it.filter { c ->
+                                c.isDigit() ||
+                                    c == '.'
+                            }
+                    },
+                    label = {
+                        Text("قيمة القسط")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = dueDay,
+                    onValueChange = {
+                        dueDay =
+                            it.filter(
+                                Char::isDigit
+                            )
+                    },
+                    label = {
+                        Text(
+                            "يوم الاستحقاق"
+                        )
+                    }
+                )
+
+                OutlinedTextField(
+                    value = count,
+                    onValueChange = {
+                        count =
+                            it.filter(
+                                Char::isDigit
+                            )
+                    },
+                    label = {
+                        Text("عدد الأقساط")
+                    }
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                ObligationTypeV11.entries
+                    .forEach {
+                        Row(
+                            verticalAlignment =
+                                Alignment
+                                    .CenterVertically
+                        ) {
+                            RadioButton(
+                                selected =
+                                    type == it,
+                                onClick = {
+                                    type = it
+                                }
+                            )
+
+                            Text(
+                                obligationLabel(
+                                    it
+                                )
+                            )
+                        }
+                    }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(
+                        V11AccountsController
+                            .addObligation(
+                                db = db,
+                                name = name,
+                                type = type,
+                                totalAmount =
+                                    total
+                                        .toDoubleOrNull(),
+                                installmentAmount =
+                                    installment
+                                        .toDoubleOrNull(),
+                                startDate =
+                                    LocalDate.now()
+                                        .toString(),
+                                dueDay =
+                                    dueDay
+                                        .toIntOrNull()
+                                        ?.coerceIn(
+                                            1,
+                                            31
+                                        ),
+                                installmentCount =
+                                    count
+                                        .toIntOrNull(),
+                                reminderDaysBefore =
+                                    3,
+                                note = ""
+                            )
+                    )
+                },
+                enabled = name.isNotBlank()
+            ) {
+                Text("حفظ")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("إلغاء")
+            }
+        }
+    )
+}
+
+private fun obligationLabel(
+    type: ObligationTypeV11
+): String =
+    when (type) {
+        ObligationTypeV11.INSTALLMENT ->
+            "قسط"
+        ObligationTypeV11.DEBT ->
+            "دين"
+        ObligationTypeV11.LOAN ->
+            "قرض"
+        ObligationTypeV11.CREDIT_CARD ->
+            "بطاقة ائتمان"
+        ObligationTypeV11.ASSOCIATION ->
+            "جمعية"
+        ObligationTypeV11.RECURRING_BILL ->
+            "مدفوع دوري"
+        ObligationTypeV11.OTHER ->
+            "أخرى"
+    }

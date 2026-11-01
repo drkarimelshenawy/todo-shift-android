@@ -1,11 +1,12 @@
 package com.todoshift.app.v11.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -28,69 +29,104 @@ fun V11MoreScreen(
             .verticalScroll(
                 rememberScrollState()
             )
-            .padding(16.dp)
+            .padding(14.dp)
     ) {
         Text(
-            "المزيد",
+            "الإعدادات",
             style =
                 MaterialTheme.typography
                     .headlineMedium,
             fontWeight = FontWeight.Black
         )
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(16.dp))
 
-        MoreSection(
-            "أماكن العمل والشيفتات",
-            "إدارة الأماكن، الألوان وأسعار الشيفتات",
-            onClick = onOpenWorkplaces
+        SettingsTitle(
+            "التقويم والعمل"
         )
 
-        MoreSection(
-            "التقويم والجداول",
-            "${db.calendars.size} تقويم"
+        SettingsAction(
+            title =
+                "أماكن العمل والأسعار",
+            subtitle =
+                "إدارة الأماكن والألوان وأسعار الشيفتات",
+            onClick =
+                onOpenWorkplaces
         )
 
-        MoreSection(
-            "المالية والحسابات",
-            if (moneyVisible)
-                "المبالغ ظاهرة حاليا"
-            else
-                "المبالغ مخفية حاليا",
-            onClick = onToggleMoney
+        SettingsInfo(
+            title = "التقاويم",
+            subtitle =
+                "${db.calendars.size} تقويم • ${
+                    db.calendars.count {
+                        it.visible
+                    }
+                } ظاهر"
         )
 
-        MoreSection(
-            "التقارير والإحصائيات",
-            "تقارير الشيفتات والمالية"
+        Spacer(Modifier.height(16.dp))
+
+        SettingsTitle(
+            "الحسابات والالتزامات"
         )
 
-        MoreSection(
-            "البحث",
-            "بحث بالتاريخ والتقويم ومكان العمل ونوع الشيفت"
+        SettingsSwitch(
+            title = "إظهار المبالغ",
+            subtitle =
+                "إخفاء أو إظهار القيم المالية داخل الحسابات",
+            checked = moneyVisible,
+            onCheckedChange = {
+                if (it != moneyVisible)
+                    onToggleMoney()
+            }
         )
 
-        MoreSection(
-            "النسخ الاحتياطي والاستعادة",
-            "بيانات V1.1 قابلة للتصدير والاستعادة"
+        SettingsInfo(
+            title = "مصادر الدخل",
+            subtitle =
+                "${db.incomeSources.size} مصدر"
         )
 
-        MoreSection(
-            "الإشعارات",
-            "تذكيرات الشيفتات"
+        SettingsInfo(
+            title = "طرق الدفع",
+            subtitle =
+                "${db.paymentMethods.size} طريقة"
         )
 
-        Spacer(Modifier.height(12.dp))
-
-        Text(
-            "المظهر والتخصيص",
-            fontWeight = FontWeight.Black
+        SettingsInfo(
+            title = "الالتزامات",
+            subtitle =
+                "${db.obligations.count {
+                    it.status ==
+                        ObligationStatusV11.ACTIVE
+                }} التزام نشط"
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
+
+        SettingsTitle(
+            "المظهر والتخصيص"
+        )
+
+        SettingsSwitch(
+            title =
+                "أسماء أماكن العمل",
+            subtitle =
+                "إظهار اسم مكان العمل داخل الشيفت في التقويم",
+            checked =
+                uiSettings.showWorkplaceNames,
+            onCheckedChange = {
+                onUiSettingsChange(
+                    uiSettings.copy(
+                        showWorkplaceNames = it
+                    )
+                )
+            }
+        )
 
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier =
@@ -102,7 +138,12 @@ fun V11MoreScreen(
                         FontWeight.Bold
                 )
 
-                Row {
+                Row(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
                     FilterChip(
                         selected =
                             uiSettings.fabSide ==
@@ -118,10 +159,6 @@ fun V11MoreScreen(
                         label = {
                             Text("يمين")
                         }
-                    )
-
-                    Spacer(
-                        Modifier.width(8.dp)
                     )
 
                     FilterChip(
@@ -141,110 +178,106 @@ fun V11MoreScreen(
                         }
                     )
                 }
+            }
+        }
 
-                Spacer(
-                    Modifier.height(12.dp)
-                )
+        Spacer(Modifier.height(8.dp))
 
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    verticalAlignment =
-                        Alignment.CenterVertically,
-                    horizontalArrangement =
-                        Arrangement.SpaceBetween
-                ) {
-                    Switch(
-                        checked =
-                            uiSettings
-                                .showWorkplaceNames,
-                        onCheckedChange = {
-                            onUiSettingsChange(
-                                uiSettings.copy(
-                                    showWorkplaceNames =
-                                        it
-                                )
-                            )
-                        }
-                    )
-
-                    Text(
-                        "إظهار أسماء الأماكن داخل التقويم"
-                    )
-                }
-
-                Spacer(
-                    Modifier.height(12.dp)
-                )
-
+        Card(
+            modifier =
+                Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier =
+                    Modifier.padding(14.dp)
+            ) {
                 Text(
                     "تمييز اليوم الحالي",
                     fontWeight =
                         FontWeight.Bold
                 )
 
-                TodayHighlightStyle.entries
-                    .forEach { style ->
-
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onUiSettingsChange(
-                                            uiSettings
-                                                .copy(
-                                                    todayHighlightStyle =
-                                                        style
-                                                )
-                                        )
-                                    },
-                            verticalAlignment =
-                                Alignment
-                                    .CenterVertically
-                        ) {
-                            RadioButton(
-                                selected =
-                                    uiSettings
-                                        .todayHighlightStyle ==
-                                        style,
-                                onClick = {
-                                    onUiSettingsChange(
-                                        uiSettings
-                                            .copy(
-                                                todayHighlightStyle =
-                                                    style
-                                            )
+                listOf(
+                    TodayHighlightStyle.BORDER,
+                    TodayHighlightStyle.TINT,
+                    TodayHighlightStyle.RING,
+                    TodayHighlightStyle.BORDER_TINT,
+                    TodayHighlightStyle.NONE
+                ).forEach { style ->
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        verticalAlignment =
+                            Alignment
+                                .CenterVertically
+                    ) {
+                        RadioButton(
+                            selected =
+                                uiSettings
+                                    .todayHighlightStyle ==
+                                    style,
+                            onClick = {
+                                onUiSettingsChange(
+                                    uiSettings.copy(
+                                        todayHighlightStyle =
+                                            style
                                     )
-                                }
-                            )
+                                )
+                            }
+                        )
 
-                            Text(
-                                when (style) {
-                                    TodayHighlightStyle.BORDER ->
-                                        "إطار"
-                                    TodayHighlightStyle.TINT ->
-                                        "تلوين خفيف"
-                                    TodayHighlightStyle.RING ->
-                                        "حلقة حول الرقم"
-                                    TodayHighlightStyle.PULSE ->
-                                        "نبض"
-                                    TodayHighlightStyle.BORDER_TINT ->
-                                        "إطار + تلوين"
-                                    TodayHighlightStyle.NONE ->
-                                        "بدون"
-                                }
+                        Text(
+                            highlightLabel(
+                                style
                             )
-                        }
+                        )
                     }
+                }
             }
         }
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(16.dp))
 
-        MoreSection(
-            "حول التطبيق وتشخيص البيانات",
-            "ToDo Shift V1.1 • Schema ${db.schemaVersion}"
+        SettingsTitle(
+            "الخصوصية والبيانات"
+        )
+
+        SettingsInfo(
+            title =
+                "حماية الحسابات",
+            subtitle =
+                "PIN • Pattern • Biometric — أساس الحماية جاهز للربط في RC7E"
+        )
+
+        SettingsInfo(
+            title =
+                "النسخ الاحتياطي المحلي",
+            subtitle =
+                "Schema ${db.schemaVersion} • سيتم ربط التصدير والاستعادة النهائية في RC7E"
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        SettingsTitle(
+            "الحساب والمزامنة"
+        )
+
+        SettingsInfo(
+            title = "Google Sync",
+            subtitle =
+                "غير مفعّل حاليا — لن يظهر كمفتاح وهمي قبل تنفيذ المزامنة الحقيقية"
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        SettingsTitle(
+            "حول التطبيق"
+        )
+
+        SettingsInfo(
+            title = "ToDo Shift",
+            subtitle =
+                "V1.1 • Schema ${db.schemaVersion}"
         )
 
         Spacer(Modifier.height(30.dp))
@@ -252,16 +285,31 @@ fun V11MoreScreen(
 }
 
 @Composable
-private fun MoreSection(
+private fun SettingsTitle(
+    text: String
+) {
+    Text(
+        text,
+        fontWeight = FontWeight.Black,
+        style =
+            MaterialTheme.typography
+                .titleMedium,
+        modifier =
+            Modifier.padding(
+                vertical = 6.dp
+            )
+    )
+}
+
+@Composable
+private fun SettingsInfo(
     title: String,
-    subtitle: String,
-    onClick: () -> Unit = {}
+    subtitle: String
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable(onClick = onClick)
     ) {
         Column(
             modifier =
@@ -269,9 +317,10 @@ private fun MoreSection(
         ) {
             Text(
                 title,
-                fontWeight = FontWeight.Bold
+                fontWeight =
+                    FontWeight.Bold
             )
-            Spacer(Modifier.height(2.dp))
+
             Text(
                 subtitle,
                 style =
@@ -281,3 +330,117 @@ private fun MoreSection(
         }
     }
 }
+
+@Composable
+private fun SettingsAction(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.ChevronRight,
+                null
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            Column(
+                horizontalAlignment =
+                    Alignment.End
+            ) {
+                Text(
+                    title,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    subtitle,
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsSwitch(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange:
+        (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Switch(
+                checked = checked,
+                onCheckedChange =
+                    onCheckedChange
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            Column(
+                horizontalAlignment =
+                    Alignment.End
+            ) {
+                Text(
+                    title,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    subtitle,
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall
+                )
+            }
+        }
+    }
+}
+
+private fun highlightLabel(
+    style: TodayHighlightStyle
+): String =
+    when (style) {
+        TodayHighlightStyle.BORDER ->
+            "إطار"
+        TodayHighlightStyle.TINT ->
+            "تلوين خفيف"
+        TodayHighlightStyle.RING ->
+            "حلقة حول الرقم"
+        TodayHighlightStyle.BORDER_TINT ->
+            "إطار + تلوين"
+        TodayHighlightStyle.NONE ->
+            "بدون"
+        TodayHighlightStyle.PULSE ->
+            "نبض"
+    }

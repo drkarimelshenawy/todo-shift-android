@@ -28,9 +28,9 @@ fun V11FinanceScreen(
     onDatabaseChange: (V11Database) -> Unit
 ) {
     val result = remember(db, month) {
-        V11FinanceEngine.calculateMonth(
+        V11FinanceEngine.month(
             db = db,
-            month = month.toString()
+            month = month
         )
     }
 
@@ -193,10 +193,10 @@ fun V11FinanceScreen(
             textAlign = TextAlign.End
         )
 
-        result.byKind.forEach { (kind, amount) ->
+        result.byShiftKind.forEach { summary ->
             FinanceLine(
-                title = V11Labels.shift(kind),
-                value = amount,
+                title = "${V11Labels.shift(summary.kind)} (${summary.count})",
+                value = summary.amount,
                 visible = moneyVisible
             )
         }
@@ -211,14 +211,12 @@ fun V11FinanceScreen(
             textAlign = TextAlign.End
         )
 
-        result.byWorkplace.forEach {
-                (workplaceId, amount) ->
-
+        result.byWorkplace.forEach { summary ->
             FinanceLine(
                 title = workplaces.firstOrNull {
-                    it.id == workplaceId
+                    it.id == summary.workplaceId
                 }?.name ?: "غير محدد",
-                value = amount,
+                value = summary.amount,
                 visible = moneyVisible
             )
         }

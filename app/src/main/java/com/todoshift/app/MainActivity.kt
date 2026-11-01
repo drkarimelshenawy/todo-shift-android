@@ -89,19 +89,16 @@ import com.todoshift.app.data.ShiftPainterEngine
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        intent?.getStringExtra(
-            "todo_shift_open_date"
-        )?.let { date ->
-            getSharedPreferences(
-                "todo_shift_navigation",
-                MODE_PRIVATE
-            ).edit()
-                .putString(
-                    "open_date",
-                    date
+        val widgetOpenDate =
+            intent
+                ?.getStringExtra(
+                    "todo_shift_open_date"
                 )
-                .apply()
-        }
+                ?.let { raw ->
+                    runCatching {
+                        LocalDate.parse(raw)
+                    }.getOrNull()
+                }
 
         setContent {
             MaterialTheme(
@@ -112,7 +109,9 @@ class MainActivity : ComponentActivity() {
                     surface = Color.White
                 )
             ) {
-                V11Home()
+                V11Home(
+                    initialDate = widgetOpenDate
+                )
             }
         }
     }

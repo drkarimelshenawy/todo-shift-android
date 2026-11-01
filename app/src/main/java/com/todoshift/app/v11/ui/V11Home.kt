@@ -13,10 +13,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.todoshift.app.data.AppStorage
 import com.todoshift.app.v11.*
+import java.time.LocalDate
 import java.time.YearMonth
 
 @Composable
-fun V11Home() {
+fun V11Home(
+    initialDate: LocalDate? = null
+) {
     val context = LocalContext.current
 
     val runtime = remember {
@@ -57,9 +60,12 @@ fun V11Home() {
         mutableIntStateOf(0)
     }
 
-    var month by remember {
+    val launchDate =
+        initialDate ?: LocalDate.now()
+
+    var month by remember(launchDate) {
         mutableStateOf(
-            YearMonth.now()
+            YearMonth.from(launchDate)
         )
     }
 
@@ -164,6 +170,7 @@ fun V11Home() {
                 0 ->
                     V11CalendarScreen(
                         month = month,
+                        initialDate = launchDate,
                         db = db,
                         workplaces =
                             oldData.workplaces,

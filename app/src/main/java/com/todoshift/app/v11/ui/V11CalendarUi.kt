@@ -49,6 +49,7 @@ private fun monthName(month: Int): String =
 @Composable
 fun V11CalendarScreen(
     month: YearMonth,
+    initialDate: LocalDate = LocalDate.now(),
     db: V11Database,
     workplaces: List<Workplace>,
     uiSettings: V11UiSettings,
@@ -56,7 +57,9 @@ fun V11CalendarScreen(
     onDatabaseChange: (V11Database) -> Unit,
     onUiSettingsChange: (V11UiSettings) -> Unit
 ) {
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var selectedDate by remember(initialDate) {
+        mutableStateOf(initialDate)
+    }
     var quickAddOpen by remember { mutableStateOf(false) }
     var calendarManagerOpen by remember { mutableStateOf(false) }
 

@@ -8,9 +8,15 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.todoshift.app.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -238,9 +244,34 @@ fun V11Home(
         uiStore.save(value)
     }
 
+    val sectionTitle =
+        when {
+            showWorkplaces ->
+                "أماكن العمل"
+
+            tab == 0 ->
+                "التقويم"
+
+            tab == 1 ->
+                "جداولي"
+
+            tab == 2 ->
+                "الحسابات"
+
+            else ->
+                "الإعدادات"
+        }
+
     Scaffold(
         containerColor =
             Color(0xFFF7F8FA),
+        contentWindowInsets =
+            WindowInsets(0, 0, 0, 0),
+        topBar = {
+            V11GlobalHeader(
+                title = sectionTitle
+            )
+        },
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
@@ -469,6 +500,73 @@ fun V11Home(
                     )
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun V11GlobalHeader(
+    title: String
+) {
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        color = Color.White,
+        tonalElevation = 1.dp,
+        shadowElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(58.dp)
+                .padding(horizontal = 12.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            androidx.compose.foundation.Image(
+                painter =
+                    painterResource(
+                        R.drawable
+                            .todo_shift_icon_source
+                    ),
+                contentDescription =
+                    "ToDo Shift",
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(
+                        MaterialTheme
+                            .shapes.small
+                    )
+            )
+
+            Spacer(
+                Modifier.width(8.dp)
+            )
+
+            Text(
+                "ToDo Shift",
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium,
+                fontWeight =
+                    FontWeight.Black
+            )
+
+            Spacer(
+                Modifier.weight(1f)
+            )
+
+            Text(
+                title,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium,
+                fontWeight =
+                    FontWeight.Black
+            )
         }
     }
 }

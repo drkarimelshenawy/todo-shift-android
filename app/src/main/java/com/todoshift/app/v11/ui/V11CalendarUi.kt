@@ -32,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
@@ -108,6 +109,8 @@ fun V11CalendarScreen(
 
     Scaffold(
         containerColor = Color(0xFFF7F8FA),
+        contentWindowInsets =
+            WindowInsets(0, 0, 0, 0),
         floatingActionButtonPosition =
             if (uiSettings.fabSide == FabSide.LEFT)
                 FabPosition.Start
@@ -292,16 +295,41 @@ fun V11CalendarScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 10.dp)
         ) {
-            Spacer(Modifier.height(1.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(34.dp),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Text(
+                    activeCalendar?.name
+                        ?: "التقويم",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelLarge,
+                    fontWeight =
+                        FontWeight.Bold
+                )
 
-            V11CompactHeader(
-                activeCalendarName = activeCalendar?.name ?: "التقويم",
-                onManageCalendars = {
-                    showCalendarManager = true
+                Spacer(
+                    Modifier.weight(1f)
+                )
+
+                TextButton(
+                    onClick = {
+                        showCalendarManager = true
+                    },
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = 8.dp,
+                            vertical = 0.dp
+                        )
+                ) {
+                    Text("إدارة التقاويم")
                 }
-            )
-
-            Spacer(Modifier.height(1.dp))
+            }
 
             V11AnimatedCalendarArea(
                 month = month,
@@ -747,7 +775,7 @@ private fun V11AnimatedCalendarArea(
     }
 
     AnimatedContent(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxSize(),
         targetState = month,
         transitionSpec = {
             val forward = targetState > initialState
@@ -777,7 +805,7 @@ private fun V11AnimatedCalendarArea(
     ) { shownMonth ->
 
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxSize()
         ) {
             V11MonthSelector(
                 month = shownMonth,
@@ -815,7 +843,9 @@ private fun V11AnimatedCalendarArea(
                     onMonthChange(
                         shownMonth.plusMonths(1)
                     )
-                }
+                },
+                modifier =
+                    Modifier.weight(1f)
             )
         }
     }
@@ -832,43 +862,67 @@ private fun V11CalendarGrid(
     paintDates: Set<LocalDate>,
     onSelectedDate: (LocalDate) -> Unit,
     onPrevious: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val first = month.atDay(1)
-    // Calendar columns start with Saturday.
-    // java.time.DayOfWeek uses Monday=1 ... Sunday=7.
-    // This conversion guarantees:
-    // Saturday=0, Sunday=1, Monday=2 ... Friday=6.
+
+    // Saturday = first column.
     val firstIndex =
         (first.dayOfWeek.value + 1) % 7
-    val total = firstIndex + month.lengthOfMonth()
-    val rows = (total + 6) / 7
 
-    var drag by remember { mutableFloatStateOf(0f) }
+    val naturalRows =
+        (
+            firstIndex +
+                month.lengthOfMonth() +
+                6
+        ) / 7
+
+    val rows =
+        maxOf(
+            5,
+            naturalRows
+        )
+
+    val gridStart =
+        first.minusDays(
+            firstIndex.toLong()
+        )
+
+    var drag by remember {
+        mutableFloatStateOf(0f)
+    }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
+            .fillMaxSize()
             .pointerInput(month) {
                 detectHorizontalDragGestures(
                     onDragStart = {
                         drag = 0f
                     },
-                    onHorizontalDrag = { _, amount ->
+                    onHorizontalDrag = {
+                            _,
+                            amount ->
                         drag += amount
                     },
                     onDragEnd = {
                         when {
-                            drag > 90f -> onPrevious()
-                            drag < -90f -> onNext()
+                            drag > 90f ->
+                                onPrevious()
+
+                            drag < -90f ->
+                                onNext()
                         }
+
                         drag = 0f
                     }
                 )
             }
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier =
+                Modifier.fillMaxWidth()
         ) {
             listOf(
                 "السبت",
@@ -881,65 +935,86 @@ private fun V11CalendarGrid(
             ).forEach {
                 Text(
                     it,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier.weight(1f),
+                    textAlign =
+                        TextAlign.Center,
                     fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4B5563)
+                    fontWeight =
+                        FontWeight.Bold,
+                    color =
+                        Color(0xFF4B5563)
                 )
             }
         }
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(
+            Modifier.height(4.dp)
+        )
 
-        repeat(rows) { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                repeat(7) { col ->
-                    val cell = row * 7 + col
-                    val day =
-                        cell - firstIndex + 1
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            repeat(rows) { row ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    repeat(7) { col ->
+                        val cell =
+                            row * 7 + col
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(1.5.dp)
-                    ) {
-                        if (
-                            day in
-                            1..month.lengthOfMonth()
+                        val date =
+                            gridStart.plusDays(
+                                cell.toLong()
+                            )
+
+                        val isCurrentMonth =
+                            YearMonth.from(date) ==
+                                month
+
+                        val dayEntries =
+                            db.days.filter {
+                                it.date ==
+                                    date.toString() &&
+                                    it.calendarId in
+                                    visibleCalendarIds
+                            }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(1.5.dp)
                         ) {
-                            val date =
-                                month.atDay(day)
-
-                            val dayEntries =
-                                db.days.filter {
-                                    it.date ==
-                                        date.toString() &&
-                                        it.calendarId in
-                                        visibleCalendarIds
-                                }
-
                             V11DayCell(
                                 date = date,
-                                entries = dayEntries,
-                                workplaces = workplaces,
-                                uiSettings = uiSettings,
+                                entries =
+                                    dayEntries,
+                                workplaces =
+                                    workplaces,
+                                uiSettings =
+                                    uiSettings,
                                 selected =
-                                    date == selectedDate,
+                                    date ==
+                                        selectedDate,
                                 paintSelected =
                                     paintMode &&
-                                        date in paintDates,
+                                        date in
+                                        paintDates,
+                                muted =
+                                    !isCurrentMonth,
                                 onClick = {
-                                    onSelectedDate(date)
-                                }
-                            )
-                        } else {
-                            Spacer(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(58.dp)
+                                    onSelectedDate(
+                                        date
+                                    )
+                                },
+                                cellModifier =
+                                    Modifier
+                                        .fillMaxSize()
                             )
                         }
                     }
@@ -957,7 +1032,9 @@ private fun V11DayCell(
     uiSettings: V11UiSettings,
     selected: Boolean,
     paintSelected: Boolean,
-    onClick: () -> Unit
+    muted: Boolean = false,
+    onClick: () -> Unit,
+    cellModifier: Modifier = Modifier
 ) {
     val today = date == LocalDate.now()
 
@@ -967,9 +1044,14 @@ private fun V11DayCell(
 
     val shape = RoundedCornerShape(9.dp)
 
-    var modifier = Modifier
-        .fillMaxWidth()
-        .height(58.dp)
+    var modifier = cellModifier
+        .fillMaxSize()
+        .alpha(
+            if (muted)
+                0.30f
+            else
+                1f
+        )
         .clip(shape)
         .background(
             when {

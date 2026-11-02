@@ -494,4 +494,5 @@ private fun highlightLabel(
     TodayHighlightStyle.RING -> "دائرة"
     TodayHighlightStyle.BORDER_TINT -> "إطار وتظليل"
     TodayHighlightStyle.NONE -> "بدون"
+    else -> "نبض"
 }

@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:icon="@mipmap/ic_launcher"
@@ -30,6 +31,21 @@
             android:name=".widget.CalendarWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
+
+
+        <receiver
+            android:name=".reminders.ToDoShiftReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".reminders.ToDoShiftBootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".widget.ToDoShiftWidget"

@@ -10,7 +10,8 @@ object V11DayOrganizerController {
         calendarId: String?,
         type: DayItemTypeV11,
         title: String,
-        details: String = ""
+        details: String = "",
+        reminderAt: Long? = null
     ): V11Database {
         if (title.isBlank()) return db
 
@@ -20,7 +21,8 @@ object V11DayOrganizerController {
             calendarId = calendarId,
             type = type,
             title = title.trim(),
-            details = details.trim()
+            details = details.trim(),
+            reminderAt = reminderAt
         )
 
         return db.copy(

@@ -1,5 +1,11 @@
 package com.todoshift.app.v11.ui
 
+import android.Manifest
+import android.app.TimePickerDialog
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,11 +18,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.todoshift.app.data.Workplace
+import com.todoshift.app.reminders.ToDoShiftReminder
 import com.todoshift.app.v11.*
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
 
 @Composable
 fun V11DayDetailsScreen(
@@ -32,6 +44,31 @@ fun V11DayDetailsScreen(
 
     var addType by remember {
         mutableStateOf<DayItemTypeV11?>(null)
+    }
+
+    val context = LocalContext.current
+
+    val notificationPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts
+                .RequestPermission()
+        ) { }
+
+    fun ensureNotificationPermission() {
+        if (
+            Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission
+                    .POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher
+                .launch(
+                    Manifest.permission
+                        .POST_NOTIFICATIONS
+                )
+        }
     }
 
     val entries = db.days.filter {
@@ -305,6 +342,11 @@ fun V11DayDetailsScreen(
                     ) {
                         IconButton(
                             onClick = {
+                                ToDoShiftReminder.cancel(
+                                    context,
+                                    item.id
+                                )
+
                                 onDatabaseChange(
                                     V11DayOrganizerController
                                         .delete(
@@ -327,12 +369,41 @@ fun V11DayDetailsScreen(
                             Checkbox(
                                 checked = item.completed,
                                 onCheckedChange = {
-                                    onDatabaseChange(
+                                    val updated =
                                         V11DayOrganizerController
                                             .toggle(
                                                 db,
                                                 item.id
                                             )
+
+                                    val changed =
+                                        updated.dayItems
+                                            .firstOrNull {
+                                                it.id ==
+                                                    item.id
+                                            }
+
+                                    if (
+                                        changed?.completed ==
+                                        true
+                                    ) {
+                                        ToDoShiftReminder
+                                            .cancel(
+                                                context,
+                                                item.id
+                                            )
+                                    } else if (
+                                        changed != null
+                                    ) {
+                                        ToDoShiftReminder
+                                            .schedule(
+                                                context,
+                                                changed
+                                            )
+                                    }
+
+                                    onDatabaseChange(
+                                        updated
                                     )
                                 }
                             )
@@ -366,6 +437,32 @@ fun V11DayDetailsScreen(
                                         .labelSmall,
                                 color = Color.Gray
                             )
+
+                            item.reminderAt?.let { millis ->
+                                val reminderTime =
+                                    java.time.Instant
+                                        .ofEpochMilli(
+                                            millis
+                                        )
+                                        .atZone(
+                                            ZoneId
+                                                .systemDefault()
+                                        )
+
+                                Text(
+                                    "تنبيه ${"%02d:%02d".format(
+                                        reminderTime.hour,
+                                        reminderTime.minute
+                                    )}",
+                                    style =
+                                        MaterialTheme.typography
+                                            .labelSmall,
+                                    color =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .primary
+                                )
+                            }
                         }
                     }
                 }
@@ -378,25 +475,51 @@ fun V11DayDetailsScreen(
     addType?.let { type ->
         V11AddDayItemDialog(
             type = type,
+            dateForReminder =
+                date.toString(),
             onDismiss = {
                 addType = null
             },
-            onSave = { title, details ->
+            onSave = {
+                    title,
+                    details,
+                    reminderAt ->
+
                 val calendarId =
                     db.calendars
                         .sortedBy { it.order }
                         .firstOrNull { it.visible }
                         ?.id
 
-                onDatabaseChange(
+                val updated =
                     V11DayOrganizerController.add(
                         db = db,
                         date = date.toString(),
                         calendarId = calendarId,
                         type = type,
                         title = title,
-                        details = details
+                        details = details,
+                        reminderAt = reminderAt
                     )
+
+                val created =
+                    updated.dayItems
+                        .lastOrNull()
+
+                if (
+                    created != null &&
+                    created.reminderAt != null
+                ) {
+                    ensureNotificationPermission()
+
+                    ToDoShiftReminder.schedule(
+                        context,
+                        created
+                    )
+                }
+
+                onDatabaseChange(
+                    updated
                 )
 
                 addType = null
@@ -446,8 +569,13 @@ private fun V11AddItemButton(
 @Composable
 private fun V11AddDayItemDialog(
     type: DayItemTypeV11,
+    dateForReminder: String,
     onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit
+    onSave: (
+        String,
+        String,
+        Long?
+    ) -> Unit
 ) {
     var title by remember {
         mutableStateOf("")
@@ -455,6 +583,24 @@ private fun V11AddDayItemDialog(
 
     var details by remember {
         mutableStateOf("")
+    }
+
+    val context =
+        LocalContext.current
+
+    var reminderHour by remember {
+        mutableIntStateOf(9)
+    }
+
+    var reminderMinute by remember {
+        mutableIntStateOf(0)
+    }
+
+    var reminderEnabled by remember {
+        mutableStateOf(
+            type ==
+                DayItemTypeV11.REMINDER
+        )
     }
 
     AlertDialog(
@@ -491,12 +637,113 @@ private fun V11AddDayItemDialog(
                     modifier =
                         Modifier.fillMaxWidth()
                 )
+
+                if (
+                    type !=
+                    DayItemTypeV11.NOTE
+                ) {
+                    Spacer(
+                        Modifier.height(10.dp)
+                    )
+
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Switch(
+                            checked =
+                                reminderEnabled,
+                            onCheckedChange = {
+                                reminderEnabled =
+                                    it
+                            }
+                        )
+
+                        Spacer(
+                            Modifier.width(8.dp)
+                        )
+
+                        Text(
+                            "تنبيه"
+                        )
+
+                        Spacer(
+                            Modifier.weight(1f)
+                        )
+
+                        if (
+                            reminderEnabled
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    TimePickerDialog(
+                                        context,
+                                        {
+                                            _,
+                                            hour,
+                                            minute ->
+
+                                            reminderHour =
+                                                hour
+
+                                            reminderMinute =
+                                                minute
+                                        },
+                                        reminderHour,
+                                        reminderMinute,
+                                        true
+                                    ).show()
+                                }
+                            ) {
+                                Text(
+                                    "%02d:%02d"
+                                        .format(
+                                            reminderHour,
+                                            reminderMinute
+                                        )
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    onSave(title, details)
+                    val reminderAt =
+                        if (
+                            reminderEnabled &&
+                            type !=
+                                DayItemTypeV11.NOTE
+                        ) {
+                            LocalDateTime.of(
+                                LocalDate.parse(
+                                    dateForReminder
+                                ),
+                                LocalTime.of(
+                                    reminderHour,
+                                    reminderMinute
+                                )
+                            )
+                                .atZone(
+                                    ZoneId
+                                        .systemDefault()
+                                )
+                                .toInstant()
+                                .toEpochMilli()
+                        } else {
+                            null
+                        }
+
+                    onSave(
+                        title,
+                        details,
+                        reminderAt
+                    )
                 },
                 enabled = title.isNotBlank()
             ) {

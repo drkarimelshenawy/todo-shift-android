@@ -11,6 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.todoshift.app.data.AppStorage
 import com.todoshift.app.v11.*
 import java.time.LocalDate
@@ -38,6 +41,99 @@ fun V11Home(
         V11UiSettingsStore(
             context.applicationContext
         )
+    }
+
+    val securityStore = remember {
+        V11SecurityStore(
+            context.applicationContext
+        )
+    }
+
+    var securitySettings by remember {
+        mutableStateOf(
+            securityStore.load()
+        )
+    }
+
+    var accountsUnlocked by remember {
+        mutableStateOf(
+            !securitySettings.protectAccounts ||
+                securitySettings.mode ==
+                    V11LockMode.NONE
+        )
+    }
+
+    var backgroundAt by remember {
+        mutableLongStateOf(0L)
+    }
+
+    val lifecycleOwner =
+        LocalLifecycleOwner.current
+
+    DisposableEffect(
+        lifecycleOwner,
+        securitySettings
+    ) {
+        val observer =
+            LifecycleEventObserver {
+                _,
+                event ->
+
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> {
+                        backgroundAt =
+                            System.currentTimeMillis()
+
+                        if (
+                            securitySettings
+                                .protectAccounts &&
+                            securitySettings
+                                .autoLockMinutes == 0
+                        ) {
+                            accountsUnlocked =
+                                false
+                        }
+                    }
+
+                    Lifecycle.Event.ON_START -> {
+                        if (
+                            securitySettings
+                                .protectAccounts &&
+                            securitySettings
+                                .mode !=
+                                V11LockMode.NONE &&
+                            backgroundAt > 0L
+                        ) {
+                            val limit =
+                                securitySettings
+                                    .autoLockMinutes *
+                                    60_000L
+
+                            if (
+                                securitySettings
+                                    .autoLockMinutes == 0 ||
+                                System
+                                    .currentTimeMillis() -
+                                    backgroundAt >=
+                                    limit
+                            ) {
+                                accountsUnlocked =
+                                    false
+                            }
+                        }
+                    }
+
+                    else -> Unit
+                }
+            }
+
+        lifecycleOwner.lifecycle
+            .addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle
+                .removeObserver(observer)
+        }
     }
 
     var db by remember {
@@ -74,7 +170,9 @@ fun V11Home(
     }
 
     var moneyVisible by remember {
-        mutableStateOf(false)
+        mutableStateOf(
+            !securitySettings.hideAmounts
+        )
     }
 
     fun saveDb(value: V11Database) {
@@ -219,29 +317,48 @@ fun V11Home(
                     )
 
                 2 ->
-                    V11FinanceScreen(
-                        month = month,
-                        db = db,
-                        workplaces =
-                            oldData.workplaces,
-                        moneyVisible =
-                            moneyVisible,
-                        onPrevious = {
-                            month =
-                                month.minusMonths(1)
-                        },
-                        onNext = {
-                            month =
-                                month.plusMonths(1)
-                        },
-                        onToggleMoney = {
+                    if (
+                        securitySettings
+                            .protectAccounts &&
+                        securitySettings.mode !=
+                            V11LockMode.NONE &&
+                        !accountsUnlocked
+                    ) {
+                        V11AccountsUnlockScreen(
+                            mode =
+                                securitySettings.mode,
+                            securityStore =
+                                securityStore,
+                            onUnlocked = {
+                                accountsUnlocked =
+                                    true
+                            }
+                        )
+                    } else {
+                        V11FinanceScreen(
+                            month = month,
+                            db = db,
+                            workplaces =
+                                oldData.workplaces,
                             moneyVisible =
-                                !moneyVisible
-                        },
-                        onDatabaseChange = {
-                            saveDb(it)
-                        }
-                    )
+                                moneyVisible,
+                            onPrevious = {
+                                month =
+                                    month.minusMonths(1)
+                            },
+                            onNext = {
+                                month =
+                                    month.plusMonths(1)
+                            },
+                            onToggleMoney = {
+                                moneyVisible =
+                                    !moneyVisible
+                            },
+                            onDatabaseChange = {
+                                saveDb(it)
+                            }
+                        )
+                    }
 
                 else ->
                     V11MoreScreen(
@@ -250,6 +367,21 @@ fun V11Home(
                             uiSettings,
                         moneyVisible =
                             moneyVisible,
+                        securitySettings =
+                            securitySettings,
+                        securityStore =
+                            securityStore,
+                        onSecuritySettingsChange = {
+                            securitySettings = it
+
+                            moneyVisible =
+                                !it.hideAmounts
+
+                            accountsUnlocked =
+                                !it.protectAccounts ||
+                                    it.mode ==
+                                        V11LockMode.NONE
+                        },
                         onUiSettingsChange = {
                             saveUi(it)
                         },

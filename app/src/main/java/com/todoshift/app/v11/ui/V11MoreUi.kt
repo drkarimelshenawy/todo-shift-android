@@ -6,7 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -18,11 +18,20 @@ fun V11MoreScreen(
     db: V11Database,
     uiSettings: V11UiSettings,
     moneyVisible: Boolean,
+    securitySettings:
+        V11SecuritySettings,
+    securityStore:
+        V11SecurityStore,
+    onSecuritySettingsChange:
+        (V11SecuritySettings) -> Unit,
     onUiSettingsChange:
         (V11UiSettings) -> Unit,
     onToggleMoney: () -> Unit,
     onOpenWorkplaces: () -> Unit
 ) {
+    var securityOpen by remember {
+        mutableStateOf(false)
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -242,11 +251,29 @@ fun V11MoreScreen(
             "الخصوصية والبيانات"
         )
 
-        SettingsInfo(
+        SettingsAction(
             title =
                 "حماية الحسابات",
             subtitle =
-                "PIN • Pattern • Biometric — أساس الحماية جاهز للربط في RC7E"
+                when {
+                    !securitySettings
+                        .protectAccounts ->
+                        "غير مفعلة"
+
+                    securitySettings.mode ==
+                        V11LockMode.PIN ->
+                        "PIN • قفل تلقائي"
+
+                    securitySettings.mode ==
+                        V11LockMode.BIOMETRIC ->
+                        "بصمة / قفل الجهاز • قفل تلقائي"
+
+                    else ->
+                        "بدون قفل"
+                },
+            onClick = {
+                securityOpen = true
+            }
         )
 
         SettingsInfo(
@@ -281,6 +308,17 @@ fun V11MoreScreen(
         )
 
         Spacer(Modifier.height(30.dp))
+    }
+    if (securityOpen) {
+        V11SecuritySettingsDialog(
+            store = securityStore,
+            current = securitySettings,
+            onDismiss = {
+                securityOpen = false
+            },
+            onChanged =
+                onSecuritySettingsChange
+        )
     }
 }
 

@@ -28,7 +28,7 @@ import com.todoshift.app.data.SmartToolsLabels
 import com.todoshift.app.data.SmartToolMode
 import android.graphics.Color as AndroidColor
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -86,7 +86,7 @@ import com.todoshift.app.data.DayEngine
 import com.todoshift.app.data.PainterSelection
 import com.todoshift.app.data.ShiftPainterEngine
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val widgetOpenDate =

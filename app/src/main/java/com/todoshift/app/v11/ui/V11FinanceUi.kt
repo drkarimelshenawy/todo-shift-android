@@ -6,6 +6,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -979,15 +982,18 @@ private fun V11PaymentDialog(
 private fun V11IncomeSourcesDialog(
     db: V11Database,
     onDismiss: () -> Unit,
-    onDatabaseChange:
-        (V11Database) -> Unit
+    onDatabaseChange: (V11Database) -> Unit
 ) {
-    var name by remember {
+    var newName by remember {
         mutableStateOf("")
     }
 
-    var fixed by remember {
+    var fixedAmount by remember {
         mutableStateOf("")
+    }
+
+    var editing by remember {
+        mutableStateOf<IncomeSourceV11?>(null)
     }
 
     AlertDialog(
@@ -998,100 +1004,227 @@ private fun V11IncomeSourcesDialog(
         text = {
             Column(
                 modifier =
-                    Modifier.verticalScroll(
-                        rememberScrollState()
-                    )
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 520.dp)
+                        .verticalScroll(
+                            rememberScrollState()
+                        )
             ) {
-                db.incomeSources
-                    .sortedBy { it.order }
-                    .forEach { source ->
-                        Row(
+                val ordered =
+                    db.incomeSources
+                        .sortedBy { it.order }
+
+                ordered.forEachIndexed {
+                    index,
+                    source ->
+
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    vertical = 3.dp
+                                )
+                    ) {
+                        Column(
                             modifier =
-                                Modifier.fillMaxWidth(),
-                            verticalAlignment =
-                                Alignment.CenterVertically
+                                Modifier.padding(7.dp)
                         ) {
-                            IconButton(
-                                onClick = {
-                                    onDatabaseChange(
-                                        V11AccountsController
-                                            .deleteIncomeSource(
-                                                db,
-                                                source.id
-                                            )
+                            Row(
+                                verticalAlignment =
+                                    Alignment
+                                        .CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        onDatabaseChange(
+                                            V11AccountsController
+                                                .deleteIncomeSource(
+                                                    db,
+                                                    source.id
+                                                )
+                                        )
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        "حذف"
                                     )
                                 }
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    "حذف"
+
+                                IconButton(
+                                    onClick = {
+                                        editing =
+                                            source
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        "تعديل"
+                                    )
+                                }
+
+                                Spacer(
+                                    Modifier.weight(1f)
                                 )
+
+                                Column(
+                                    horizontalAlignment =
+                                        Alignment.End
+                                ) {
+                                    Text(
+                                        source.name,
+                                        fontWeight =
+                                            FontWeight.Bold
+                                    )
+
+                                    source
+                                        .fixedMonthlyAmount
+                                        ?.let {
+                                            Text(
+                                                "ثابت شهريا: %.2f ج"
+                                                    .format(it),
+                                                style =
+                                                    MaterialTheme
+                                                        .typography
+                                                        .labelSmall
+                                            )
+                                        }
+                                }
                             }
 
-                            Spacer(
-                                Modifier.weight(1f)
-                            )
+                            Row(
+                                modifier =
+                                    Modifier.fillMaxWidth(),
+                                horizontalArrangement =
+                                    Arrangement.Center
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        onDatabaseChange(
+                                            V11AccountsController
+                                                .moveIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                    -1
+                                                )
+                                        )
+                                    },
+                                    enabled =
+                                        index > 0
+                                ) {
+                                    Icon(
+                                        Icons.Default
+                                            .KeyboardArrowUp,
+                                        "لأعلى"
+                                    )
+                                }
 
-                            Text(
-                                source.name,
-                                fontWeight =
-                                    FontWeight.Bold
-                            )
+                                Text(
+                                    "ترتيب ${index + 1}",
+                                    modifier =
+                                        Modifier.align(
+                                            Alignment
+                                                .CenterVertically
+                                        ),
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .labelSmall
+                                )
+
+                                IconButton(
+                                    onClick = {
+                                        onDatabaseChange(
+                                            V11AccountsController
+                                                .moveIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                    1
+                                                )
+                                        )
+                                    },
+                                    enabled =
+                                        index <
+                                        ordered.lastIndex
+                                ) {
+                                    Icon(
+                                        Icons.Default
+                                            .KeyboardArrowDown,
+                                        "لأسفل"
+                                    )
+                                }
+                            }
                         }
                     }
+                }
 
-                HorizontalDivider()
+                Spacer(
+                    Modifier.height(12.dp)
+                )
 
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = {
-                        name = it
-                    },
-                    label = {
-                        Text("مصدر جديد")
-                    }
+                Text(
+                    "إضافة مصدر دخل",
+                    fontWeight =
+                        FontWeight.Black
                 )
 
                 OutlinedTextField(
-                    value = fixed,
+                    value = newName,
                     onValueChange = {
-                        fixed =
-                            it.filter { c ->
-                                c.isDigit() ||
-                                    c == '.'
-                            }
+                        newName = it
+                    },
+                    label = {
+                        Text("اسم المصدر")
+                    },
+                    singleLine = true,
+                    modifier =
+                        Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = fixedAmount,
+                    onValueChange = {
+                        fixedAmount = it
                     },
                     label = {
                         Text(
-                            "مرتب ثابت شهري - اختياري"
+                            "راتب/دخل شهري ثابت - اختياري"
                         )
-                    }
+                    },
+                    singleLine = true,
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 Button(
                     onClick = {
-                        onDatabaseChange(
-                            V11AccountsController
-                                .addIncomeSource(
-                                    db,
-                                    name,
-                                    if (
-                                        fixed
-                                            .toDoubleOrNull() !=
-                                        null
+                        if (
+                            newName.isNotBlank()
+                        ) {
+                            onDatabaseChange(
+                                V11AccountsController
+                                    .addIncomeSource(
+                                        db = db,
+                                        name =
+                                            newName.trim(),
+                                        type =
+                                            IncomeSourceTypeV11
+                                                .OTHER,
+                                        fixedAmount =
+                                            fixedAmount
+                                                .replace(
+                                                    ",",
+                                                    "."
+                                                )
+                                                .toDoubleOrNull()
                                     )
-                                        IncomeSourceTypeV11
-                                            .FIXED_SALARY
-                                    else
-                                        IncomeSourceTypeV11
-                                            .OTHER,
-                                    fixed
-                                        .toDoubleOrNull()
-                                )
-                        )
+                            )
 
-                        name = ""
-                        fixed = ""
+                            newName = ""
+                            fixedAmount = ""
+                        }
                     },
                     modifier =
                         Modifier.fillMaxWidth()
@@ -1108,17 +1241,122 @@ private fun V11IncomeSourcesDialog(
             }
         }
     )
+
+    editing?.let { source ->
+        V11EditIncomeSourceDialog(
+            source = source,
+            onDismiss = {
+                editing = null
+            },
+            onSave = {
+                onDatabaseChange(
+                    V11AccountsController
+                        .updateIncomeSource(
+                            db,
+                            it
+                        )
+                )
+                editing = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun V11EditIncomeSourceDialog(
+    source: IncomeSourceV11,
+    onDismiss: () -> Unit,
+    onSave: (IncomeSourceV11) -> Unit
+) {
+    var name by remember(source.id) {
+        mutableStateOf(source.name)
+    }
+
+    var amount by remember(source.id) {
+        mutableStateOf(
+            source.fixedMonthlyAmount
+                ?.toString()
+                ?: ""
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("تعديل مصدر الدخل")
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = {
+                        Text("الاسم")
+                    },
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = {
+                        amount = it
+                    },
+                    label = {
+                        Text(
+                            "الدخل الشهري الثابت"
+                        )
+                    },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(
+                        source.copy(
+                            name =
+                                name.trim(),
+                            fixedMonthlyAmount =
+                                amount
+                                    .replace(
+                                        ",",
+                                        "."
+                                    )
+                                    .toDoubleOrNull()
+                        )
+                    )
+                },
+                enabled =
+                    name.isNotBlank()
+            ) {
+                Text("حفظ")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("إلغاء")
+            }
+        }
+    )
 }
 
 @Composable
 private fun V11PaymentMethodsDialog(
     db: V11Database,
     onDismiss: () -> Unit,
-    onDatabaseChange:
-        (V11Database) -> Unit
+    onDatabaseChange: (V11Database) -> Unit
 ) {
-    var name by remember {
+    var newName by remember {
         mutableStateOf("")
+    }
+
+    var editing by remember {
+        mutableStateOf<PaymentMethodV11?>(null)
     }
 
     AlertDialog(
@@ -1129,18 +1367,35 @@ private fun V11PaymentMethodsDialog(
         text = {
             Column(
                 modifier =
-                    Modifier.verticalScroll(
-                        rememberScrollState()
-                    )
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 500.dp)
+                        .verticalScroll(
+                            rememberScrollState()
+                        )
             ) {
-                db.paymentMethods
-                    .sortedBy { it.order }
-                    .forEach { method ->
+                val ordered =
+                    db.paymentMethods
+                        .sortedBy { it.order }
+
+                ordered.forEachIndexed {
+                    index,
+                    method ->
+
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    vertical = 3.dp
+                                )
+                    ) {
                         Row(
                             modifier =
-                                Modifier.fillMaxWidth(),
+                                Modifier.padding(5.dp),
                             verticalAlignment =
-                                Alignment.CenterVertically
+                                Alignment
+                                    .CenterVertically
                         ) {
                             IconButton(
                                 onClick = {
@@ -1159,6 +1414,61 @@ private fun V11PaymentMethodsDialog(
                                 )
                             }
 
+                            IconButton(
+                                onClick = {
+                                    editing =
+                                        method
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    "تعديل"
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11AccountsController
+                                            .movePaymentMethod(
+                                                db,
+                                                method.id,
+                                                -1
+                                            )
+                                    )
+                                },
+                                enabled =
+                                    index > 0
+                            ) {
+                                Icon(
+                                    Icons.Default
+                                        .KeyboardArrowUp,
+                                    "لأعلى"
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11AccountsController
+                                            .movePaymentMethod(
+                                                db,
+                                                method.id,
+                                                1
+                                            )
+                                    )
+                                },
+                                enabled =
+                                    index <
+                                    ordered.lastIndex
+                            ) {
+                                Icon(
+                                    Icons.Default
+                                        .KeyboardArrowDown,
+                                    "لأسفل"
+                                )
+                            }
+
                             Spacer(
                                 Modifier.weight(1f)
                             )
@@ -1170,33 +1480,44 @@ private fun V11PaymentMethodsDialog(
                             )
                         }
                     }
+                }
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
 
                 OutlinedTextField(
-                    value = name,
+                    value = newName,
                     onValueChange = {
-                        name = it
+                        newName = it
                     },
                     label = {
                         Text("طريقة دفع جديدة")
-                    }
+                    },
+                    singleLine = true,
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 Button(
                     onClick = {
-                        onDatabaseChange(
-                            V11AccountsController
-                                .addPaymentMethod(
-                                    db,
-                                    name
-                                )
-                        )
-
-                        name = ""
+                        if (
+                            newName.isNotBlank()
+                        ) {
+                            onDatabaseChange(
+                                V11AccountsController
+                                    .addPaymentMethod(
+                                        db,
+                                        newName.trim()
+                                    )
+                            )
+                            newName = ""
+                        }
                     },
                     modifier =
                         Modifier.fillMaxWidth()
                 ) {
-                    Text("إضافة")
+                    Text("إضافة طريقة الدفع")
                 }
             }
         },
@@ -1208,6 +1529,65 @@ private fun V11PaymentMethodsDialog(
             }
         }
     )
+
+    editing?.let { method ->
+        var name by remember(method.id) {
+            mutableStateOf(method.name)
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                editing = null
+            },
+            title = {
+                Text("تعديل طريقة الدفع")
+            },
+            text = {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = {
+                        Text("الاسم")
+                    },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (
+                            name.isNotBlank()
+                        ) {
+                            onDatabaseChange(
+                                V11AccountsController
+                                    .updatePaymentMethod(
+                                        db,
+                                        method.copy(
+                                            name =
+                                                name.trim()
+                                        )
+                                    )
+                            )
+                            editing = null
+                        }
+                    }
+                ) {
+                    Text("حفظ")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        editing = null
+                    }
+                ) {
+                    Text("إلغاء")
+                }
+            }
+        )
+    }
 }
 
 @Composable

@@ -68,6 +68,60 @@ object V11AccountsController {
         )
     }
 
+    fun updateIncomeSource(
+        db: V11Database,
+        source: IncomeSourceV11
+    ): V11Database =
+        db.copy(
+            incomeSources =
+                db.incomeSources.map {
+                    if (it.id == source.id)
+                        source
+                    else
+                        it
+                }
+        )
+
+    fun moveIncomeSource(
+        db: V11Database,
+        id: String,
+        direction: Int
+    ): V11Database {
+        val items =
+            db.incomeSources
+                .sortedBy { it.order }
+                .toMutableList()
+
+        val index =
+            items.indexOfFirst {
+                it.id == id
+            }
+
+        if (index < 0)
+            return db
+
+        val target =
+            index + direction
+
+        if (target !in items.indices)
+            return db
+
+        val tmp = items[index]
+        items[index] = items[target]
+        items[target] = tmp
+
+        return db.copy(
+            incomeSources =
+                items.mapIndexed {
+                    order,
+                    item ->
+                    item.copy(
+                        order = order
+                    )
+                }
+        )
+    }
+
     fun deleteIncomeSource(
         db: V11Database,
         id: String
@@ -95,6 +149,60 @@ object V11AccountsController {
                         order =
                             db.paymentMethods.size
                     )
+        )
+    }
+
+    fun updatePaymentMethod(
+        db: V11Database,
+        method: PaymentMethodV11
+    ): V11Database =
+        db.copy(
+            paymentMethods =
+                db.paymentMethods.map {
+                    if (it.id == method.id)
+                        method
+                    else
+                        it
+                }
+        )
+
+    fun movePaymentMethod(
+        db: V11Database,
+        id: String,
+        direction: Int
+    ): V11Database {
+        val items =
+            db.paymentMethods
+                .sortedBy { it.order }
+                .toMutableList()
+
+        val index =
+            items.indexOfFirst {
+                it.id == id
+            }
+
+        if (index < 0)
+            return db
+
+        val target =
+            index + direction
+
+        if (target !in items.indices)
+            return db
+
+        val tmp = items[index]
+        items[index] = items[target]
+        items[target] = tmp
+
+        return db.copy(
+            paymentMethods =
+                items.mapIndexed {
+                    order,
+                    item ->
+                    item.copy(
+                        order = order
+                    )
+                }
         )
     }
 

@@ -36,6 +36,7 @@ fun V11DayDetailsScreen(
     initialDate: LocalDate,
     db: V11Database,
     workplaces: List<Workplace>,
+    activeCalendarId: String?,
     onBack: () -> Unit,
     onDatabaseChange: (V11Database) -> Unit
 ) {
@@ -45,6 +46,10 @@ fun V11DayDetailsScreen(
 
     var addType by remember {
         mutableStateOf<DayItemTypeV11?>(null)
+    }
+
+    var pendingDeleteSegmentId by remember {
+        mutableStateOf<String?>(null)
     }
 
     val context = LocalContext.current
@@ -204,13 +209,8 @@ fun V11DayDetailsScreen(
                         ) {
                             IconButton(
                                 onClick = {
-                                    onDatabaseChange(
-                                        V11DayController
-                                            .deleteSegment(
-                                                db,
-                                                segment.id
-                                            )
-                                    )
+                                    pendingDeleteSegmentId =
+                                        segment.id
                                 }
                             ) {
                                 Icon(
@@ -565,6 +565,52 @@ fun V11DayDetailsScreen(
         }
     }
 
+    pendingDeleteSegmentId?.let { segmentId ->
+        AlertDialog(
+            onDismissRequest = {
+                pendingDeleteSegmentId = null
+            },
+            title = {
+                Text("حذف الشيفت")
+            },
+            text = {
+                Text("هل تريد حذف هذا الشيفت؟")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDatabaseChange(
+                            V11DayController
+                                .deleteSegment(
+                                    db,
+                                    segmentId
+                                )
+                        )
+                        pendingDeleteSegmentId = null
+                    },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                MaterialTheme
+                                    .colorScheme
+                                    .error
+                        )
+                ) {
+                    Text("حذف")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        pendingDeleteSegmentId = null
+                    }
+                ) {
+                    Text("إلغاء")
+                }
+            }
+        )
+    }
+
     addType?.let { type ->
         V11AddDayItemDialog(
             type = type,
@@ -580,9 +626,15 @@ fun V11DayDetailsScreen(
 
                 val calendarId =
                     db.calendars
-                        .sortedBy { it.order }
-                        .firstOrNull { it.visible }
+                        .firstOrNull {
+                            it.id ==
+                                activeCalendarId
+                        }
                         ?.id
+                        ?: db.calendars
+                            .sortedBy { it.order }
+                            .firstOrNull()
+                            ?.id
 
                 val updated =
                     V11DayOrganizerController.add(

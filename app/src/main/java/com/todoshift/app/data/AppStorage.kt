@@ -17,7 +17,13 @@ class AppStorage(context: Context) {
 
     fun load(): AppData {
         val raw = prefs.getString(KEY_DATABASE, null)
-            ?: return defaultData()
+            ?: return defaultData().also { fresh ->
+                // RC8: persist generated workplace IDs immediately.
+                // Otherwise every load before the first explicit save can
+                // generate different UUIDs and disconnect V11 segments from
+                // their workplace colours/rates after restart.
+                save(fresh)
+            }
 
         return try {
             fromJson(JSONObject(raw))

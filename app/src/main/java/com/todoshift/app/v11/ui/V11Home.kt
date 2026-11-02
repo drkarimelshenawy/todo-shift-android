@@ -49,6 +49,12 @@ fun V11Home(
         )
     }
 
+    val activeCalendarStore = remember {
+        V11ActiveCalendarStore(
+            context.applicationContext
+        )
+    }
+
     var securitySettings by remember {
         mutableStateOf(
             securityStore.load()
@@ -146,6 +152,51 @@ fun V11Home(
         )
     }
 
+    var activeCalendarId by remember {
+        mutableStateOf(
+            activeCalendarStore.load()
+        )
+    }
+
+    LaunchedEffect(
+        db.calendars,
+        activeCalendarId
+    ) {
+        val valid =
+            db.calendars.any {
+                it.id == activeCalendarId
+            }
+
+        if (!valid) {
+            val fallback =
+                db.calendars
+                    .sortedBy { it.order }
+                    .firstOrNull()
+                    ?.id
+
+            activeCalendarId = fallback
+            activeCalendarStore.save(
+                fallback
+            )
+        }
+    }
+
+    // Repair RC7 workplace UUID mismatch and keep the V11 finance
+    // rate table aligned with the workplace editor.
+    LaunchedEffect(Unit) {
+        val repaired =
+            V11WorkplaceSync
+                .repairAndSync(
+                    db,
+                    oldData.workplaces
+                )
+
+        if (repaired != db) {
+            db = repaired
+            runtime.save(repaired)
+        }
+    }
+
     var uiSettings by remember {
         mutableStateOf(
             uiStore.load()
@@ -195,6 +246,7 @@ fun V11Home(
                 NavigationBarItem(
                     selected = tab == 0,
                     onClick = {
+                        showWorkplaces = false
                         tab = 0
                     },
                     icon = {
@@ -212,6 +264,7 @@ fun V11Home(
                 NavigationBarItem(
                     selected = tab == 1,
                     onClick = {
+                        showWorkplaces = false
                         tab = 1
                     },
                     icon = {
@@ -229,6 +282,7 @@ fun V11Home(
                 NavigationBarItem(
                     selected = tab == 2,
                     onClick = {
+                        showWorkplaces = false
                         tab = 2
                     },
                     icon = {
@@ -246,6 +300,7 @@ fun V11Home(
                 NavigationBarItem(
                     selected = tab == 3,
                     onClick = {
+                        showWorkplaces = false
                         tab = 3
                     },
                     icon = {
@@ -279,8 +334,18 @@ fun V11Home(
                             oldData.copy(
                                 workplaces = workplaces
                             )
+
                         oldStorage.save(updated)
                         oldData = updated
+
+                        val syncedDb =
+                            V11WorkplaceSync
+                                .repairAndSync(
+                                    db,
+                                    workplaces
+                                )
+
+                        saveDb(syncedDb)
                     }
                 )
             } else {
@@ -294,6 +359,12 @@ fun V11Home(
                             oldData.workplaces,
                         uiSettings =
                             uiSettings,
+                        activeCalendarId =
+                            activeCalendarId,
+                        onActiveCalendarChange = { id ->
+                            activeCalendarId = id
+                            activeCalendarStore.save(id)
+                        },
                         onMonthChange = {
                             month = it
                         },

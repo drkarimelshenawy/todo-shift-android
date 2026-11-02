@@ -65,6 +65,8 @@ fun V11CalendarScreen(
     db: V11Database,
     workplaces: List<Workplace>,
     uiSettings: V11UiSettings,
+    activeCalendarId: String?,
+    onActiveCalendarChange: (String) -> Unit,
     onMonthChange: (YearMonth) -> Unit,
     onDatabaseChange: (V11Database) -> Unit,
     onUiSettingsChange: (V11UiSettings) -> Unit
@@ -142,8 +144,10 @@ fun V11CalendarScreen(
                             val kind = selectedPaintKind
                             val calendarId =
                                 db.calendars
-                                    .sortedBy { it.order }
-                                    .firstOrNull { it.visible }
+                                    .firstOrNull {
+                                        it.id ==
+                                            activeCalendarId
+                                    }
                                     ?.id
                                     ?: db.calendars
                                         .sortedBy { it.order }
@@ -306,8 +310,11 @@ fun V11CalendarScreen(
                             else
                                 paintDates + date
                     } else {
-                        selectedDate = date
-                        openDay = date
+                        if (selectedDate == date) {
+                            openDay = date
+                        } else {
+                            selectedDate = date
+                        }
                     }
                 },
                 onMonthChange = onMonthChange,
@@ -353,6 +360,8 @@ fun V11CalendarScreen(
             initialDate = day,
             db = db,
             workplaces = workplaces,
+            activeCalendarId =
+                activeCalendarId,
             onBack = {
                 openDay = null
             },
@@ -573,6 +582,10 @@ fun V11CalendarScreen(
     if (showCalendarManager) {
         V11CalendarManagerSheet(
             db = db,
+            activeCalendarId =
+                activeCalendarId,
+            onActiveCalendarChange =
+                onActiveCalendarChange,
             onDismiss = {
                 showCalendarManager = false
             },
@@ -1654,6 +1667,8 @@ private fun V11PaintStatusBar(
 @Composable
 private fun V11CalendarManagerSheet(
     db: V11Database,
+    activeCalendarId: String?,
+    onActiveCalendarChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onDatabaseChange: (V11Database) -> Unit
 ) {
@@ -1772,11 +1787,48 @@ private fun V11CalendarManagerSheet(
                             Modifier.weight(1f)
                         )
 
-                        Text(
-                            calendar.name,
-                            fontWeight =
-                                FontWeight.Bold
-                        )
+                        Column(
+                            horizontalAlignment =
+                                Alignment.End
+                        ) {
+                            Text(
+                                calendar.name,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    onActiveCalendarChange(
+                                        calendar.id
+                                    )
+                                },
+                                contentPadding =
+                                    PaddingValues(
+                                        horizontal = 4.dp,
+                                        vertical = 0.dp
+                                    )
+                            ) {
+                                Text(
+                                    if (
+                                        calendar.id ==
+                                        activeCalendarId
+                                    )
+                                        "✓ التقويم النشط"
+                                    else
+                                        "تعيين كنشط",
+                                    fontSize = 10.sp,
+                                    color =
+                                        if (
+                                            calendar.id ==
+                                            activeCalendarId
+                                        )
+                                            Color(0xFF2E7D32)
+                                        else
+                                            Color(0xFF4F709C)
+                                )
+                            }
+                        }
 
                         Spacer(
                             Modifier.width(8.dp)

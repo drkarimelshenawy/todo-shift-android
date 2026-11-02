@@ -11,7 +11,7 @@
     <TextView
         android:id="@+id/day_number"
         android:layout_width="28dp"
-        android:layout_height="28dp"
+        android:layout_height="25dp"
         android:gravity="center"
         android:textSize="12sp"
         android:textStyle="bold"
@@ -20,50 +20,108 @@
     <TextView
         android:id="@+id/day_shift"
         android:layout_width="match_parent"
-        android:layout_height="13dp"
+        android:layout_height="11dp"
         android:gravity="center"
         android:textSize="7sp"
         android:textColor="#475569"
         android:maxLines="1" />
 
+    <!--
+        Compact 24-hour timeline.
+        Each band represents 2 hours.
+        Vertical order = chronological order.
+    -->
     <LinearLayout
-        android:id="@+id/day_colors"
+        android:id="@+id/day_timeline"
         android:layout_width="match_parent"
-        android:layout_height="7dp"
-        android:orientation="horizontal"
-        android:gravity="center">
+        android:layout_height="15dp"
+        android:orientation="vertical"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp">
 
         <TextView
-            android:id="@+id/day_color_1"
-            android:layout_width="0dp"
-            android:layout_height="5dp"
+            android:id="@+id/time_band_01"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginHorizontal="1dp"
-            android:visibility="gone" />
+            android:visibility="invisible" />
 
         <TextView
-            android:id="@+id/day_color_2"
-            android:layout_width="0dp"
-            android:layout_height="5dp"
+            android:id="@+id/time_band_02"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginHorizontal="1dp"
-            android:visibility="gone" />
+            android:visibility="invisible" />
 
         <TextView
-            android:id="@+id/day_color_3"
-            android:layout_width="0dp"
-            android:layout_height="5dp"
+            android:id="@+id/time_band_03"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginHorizontal="1dp"
-            android:visibility="gone" />
+            android:visibility="invisible" />
 
         <TextView
-            android:id="@+id/day_color_4"
-            android:layout_width="0dp"
-            android:layout_height="5dp"
+            android:id="@+id/time_band_04"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginHorizontal="1dp"
-            android:visibility="gone" />
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_05"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_06"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_07"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_08"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_09"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_10"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_11"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/time_band_12"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
 
     </LinearLayout>
 

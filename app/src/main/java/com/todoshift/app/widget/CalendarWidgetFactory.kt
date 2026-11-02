@@ -9,10 +9,10 @@ import android.widget.RemoteViewsService
 import com.todoshift.app.R
 import com.todoshift.app.data.AppStorage
 import com.todoshift.app.v11.ShiftKind
+import com.todoshift.app.v11.ShiftSegmentV11
 import com.todoshift.app.v11.V11Database
 import com.todoshift.app.v11.V11Runtime
 import java.time.LocalDate
-import java.time.YearMonth
 
 class CalendarWidgetFactory(
     private val context: Context,
@@ -21,20 +21,35 @@ class CalendarWidgetFactory(
 
     private val appWidgetId =
         intent.getIntExtra(
-            android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID,
+            android.appwidget.AppWidgetManager
+                .EXTRA_APPWIDGET_ID,
             -1
         )
 
     private var month =
-        CalendarWidgetState.month(context, appWidgetId)
+        CalendarWidgetState.month(
+            context,
+            appWidgetId
+        )
 
-    private var db = V11Database()
+    private var db =
+        V11Database()
 
     private val cells =
         mutableListOf<WidgetDay>()
 
     private var workplaceColors:
         Map<String, Int> = emptyMap()
+
+    /*
+     * 12 fixed visual bands.
+     * Every band represents 120 minutes.
+     *
+     * This gives deterministic RemoteViews rendering
+     * across supported Android versions while keeping
+     * actual shift start/end semantics.
+     */
+    private val bandSizeMinutes = 120
 
     override fun onCreate() {
         reload()
@@ -54,15 +69,16 @@ class CalendarWidgetFactory(
 
         db =
             runCatching {
-                V11Runtime(context).start()
+                V11Runtime(context)
+                    .start()
             }.getOrElse {
                 V11Database()
             }
 
         /*
-         * Workplaces still live in the legacy AppStorage.
-         * Their color is the visual identity of a workplace.
-         * Shift type itself has NO color.
+         * IMPORTANT:
+         * Workplace owns the color.
+         * Shift kind does not own a color.
          */
         workplaceColors =
             runCatching {
@@ -71,7 +87,7 @@ class CalendarWidgetFactory(
                     .workplaces
                     .associate { workplace ->
 
-                        val parsed =
+                        val color =
                             runCatching {
                                 Color.parseColor(
                                     workplace.colorHex
@@ -84,7 +100,7 @@ class CalendarWidgetFactory(
                                 )
                             )
 
-                        workplace.id to parsed
+                        workplace.id to color
                     }
             }.getOrDefault(
                 emptyMap()
@@ -95,20 +111,25 @@ class CalendarWidgetFactory(
         val first =
             month.atDay(1)
 
-        // Saturday is first column.
+        // Saturday = first column.
         val offset =
             (first.dayOfWeek.value + 2) % 7
 
         repeat(offset) {
-            cells += WidgetDay(
-                date = null,
-                label = "",
-                colors = emptyList()
-            )
+            cells +=
+                WidgetDay(
+                    date = null,
+                    label = "",
+                    bands =
+                        List(12) {
+                            null
+                        }
+                )
         }
 
         for (
-            day in 1..month.lengthOfMonth()
+            day in
+            1..month.lengthOfMonth()
         ) {
 
             val date =
@@ -120,22 +141,25 @@ class CalendarWidgetFactory(
                     entry.date ==
                         date.toString() &&
 
-                    db.calendars
-                        .firstOrNull { calendar ->
-                            calendar.id ==
-                                entry.calendarId
-                        }
-                        ?.visible != false
+                        db.calendars
+                            .firstOrNull {
+                                calendar ->
+                                calendar.id ==
+                                    entry.calendarId
+                            }
+                            ?.visible != false
                 }
 
             val segments =
-                entries.flatMap {
-                    it.segments
-                }
+                entries
+                    .flatMap {
+                        it.segments
+                    }
 
-            val workingSegments =
+            val working =
                 segments.filter {
-                    it.kind != ShiftKind.OFF
+                    it.kind !=
+                        ShiftKind.OFF
                 }
 
             val label =
@@ -144,50 +168,131 @@ class CalendarWidgetFactory(
                     segments.isEmpty() ->
                         ""
 
-                    workingSegments.isEmpty() ->
+                    working.isEmpty() ->
                         "Off"
 
-                    workingSegments.size == 1 ->
+                    working.size == 1 ->
                         shortLabel(
-                            workingSegments
-                                .first()
+                            working.first()
                                 .kind
                         )
 
                     else ->
-                        "${workingSegments.size} ش"
+                        "${working.size} ش"
                 }
 
-            /*
-             * One stripe per segment/workplace.
-             * Maximum 4 stripes in compact widget cell.
-             *
-             * We intentionally DO NOT distinct() the colors:
-             * two shifts at the same workplace remain two
-             * independent segments.
-             */
-            val colors =
-                workingSegments
-                    .mapNotNull {
-                        workplaceColors[
-                            it.workplaceId
-                        ]
-                    }
-                    .take(4)
-
-            cells += WidgetDay(
-                date = date,
-                label = label,
-                colors = colors
-            )
+            cells +=
+                WidgetDay(
+                    date = date,
+                    label = label,
+                    bands =
+                        buildTimeBands(
+                            working
+                        )
+                )
         }
 
-        while (cells.size < 42) {
-            cells += WidgetDay(
-                date = null,
-                label = "",
-                colors = emptyList()
-            )
+        while (
+            cells.size < 42
+        ) {
+            cells +=
+                WidgetDay(
+                    date = null,
+                    label = "",
+                    bands =
+                        List(12) {
+                            null
+                        }
+                )
+        }
+    }
+
+    /*
+     * Convert the real 24-hour timeline to
+     * twelve 2-hour visual bands.
+     *
+     * A band takes the color of the shift
+     * occupying the greatest number of minutes
+     * inside that band.
+     *
+     * Therefore custom shift times still influence
+     * the rendered result instead of using arbitrary
+     * equal stripes.
+     */
+    private fun buildTimeBands(
+        segments:
+            List<ShiftSegmentV11>
+    ): List<Int?> {
+
+        return List(12) {
+            bandIndex ->
+
+            val bandStart =
+                bandIndex *
+                    bandSizeMinutes
+
+            val bandEnd =
+                bandStart +
+                    bandSizeMinutes
+
+            segments
+                .mapNotNull {
+                    segment ->
+
+                    val range =
+                        segment.timeRange()
+                            ?: return@mapNotNull null
+
+                    val color =
+                        workplaceColors[
+                            segment.workplaceId
+                        ]
+                            ?: return@mapNotNull null
+
+                    val overlapStart =
+                        maxOf(
+                            bandStart,
+                            range.startMinute
+                        )
+
+                    val overlapEnd =
+                        minOf(
+                            bandEnd,
+                            range.endMinute
+                        )
+
+                    val overlap =
+                        overlapEnd -
+                            overlapStart
+
+                    if (overlap <= 0) {
+                        null
+                    } else {
+                        BandCandidate(
+                            color = color,
+                            overlapMinutes =
+                                overlap,
+                            segmentStart =
+                                range.startMinute
+                        )
+                    }
+                }
+                /*
+                 * Largest occupancy wins.
+                 * Earlier start is deterministic
+                 * tie-breaker.
+                 */
+                .sortedWith(
+                    compareByDescending<
+                        BandCandidate
+                    > {
+                        it.overlapMinutes
+                    }.thenBy {
+                        it.segmentStart
+                    }
+                )
+                .firstOrNull()
+                ?.color
         }
     }
 
@@ -195,15 +300,28 @@ class CalendarWidgetFactory(
         kind: ShiftKind
     ): String =
         when (kind) {
-            ShiftKind.FULL_DAY -> "24س"
-            ShiftKind.LONG -> "Long"
-            ShiftKind.NIGHT -> "Night"
-            ShiftKind.MORNING -> "ص"
-            ShiftKind.EVENING -> "م"
-            ShiftKind.OFF -> "Off"
+
+            ShiftKind.FULL_DAY ->
+                "24س"
+
+            ShiftKind.LONG ->
+                "Long"
+
+            ShiftKind.NIGHT ->
+                "Night"
+
+            ShiftKind.MORNING ->
+                "ص"
+
+            ShiftKind.EVENING ->
+                "م"
+
+            ShiftKind.OFF ->
+                "Off"
         }
 
-    override fun getCount(): Int =
+    override fun getCount():
+        Int =
         cells.size
 
     override fun getViewAt(
@@ -211,31 +329,36 @@ class CalendarWidgetFactory(
     ): RemoteViews {
 
         val cell =
-            cells.getOrNull(position)
-                ?: WidgetDay(
-                    null,
-                    "",
-                    emptyList()
-                )
+            cells.getOrNull(
+                position
+            ) ?: WidgetDay(
+                date = null,
+                label = "",
+                bands =
+                    List(12) {
+                        null
+                    }
+            )
 
         val views =
             RemoteViews(
                 context.packageName,
-                R.layout.widget_calendar_day
+                R.layout
+                    .widget_calendar_day
             )
 
-        resetCell(views)
+        resetCell(
+            views
+        )
 
         val date =
             cell.date
-
-        if (date == null) {
-            return views
-        }
+                ?: return views
 
         views.setTextViewText(
             R.id.day_number,
-            date.dayOfMonth.toString()
+            date.dayOfMonth
+                .toString()
         )
 
         views.setTextViewText(
@@ -244,8 +367,10 @@ class CalendarWidgetFactory(
         )
 
         if (
-            date == LocalDate.now()
+            date ==
+            LocalDate.now()
         ) {
+
             views.setInt(
                 R.id.day_number,
                 "setBackgroundResource",
@@ -263,9 +388,9 @@ class CalendarWidgetFactory(
             )
         }
 
-        applyColors(
+        applyTimeBands(
             views,
-            cell.colors
+            cell.bands
         )
 
         val fill =
@@ -278,9 +403,10 @@ class CalendarWidgetFactory(
                 )
 
                 data =
-                    android.net.Uri.parse(
-                        "todoshift://date/$date"
-                    )
+                    android.net.Uri
+                        .parse(
+                            "todoshift://date/$date"
+                        )
             }
 
         views.setOnClickFillInIntent(
@@ -290,6 +416,23 @@ class CalendarWidgetFactory(
 
         return views
     }
+
+    private fun bandIds():
+        List<Int> =
+        listOf(
+            R.id.time_band_01,
+            R.id.time_band_02,
+            R.id.time_band_03,
+            R.id.time_band_04,
+            R.id.time_band_05,
+            R.id.time_band_06,
+            R.id.time_band_07,
+            R.id.time_band_08,
+            R.id.time_band_09,
+            R.id.time_band_10,
+            R.id.time_band_11,
+            R.id.time_band_12
+        )
 
     private fun resetCell(
         views: RemoteViews
@@ -308,51 +451,72 @@ class CalendarWidgetFactory(
         views.setInt(
             R.id.day_number,
             "setBackgroundResource",
-            android.R.color.transparent
+            android.R.color
+                .transparent
         )
 
-        listOf(
-            R.id.day_color_1,
-            R.id.day_color_2,
-            R.id.day_color_3,
-            R.id.day_color_4
-        ).forEach {
-
-            views.setViewVisibility(
-                it,
-                View.GONE
+        views.setTextColor(
+            R.id.day_number,
+            Color.rgb(
+                23,
+                32,
+                51
             )
+        )
 
-            views.setInt(
-                it,
-                "setBackgroundColor",
-                Color.TRANSPARENT
-            )
-        }
+        bandIds()
+            .forEach {
+                id ->
+
+                /*
+                 * INVISIBLE keeps every time band's
+                 * geometry. GONE would collapse time.
+                 */
+                views.setViewVisibility(
+                    id,
+                    View.INVISIBLE
+                )
+
+                views.setInt(
+                    id,
+                    "setBackgroundColor",
+                    Color.TRANSPARENT
+                )
+            }
     }
 
-    private fun applyColors(
+    private fun applyTimeBands(
         views: RemoteViews,
-        colors: List<Int>
+        bands: List<Int?>
     ) {
 
         val ids =
-            listOf(
-                R.id.day_color_1,
-                R.id.day_color_2,
-                R.id.day_color_3,
-                R.id.day_color_4
-            )
+            bandIds()
 
-        colors
-            .take(ids.size)
-            .forEachIndexed {
-                index,
-                color ->
+        ids.forEachIndexed {
+            index,
+            id ->
 
-                val id =
-                    ids[index]
+            val color =
+                bands
+                    .getOrNull(
+                        index
+                    )
 
+            if (
+                color == null
+            ) {
+                views.setViewVisibility(
+                    id,
+                    View.INVISIBLE
+                )
+
+                views.setInt(
+                    id,
+                    "setBackgroundColor",
+                    Color.TRANSPARENT
+                )
+            } else {
                 views.setViewVisibility(
                     id,
                     View.VISIBLE
@@ -364,12 +528,15 @@ class CalendarWidgetFactory(
                     color
                 )
             }
+        }
     }
 
     override fun getLoadingView():
-        RemoteViews? = null
+        RemoteViews? =
+        null
 
-    override fun getViewTypeCount(): Int =
+    override fun getViewTypeCount():
+        Int =
         1
 
     override fun getItemId(
@@ -378,7 +545,9 @@ class CalendarWidgetFactory(
 
         val date =
             cells
-                .getOrNull(position)
+                .getOrNull(
+                    position
+                )
                 ?.date
 
         return date
@@ -386,7 +555,8 @@ class CalendarWidgetFactory(
             ?: position.toLong()
     }
 
-    override fun hasStableIds(): Boolean =
+    override fun hasStableIds():
+        Boolean =
         true
 
     override fun onDestroy() =
@@ -395,6 +565,12 @@ class CalendarWidgetFactory(
     data class WidgetDay(
         val date: LocalDate?,
         val label: String,
-        val colors: List<Int>
+        val bands: List<Int?>
+    )
+
+    private data class BandCandidate(
+        val color: Int,
+        val overlapMinutes: Int,
+        val segmentStart: Int
     )
 }

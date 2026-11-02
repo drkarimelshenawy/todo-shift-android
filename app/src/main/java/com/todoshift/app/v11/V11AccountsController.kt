@@ -165,14 +165,50 @@ object V11AccountsController {
     ): V11Database {
         if (amount <= 0.0) return db
 
+        val obligation =
+            db.obligations
+                .firstOrNull {
+                    it.id == obligationId
+                }
+                ?: return db
+
+        val ym =
+            runCatching {
+                YearMonth.parse(month)
+            }.getOrNull()
+                ?: return db
+
+        val info =
+            V11ObligationEngine
+                .monthInfo(
+                    db,
+                    obligation,
+                    ym
+                )
+
+        if (
+            info.expected <= 0.0 ||
+            info.remaining <= 0.0
+        ) {
+            return db
+        }
+
+        val safeAmount =
+            minOf(
+                amount,
+                info.remaining
+            )
+
         val payment =
             ObligationPaymentV11(
                 id = UUID.randomUUID()
                     .toString(),
                 obligationId =
                     obligationId,
-                dueMonth = month,
-                amount = amount,
+                dueMonth =
+                    month,
+                amount =
+                    safeAmount,
                 paidDate =
                     LocalDate.now()
                         .toString(),
@@ -180,11 +216,59 @@ object V11AccountsController {
                     methodId
             )
 
-        return db.copy(
-            obligationPayments =
-                db.obligationPayments +
-                    payment
-        )
+        var updated =
+            db.copy(
+                obligationPayments =
+                    db.obligationPayments +
+                        payment,
+                auditLog =
+                    db.auditLog +
+                        AuditEntryV11(
+                            id = UUID.randomUUID()
+                                .toString(),
+                            action =
+                                "OBLIGATION_PAYMENT",
+                            entityType =
+                                "obligation",
+                            entityId =
+                                obligationId,
+                            description =
+                                "سداد ${safeAmount} للالتزام ${obligation.name}"
+                        )
+            )
+
+        val totalRemaining =
+            obligationRemaining(
+                updated,
+                obligation
+            )
+
+        if (
+            totalRemaining != null &&
+            totalRemaining <= 0.0001
+        ) {
+            updated =
+                updated.copy(
+                    obligations =
+                        updated.obligations
+                            .map {
+                                if (
+                                    it.id ==
+                                    obligationId
+                                ) {
+                                    it.copy(
+                                        status =
+                                            ObligationStatusV11
+                                                .PAID
+                                    )
+                                } else {
+                                    it
+                                }
+                            }
+                )
+        }
+
+        return updated
     }
 
     fun obligationPaid(
@@ -218,12 +302,9 @@ object V11AccountsController {
         db: V11Database,
         month: YearMonth
     ): Double =
-        db.obligations
-            .filter {
-                it.status ==
-                    ObligationStatusV11.ACTIVE
-            }
-            .sumOf {
-                it.installmentAmount ?: 0.0
-            }
+        V11ObligationEngine
+            .totalDue(
+                db,
+                month
+            )
 }

@@ -263,7 +263,99 @@ fun V11DayDetailsScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            Row(
+            val dueObligations =
+            remember(
+                db,
+                date
+            ) {
+                V11ObligationEngine
+                    .itemsForDate(
+                        db,
+                        date
+                    )
+            }
+
+        if (
+            dueObligations
+                .isNotEmpty()
+        ) {
+            Spacer(
+                Modifier.height(10.dp)
+            )
+
+            Text(
+                "التزامات اليوم",
+                fontWeight =
+                    FontWeight.Black,
+                fontSize = 18.sp
+            )
+
+            Spacer(
+                Modifier.height(6.dp)
+            )
+
+            dueObligations
+                .forEach {
+                    info ->
+
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    vertical =
+                                        3.dp
+                                )
+                    ) {
+                        Column(
+                            modifier =
+                                Modifier.padding(
+                                    11.dp
+                                )
+                        ) {
+                            Text(
+                                info.obligation
+                                    .name,
+                                fontWeight =
+                                    FontWeight.Black
+                            )
+
+                            Text(
+                                V11ObligationEngine
+                                    .stateLabel(
+                                        info.state
+                                    ),
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelMedium
+                            )
+
+                            Text(
+                                "المستحق: ${
+                                    "%.2f".format(
+                                        info.expected
+                                    )
+                                } ج • المتبقي: ${
+                                    "%.2f".format(
+                                        info.remaining
+                                    )
+                                } ج",
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodySmall
+                            )
+                        }
+                    }
+                }
+
+            Spacer(
+                Modifier.height(10.dp)
+            )
+        }
+
+        Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement =
                     Arrangement.spacedBy(6.dp)

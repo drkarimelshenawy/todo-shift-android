@@ -52,6 +52,10 @@ fun V11FinanceScreen(
         mutableStateOf(false)
     }
 
+    var payingObligationId by remember {
+        mutableStateOf<String?>(null)
+    }
+
     val obligationDue =
         V11AccountsController
             .monthObligationDue(
@@ -472,11 +476,19 @@ fun V11FinanceScreen(
                         obligation.id
                     )
 
-            val remaining =
+            val totalRemaining =
                 V11AccountsController
                     .obligationRemaining(
                         db,
                         obligation
+                    )
+
+            val monthInfo =
+                V11ObligationEngine
+                    .monthInfo(
+                        db,
+                        obligation,
+                        month
                     )
 
             Card(
@@ -508,32 +520,62 @@ fun V11FinanceScreen(
                         Modifier.height(6.dp)
                     )
 
+                    AccountLine(
+                        "حالة هذا الشهر",
+                        V11ObligationEngine
+                            .stateLabel(
+                                monthInfo.state
+                            )
+                    )
+
+                    monthInfo.dueDate
+                        ?.let {
+                            AccountLine(
+                                "تاريخ الاستحقاق",
+                                it.toString()
+                            )
+                        }
+
                     if (
-                        obligation
-                            .installmentAmount !=
-                        null
+                        monthInfo.expected >
+                        0.0
                     ) {
                         AccountLine(
-                            "القسط",
+                            "مستحق الشهر",
                             money(
-                                obligation
-                                    .installmentAmount,
+                                monthInfo.expected,
+                                moneyVisible
+                            )
+                        )
+
+                        AccountLine(
+                            "المسدد للشهر",
+                            money(
+                                monthInfo.paid,
+                                moneyVisible
+                            )
+                        )
+
+                        AccountLine(
+                            "متبقي الشهر",
+                            money(
+                                monthInfo.remaining,
                                 moneyVisible
                             )
                         )
                     }
 
                     AccountLine(
-                        "المدفوع",
+                        "إجمالي المدفوع",
                         money(
                             paid,
                             moneyVisible
                         )
                     )
 
-                    remaining?.let {
+                    totalRemaining?.let {
                         AccountLine(
-                            "المتبقي",
+                            "إجمالي المتبقي",
                             money(
                                 it,
                                 moneyVisible
@@ -541,45 +583,30 @@ fun V11FinanceScreen(
                         )
                     }
 
-                    obligation.dueDay
-                        ?.let {
-                            AccountLine(
-                                "موعد الاستحقاق",
-                                "يوم $it"
-                            )
-                        }
-
                     Button(
                         onClick = {
-                            val amount =
-                                obligation
-                                    .installmentAmount
-                                    ?: remaining
-                                    ?: 0.0
-
-                            if (amount > 0) {
-                                onDatabaseChange(
-                                    V11AccountsController
-                                        .payObligation(
-                                            db,
-                                            obligation.id,
-                                            month.toString(),
-                                            amount,
-                                            db.paymentMethods
-                                                .firstOrNull()
-                                                ?.id
-                                        )
-                                )
-                            }
+                            payingObligationId =
+                                obligation.id
                         },
                         modifier =
                             Modifier.fillMaxWidth(),
                         enabled =
                             obligation.status ==
                                 ObligationStatusV11
-                                    .ACTIVE
+                                    .ACTIVE &&
+                            monthInfo.remaining >
+                                0.0
                     ) {
-                        Text("تسجيل سداد القسط")
+                        Text(
+                            if (
+                                monthInfo.paid >
+                                0.0
+                            ) {
+                                "استكمال / سداد جزئي"
+                            } else {
+                                "تسجيل سداد"
+                            }
+                        )
                     }
                 }
             }
@@ -636,6 +663,61 @@ fun V11FinanceScreen(
                 onDatabaseChange
         )
     }
+
+    payingObligationId
+        ?.let { obligationId ->
+
+            val obligation =
+                db.obligations
+                    .firstOrNull {
+                        it.id ==
+                            obligationId
+                    }
+
+            if (obligation != null) {
+                val info =
+                    V11ObligationEngine
+                        .monthInfo(
+                            db,
+                            obligation,
+                            month
+                        )
+
+                V11ObligationPaymentDialog(
+                    obligation = obligation,
+                    month = month,
+                    remaining =
+                        info.remaining,
+                    db = db,
+                    onDismiss = {
+                        payingObligationId =
+                            null
+                    },
+                    onSave = {
+                        amount,
+                        methodId ->
+
+                        onDatabaseChange(
+                            V11AccountsController
+                                .payObligation(
+                                    db = db,
+                                    obligationId =
+                                        obligation.id,
+                                    month =
+                                        month.toString(),
+                                    amount =
+                                        amount,
+                                    methodId =
+                                        methodId
+                                )
+                        )
+
+                        payingObligationId =
+                            null
+                    }
+                )
+            }
+        }
 }
 
 @Composable
@@ -1332,3 +1414,162 @@ private fun obligationLabel(
         ObligationTypeV11.OTHER ->
             "أخرى"
     }
+
+
+@Composable
+private fun V11ObligationPaymentDialog(
+    obligation: ObligationV11,
+    month: YearMonth,
+    remaining: Double,
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onSave: (
+        Double,
+        String?
+    ) -> Unit
+) {
+    var amount by remember(
+        obligation.id,
+        month
+    ) {
+        mutableStateOf(
+            if (remaining > 0.0)
+                "%.2f".format(remaining)
+            else
+                ""
+        )
+    }
+
+    var methodId by remember {
+        mutableStateOf(
+            db.paymentMethods
+                .firstOrNull {
+                    it.active
+                }
+                ?.id
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest =
+            onDismiss,
+        title = {
+            Text(
+                "سداد ${obligation.name}"
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    "المتبقي لهذا الشهر: ${
+                        "%.2f".format(
+                            remaining
+                        )
+                    } ج"
+                )
+
+                Spacer(
+                    Modifier.height(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = {
+                        amount = it
+                    },
+                    label = {
+                        Text("المبلغ")
+                    },
+                    singleLine = true,
+                    modifier =
+                        Modifier.fillMaxWidth()
+                )
+
+                if (
+                    db.paymentMethods
+                        .isNotEmpty()
+                ) {
+                    Spacer(
+                        Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        "طريقة الدفع",
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+
+                    db.paymentMethods
+                        .filter {
+                            it.active
+                        }
+                        .forEach {
+                            method ->
+
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth(),
+                                verticalAlignment =
+                                    Alignment
+                                        .CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected =
+                                        methodId ==
+                                            method.id,
+                                    onClick = {
+                                        methodId =
+                                            method.id
+                                    }
+                                )
+
+                                Text(
+                                    method.name
+                                )
+                            }
+                        }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val parsed =
+                        amount
+                            .replace(
+                                ",",
+                                "."
+                            )
+                            .toDoubleOrNull()
+                            ?: 0.0
+
+                    onSave(
+                        parsed,
+                        methodId
+                    )
+                },
+                enabled =
+                    (
+                        amount
+                            .replace(
+                                ",",
+                                "."
+                            )
+                            .toDoubleOrNull()
+                            ?: 0.0
+                    ) > 0.0
+            ) {
+                Text("حفظ السداد")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick =
+                    onDismiss
+            ) {
+                Text("إلغاء")
+            }
+        }
+    )
+}

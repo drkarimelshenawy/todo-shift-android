@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
@@ -24,6 +25,8 @@ fun V11MoreScreen(
         V11SecurityStore,
     onSecuritySettingsChange:
         (V11SecuritySettings) -> Unit,
+    onDatabaseRestored:
+        (V11Database) -> Unit,
     onUiSettingsChange:
         (V11UiSettings) -> Unit,
     onToggleMoney: () -> Unit,
@@ -32,6 +35,12 @@ fun V11MoreScreen(
     var securityOpen by remember {
         mutableStateOf(false)
     }
+
+    var backupOpen by remember {
+        mutableStateOf(false)
+    }
+
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -276,11 +285,14 @@ fun V11MoreScreen(
             }
         )
 
-        SettingsInfo(
+        SettingsAction(
             title =
-                "النسخ الاحتياطي المحلي",
+                "النسخ الاحتياطي والاستعادة",
             subtitle =
-                "Schema ${db.schemaVersion} • سيتم ربط التصدير والاستعادة النهائية في RC7E"
+                "تصدير أو استعادة بيانات ToDo Shift • Schema ${db.schemaVersion}",
+            onClick = {
+                backupOpen = true
+            }
         )
 
         Spacer(Modifier.height(16.dp))
@@ -309,6 +321,19 @@ fun V11MoreScreen(
 
         Spacer(Modifier.height(30.dp))
     }
+    if (backupOpen) {
+        V11BackupRestoreDialog(
+            context = context,
+            db = db,
+            onDatabaseRestored = {
+                onDatabaseRestored(it)
+            },
+            onDismiss = {
+                backupOpen = false
+            }
+        )
+    }
+
     if (securityOpen) {
         V11SecuritySettingsDialog(
             store = securityStore,

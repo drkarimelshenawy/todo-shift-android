@@ -382,6 +382,9 @@ fun V11Home(
                                     it.mode ==
                                         V11LockMode.NONE
                         },
+                        onDatabaseRestored = {
+                            saveDb(it)
+                        },
                         onUiSettingsChange = {
                             saveUi(it)
                         },

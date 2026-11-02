@@ -485,3 +485,13 @@ private fun SettingsSwitch(
         }
     }
 }
+
+private fun highlightLabel(
+    style: TodayHighlightStyle
+): String = when (style) {
+    TodayHighlightStyle.BORDER -> "إطار"
+    TodayHighlightStyle.TINT -> "تظليل"
+    TodayHighlightStyle.RING -> "دائرة"
+    TodayHighlightStyle.BORDER_TINT -> "إطار وتظليل"
+    TodayHighlightStyle.NONE -> "بدون"
+}

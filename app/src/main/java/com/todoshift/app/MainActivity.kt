@@ -1,6 +1,7 @@
 package com.todoshift.app
 
 import com.todoshift.app.v11.ui.V11Home
+import com.todoshift.app.reminders.ToDoShiftReminder
 
 import com.todoshift.app.system.TodaySnapshotEngine
 import com.todoshift.app.system.ShiftNotificationEngine
@@ -89,6 +90,11 @@ import com.todoshift.app.data.ShiftPainterEngine
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        ToDoShiftReminder.createChannel(
+            applicationContext
+        )
+
         val widgetOpenDate =
             intent
                 ?.getStringExtra(

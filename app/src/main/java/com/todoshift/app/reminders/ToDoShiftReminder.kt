@@ -116,16 +116,22 @@ object ToDoShiftReminder {
                     PendingIntent.FLAG_IMMUTABLE
             )
 
-        /*
-         * لا نطلب SCHEDULE_EXACT_ALARM.
-         * setAndAllowWhileIdle مناسب للتذكيرات
-         * بدون إضافة صلاحية حساسة جديدة.
-         */
-        alarm.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            whenMs,
-            pending
-        )
+        if (
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            alarm.canScheduleExactAlarms()
+        ) {
+            alarm.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                whenMs,
+                pending
+            )
+        } else {
+            alarm.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                whenMs,
+                pending
+            )
+        }
     }
 
     fun cancel(

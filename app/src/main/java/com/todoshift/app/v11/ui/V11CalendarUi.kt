@@ -261,7 +261,7 @@ fun V11CalendarScreen(
                             Color(0xFF213555),
                     contentColor = Color.White,
                     modifier = Modifier
-                        .padding(bottom = 8.dp)
+                        .padding(bottom = 2.dp)
                         .size(48.dp)
                 ) {
                     Icon(
@@ -287,11 +287,11 @@ fun V11CalendarScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 10.dp)
         ) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(1.dp))
 
             V11CompactHeader()
 
-            Spacer(Modifier.height(5.dp))
+            Spacer(Modifier.height(1.dp))
 
             V11AnimatedCalendarArea(
                 month = month,
@@ -600,14 +600,14 @@ private fun V11CompactHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp),
+            .height(42.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
             painter = painterResource(R.mipmap.ic_launcher),
             contentDescription = "ToDo Shift",
             modifier = Modifier
-                .size(42.dp)
+                .size(36.dp)
                 .clip(RoundedCornerShape(11.dp))
         )
 
@@ -615,7 +615,7 @@ private fun V11CompactHeader() {
 
         Text(
             "ToDo Shift",
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Black,
             color = Color(0xFF162A46)
         )

@@ -5,6 +5,5 @@
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/todo_shift_icon_source</item>
         <item name="android:windowSplashScreenIconBackgroundColor">#071F45</item>
         <item name="android:windowSplashScreenAnimationDuration">0</item>
-        <item name="android:postSplashScreenTheme">@style/Theme.ToDoShift</item>
     </style>
 </resources>

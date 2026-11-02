@@ -28,6 +28,9 @@ import com.todoshift.app.data.SmartToolsController
 import com.todoshift.app.data.SmartToolsLabels
 import com.todoshift.app.data.SmartToolMode
 import android.graphics.Color as AndroidColor
+import android.Manifest
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
@@ -88,23 +91,49 @@ import com.todoshift.app.data.PainterSelection
 import com.todoshift.app.data.ShiftPainterEngine
 
 class MainActivity : FragmentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
+
+    private var requestedOpenDate by
+        mutableStateOf<LocalDate?>(null)
+
+    private fun readOpenDate(
+        source: Intent?
+    ): LocalDate? =
+        source
+            ?.getStringExtra(
+                "todo_shift_open_date"
+            )
+            ?.let { raw ->
+                runCatching {
+                    LocalDate.parse(raw)
+                }.getOrNull()
+            }
+
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
         super.onCreate(savedInstanceState)
 
         ToDoShiftReminder.createChannel(
             applicationContext
         )
 
-        val widgetOpenDate =
-            intent
-                ?.getStringExtra(
-                    "todo_shift_open_date"
-                )
-                ?.let { raw ->
-                    runCatching {
-                        LocalDate.parse(raw)
-                    }.getOrNull()
-                }
+        requestedOpenDate =
+            readOpenDate(intent)
+
+        if (
+            Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(
+                Manifest.permission.POST_NOTIFICATIONS
+            ) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.POST_NOTIFICATIONS
+                ),
+                1101
+            )
+        }
 
         setContent {
             MaterialTheme(
@@ -116,9 +145,20 @@ class MainActivity : FragmentActivity() {
                 )
             ) {
                 V11Home(
-                    initialDate = widgetOpenDate
+                    initialDate = requestedOpenDate
                 )
             }
+        }
+    }
+
+    override fun onNewIntent(
+        intent: Intent
+    ) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+
+        readOpenDate(intent)?.let {
+            requestedOpenDate = it
         }
     }
 }

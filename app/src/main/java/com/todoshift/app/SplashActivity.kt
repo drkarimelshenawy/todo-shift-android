@@ -60,7 +60,7 @@ private fun SplashContent(
             ),
             contentDescription = "ToDo Shift",
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Fit
         )
     }
 }

@@ -792,8 +792,12 @@ private fun V11CalendarGrid(
     onNext: () -> Unit
 ) {
     val first = month.atDay(1)
+    // Calendar columns start with Saturday.
+    // java.time.DayOfWeek uses Monday=1 ... Sunday=7.
+    // This conversion guarantees:
+    // Saturday=0, Sunday=1, Monday=2 ... Friday=6.
     val firstIndex =
-        (first.dayOfWeek.value + 2) % 7
+        (first.dayOfWeek.value + 1) % 7
     val total = firstIndex + month.lengthOfMonth()
     val rows = (total + 6) / 7
 

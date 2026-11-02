@@ -4,27 +4,10 @@
     <style
         name="Theme.ToDoShift.Splash"
         parent="Theme.ToDoShift">
-
-        <item name="android:windowSplashScreenBackground">
-            #0D2344
-        </item>
-
-        <item name="android:windowSplashScreenAnimatedIcon">
-            @mipmap/ic_launcher
-        </item>
-
-        <item name="android:windowSplashScreenIconBackgroundColor">
-            #0D2344
-        </item>
-
-        <item name="android:windowSplashScreenAnimationDuration">
-            0
-        </item>
-
-        <item name="android:windowBackground">
-            @drawable/todoshift_splash_background
-        </item>
-
+        <item name="android:windowSplashScreenBackground">#0D2344</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#0D2344</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
     </style>
 
 </resources>

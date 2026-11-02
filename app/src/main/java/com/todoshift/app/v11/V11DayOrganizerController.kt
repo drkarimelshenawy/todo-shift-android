@@ -119,3 +119,140 @@ object V11PaintConflictController {
         )
     }
 }
+
+data class V11PendingPaintConflict(
+    val date: String,
+    val calendarId: String,
+    val incoming: ShiftSegmentV11,
+    val existing: List<ShiftSegmentV11>,
+    val analysis: ShiftConflictAnalysisV11
+)
+
+object V11PaintConflictResolver {
+
+    fun analyse(
+        db: V11Database,
+        date: String,
+        calendarId: String,
+        kind: ShiftKind,
+        workplaceId: String?
+    ): V11PendingPaintConflict {
+
+        val entry =
+            db.days.firstOrNull {
+                it.date == date &&
+                    it.calendarId == calendarId
+            }
+
+        val incoming =
+            ShiftSegmentV11(
+                id = UUID.randomUUID().toString(),
+                kind = kind,
+                workplaceId =
+                    if (kind == ShiftKind.OFF)
+                        null
+                    else
+                        workplaceId
+            )
+
+        val existing =
+            entry?.segments ?: emptyList()
+
+        return V11PendingPaintConflict(
+            date = date,
+            calendarId = calendarId,
+            incoming = incoming,
+            existing = existing,
+            analysis =
+                V11ShiftConflictEngine.analyse(
+                    existing,
+                    incoming
+                )
+        )
+    }
+
+    fun applyOption(
+        db: V11Database,
+        pending: V11PendingPaintConflict,
+        option: ShiftConflictOptionV11
+    ): V11Database {
+
+        if (
+            option.action ==
+            ShiftConflictActionV11.REJECT
+        ) {
+            return db
+        }
+
+        return writeSegments(
+            db = db,
+            date = pending.date,
+            calendarId =
+                pending.calendarId,
+            segments =
+                option.resultingSegments
+        )
+    }
+
+    fun applyDirect(
+        db: V11Database,
+        pending: V11PendingPaintConflict
+    ): V11Database {
+
+        val result =
+            pending.analysis.options
+                .firstOrNull {
+                    it.action !=
+                        ShiftConflictActionV11.REJECT
+                }
+                ?.resultingSegments
+                ?: (
+                    pending.existing +
+                        pending.incoming
+                    )
+
+        return writeSegments(
+            db = db,
+            date = pending.date,
+            calendarId =
+                pending.calendarId,
+            segments = result
+        )
+    }
+
+    private fun writeSegments(
+        db: V11Database,
+        date: String,
+        calendarId: String,
+        segments: List<ShiftSegmentV11>
+    ): V11Database {
+
+        val old =
+            db.days.firstOrNull {
+                it.date == date &&
+                    it.calendarId == calendarId
+            }
+
+        val entry =
+            (
+                old ?: DayEntryV11(
+                    id =
+                        UUID.randomUUID()
+                            .toString(),
+                    date = date,
+                    calendarId = calendarId
+                )
+                ).copy(
+                    segments = segments
+                )
+
+        return db.copy(
+            days =
+                db.days.filterNot {
+                    it.date == date &&
+                        it.calendarId ==
+                            calendarId
+                } + entry
+        )
+    }
+}

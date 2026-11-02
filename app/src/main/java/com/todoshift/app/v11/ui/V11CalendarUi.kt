@@ -80,6 +80,18 @@ fun V11CalendarScreen(
     var openDay by remember { mutableStateOf<LocalDate?>(null) }
     var showCalendarManager by remember { mutableStateOf(false) }
 
+    var pendingConflict by remember {
+        mutableStateOf<V11PendingPaintConflict?>(null)
+    }
+
+    var pendingPaintQueue by remember {
+        mutableStateOf<List<LocalDate>>(emptyList())
+    }
+
+    var pendingPaintDb by remember {
+        mutableStateOf<V11Database?>(null)
+    }
+
     val visibleCalendarIds = remember(db.calendars) {
         db.calendars
             .filter { it.visible }
@@ -143,26 +155,85 @@ fun V11CalendarScreen(
                                 calendarId != null &&
                                 paintDates.isNotEmpty()
                             ) {
-                                var updated = db
+                                pendingPaintDb = db
+                                pendingPaintQueue =
+                                    paintDates.sorted()
 
-                                paintDates
-                                    .sorted()
-                                    .forEach { date ->
-                                        updated =
-                                            V11PaintConflictController.apply(
-                                                db = updated,
-                                                date = date.toString(),
-                                                calendarId = calendarId,
-                                                kind = kind,
-                                                workplaceId =
-                                                    if (kind == ShiftKind.OFF)
-                                                        null
-                                                    else
-                                                        selectedWorkplace?.id
-                                            )
+                                fun continueQueue(
+                                    startDb: V11Database
+                                ) {
+                                    var updated =
+                                        startDb
+
+                                    val queue =
+                                        pendingPaintQueue
+                                            .toMutableList()
+
+                                    while (
+                                        queue.isNotEmpty()
+                                    ) {
+                                        val date =
+                                            queue.removeAt(0)
+
+                                        val pending =
+                                            V11PaintConflictResolver
+                                                .analyse(
+                                                    db = updated,
+                                                    date =
+                                                        date.toString(),
+                                                    calendarId =
+                                                        calendarId,
+                                                    kind = kind,
+                                                    workplaceId =
+                                                        if (
+                                                            kind ==
+                                                            ShiftKind.OFF
+                                                        )
+                                                            null
+                                                        else
+                                                            selectedWorkplace
+                                                                ?.id
+                                                )
+
+                                        if (
+                                            pending.analysis
+                                                .canAddDirectly
+                                        ) {
+                                            updated =
+                                                V11PaintConflictResolver
+                                                    .applyDirect(
+                                                        updated,
+                                                        pending
+                                                    )
+
+                                            pendingPaintDb =
+                                                updated
+
+                                            continue
+                                        }
+
+                                        pendingPaintDb =
+                                            updated
+
+                                        pendingPaintQueue =
+                                            queue
+
+                                        pendingConflict =
+                                            pending
+
+                                        return
                                     }
 
-                                onDatabaseChange(updated)
+                                    pendingPaintDb = null
+                                    pendingPaintQueue =
+                                        emptyList()
+
+                                    onDatabaseChange(
+                                        updated
+                                    )
+                                }
+
+                                continueQueue(db)
                             }
 
                             paintMode = false
@@ -286,6 +357,216 @@ fun V11CalendarScreen(
                 openDay = null
             },
             onDatabaseChange = onDatabaseChange
+        )
+    }
+
+    pendingConflict?.let { conflict ->
+        AlertDialog(
+            onDismissRequest = {
+                pendingConflict = null
+                pendingPaintDb = null
+                pendingPaintQueue =
+                    emptyList()
+            },
+            title = {
+                Text("تعارض في الشيفت")
+            },
+            text = {
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    Text(
+                        "اليوم ${conflict.date} يحتوي على شيفت يتداخل زمنياً مع الشيفت الجديد."
+                    )
+
+                    Text(
+                        "اختر طريقة حل التعارض. لن يتم إنشاء شيفتين متداخلين."
+                    )
+
+                    conflict.analysis.options
+                        .filter {
+                            it.action !=
+                                ShiftConflictActionV11
+                                    .REJECT
+                        }
+                        .forEachIndexed {
+                            index,
+                            option ->
+
+                            OutlinedButton(
+                                onClick = {
+                                    val base =
+                                        pendingPaintDb
+                                            ?: db
+
+                                    var updated =
+                                        V11PaintConflictResolver
+                                            .applyOption(
+                                                db = base,
+                                                pending =
+                                                    conflict,
+                                                option =
+                                                    option
+                                            )
+
+                                    pendingConflict =
+                                        null
+
+                                    val remaining =
+                                        pendingPaintQueue
+
+                                    val kind =
+                                        selectedPaintKind
+
+                                    val calendar =
+                                        conflict
+                                            .calendarId
+
+                                    if (
+                                        kind == null ||
+                                        remaining
+                                            .isEmpty()
+                                    ) {
+                                        pendingPaintDb =
+                                            null
+                                        pendingPaintQueue =
+                                            emptyList()
+
+                                        onDatabaseChange(
+                                            updated
+                                        )
+                                    } else {
+                                        val queue =
+                                            remaining
+                                                .toMutableList()
+
+                                        while (
+                                            queue
+                                                .isNotEmpty()
+                                        ) {
+                                            val date =
+                                                queue
+                                                    .removeAt(
+                                                        0
+                                                    )
+
+                                            val next =
+                                                V11PaintConflictResolver
+                                                    .analyse(
+                                                        db =
+                                                            updated,
+                                                        date =
+                                                            date
+                                                                .toString(),
+                                                        calendarId =
+                                                            calendar,
+                                                        kind =
+                                                            kind,
+                                                        workplaceId =
+                                                            if (
+                                                                kind ==
+                                                                ShiftKind
+                                                                    .OFF
+                                                            )
+                                                                null
+                                                            else
+                                                                selectedWorkplace
+                                                                    ?.id
+                                                    )
+
+                                            if (
+                                                next.analysis
+                                                    .canAddDirectly
+                                            ) {
+                                                updated =
+                                                    V11PaintConflictResolver
+                                                        .applyDirect(
+                                                            updated,
+                                                            next
+                                                        )
+
+                                                continue
+                                            }
+
+                                            pendingPaintDb =
+                                                updated
+
+                                            pendingPaintQueue =
+                                                queue
+
+                                            pendingConflict =
+                                                next
+
+                                            return@OutlinedButton
+                                        }
+
+                                        pendingPaintDb =
+                                            null
+
+                                        pendingPaintQueue =
+                                            emptyList()
+
+                                        onDatabaseChange(
+                                            updated
+                                        )
+                                    }
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                            ) {
+                                Text(
+                                    when (
+                                        option.action
+                                    ) {
+                                        ShiftConflictActionV11
+                                            .REPLACE ->
+                                            "استبدال الشيفت القديم"
+
+                                        ShiftConflictActionV11
+                                            .SPLIT_EXISTING ->
+                                            "تقسيم الشيفت القديم وحفظ الوقت المتبقي"
+
+                                        ShiftConflictActionV11
+                                            .TRIM_EXISTING_BEFORE ->
+                                            "تقصير الشيفت القديم قبل الجديد"
+
+                                        ShiftConflictActionV11
+                                            .TRIM_EXISTING_AFTER ->
+                                            "تقصير الشيفت القديم بعد الجديد"
+
+                                        ShiftConflictActionV11
+                                            .ADD ->
+                                            "إضافة"
+
+                                        else ->
+                                            "الحل ${index + 1}"
+                                    }
+                                )
+                            }
+                        }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        pendingConflict =
+                            null
+                        pendingPaintDb =
+                            null
+                        pendingPaintQueue =
+                            emptyList()
+                    }
+                ) {
+                    Text(
+                        "إلغاء بدون تغيير"
+                    )
+                }
+            }
         )
     }
 

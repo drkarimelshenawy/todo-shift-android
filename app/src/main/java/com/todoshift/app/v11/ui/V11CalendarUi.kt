@@ -604,7 +604,7 @@ private fun V11CompactHeader() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(R.drawable.todoshift_splash),
+            painter = painterResource(R.drawable.todo_shift_splash_portrait_portrait),
             contentDescription = "ToDo Shift",
             modifier = Modifier
                 .size(36.dp)

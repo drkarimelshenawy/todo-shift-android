@@ -28,7 +28,6 @@ import com.todoshift.app.data.SmartToolsController
 import com.todoshift.app.data.SmartToolsLabels
 import com.todoshift.app.data.SmartToolMode
 import android.graphics.Color as AndroidColor
-import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
@@ -89,34 +88,23 @@ import com.todoshift.app.data.PainterSelection
 import com.todoshift.app.data.ShiftPainterEngine
 
 class MainActivity : FragmentActivity() {
-
-    private var requestedOpenDate by
-        mutableStateOf<LocalDate?>(null)
-
-    private fun readOpenDate(
-        source: Intent?
-    ): LocalDate? =
-        source
-            ?.getStringExtra(
-                "todo_shift_open_date"
-            )
-            ?.let { raw ->
-                runCatching {
-                    LocalDate.parse(raw)
-                }.getOrNull()
-            }
-
-    override fun onCreate(
-        savedInstanceState: Bundle?
-    ) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         ToDoShiftReminder.createChannel(
             applicationContext
         )
 
-        requestedOpenDate =
-            readOpenDate(intent)
+        val widgetOpenDate =
+            intent
+                ?.getStringExtra(
+                    "todo_shift_open_date"
+                )
+                ?.let { raw ->
+                    runCatching {
+                        LocalDate.parse(raw)
+                    }.getOrNull()
+                }
 
         setContent {
             MaterialTheme(
@@ -128,20 +116,9 @@ class MainActivity : FragmentActivity() {
                 )
             ) {
                 V11Home(
-                    initialDate = requestedOpenDate
+                    initialDate = widgetOpenDate
                 )
             }
-        }
-    }
-
-    override fun onNewIntent(
-        intent: Intent
-    ) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-
-        readOpenDate(intent)?.let {
-            requestedOpenDate = it
         }
     }
 }

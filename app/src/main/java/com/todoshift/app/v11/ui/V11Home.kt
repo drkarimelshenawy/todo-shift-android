@@ -214,22 +214,10 @@ fun V11Home(
     val launchDate =
         initialDate ?: LocalDate.now()
 
-    var month by remember {
+    var month by remember(launchDate) {
         mutableStateOf(
             YearMonth.from(launchDate)
         )
-    }
-
-    LaunchedEffect(initialDate) {
-        initialDate?.let { requestedDate ->
-            month =
-                YearMonth.from(
-                    requestedDate
-                )
-
-            showWorkplaces = false
-            tab = 0
-        }
     }
 
     var moneyVisible by remember {

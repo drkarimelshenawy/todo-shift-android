@@ -47,7 +47,7 @@ fun V11MoreScreen(
             .verticalScroll(
                 rememberScrollState()
             )
-            .padding(14.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Text(
             "الإعدادات",
@@ -57,7 +57,7 @@ fun V11MoreScreen(
             fontWeight = FontWeight.Black
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         SettingsTitle(
             "التقويم والعمل"
@@ -82,7 +82,7 @@ fun V11MoreScreen(
                 } ظاهر"
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         SettingsTitle(
             "الحسابات والالتزامات"
@@ -120,7 +120,7 @@ fun V11MoreScreen(
                 }} التزام نشط"
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         SettingsTitle(
             "المظهر والتخصيص"
@@ -148,7 +148,7 @@ fun V11MoreScreen(
         ) {
             Column(
                 modifier =
-                    Modifier.padding(14.dp)
+                    Modifier.padding(12.dp)
             ) {
                 Text(
                     "مكان زر الإضافة",
@@ -207,7 +207,7 @@ fun V11MoreScreen(
         ) {
             Column(
                 modifier =
-                    Modifier.padding(14.dp)
+                    Modifier.padding(12.dp)
             ) {
                 Text(
                     "تمييز اليوم الحالي",
@@ -254,7 +254,7 @@ fun V11MoreScreen(
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         SettingsTitle(
             "الخصوصية والبيانات"
@@ -262,12 +262,12 @@ fun V11MoreScreen(
 
         SettingsAction(
             title =
-                "حماية الحسابات",
+                "الأمان والخصوصية",
             subtitle =
                 when {
                     !securitySettings
                         .protectAccounts ->
-                        "غير مفعلة"
+                        "بدون قفل"
 
                     securitySettings.mode ==
                         V11LockMode.PIN ->
@@ -295,7 +295,7 @@ fun V11MoreScreen(
             }
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         SettingsTitle(
             "الحساب والمزامنة"
@@ -307,7 +307,7 @@ fun V11MoreScreen(
                 "غير مفعّل حاليا — لن يظهر كمفتاح وهمي قبل تنفيذ المزامنة الحقيقية"
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         SettingsTitle(
             "حول التطبيق"
@@ -372,11 +372,11 @@ private fun SettingsInfo(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 2.dp)
     ) {
         Column(
             modifier =
-                Modifier.padding(14.dp)
+                Modifier.padding(12.dp)
         ) {
             Text(
                 title,
@@ -404,12 +404,12 @@ private fun SettingsAction(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(12.dp),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
@@ -452,12 +452,12 @@ private fun SettingsSwitch(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(12.dp),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {

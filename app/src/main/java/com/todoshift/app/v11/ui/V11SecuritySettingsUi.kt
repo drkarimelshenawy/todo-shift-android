@@ -5,8 +5,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -20,8 +25,7 @@ fun V11SecuritySettingsDialog(
     store: V11SecurityStore,
     current: V11SecuritySettings,
     onDismiss: () -> Unit,
-    onChanged:
-        (V11SecuritySettings) -> Unit
+    onChanged: (V11SecuritySettings) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -29,7 +33,11 @@ fun V11SecuritySettingsDialog(
         mutableStateOf(current)
     }
 
-    var pin by remember {
+    var currentPin by remember {
+        mutableStateOf("")
+    }
+
+    var newPin by remember {
         mutableStateOf("")
     }
 
@@ -41,25 +49,53 @@ fun V11SecuritySettingsDialog(
         mutableStateOf<String?>(null)
     }
 
-    val biometricAvailable =
-        remember {
-            val allowed =
-                BiometricManager.Authenticators
-                    .BIOMETRIC_STRONG or
-                    BiometricManager.Authenticators
-                        .DEVICE_CREDENTIAL
+    val hadPin = remember {
+        store.hasPin()
+    }
 
-            BiometricManager
-                .from(context)
-                .canAuthenticate(allowed) ==
-                BiometricManager
-                    .BIOMETRIC_SUCCESS
-        }
+    val biometricAvailable = remember {
+        val allowed =
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+
+        BiometricManager.from(context)
+            .canAuthenticate(allowed) ==
+            BiometricManager.BIOMETRIC_SUCCESS
+    }
+
+    val securityWasEnabled =
+        current.mode != V11LockMode.NONE
+
+    val pinNeedsVerification =
+        hadPin &&
+            (
+                settings.mode == V11LockMode.NONE ||
+                    (
+                        settings.mode == V11LockMode.PIN &&
+                            (
+                                newPin.isNotEmpty() ||
+                                    current.mode != V11LockMode.PIN
+                                )
+                        )
+                )
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("حماية الحسابات")
+            Column {
+                Text(
+                    "الأمان والخصوصية",
+                    fontWeight = FontWeight.Black
+                )
+
+                Text(
+                    "اختر طريقة حماية قسم الحسابات",
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
+                )
+            }
         },
         text = {
             Column(
@@ -68,17 +104,18 @@ fun V11SecuritySettingsDialog(
                         rememberScrollState()
                     )
             ) {
-                Text(
-                    "طريقة الحماية",
-                    fontWeight =
-                        FontWeight.Black
+                SecuritySectionTitle(
+                    "طريقة الحماية"
                 )
 
-                SecurityModeRow(
-                    label = "بدون قفل",
+                SecurityModeCard(
+                    title = "بدون قفل",
+                    subtitle =
+                        "فتح الحسابات مباشرة",
                     selected =
                         settings.mode ==
                             V11LockMode.NONE,
+                    enabled = true,
                     onClick = {
                         settings =
                             settings.copy(
@@ -89,11 +126,14 @@ fun V11SecuritySettingsDialog(
                     }
                 )
 
-                SecurityModeRow(
-                    label = "PIN",
+                SecurityModeCard(
+                    title = "PIN",
+                    subtitle =
+                        "رقم سري من 4 إلى 12 رقماً",
                     selected =
                         settings.mode ==
                             V11LockMode.PIN,
+                    enabled = true,
                     onClick = {
                         settings =
                             settings.copy(
@@ -104,12 +144,14 @@ fun V11SecuritySettingsDialog(
                     }
                 )
 
-                SecurityModeRow(
-                    label =
+                SecurityModeCard(
+                    title =
+                        "البصمة / قفل الجهاز",
+                    subtitle =
                         if (biometricAvailable)
-                            "بصمة / قفل الجهاز"
+                            "استخدام حماية الجهاز"
                         else
-                            "بصمة / قفل الجهاز — غير متاح",
+                            "غير متاح على الجهاز حالياً",
                     selected =
                         settings.mode ==
                             V11LockMode.BIOMETRIC,
@@ -119,8 +161,7 @@ fun V11SecuritySettingsDialog(
                         settings =
                             settings.copy(
                                 mode =
-                                    V11LockMode
-                                        .BIOMETRIC
+                                    V11LockMode.BIOMETRIC
                             )
                         message = null
                     }
@@ -131,131 +172,163 @@ fun V11SecuritySettingsDialog(
                     V11LockMode.PIN
                 ) {
                     Spacer(
+                        Modifier.height(10.dp)
+                    )
+
+                    SecuritySectionTitle(
+                        if (hadPin)
+                            "تغيير PIN"
+                        else
+                            "إنشاء PIN"
+                    )
+
+                    if (hadPin) {
+                        SecurePinField(
+                            value = currentPin,
+                            label = "PIN الحالي",
+                            onValueChange = {
+                                currentPin = it
+                                message = null
+                            }
+                        )
+
+                        Spacer(
+                            Modifier.height(8.dp)
+                        )
+                    }
+
+                    SecurePinField(
+                        value = newPin,
+                        label =
+                            if (hadPin)
+                                "PIN الجديد"
+                            else
+                                "PIN",
+                        onValueChange = {
+                            newPin = it
+                            message = null
+                        }
+                    )
+
+                    Spacer(
                         Modifier.height(8.dp)
                     )
 
-                    OutlinedTextField(
-                        value = pin,
-                        onValueChange = {
-                            pin =
-                                it.filter(
-                                    Char::isDigit
-                                ).take(12)
-                        },
-                        label = {
-                            Text(
-                                "PIN جديد"
-                            )
-                        },
-                        singleLine = true,
-                        visualTransformation =
-                            PasswordVisualTransformation(),
-                        keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType =
-                                    KeyboardType
-                                        .NumberPassword
-                            )
-                    )
-
-                    OutlinedTextField(
+                    SecurePinField(
                         value = confirmPin,
+                        label = "تأكيد PIN",
                         onValueChange = {
-                            confirmPin =
-                                it.filter(
-                                    Char::isDigit
-                                ).take(12)
-                        },
-                        label = {
-                            Text(
-                                "تأكيد PIN"
-                            )
-                        },
-                        singleLine = true,
-                        visualTransformation =
-                            PasswordVisualTransformation(),
-                        keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType =
-                                    KeyboardType
-                                        .NumberPassword
-                            )
+                            confirmPin = it
+                            message = null
+                        }
+                    )
+                } else if (
+                    settings.mode ==
+                        V11LockMode.NONE &&
+                    securityWasEnabled &&
+                    hadPin
+                ) {
+                    Spacer(
+                        Modifier.height(10.dp)
+                    )
+
+                    Text(
+                        "لتعطيل الحماية أدخل PIN الحالي.",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall
+                    )
+
+                    Spacer(
+                        Modifier.height(6.dp)
+                    )
+
+                    SecurePinField(
+                        value = currentPin,
+                        label = "PIN الحالي",
+                        onValueChange = {
+                            currentPin = it
+                            message = null
+                        }
                     )
                 }
 
                 Spacer(
-                    Modifier.height(12.dp)
+                    Modifier.height(14.dp)
+                )
+
+                SecuritySectionTitle(
+                    "خيارات الحسابات"
+                )
+
+                SecuritySwitchCard(
+                    icon = {
+                        Icon(
+                            Icons.Default.Lock,
+                            null
+                        )
+                    },
+                    title = "قفل قسم الحسابات",
+                    subtitle =
+                        "اطلب التحقق قبل عرض الحسابات",
+                    checked =
+                        settings.protectAccounts,
+                    enabled =
+                        settings.mode !=
+                            V11LockMode.NONE,
+                    onCheckedChange = {
+                        settings =
+                            settings.copy(
+                                protectAccounts = it
+                            )
+                    }
+                )
+
+                SecuritySwitchCard(
+                    icon = {
+                        Icon(
+                            Icons.Default.VisibilityOff,
+                            null
+                        )
+                    },
+                    title =
+                        "إخفاء المبالغ افتراضياً",
+                    subtitle =
+                        "يمكن إظهارها من شاشة الحسابات",
+                    checked =
+                        settings.hideAmounts,
+                    enabled = true,
+                    onCheckedChange = {
+                        settings =
+                            settings.copy(
+                                hideAmounts = it
+                            )
+                    }
+                )
+
+                Spacer(
+                    Modifier.height(14.dp)
+                )
+
+                SecuritySectionTitle(
+                    "القفل التلقائي"
                 )
 
                 Row(
                     modifier =
                         Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement
-                            .SpaceBetween
+                        Arrangement.spacedBy(6.dp)
                 ) {
-                    Switch(
-                        checked =
-                            settings
-                                .protectAccounts,
-                        onCheckedChange = {
-                            settings =
-                                settings.copy(
-                                    protectAccounts =
-                                        it
-                                )
-                        }
-                    )
+                    listOf(
+                        0 to "فوري",
+                        1 to "1 د",
+                        5 to "5 د",
+                        15 to "15 د"
+                    ).forEach {
+                            (minutes, label) ->
 
-                    Text(
-                        "قفل قسم الحسابات"
-                    )
-                }
-
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement
-                            .SpaceBetween
-                ) {
-                    Switch(
-                        checked =
-                            settings.hideAmounts,
-                        onCheckedChange = {
-                            settings =
-                                settings.copy(
-                                    hideAmounts =
-                                        it
-                                )
-                        }
-                    )
-
-                    Text(
-                        "إخفاء المبالغ افتراضياً"
-                    )
-                }
-
-                Spacer(
-                    Modifier.height(10.dp)
-                )
-
-                Text(
-                    "القفل التلقائي",
-                    fontWeight =
-                        FontWeight.Bold
-                )
-
-                listOf(
-                    0 to "فوري",
-                    1 to "بعد دقيقة",
-                    5 to "بعد 5 دقائق",
-                    15 to "بعد 15 دقيقة"
-                ).forEach {
-                    (minutes, label) ->
-
-                    Row {
-                        RadioButton(
+                        FilterChip(
                             selected =
                                 settings
                                     .autoLockMinutes ==
@@ -266,30 +339,55 @@ fun V11SecuritySettingsDialog(
                                         autoLockMinutes =
                                             minutes
                                     )
+                            },
+                            label = {
+                                Text(label)
                             }
+                        )
+                    }
+                }
+
+                if (biometricAvailable) {
+                    Spacer(
+                        Modifier.height(10.dp)
+                    )
+
+                    Row(
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Fingerprint,
+                            null,
+                            modifier =
+                                Modifier.size(18.dp)
+                        )
+
+                        Spacer(
+                            Modifier.width(6.dp)
                         )
 
                         Text(
-                            label,
-                            modifier =
-                                Modifier.padding(
-                                    top = 12.dp
-                                )
+                            "البصمة وقفل الجهاز متاحان.",
+                            style =
+                                MaterialTheme.typography
+                                    .bodySmall
                         )
                     }
                 }
 
                 message?.let {
                     Spacer(
-                        Modifier.height(8.dp)
+                        Modifier.height(10.dp)
                     )
 
                     Text(
                         it,
                         color =
                             MaterialTheme
-                                .colorScheme
-                                .error
+                                .colorScheme.error,
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
             }
@@ -297,38 +395,86 @@ fun V11SecuritySettingsDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    message = null
+
+                    if (
+                        pinNeedsVerification &&
+                        !store.verifyPin(
+                            currentPin
+                        )
+                    ) {
+                        message =
+                            "PIN الحالي غير صحيح"
+                        return@Button
+                    }
+
                     if (
                         settings.mode ==
                         V11LockMode.PIN
                     ) {
-                        if (pin.length < 4) {
+                        if (
+                            newPin.length < 4 ||
+                            newPin.length > 12
+                        ) {
                             message =
-                                "PIN يجب ألا يقل عن 4 أرقام"
+                                "PIN يجب أن يكون من 4 إلى 12 رقماً"
                             return@Button
                         }
 
-                        if (pin != confirmPin) {
+                        if (
+                            newPin != confirmPin
+                        ) {
                             message =
                                 "تأكيد PIN غير مطابق"
                             return@Button
                         }
 
-                        if (!store.setPin(pin)) {
+                        if (
+                            !store.setPin(newPin)
+                        ) {
                             message =
                                 "تعذر حفظ PIN"
                             return@Button
                         }
                     }
 
+                    var finalSettings =
+                        settings
+
                     if (
-                        settings.mode ==
+                        finalSettings.mode ==
                         V11LockMode.NONE
                     ) {
+                        finalSettings =
+                            finalSettings.copy(
+                                protectAccounts =
+                                    false
+                            )
+
                         store.clearPin()
                     }
 
-                    store.save(settings)
-                    onChanged(settings)
+                    if (
+                        finalSettings.mode !=
+                        V11LockMode.NONE &&
+                        !finalSettings
+                            .protectAccounts
+                    ) {
+                        finalSettings =
+                            finalSettings.copy(
+                                protectAccounts =
+                                    true
+                            )
+                    }
+
+                    store.save(
+                        finalSettings
+                    )
+
+                    onChanged(
+                        finalSettings
+                    )
+
                     onDismiss()
                 }
             ) {
@@ -346,35 +492,168 @@ fun V11SecuritySettingsDialog(
 }
 
 @Composable
-private fun SecurityModeRow(
+private fun SecurePinField(
+    value: String,
     label: String,
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = {
+            onValueChange(
+                it.filter(
+                    Char::isDigit
+                ).take(12)
+            )
+        },
+        label = {
+            Text(label)
+        },
+        singleLine = true,
+        modifier =
+            Modifier.fillMaxWidth(),
+        visualTransformation =
+            PasswordVisualTransformation(),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType =
+                    KeyboardType
+                        .NumberPassword
+            )
+    )
+}
+
+@Composable
+private fun SecuritySectionTitle(
+    text: String
+) {
+    Text(
+        text,
+        fontWeight = FontWeight.Black,
+        style =
+            MaterialTheme.typography
+                .titleSmall,
+        modifier =
+            Modifier.padding(
+                bottom = 6.dp
+            )
+    )
+}
+
+@Composable
+private fun SecurityModeCard(
+    title: String,
+    subtitle: String,
     selected: Boolean,
-    enabled: Boolean = true,
+    enabled: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
+    Card(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (selected)
+                        MaterialTheme
+                            .colorScheme
+                            .secondaryContainer
+                    else
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+            )
     ) {
-        RadioButton(
-            selected = selected,
-            onClick = onClick,
-            enabled = enabled
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = selected,
+                onClick = onClick,
+                enabled = enabled
+            )
 
-        Text(
-            label,
-            modifier =
-                Modifier.padding(
-                    top = 12.dp
-                ),
-            color =
-                if (enabled)
-                    LocalContentColor.current
-                else
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant
-        )
+            Spacer(
+                Modifier.width(6.dp)
+            )
+
+            Column {
+                Text(
+                    title,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    subtitle,
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecuritySwitchCard(
+    icon: @Composable () -> Unit,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange:
+        (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            icon()
+
+            Spacer(
+                Modifier.width(8.dp)
+            )
+
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+                Text(
+                    title,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    subtitle,
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall
+                )
+            }
+
+            Switch(
+                checked = checked,
+                onCheckedChange =
+                    onCheckedChange,
+                enabled = enabled
+            )
+        }
     }
 }

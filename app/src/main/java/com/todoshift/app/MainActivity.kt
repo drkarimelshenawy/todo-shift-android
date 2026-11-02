@@ -28,9 +28,7 @@ import com.todoshift.app.data.SmartToolsController
 import com.todoshift.app.data.SmartToolsLabels
 import com.todoshift.app.data.SmartToolMode
 import android.graphics.Color as AndroidColor
-import android.Manifest
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
@@ -119,21 +117,6 @@ class MainActivity : FragmentActivity() {
 
         requestedOpenDate =
             readOpenDate(intent)
-
-        if (
-            Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(
-                Manifest.permission.POST_NOTIFICATIONS
-            ) !=
-            android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.POST_NOTIFICATIONS
-                ),
-                1101
-            )
-        }
 
         setContent {
             MaterialTheme(

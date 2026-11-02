@@ -101,6 +101,11 @@ fun V11CalendarScreen(
             .toSet()
     }
 
+    val activeCalendar = remember(db.calendars, activeCalendarId) {
+        db.calendars.firstOrNull { it.id == activeCalendarId }
+            ?: db.calendars.sortedBy { it.order }.firstOrNull()
+    }
+
     Scaffold(
         containerColor = Color(0xFFF7F8FA),
         floatingActionButtonPosition =
@@ -261,7 +266,7 @@ fun V11CalendarScreen(
                             Color(0xFF213555),
                     contentColor = Color.White,
                     modifier = Modifier
-                        .padding(bottom = 2.dp)
+                        .padding(bottom = 0.dp)
                         .size(48.dp)
                 ) {
                     Icon(
@@ -289,7 +294,12 @@ fun V11CalendarScreen(
         ) {
             Spacer(Modifier.height(1.dp))
 
-            V11CompactHeader()
+            V11CompactHeader(
+                activeCalendarName = activeCalendar?.name ?: "التقويم",
+                onManageCalendars = {
+                    showCalendarManager = true
+                }
+            )
 
             Spacer(Modifier.height(1.dp))
 
@@ -322,10 +332,9 @@ fun V11CalendarScreen(
                     val today = LocalDate.now()
                     selectedDate = today
                     onMonthChange(YearMonth.from(today))
-                }
+                },
+                modifier = Modifier.weight(1f)
             )
-
-            Spacer(Modifier.height(6.dp))
 
             if (paintMode) {
                 V11PaintStatusBar(
@@ -340,17 +349,6 @@ fun V11CalendarScreen(
                         paletteOpen = false
                     }
                 )
-            } else {
-                TextButton(
-                    onClick = {
-                        showCalendarManager = true
-                    },
-                    modifier = Modifier.align(
-                        Alignment.End
-                    )
-                ) {
-                    Text("إدارة التقاويم")
-                }
             }
         }
     }
@@ -596,29 +594,59 @@ fun V11CalendarScreen(
 }
 
 @Composable
-private fun V11CompactHeader() {
+private fun V11CompactHeader(
+    activeCalendarName: String,
+    onManageCalendars: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(42.dp),
+            .height(52.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(R.drawable.todo_shift_splash_portrait),
+            painter = painterResource(R.drawable.todo_shift_icon_source),
             contentDescription = "ToDo Shift",
             modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(11.dp))
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
         )
 
-        Spacer(Modifier.width(9.dp))
+        Spacer(Modifier.width(8.dp))
 
-        Text(
-            "ToDo Shift",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF162A46)
-        )
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                "ToDo Shift",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF162A46),
+                maxLines = 1
+            )
+
+            Text(
+                activeCalendarName,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF4F709C),
+                maxLines = 1
+            )
+        }
+
+        TextButton(
+            onClick = onManageCalendars,
+            contentPadding = PaddingValues(
+                horizontal = 8.dp,
+                vertical = 0.dp
+            )
+        ) {
+            Text(
+                "إدارة التقاويم",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -701,7 +729,8 @@ private fun V11AnimatedCalendarArea(
     paintDates: Set<LocalDate>,
     onSelectedDate: (LocalDate) -> Unit,
     onMonthChange: (YearMonth) -> Unit,
-    onToday: () -> Unit
+    onToday: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var previousMonth by remember { mutableStateOf(month) }
 
@@ -718,6 +747,7 @@ private fun V11AnimatedCalendarArea(
     }
 
     AnimatedContent(
+        modifier = modifier.fillMaxWidth(),
         targetState = month,
         transitionSpec = {
             val forward = targetState > initialState

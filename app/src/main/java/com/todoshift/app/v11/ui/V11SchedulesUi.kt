@@ -40,6 +40,10 @@ fun V11SchedulesScreen(
         mutableStateOf("")
     }
 
+    var editingCalendar by remember {
+        mutableStateOf<AppCalendarV11?>(null)
+    }
+
     val monthDays =
         db.days.filter {
             it.date.startsWith(
@@ -95,97 +99,191 @@ fun V11SchedulesScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        db.calendars
-            .sortedBy { it.order }
-            .forEach { calendar ->
+        val orderedCalendars =
+            db.calendars
+                .sortedBy { it.order }
+
+        orderedCalendars
+            .forEachIndexed {
+                index,
+                calendar ->
 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                    Column(
+                        modifier =
+                            Modifier.padding(8.dp)
                     ) {
-                        IconButton(
-                            onClick = {
-                                onDatabaseChange(
-                                    V11CalendarController
-                                        .deleteCalendar(
-                                            db,
-                                            calendar.id
-                                        )
-                                )
-                            },
-                            enabled =
-                                db.calendars.size > 1
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            verticalAlignment =
+                                Alignment.CenterVertically
                         ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                "حذف"
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                onDatabaseChange(
-                                    V11CalendarController
-                                        .toggleVisibility(
-                                            db,
-                                            calendar.id
-                                        )
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11CalendarController
+                                            .deleteCalendar(
+                                                db,
+                                                calendar.id
+                                            )
+                                    )
+                                },
+                                enabled =
+                                    db.calendars.size > 1
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    "حذف"
                                 )
                             }
-                        ) {
-                            Icon(
-                                if (calendar.visible)
-                                    Icons.Default.Visibility
-                                else
-                                    Icons.Default.VisibilityOff,
-                                "إظهار أو إخفاء"
-                            )
-                        }
 
-                        Spacer(Modifier.weight(1f))
-
-                        Column(
-                            horizontalAlignment =
-                                Alignment.End
-                        ) {
-                            Text(
-                                calendar.name,
-                                fontWeight =
-                                    FontWeight.Black
-                            )
-
-                            Text(
-                                if (calendar.visible)
-                                    "ظاهر في التقويم"
-                                else
-                                    "مخفي",
-                                style =
-                                    MaterialTheme.typography
-                                        .labelSmall,
-                                color = Color.Gray
-                            )
-                        }
-
-                        Spacer(Modifier.width(10.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    schedulesColor(
-                                        calendar.colorHex
-                                    )
+                            IconButton(
+                                onClick = {
+                                    editingCalendar =
+                                        calendar
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    "تعديل"
                                 )
-                        )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11CalendarController
+                                            .toggleVisibility(
+                                                db,
+                                                calendar.id
+                                            )
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    if (calendar.visible)
+                                        Icons.Default.Visibility
+                                    else
+                                        Icons.Default.VisibilityOff,
+                                    "إظهار أو إخفاء"
+                                )
+                            }
+
+                            Spacer(
+                                Modifier.weight(1f)
+                            )
+
+                            Column(
+                                horizontalAlignment =
+                                    Alignment.End
+                            ) {
+                                Text(
+                                    calendar.name,
+                                    fontWeight =
+                                        FontWeight.Black
+                                )
+
+                                Text(
+                                    if (calendar.visible)
+                                        "ظاهر في التقويم"
+                                    else
+                                        "مخفي",
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .labelSmall,
+                                    color = Color.Gray
+                                )
+                            }
+
+                            Spacer(
+                                Modifier.width(10.dp)
+                            )
+
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            schedulesColor(
+                                                calendar.colorHex
+                                            )
+                                        )
+                            )
+                        }
+
+                        HorizontalDivider()
+
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.Center
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11CalendarController
+                                            .moveCalendar(
+                                                db,
+                                                calendar.id,
+                                                -1
+                                            )
+                                    )
+                                },
+                                enabled =
+                                    index > 0
+                            ) {
+                                Icon(
+                                    Icons.Default
+                                        .KeyboardArrowUp,
+                                    "تحريك لأعلى"
+                                )
+                            }
+
+                            Text(
+                                "ترتيب ${index + 1}",
+                                modifier =
+                                    Modifier
+                                        .align(
+                                            Alignment
+                                                .CenterVertically
+                                        ),
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelMedium
+                            )
+
+                            IconButton(
+                                onClick = {
+                                    onDatabaseChange(
+                                        V11CalendarController
+                                            .moveCalendar(
+                                                db,
+                                                calendar.id,
+                                                1
+                                            )
+                                    )
+                                },
+                                enabled =
+                                    index <
+                                    orderedCalendars
+                                        .lastIndex
+                            ) {
+                                Icon(
+                                    Icons.Default
+                                        .KeyboardArrowDown,
+                                    "تحريك لأسفل"
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -362,38 +460,208 @@ fun V11SchedulesScreen(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
-
-        Card(
-            colors =
-                CardDefaults.cardColors(
-                    containerColor =
-                        Color(0xFFF2F4F7)
-                )
-        ) {
-            Column(
-                modifier =
-                    Modifier.padding(14.dp)
-            ) {
-                Text(
-                    "القوالب والجداول المتكررة",
-                    fontWeight =
-                        FontWeight.Black
-                )
-
-                Spacer(Modifier.height(4.dp))
-
-                Text(
-                    "سيتم ربط القوالب المتكررة مع Paint Mode بدون إعادة نظام Long/Night القديم.",
-                    style =
-                        MaterialTheme.typography
-                            .bodySmall
-                )
-            }
-        }
-
         Spacer(Modifier.height(30.dp))
     }
+
+    editingCalendar
+        ?.let { calendar ->
+
+            V11EditCalendarDialog(
+                calendar = calendar,
+                onDismiss = {
+                    editingCalendar = null
+                },
+                onSave = {
+                    updated ->
+
+                    onDatabaseChange(
+                        V11CalendarController
+                            .updateCalendar(
+                                db,
+                                updated
+                            )
+                    )
+
+                    editingCalendar = null
+                }
+            )
+        }
+}
+
+@Composable
+private fun V11EditCalendarDialog(
+    calendar: AppCalendarV11,
+    onDismiss: () -> Unit,
+    onSave: (AppCalendarV11) -> Unit
+) {
+    var name by remember(calendar.id) {
+        mutableStateOf(calendar.name)
+    }
+
+    var colorHex by remember(calendar.id) {
+        mutableStateOf(calendar.colorHex)
+    }
+
+    val colors =
+        listOf(
+            "#4F709C",
+            "#9DD8AE",
+            "#FFE28A",
+            "#D7ACE8",
+            "#91C1EE",
+            "#FFB4A2",
+            "#B8C0FF",
+            "#A8DADC"
+        )
+
+    AlertDialog(
+        onDismissRequest =
+            onDismiss,
+        title = {
+            Text("تعديل التقويم")
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = {
+                        Text("اسم التقويم")
+                    },
+                    singleLine = true,
+                    modifier =
+                        Modifier.fillMaxWidth()
+                )
+
+                Spacer(
+                    Modifier.height(14.dp)
+                )
+
+                Text(
+                    "لون التقويم",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement
+                            .SpaceEvenly
+                ) {
+                    colors
+                        .take(4)
+                        .forEach { hex ->
+                            CalendarColorChoice(
+                                hex = hex,
+                                selected =
+                                    colorHex == hex,
+                                onClick = {
+                                    colorHex = hex
+                                }
+                            )
+                        }
+                }
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement
+                            .SpaceEvenly
+                ) {
+                    colors
+                        .drop(4)
+                        .forEach { hex ->
+                            CalendarColorChoice(
+                                hex = hex,
+                                selected =
+                                    colorHex == hex,
+                                onClick = {
+                                    colorHex = hex
+                                }
+                            )
+                        }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (
+                        name.isNotBlank()
+                    ) {
+                        onSave(
+                            calendar.copy(
+                                name =
+                                    name.trim(),
+                                colorHex =
+                                    colorHex
+                            )
+                        )
+                    }
+                },
+                enabled =
+                    name.isNotBlank()
+            ) {
+                Text("حفظ")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick =
+                    onDismiss
+            ) {
+                Text("إلغاء")
+            }
+        }
+    )
+}
+
+@Composable
+private fun CalendarColorChoice(
+    hex: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier =
+            Modifier
+                .size(
+                    if (selected)
+                        42.dp
+                    else
+                        36.dp
+                )
+                .clickable {
+                    onClick()
+                },
+        shape =
+            CircleShape,
+        color =
+            schedulesColor(hex),
+        border =
+            if (selected)
+                androidx.compose.foundation.BorderStroke(
+                    3.dp,
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+                )
+            else
+                null
+    ) {}
 }
 
 @Composable

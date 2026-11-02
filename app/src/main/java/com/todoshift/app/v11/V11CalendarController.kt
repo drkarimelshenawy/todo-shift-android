@@ -47,6 +47,54 @@ object V11CalendarController {
             }
         )
 
+
+    fun moveCalendar(
+        db: V11Database,
+        calendarId: String,
+        direction: Int
+    ): V11Database {
+        val ordered =
+            db.calendars
+                .sortedBy { it.order }
+                .toMutableList()
+
+        val index =
+            ordered.indexOfFirst {
+                it.id == calendarId
+            }
+
+        if (index < 0) return db
+
+        val target =
+            index + direction
+
+        if (
+            target !in
+            ordered.indices
+        ) return db
+
+        val current =
+            ordered[index]
+
+        ordered[index] =
+            ordered[target]
+
+        ordered[target] =
+            current
+
+        return db.copy(
+            calendars =
+                ordered.mapIndexed {
+                    order,
+                    calendar ->
+
+                    calendar.copy(
+                        order = order
+                    )
+                }
+        )
+    }
+
     fun deleteCalendar(
         db: V11Database,
         calendarId: String

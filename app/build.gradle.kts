@@ -12,8 +12,30 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
+        versionCode = 28
         versionName = "1.1.0-rc7e"
+    }
+
+
+    signingConfigs {
+        create("persistentDebug") {
+            val keyPath = System.getenv("TODOSHIFT_SIGNING_FILE")
+            val signingPassword = System.getenv("TODOSHIFT_SIGNING_PASSWORD")
+
+            if (!keyPath.isNullOrBlank() &&
+                !signingPassword.isNullOrBlank()) {
+                storeFile = file(keyPath)
+                storePassword = signingPassword
+                keyAlias = "todoshift"
+                keyPassword = signingPassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("persistentDebug")
+        }
     }
 
     compileOptions {

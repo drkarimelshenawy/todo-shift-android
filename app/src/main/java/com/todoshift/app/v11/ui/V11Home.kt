@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -269,6 +271,14 @@ fun V11Home(
         showWorkplaces = false
     }
 
+    // RC9: Calendar is the root/home destination.
+    // Back from any main section returns to Calendar first.
+    BackHandler(
+        enabled = !showWorkplaces && tab != 0
+    ) {
+        tab = 0
+    }
+
     val sectionTitle =
         when {
             showWorkplaces ->
@@ -283,8 +293,14 @@ fun V11Home(
             tab == 2 ->
                 "الحسابات"
 
-            else ->
+            tab == 3 ->
                 "الإعدادات"
+
+            tab == 4 ->
+                "المهام"
+
+            else ->
+                "التقويم"
         }
 
     V11AppThemeProvider(
@@ -309,79 +325,13 @@ fun V11Home(
             )
         },
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = tab == 0,
-                    onClick = {
-                        showWorkplaces = false
-                        tab = 0
-                    },
-                    icon = {
-                        Icon(
-                            Icons.Default
-                                .CalendarMonth,
-                            null
-                        )
-                    },
-                    label = {
-                        Text("التقويم")
-                    }
-                )
-
-                NavigationBarItem(
-                    selected = tab == 1,
-                    onClick = {
-                        showWorkplaces = false
-                        tab = 1
-                    },
-                    icon = {
-                        Icon(
-                            Icons.Default
-                                .DateRange,
-                            null
-                        )
-                    },
-                    label = {
-                        Text("جداولي")
-                    }
-                )
-
-                NavigationBarItem(
-                    selected = tab == 2,
-                    onClick = {
-                        showWorkplaces = false
-                        tab = 2
-                    },
-                    icon = {
-                        Icon(
-                            Icons.Default
-                                .Payments,
-                            null
-                        )
-                    },
-                    label = {
-                        Text("الحسابات")
-                    }
-                )
-
-                NavigationBarItem(
-                    selected = tab == 3,
-                    onClick = {
-                        showWorkplaces = false
-                        tab = 3
-                    },
-                    icon = {
-                        Icon(
-                            Icons.Default
-                                .Settings,
-                            null
-                        )
-                    },
-                    label = {
-                        Text("الإعدادات")
-                    }
-                )
-            }
+            V11HeroBottomBar(
+                selectedTab = tab,
+                onSelectTab = { destination ->
+                    showWorkplaces = false
+                    tab = destination
+                }
+            )
         }
     ) { padding ->
 
@@ -506,7 +456,7 @@ fun V11Home(
                         )
                     }
 
-                else ->
+                3 ->
                     V11MoreScreen(
                         db = db,
                         uiSettings =
@@ -545,11 +495,279 @@ fun V11Home(
                             showWorkplaces = true
                         }
                     )
+
+                4 ->
+                    V11TasksPlaceholderScreen()
+
+                else ->
+                    V11CalendarScreen(
+                        month = month,
+                        initialDate = launchDate,
+                        db = db,
+                        workplaces =
+                            oldData.workplaces,
+                        uiSettings =
+                            uiSettings,
+                        activeCalendarId =
+                            activeCalendarId,
+                        onActiveCalendarChange = { id ->
+                            activeCalendarId = id
+                            activeCalendarStore.save(id)
+                        },
+                        onMonthChange = {
+                            month = it
+                        },
+                        onDatabaseChange = {
+                            saveDb(it)
+                        },
+                        onUiSettingsChange = {
+                            saveUi(it)
+                        }
+                    )
                 }
             }
         }
     }
 }
+}
+
+@Composable
+private fun V11HeroBottomBar(
+    selectedTab: Int,
+    onSelectTab: (Int) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(82.dp)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            V11BottomDestination(
+                modifier = Modifier.weight(1f),
+                label = "جداولي",
+                selected = selectedTab == 1,
+                onClick = { onSelectTab(1) },
+                icon = {
+                    Icon(
+                        Icons.Default.DateRange,
+                        contentDescription = null
+                    )
+                }
+            )
+
+            V11BottomDestination(
+                modifier = Modifier.weight(1f),
+                label = "المهام",
+                selected = selectedTab == 4,
+                onClick = { onSelectTab(4) },
+                icon = {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null
+                    )
+                }
+            )
+
+            V11CalendarHeroDestination(
+                modifier = Modifier.weight(1.15f),
+                selected = selectedTab == 0,
+                onClick = { onSelectTab(0) }
+            )
+
+            V11BottomDestination(
+                modifier = Modifier.weight(1f),
+                label = "الحسابات",
+                selected = selectedTab == 2,
+                onClick = { onSelectTab(2) },
+                icon = {
+                    Box {
+                        Icon(
+                            Icons.Default.Payments,
+                            contentDescription = null
+                        )
+
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(10.dp)
+                        )
+                    }
+                }
+            )
+
+            V11BottomDestination(
+                modifier = Modifier.weight(1f),
+                label = "الإعدادات",
+                selected = selectedTab == 3,
+                onClick = { onSelectTab(3) },
+                icon = {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = null
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun V11BottomDestination(
+    modifier: Modifier = Modifier,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit
+) {
+    val color =
+        if (selected)
+            MaterialTheme.colorScheme.primary
+        else
+            MaterialTheme.colorScheme.onSurfaceVariant
+
+    TextButton(
+        modifier = modifier
+            .fillMaxHeight(),
+        onClick = onClick,
+        contentPadding = PaddingValues(
+            horizontal = 2.dp,
+            vertical = 6.dp
+        )
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CompositionLocalProvider(
+                LocalContentColor provides color
+            ) {
+                Box(
+                    modifier = Modifier.size(25.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    icon()
+                }
+            }
+
+            Spacer(Modifier.height(3.dp))
+
+            Text(
+                text = label,
+                color = color,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight =
+                    if (selected)
+                        FontWeight.Bold
+                    else
+                        FontWeight.Medium,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun V11CalendarHeroDestination(
+    modifier: Modifier = Modifier,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    TextButton(
+        modifier = modifier.fillMaxHeight(),
+        onClick = onClick,
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Surface(
+                modifier = Modifier.size(
+                    if (selected) 54.dp else 50.dp
+                ),
+                shape = MaterialTheme.shapes.extraLarge,
+                color =
+                    if (selected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.primaryContainer,
+                shadowElevation =
+                    if (selected) 7.dp else 3.dp
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.CalendarMonth,
+                        contentDescription = "التقويم",
+                        modifier = Modifier.size(28.dp),
+                        tint =
+                            if (selected)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme
+                                    .onPrimaryContainer
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(2.dp))
+
+            Text(
+                "التقويم",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun V11TasksPlaceholderScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = null,
+                modifier = Modifier.size(52.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                "المهام",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                "سيتم بناء To-Do List في المرحلة التالية",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable

@@ -1,5 +1,10 @@
 package com.todoshift.app.v11.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,11 +21,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 import com.todoshift.app.data.Workplace
+import com.todoshift.app.reminders.ToDoShiftReminder
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.UUID
 
 private enum class TaskFilterV11 {
@@ -37,6 +47,35 @@ fun V11TasksScreen(
     workplaces: List<Workplace>,
     onDatabaseChange: (V11Database) -> Unit
 ) {
+    val context = LocalContext.current
+
+    val notificationPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract =
+                ActivityResultContracts
+                    .RequestPermission()
+        ) {
+            // Scheduling remains valid.
+            // Android will display notifications
+            // once permission is granted.
+        }
+
+    fun ensureNotificationPermission() {
+        if (
+            Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission
+                    .POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(
+                Manifest.permission
+                    .POST_NOTIFICATIONS
+            )
+        }
+    }
+
     var filter by remember {
         mutableStateOf(TaskFilterV11.TODAY)
     }
@@ -154,24 +193,40 @@ fun V11TasksScreen(
                                     task.status !=
                                         TaskStatusV11.COMPLETED
 
+                                val updatedTask =
+                                    task.copy(
+                                        status =
+                                            if (completed)
+                                                TaskStatusV11.COMPLETED
+                                            else
+                                                TaskStatusV11.TODO,
+                                        completedAt =
+                                            if (completed)
+                                                now
+                                            else
+                                                null,
+                                        updatedAt = now
+                                    )
+
+                                if (completed) {
+                                    ToDoShiftReminder.cancel(
+                                        context,
+                                        task.id
+                                    )
+                                } else {
+                                    ToDoShiftReminder.schedule(
+                                        context,
+                                        updatedTask
+                                    )
+                                }
+
                                 onDatabaseChange(
                                     db.copy(
                                         tasks = db.tasks.map {
-                                            if (it.id == task.id) {
-                                                it.copy(
-                                                    status =
-                                                        if (completed)
-                                                            TaskStatusV11.COMPLETED
-                                                        else
-                                                            TaskStatusV11.TODO,
-                                                    completedAt =
-                                                        if (completed)
-                                                            now
-                                                        else
-                                                            null,
-                                                    updatedAt = now
-                                                )
-                                            } else it
+                                            if (it.id == task.id)
+                                                updatedTask
+                                            else
+                                                it
                                         }
                                     )
                                 )
@@ -181,6 +236,11 @@ fun V11TasksScreen(
                                 showEditor = true
                             },
                             onDelete = {
+                                ToDoShiftReminder.cancel(
+                                    context,
+                                    task.id
+                                )
+
                                 onDatabaseChange(
                                     db.copy(
                                         tasks =
@@ -233,6 +293,20 @@ fun V11TasksScreen(
                     } else {
                         db.tasks + task
                     }
+
+                ToDoShiftReminder.cancel(
+                    context,
+                    task.id
+                )
+
+                if (task.reminderAt != null) {
+                    ensureNotificationPermission()
+                }
+
+                ToDoShiftReminder.schedule(
+                    context,
+                    task
+                )
 
                 onDatabaseChange(
                     db.copy(tasks = updated)
@@ -537,6 +611,33 @@ private fun TaskEditorDialogV11(
 
     var linkedShiftId by remember(existing?.id) {
         mutableStateOf(existing?.linkedShiftId)
+    }
+
+    var reminderEnabled by remember(existing?.id) {
+        mutableStateOf(
+            existing?.reminderAt != null
+        )
+    }
+
+    var reminderTime by remember(existing?.id) {
+        mutableStateOf(
+            existing?.reminderAt
+                ?.let { millis ->
+                    runCatching {
+                        java.time.Instant
+                            .ofEpochMilli(millis)
+                            .atZone(
+                                ZoneId.systemDefault()
+                            )
+                            .toLocalTime()
+                            .withSecond(0)
+                            .withNano(0)
+                            .toString()
+                    }.getOrNull()
+                }
+                ?: existing?.time
+                ?: ""
+        )
     }
 
     var workplaceMenu by remember {
@@ -868,6 +969,59 @@ private fun TaskEditorDialogV11(
                     }
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Switch(
+                        checked = reminderEnabled,
+                        onCheckedChange = {
+                            reminderEnabled = it
+
+                            if (
+                                it &&
+                                reminderTime.isBlank()
+                            ) {
+                                reminderTime =
+                                    time.takeIf {
+                                        value ->
+                                        value.isNotBlank()
+                                    } ?: "09:00"
+                            }
+                        }
+                    )
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Text(
+                        "تذكير بالمهمة",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (reminderEnabled) {
+                    OutlinedTextField(
+                        value = reminderTime,
+                        onValueChange = {
+                            reminderTime = it
+                        },
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        label = {
+                            Text(
+                                "وقت التذكير HH:MM"
+                            )
+                        },
+                        supportingText = {
+                            Text(
+                                "سيتم التنبيه في تاريخ المهمة"
+                            )
+                        },
+                        singleLine = true
+                    )
+                }
+
                 Text(
                     "الأولوية",
                     fontWeight = FontWeight.Bold
@@ -951,10 +1105,74 @@ private fun TaskEditorDialogV11(
                     title.isNotBlank() &&
                     runCatching {
                         LocalDate.parse(date)
-                    }.isSuccess,
+                    }.isSuccess &&
+                    (
+                        !reminderEnabled ||
+                        runCatching {
+                            val parts =
+                                reminderTime
+                                    .trim()
+                                    .split(":")
+
+                            require(parts.size == 2)
+
+                            val hour =
+                                parts[0].toInt()
+                            val minute =
+                                parts[1].toInt()
+
+                            require(
+                                hour in 0..23 &&
+                                minute in 0..59
+                            )
+                        }.isSuccess
+                    ),
                 onClick = {
                     val now =
                         System.currentTimeMillis()
+
+                    val calculatedReminderAt =
+                        if (reminderEnabled) {
+                            runCatching {
+                                val reminderDate =
+                                    LocalDate.parse(date)
+
+                                val parts =
+                                    reminderTime
+                                        .trim()
+                                        .split(":")
+
+                                require(
+                                    parts.size == 2
+                                )
+
+                                val hour =
+                                    parts[0].toInt()
+
+                                val minute =
+                                    parts[1].toInt()
+
+                                require(
+                                    hour in 0..23 &&
+                                    minute in 0..59
+                                )
+
+                                LocalDateTime.of(
+                                    reminderDate,
+                                    java.time.LocalTime.of(
+                                        hour,
+                                        minute
+                                    )
+                                )
+                                    .atZone(
+                                        ZoneId.systemDefault()
+                                    )
+                                    .toInstant()
+                                    .toEpochMilli()
+                            }.getOrNull()
+                        } else {
+                            null
+                        }
 
                     onSave(
                         TaskV11(
@@ -976,7 +1194,7 @@ private fun TaskEditorDialogV11(
                                     ?: TaskStatusV11.TODO,
                             repeat = repeat,
                             reminderAt =
-                                existing?.reminderAt,
+                                calculatedReminderAt,
                             workplaceId =
                                 workplaceId,
                             calendarId =

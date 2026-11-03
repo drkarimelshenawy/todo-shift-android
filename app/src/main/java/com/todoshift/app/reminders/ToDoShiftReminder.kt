@@ -13,6 +13,8 @@ import androidx.core.content.ContextCompat
 import com.todoshift.app.MainActivity
 import com.todoshift.app.R
 import com.todoshift.app.v11.DayItemV11
+import com.todoshift.app.v11.TaskStatusV11
+import com.todoshift.app.v11.TaskV11
 import com.todoshift.app.v11.V11Database
 import com.todoshift.app.v11.V11Runtime
 
@@ -134,6 +136,88 @@ object ToDoShiftReminder {
         }
     }
 
+    fun schedule(
+        context: Context,
+        task: TaskV11
+    ) {
+        val whenMs =
+            task.reminderAt ?: return
+
+        if (
+            task.status ==
+            TaskStatusV11.COMPLETED
+        ) {
+            cancel(context, task.id)
+            return
+        }
+
+        if (whenMs <= System.currentTimeMillis()) {
+            return
+        }
+
+        createChannel(context)
+
+        val alarm =
+            context.getSystemService(
+                Context.ALARM_SERVICE
+            ) as AlarmManager
+
+        val intent =
+            Intent(
+                context,
+                ToDoShiftReminderReceiver::class.java
+            ).apply {
+                action = ACTION_REMINDER
+
+                putExtra(
+                    EXTRA_ID,
+                    task.id
+                )
+
+                putExtra(
+                    EXTRA_TITLE,
+                    task.title
+                )
+
+                putExtra(
+                    EXTRA_DETAILS,
+                    task.details
+                )
+
+                putExtra(
+                    EXTRA_DATE,
+                    task.date
+                )
+            }
+
+        val pending =
+            PendingIntent.getBroadcast(
+                context,
+                requestCode(task.id),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or
+                    PendingIntent.FLAG_IMMUTABLE
+            )
+
+        if (
+            Build.VERSION.SDK_INT <
+                Build.VERSION_CODES.S ||
+            alarm.canScheduleExactAlarms()
+        ) {
+            alarm.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                whenMs,
+                pending
+            )
+        } else {
+            alarm.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                whenMs,
+                pending
+            )
+        }
+    }
+
     fun cancel(
         context: Context,
         id: String
@@ -179,6 +263,18 @@ object ToDoShiftReminder {
         db.dayItems
             .filter {
                 !it.completed &&
+                    it.reminderAt != null &&
+                    it.reminderAt >
+                        System.currentTimeMillis()
+            }
+            .forEach {
+                schedule(context, it)
+            }
+
+        db.tasks
+            .filter {
+                it.status !=
+                    TaskStatusV11.COMPLETED &&
                     it.reminderAt != null &&
                     it.reminderAt >
                         System.currentTimeMillis()

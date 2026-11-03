@@ -25,9 +25,11 @@ fun V11SecuritySettingsDialog(
     store: V11SecurityStore,
     current: V11SecuritySettings,
     onDismiss: () -> Unit,
-    onChanged: (V11SecuritySettings) -> Unit
+    onChanged:
+        (V11SecuritySettings) -> Unit
 ) {
-    val context = LocalContext.current
+    val context =
+        LocalContext.current
 
     var settings by remember(current) {
         mutableStateOf(current)
@@ -45,58 +47,86 @@ fun V11SecuritySettingsDialog(
         mutableStateOf("")
     }
 
+    var currentPatternVerified by remember {
+        mutableStateOf(false)
+    }
+
+    var newPattern by remember {
+        mutableStateOf<List<Int>?>(
+            null
+        )
+    }
+
+    var confirmPattern by remember {
+        mutableStateOf<List<Int>?>(
+            null
+        )
+    }
+
     var message by remember {
         mutableStateOf<String?>(null)
     }
 
-    val hadPin = remember {
-        store.hasPin()
-    }
+    val hadPin =
+        remember(current) {
+            store.hasPin()
+        }
 
-    val biometricAvailable = remember {
-        val allowed =
-            BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+    val hadPattern =
+        remember(current) {
+            store.hasPattern()
+        }
 
-        BiometricManager.from(context)
-            .canAuthenticate(allowed) ==
-            BiometricManager.BIOMETRIC_SUCCESS
-    }
+    val biometricAvailable =
+        remember {
+            val allowed =
+                BiometricManager
+                    .Authenticators
+                    .BIOMETRIC_STRONG or
+                    BiometricManager
+                        .Authenticators
+                        .DEVICE_CREDENTIAL
 
-    val securityWasEnabled =
-        current.mode != V11LockMode.NONE
+            BiometricManager
+                .from(context)
+                .canAuthenticate(
+                    allowed
+                ) ==
+                BiometricManager
+                    .BIOMETRIC_SUCCESS
+        }
 
-    val pinNeedsVerification =
-        hadPin &&
-            (
-                settings.mode == V11LockMode.NONE ||
-                    (
-                        settings.mode == V11LockMode.PIN &&
-                            (
-                                newPin.isNotEmpty() ||
-                                    current.mode != V11LockMode.PIN
-                                )
-                        )
-                )
+    val protectionAvailable =
+        settings.mode !=
+            V11LockMode.NONE ||
+            settings.biometricEnabled
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest =
+            onDismiss,
+
         title = {
             Column {
                 Text(
                     "الأمان والخصوصية",
-                    fontWeight = FontWeight.Black
+                    fontWeight =
+                        FontWeight.Black
                 )
 
                 Text(
                     "اختر طريقة حماية قسم الحسابات",
-                    style = MaterialTheme.typography.bodySmall,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
                     color =
-                        MaterialTheme.colorScheme
+                        MaterialTheme
+                            .colorScheme
                             .onSurfaceVariant
                 )
             }
         },
+
         text = {
             Column(
                 modifier = Modifier
@@ -105,13 +135,14 @@ fun V11SecuritySettingsDialog(
                     )
             ) {
                 SecuritySectionTitle(
-                    "طريقة الحماية"
+                    "طريقة الحماية الأساسية"
                 )
 
                 SecurityModeCard(
-                    title = "بدون قفل",
+                    title =
+                        "بدون قفل",
                     subtitle =
-                        "فتح الحسابات مباشرة",
+                        "بدون PIN أو نمط",
                     selected =
                         settings.mode ==
                             V11LockMode.NONE,
@@ -145,65 +176,177 @@ fun V11SecuritySettingsDialog(
                 )
 
                 SecurityModeCard(
-                    title =
-                        "البصمة / قفل الجهاز",
+                    title = "النمط",
                     subtitle =
-                        if (biometricAvailable)
-                            "استخدام حماية الجهاز"
-                        else
-                            "غير متاح على الجهاز حالياً",
+                        "نمط حماية 3 × 3",
                     selected =
                         settings.mode ==
-                            V11LockMode.BIOMETRIC,
-                    enabled =
-                        biometricAvailable,
+                            V11LockMode.PATTERN,
+                    enabled = true,
                     onClick = {
                         settings =
                             settings.copy(
                                 mode =
-                                    V11LockMode.BIOMETRIC
+                                    V11LockMode.PATTERN
                             )
                         message = null
                     }
                 )
 
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                SecuritySectionTitle(
+                    "البصمة"
+                )
+
+                SecuritySwitchCard(
+                    icon = {
+                        Icon(
+                            Icons.Default
+                                .Fingerprint,
+                            null
+                        )
+                    },
+                    title =
+                        "استخدام البصمة",
+                    subtitle =
+                        if (
+                            biometricAvailable
+                        )
+                            "اختيار إضافي مستقل لفتح الحسابات"
+                        else
+                            "البصمة أو قفل الجهاز غير متاح حالياً",
+                    checked =
+                        settings
+                            .biometricEnabled,
+                    enabled =
+                        biometricAvailable,
+                    onCheckedChange = {
+                        settings =
+                            settings.copy(
+                                biometricEnabled =
+                                    it
+                            )
+
+                        message = null
+                    }
+                )
+
+                // =================================================
+                // Verify current primary protection when changing it.
+                // =================================================
+
                 if (
-                    settings.mode ==
-                    V11LockMode.PIN
+                    current.mode ==
+                        V11LockMode.PIN &&
+                    hadPin &&
+                    (
+                        settings.mode !=
+                            V11LockMode.PIN ||
+                            newPin.isNotEmpty()
+                        )
                 ) {
                     Spacer(
-                        Modifier.height(10.dp)
+                        Modifier.height(12.dp)
                     )
 
                     SecuritySectionTitle(
-                        if (hadPin)
+                        "التحقق من الحماية الحالية"
+                    )
+
+                    SecurePinField(
+                        value =
+                            currentPin,
+                        label =
+                            "PIN الحالي",
+                        onValueChange = {
+                            currentPin = it
+                            message = null
+                        }
+                    )
+                }
+
+                if (
+                    current.mode ==
+                        V11LockMode.PATTERN &&
+                    hadPattern &&
+                    settings.mode !=
+                        V11LockMode.PATTERN
+                ) {
+                    Spacer(
+                        Modifier.height(12.dp)
+                    )
+
+                    SecuritySectionTitle(
+                        "ارسم النمط الحالي"
+                    )
+
+                    V11PatternInput(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(
+                                    max = 220.dp
+                                ),
+                        onPatternComplete = {
+                            currentPatternVerified =
+                                store.verifyPattern(
+                                    it
+                                )
+
+                            message =
+                                if (
+                                    currentPatternVerified
+                                )
+                                    null
+                                else
+                                    "النمط الحالي غير صحيح"
+                        }
+                    )
+
+                    if (
+                        currentPatternVerified
+                    ) {
+                        Text(
+                            "تم التحقق من النمط الحالي",
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
+
+                // =================================================
+                // PIN creation/change
+                // =================================================
+
+                if (
+                    settings.mode ==
+                        V11LockMode.PIN
+                ) {
+                    Spacer(
+                        Modifier.height(12.dp)
+                    )
+
+                    SecuritySectionTitle(
+                        if (
+                            current.mode ==
+                                V11LockMode.PIN &&
+                            hadPin
+                        )
                             "تغيير PIN"
                         else
                             "إنشاء PIN"
                     )
 
-                    if (hadPin) {
-                        SecurePinField(
-                            value = currentPin,
-                            label = "PIN الحالي",
-                            onValueChange = {
-                                currentPin = it
-                                message = null
-                            }
-                        )
-
-                        Spacer(
-                            Modifier.height(8.dp)
-                        )
-                    }
-
                     SecurePinField(
                         value = newPin,
-                        label =
-                            if (hadPin)
-                                "PIN الجديد"
-                            else
-                                "PIN",
+                        label = "PIN الجديد",
                         onValueChange = {
                             newPin = it
                             message = null
@@ -216,40 +359,153 @@ fun V11SecuritySettingsDialog(
 
                     SecurePinField(
                         value = confirmPin,
-                        label = "تأكيد PIN",
+                        label =
+                            "تأكيد PIN",
                         onValueChange = {
                             confirmPin = it
                             message = null
                         }
                     )
-                } else if (
+                }
+
+                // =================================================
+                // Pattern creation/change
+                // =================================================
+
+                if (
                     settings.mode ==
-                        V11LockMode.NONE &&
-                    securityWasEnabled &&
-                    hadPin
+                        V11LockMode.PATTERN
                 ) {
                     Spacer(
-                        Modifier.height(10.dp)
+                        Modifier.height(12.dp)
+                    )
+
+                    if (
+                        current.mode ==
+                            V11LockMode.PATTERN &&
+                        hadPattern
+                    ) {
+                        SecuritySectionTitle(
+                            "ارسم النمط الحالي"
+                        )
+
+                        V11PatternInput(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(
+                                        max = 210.dp
+                                    ),
+                            onPatternComplete = {
+                                currentPatternVerified =
+                                    store
+                                        .verifyPattern(
+                                            it
+                                        )
+
+                                message =
+                                    if (
+                                        currentPatternVerified
+                                    )
+                                        null
+                                    else
+                                        "النمط الحالي غير صحيح"
+                            }
+                        )
+
+                        if (
+                            currentPatternVerified
+                        ) {
+                            Text(
+                                "تم التحقق",
+                                color =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                            )
+                        }
+
+                        Spacer(
+                            Modifier.height(10.dp)
+                        )
+                    }
+
+                    SecuritySectionTitle(
+                        if (
+                            current.mode ==
+                                V11LockMode.PATTERN
+                        )
+                            "النمط الجديد"
+                        else
+                            "إنشاء النمط"
                     )
 
                     Text(
-                        "لتعطيل الحماية أدخل PIN الحالي.",
+                        "اربط 4 نقاط على الأقل",
                         style =
-                            MaterialTheme.typography
+                            MaterialTheme
+                                .typography
+                                .bodySmall
+                    )
+
+                    V11PatternInput(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(
+                                    max = 210.dp
+                                ),
+                        onPatternComplete = {
+                            newPattern = it
+                            message = null
+                        }
+                    )
+
+                    Text(
+                        if (
+                            newPattern != null
+                        )
+                            "تم تسجيل النمط"
+                        else
+                            "ارسم النمط",
+                        style =
+                            MaterialTheme
+                                .typography
                                 .bodySmall
                     )
 
                     Spacer(
-                        Modifier.height(6.dp)
+                        Modifier.height(10.dp)
                     )
 
-                    SecurePinField(
-                        value = currentPin,
-                        label = "PIN الحالي",
-                        onValueChange = {
-                            currentPin = it
+                    SecuritySectionTitle(
+                        "تأكيد النمط"
+                    )
+
+                    V11PatternInput(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(
+                                    max = 210.dp
+                                ),
+                        onPatternComplete = {
+                            confirmPattern = it
                             message = null
                         }
+                    )
+
+                    Text(
+                        if (
+                            confirmPattern != null
+                        )
+                            "تم تسجيل التأكيد"
+                        else
+                            "أعد رسم النمط",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall
                     )
                 }
 
@@ -268,18 +524,19 @@ fun V11SecuritySettingsDialog(
                             null
                         )
                     },
-                    title = "قفل قسم الحسابات",
+                    title =
+                        "قفل قسم الحسابات",
                     subtitle =
                         "اطلب التحقق قبل عرض الحسابات",
                     checked =
                         settings.protectAccounts,
                     enabled =
-                        settings.mode !=
-                            V11LockMode.NONE,
+                        protectionAvailable,
                     onCheckedChange = {
                         settings =
                             settings.copy(
-                                protectAccounts = it
+                                protectAccounts =
+                                    it
                             )
                     }
                 )
@@ -287,7 +544,8 @@ fun V11SecuritySettingsDialog(
                 SecuritySwitchCard(
                     icon = {
                         Icon(
-                            Icons.Default.VisibilityOff,
+                            Icons.Default
+                                .VisibilityOff,
                             null
                         )
                     },
@@ -301,7 +559,8 @@ fun V11SecuritySettingsDialog(
                     onCheckedChange = {
                         settings =
                             settings.copy(
-                                hideAmounts = it
+                                hideAmounts =
+                                    it
                             )
                     }
                 )
@@ -318,7 +577,9 @@ fun V11SecuritySettingsDialog(
                     modifier =
                         Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement.spacedBy(6.dp)
+                        Arrangement.spacedBy(
+                            6.dp
+                        )
                 ) {
                     listOf(
                         0 to "فوري",
@@ -347,35 +608,6 @@ fun V11SecuritySettingsDialog(
                     }
                 }
 
-                if (biometricAvailable) {
-                    Spacer(
-                        Modifier.height(10.dp)
-                    )
-
-                    Row(
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Fingerprint,
-                            null,
-                            modifier =
-                                Modifier.size(18.dp)
-                        )
-
-                        Spacer(
-                            Modifier.width(6.dp)
-                        )
-
-                        Text(
-                            "البصمة وقفل الجهاز متاحان.",
-                            style =
-                                MaterialTheme.typography
-                                    .bodySmall
-                        )
-                    }
-                }
-
                 message?.let {
                     Spacer(
                         Modifier.height(10.dp)
@@ -385,20 +617,33 @@ fun V11SecuritySettingsDialog(
                         it,
                         color =
                             MaterialTheme
-                                .colorScheme.error,
+                                .colorScheme
+                                .error,
                         fontWeight =
                             FontWeight.Bold
                     )
                 }
             }
         },
+
         confirmButton = {
             Button(
                 onClick = {
                     message = null
 
+                    // ---------------------------------------------
+                    // Verify old PIN when replacing/removing it.
+                    // ---------------------------------------------
+
                     if (
-                        pinNeedsVerification &&
+                        current.mode ==
+                            V11LockMode.PIN &&
+                        hadPin &&
+                        (
+                            settings.mode !=
+                                V11LockMode.PIN ||
+                                newPin.isNotEmpty()
+                            ) &&
                         !store.verifyPin(
                             currentPin
                         )
@@ -408,55 +653,141 @@ fun V11SecuritySettingsDialog(
                         return@Button
                     }
 
+                    // ---------------------------------------------
+                    // Verify old Pattern when replacing/removing.
+                    // ---------------------------------------------
+
+                    if (
+                        current.mode ==
+                            V11LockMode.PATTERN &&
+                        hadPattern &&
+                        (
+                            settings.mode !=
+                                V11LockMode.PATTERN ||
+                                newPattern != null
+                            ) &&
+                        !currentPatternVerified
+                    ) {
+                        message =
+                            "يجب التحقق من النمط الحالي أولاً"
+                        return@Button
+                    }
+
+                    // ---------------------------------------------
+                    // PIN
+                    // ---------------------------------------------
+
                     if (
                         settings.mode ==
-                        V11LockMode.PIN
+                            V11LockMode.PIN
                     ) {
-                        if (
-                            newPin.length < 4 ||
-                            newPin.length > 12
-                        ) {
-                            message =
-                                "PIN يجب أن يكون من 4 إلى 12 رقماً"
-                            return@Button
-                        }
+                        val needsNewPin =
+                            current.mode !=
+                                V11LockMode.PIN ||
+                                !hadPin ||
+                                newPin.isNotEmpty()
 
-                        if (
-                            newPin != confirmPin
-                        ) {
-                            message =
-                                "تأكيد PIN غير مطابق"
-                            return@Button
-                        }
+                        if (needsNewPin) {
+                            if (
+                                newPin.length
+                                    !in 4..12 ||
+                                !newPin.all(
+                                    Char::isDigit
+                                )
+                            ) {
+                                message =
+                                    "PIN يجب أن يكون من 4 إلى 12 رقماً"
+                                return@Button
+                            }
 
-                        if (
-                            !store.setPin(newPin)
-                        ) {
-                            message =
-                                "تعذر حفظ PIN"
-                            return@Button
+                            if (
+                                newPin !=
+                                    confirmPin
+                            ) {
+                                message =
+                                    "تأكيد PIN غير مطابق"
+                                return@Button
+                            }
+
+                            if (
+                                !store.setPin(
+                                    newPin
+                                )
+                            ) {
+                                message =
+                                    "تعذر حفظ PIN"
+                                return@Button
+                            }
+                        }
+                    }
+
+                    // ---------------------------------------------
+                    // Pattern
+                    // ---------------------------------------------
+
+                    if (
+                        settings.mode ==
+                            V11LockMode.PATTERN
+                    ) {
+                        val needsPattern =
+                            current.mode !=
+                                V11LockMode.PATTERN ||
+                                !hadPattern ||
+                                newPattern != null
+
+                        if (needsPattern) {
+                            val first =
+                                newPattern
+
+                            val second =
+                                confirmPattern
+
+                            if (
+                                first == null ||
+                                first.size < 4
+                            ) {
+                                message =
+                                    "ارسم نمطاً من 4 نقاط على الأقل"
+                                return@Button
+                            }
+
+                            if (
+                                second == null ||
+                                first != second
+                            ) {
+                                message =
+                                    "تأكيد النمط غير مطابق"
+                                return@Button
+                            }
+
+                            if (
+                                !store.setPattern(
+                                    first
+                                )
+                            ) {
+                                message =
+                                    "تعذر حفظ النمط"
+                                return@Button
+                            }
                         }
                     }
 
                     var finalSettings =
                         settings
 
-                    if (
-                        finalSettings.mode ==
-                        V11LockMode.NONE
-                    ) {
+                    val securityActive =
+                        finalSettings.mode !=
+                            V11LockMode.NONE ||
+                            finalSettings
+                                .biometricEnabled
+
+                    if (!securityActive) {
                         finalSettings =
                             finalSettings.copy(
                                 protectAccounts =
                                     false
                             )
-
-                        store.clearPin()
-                    }
-
-                    if (
-                        finalSettings.mode !=
-                        V11LockMode.NONE &&
+                    } else if (
                         !finalSettings
                             .protectAccounts
                     ) {
@@ -465,6 +796,22 @@ fun V11SecuritySettingsDialog(
                                 protectAccounts =
                                     true
                             )
+                    }
+
+                    // Remove credentials that are no longer
+                    // the selected primary method.
+                    if (
+                        finalSettings.mode !=
+                            V11LockMode.PIN
+                    ) {
+                        store.clearPin()
+                    }
+
+                    if (
+                        finalSettings.mode !=
+                            V11LockMode.PATTERN
+                    ) {
+                        store.clearPattern()
                     }
 
                     store.save(
@@ -481,6 +828,7 @@ fun V11SecuritySettingsDialog(
                 Text("حفظ")
             }
         },
+
         dismissButton = {
             TextButton(
                 onClick = onDismiss
@@ -495,7 +843,8 @@ fun V11SecuritySettingsDialog(
 private fun SecurePinField(
     value: String,
     label: String,
-    onValueChange: (String) -> Unit
+    onValueChange:
+        (String) -> Unit
 ) {
     OutlinedTextField(
         value = value,
@@ -529,9 +878,11 @@ private fun SecuritySectionTitle(
 ) {
     Text(
         text,
-        fontWeight = FontWeight.Black,
+        fontWeight =
+            FontWeight.Black,
         style =
-            MaterialTheme.typography
+            MaterialTheme
+                .typography
                 .titleSmall,
         modifier =
             Modifier.padding(
@@ -553,7 +904,9 @@ private fun SecurityModeCard(
         enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .padding(
+                vertical = 3.dp
+            ),
         colors =
             CardDefaults.cardColors(
                 containerColor =
@@ -594,7 +947,8 @@ private fun SecurityModeCard(
                 Text(
                     subtitle,
                     style =
-                        MaterialTheme.typography
+                        MaterialTheme
+                            .typography
                             .bodySmall
                 )
             }
@@ -615,7 +969,9 @@ private fun SecuritySwitchCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp)
+            .padding(
+                vertical = 3.dp
+            )
     ) {
         Row(
             modifier = Modifier
@@ -643,7 +999,8 @@ private fun SecuritySwitchCard(
                 Text(
                     subtitle,
                     style =
-                        MaterialTheme.typography
+                        MaterialTheme
+                            .typography
                             .bodySmall
                 )
             }

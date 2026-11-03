@@ -70,8 +70,11 @@ fun V11Home(
     var accountsUnlocked by remember {
         mutableStateOf(
             !securitySettings.protectAccounts ||
-                securitySettings.mode ==
-                    V11LockMode.NONE
+                (
+                    securitySettings.mode ==
+                        V11LockMode.NONE &&
+                    !securitySettings.biometricEnabled
+                )
         )
     }
 
@@ -99,6 +102,12 @@ fun V11Home(
                         if (
                             securitySettings
                                 .protectAccounts &&
+                            (
+                                securitySettings.mode !=
+                                    V11LockMode.NONE ||
+                                securitySettings
+                                    .biometricEnabled
+                            ) &&
                             securitySettings
                                 .autoLockMinutes == 0
                         ) {
@@ -111,9 +120,12 @@ fun V11Home(
                         if (
                             securitySettings
                                 .protectAccounts &&
-                            securitySettings
-                                .mode !=
-                                V11LockMode.NONE &&
+                            (
+                                securitySettings.mode !=
+                                    V11LockMode.NONE ||
+                                securitySettings
+                                    .biometricEnabled
+                            ) &&
                             backgroundAt > 0L
                         ) {
                             val limit =
@@ -422,13 +434,17 @@ fun V11Home(
                     if (
                         securitySettings
                             .protectAccounts &&
-                        securitySettings.mode !=
-                            V11LockMode.NONE &&
+                        (
+                            securitySettings.mode !=
+                                V11LockMode.NONE ||
+                            securitySettings
+                                .biometricEnabled
+                        ) &&
                         !accountsUnlocked
                     ) {
                         V11AccountsUnlockScreen(
-                            mode =
-                                securitySettings.mode,
+                            settings =
+                                securitySettings,
                             securityStore =
                                 securityStore,
                             onUnlocked = {
@@ -481,8 +497,11 @@ fun V11Home(
 
                             accountsUnlocked =
                                 !it.protectAccounts ||
-                                    it.mode ==
-                                        V11LockMode.NONE
+                                    (
+                                        it.mode ==
+                                            V11LockMode.NONE &&
+                                        !it.biometricEnabled
+                                    )
                         },
                         onDatabaseRestored = {
                             saveDb(it)

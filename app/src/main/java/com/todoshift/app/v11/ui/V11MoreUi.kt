@@ -368,10 +368,22 @@ private fun securitySummary(
         !securitySettings.protectAccounts ->
             "بدون قفل"
 
+        securitySettings.mode == V11LockMode.PIN &&
+            securitySettings.biometricEnabled ->
+            "PIN + بصمة • قفل تلقائي"
+
+        securitySettings.mode == V11LockMode.PATTERN &&
+            securitySettings.biometricEnabled ->
+            "نمط + بصمة • قفل تلقائي"
+
         securitySettings.mode == V11LockMode.PIN ->
             "PIN • قفل تلقائي"
 
-        securitySettings.mode == V11LockMode.BIOMETRIC ->
+        securitySettings.mode == V11LockMode.PATTERN ->
+            "نمط • قفل تلقائي"
+
+        securitySettings.mode == V11LockMode.NONE &&
+            securitySettings.biometricEnabled ->
             "بصمة / قفل الجهاز • قفل تلقائي"
 
         else ->

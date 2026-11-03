@@ -12,32 +12,38 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.todoshift.app.v11.V11LockMode
+import com.todoshift.app.v11.V11SecuritySettings
 import com.todoshift.app.v11.V11SecurityStore
 
 @Composable
 fun V11AccountsUnlockScreen(
-    mode: V11LockMode,
+    settings: V11SecuritySettings,
     securityStore: V11SecurityStore,
     onUnlocked: () -> Unit
 ) {
-    val context = LocalContext.current
+    val context =
+        LocalContext.current
+
     var pin by remember {
         mutableStateOf("")
     }
+
     var error by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf<String?>(
+            null
+        )
     }
 
     fun biometric() {
         val activity =
-            context as? FragmentActivity
+            context as?
+                FragmentActivity
 
         if (activity == null) {
             error =
@@ -45,18 +51,22 @@ fun V11AccountsUnlockScreen(
             return
         }
 
-        val manager =
-            BiometricManager.from(context)
-
         val allowed =
-            BiometricManager.Authenticators
+            BiometricManager
+                .Authenticators
                 .BIOMETRIC_STRONG or
-                BiometricManager.Authenticators
+                BiometricManager
+                    .Authenticators
                     .DEVICE_CREDENTIAL
 
         if (
-            manager.canAuthenticate(allowed) !=
-            BiometricManager.BIOMETRIC_SUCCESS
+            BiometricManager
+                .from(context)
+                .canAuthenticate(
+                    allowed
+                ) !=
+            BiometricManager
+                .BIOMETRIC_SUCCESS
         ) {
             error =
                 "البصمة أو قفل الجهاز غير متاح"
@@ -64,8 +74,11 @@ fun V11AccountsUnlockScreen(
         }
 
         val executor =
-            androidx.core.content.ContextCompat
-                .getMainExecutor(context)
+            androidx.core.content
+                .ContextCompat
+                .getMainExecutor(
+                    context
+                )
 
         val prompt =
             BiometricPrompt(
@@ -75,7 +88,8 @@ fun V11AccountsUnlockScreen(
                     BiometricPrompt
                         .AuthenticationCallback() {
 
-                    override fun onAuthenticationSucceeded(
+                    override fun
+                        onAuthenticationSucceeded(
                         result:
                             BiometricPrompt
                                 .AuthenticationResult
@@ -84,13 +98,16 @@ fun V11AccountsUnlockScreen(
                             .onAuthenticationSucceeded(
                                 result
                             )
+
                         error = null
                         onUnlocked()
                     }
 
-                    override fun onAuthenticationError(
+                    override fun
+                        onAuthenticationError(
                         errorCode: Int,
-                        errString: CharSequence
+                        errString:
+                            CharSequence
                     ) {
                         super
                             .onAuthenticationError(
@@ -100,21 +117,23 @@ fun V11AccountsUnlockScreen(
 
                         if (
                             errorCode !=
-                            BiometricPrompt
-                                .ERROR_USER_CANCELED &&
+                                BiometricPrompt
+                                    .ERROR_USER_CANCELED &&
                             errorCode !=
-                            BiometricPrompt
-                                .ERROR_NEGATIVE_BUTTON
+                                BiometricPrompt
+                                    .ERROR_NEGATIVE_BUTTON
                         ) {
                             error =
-                                errString.toString()
+                                errString
+                                    .toString()
                         }
                     }
                 }
             )
 
         val info =
-            BiometricPrompt.PromptInfo
+            BiometricPrompt
+                .PromptInfo
                 .Builder()
                 .setTitle(
                     "فتح الحسابات"
@@ -143,7 +162,9 @@ fun V11AccountsUnlockScreen(
         ) {
             Column(
                 modifier =
-                    Modifier.padding(20.dp),
+                    Modifier.padding(
+                        20.dp
+                    ),
                 horizontalAlignment =
                     Alignment
                         .CenterHorizontally
@@ -152,11 +173,15 @@ fun V11AccountsUnlockScreen(
                     Icons.Default.Lock,
                     null,
                     modifier =
-                        Modifier.size(42.dp)
+                        Modifier.size(
+                            42.dp
+                        )
                 )
 
                 Spacer(
-                    Modifier.height(12.dp)
+                    Modifier.height(
+                        12.dp
+                    )
                 )
 
                 Text(
@@ -170,10 +195,12 @@ fun V11AccountsUnlockScreen(
                 )
 
                 Spacer(
-                    Modifier.height(16.dp)
+                    Modifier.height(
+                        16.dp
+                    )
                 )
 
-                when (mode) {
+                when (settings.mode) {
                     V11LockMode.PIN -> {
                         OutlinedTextField(
                             value = pin,
@@ -182,6 +209,7 @@ fun V11AccountsUnlockScreen(
                                     it.filter(
                                         Char::isDigit
                                     ).take(12)
+
                                 error = null
                             },
                             label = {
@@ -197,18 +225,25 @@ fun V11AccountsUnlockScreen(
                                     keyboardType =
                                         KeyboardType
                                             .NumberPassword
-                                )
+                                ),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
                         )
 
                         Spacer(
-                            Modifier.height(10.dp)
+                            Modifier.height(
+                                10.dp
+                            )
                         )
 
                         Button(
                             onClick = {
                                 if (
                                     securityStore
-                                        .verifyPin(pin)
+                                        .verifyPin(
+                                            pin
+                                        )
                                 ) {
                                     pin = ""
                                     error = null
@@ -226,45 +261,140 @@ fun V11AccountsUnlockScreen(
                         }
                     }
 
-                    V11LockMode.BIOMETRIC -> {
-                        Button(
-                            onClick = {
-                                biometric()
-                            },
+                    V11LockMode.PATTERN -> {
+                        Text(
+                            "ارسم نمط الفتح",
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+
+                        Spacer(
+                            Modifier.height(
+                                6.dp
+                            )
+                        )
+
+                        V11PatternInput(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                        ) {
-                            Icon(
-                                Icons.Default
-                                    .Fingerprint,
-                                null
-                            )
-
-                            Spacer(
-                                Modifier.width(8.dp)
-                            )
-
-                            Text(
-                                "فتح بالبصمة"
-                            )
-                        }
-
-                        LaunchedEffect(Unit) {
-                            biometric()
-                        }
+                                    .heightIn(
+                                        max =
+                                            260.dp
+                                    ),
+                            onPatternComplete = {
+                                if (
+                                    securityStore
+                                        .verifyPattern(
+                                            it
+                                        )
+                                ) {
+                                    error = null
+                                    onUnlocked()
+                                } else {
+                                    error =
+                                        "النمط غير صحيح"
+                                }
+                            }
+                        )
                     }
 
                     V11LockMode.NONE -> {
-                        LaunchedEffect(Unit) {
-                            onUnlocked()
+                        if (
+                            !settings
+                                .biometricEnabled
+                        ) {
+                            LaunchedEffect(
+                                Unit
+                            ) {
+                                onUnlocked()
+                            }
+                        } else {
+                            Text(
+                                "استخدم البصمة لفتح الحسابات",
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodyMedium
+                            )
                         }
+                    }
+                }
+
+                if (
+                    settings
+                        .biometricEnabled
+                ) {
+                    if (
+                        settings.mode !=
+                            V11LockMode.NONE
+                    ) {
+                        Spacer(
+                            Modifier.height(
+                                14.dp
+                            )
+                        )
+
+                        HorizontalDivider()
+
+                        Spacer(
+                            Modifier.height(
+                                14.dp
+                            )
+                        )
+
+                        Text(
+                            "أو",
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall
+                        )
+
+                        Spacer(
+                            Modifier.height(
+                                8.dp
+                            )
+                        )
+                    } else {
+                        Spacer(
+                            Modifier.height(
+                                14.dp
+                            )
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            biometric()
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default
+                                .Fingerprint,
+                            null
+                        )
+
+                        Spacer(
+                            Modifier.width(
+                                8.dp
+                            )
+                        )
+
+                        Text(
+                            "فتح بالبصمة"
+                        )
                     }
                 }
 
                 error?.let {
                     Spacer(
-                        Modifier.height(10.dp)
+                        Modifier.height(
+                            10.dp
+                        )
                     )
 
                     Text(
@@ -272,7 +402,9 @@ fun V11AccountsUnlockScreen(
                         color =
                             MaterialTheme
                                 .colorScheme
-                                .error
+                                .error,
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
             }

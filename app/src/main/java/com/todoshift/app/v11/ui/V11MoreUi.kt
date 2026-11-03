@@ -1,6 +1,7 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,6 +45,15 @@ fun V11MoreScreen(
     var backupOpen by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+
+    BackHandler(
+        enabled =
+            page != V11SettingsPage.HOME &&
+            !securityOpen &&
+            !backupOpen
+    ) {
+        page = V11SettingsPage.HOME
+    }
 
     when (page) {
         V11SettingsPage.HOME -> {
@@ -108,14 +118,6 @@ fun V11MoreScreen(
                 title = "الحسابات والالتزامات",
                 onBack = { page = V11SettingsPage.HOME }
             ) {
-                SettingsSwitch(
-                    title = "إظهار المبالغ",
-                    subtitle = "إخفاء أو إظهار القيم المالية داخل الحسابات",
-                    checked = moneyVisible,
-                    onCheckedChange = {
-                        if (it != moneyVisible) onToggleMoney()
-                    }
-                )
 
                 SettingsInfo(
                     "مصادر الدخل",
@@ -139,6 +141,77 @@ fun V11MoreScreen(
                 title = "المظهر والتخصيص",
                 onBack = { page = V11SettingsPage.HOME }
             ) {
+                SettingsChoiceCard(
+                    title = "ثيم التطبيق",
+                    options = listOf(
+                        V11AppTheme.TODO_SHIFT to
+                            "ToDo Shift",
+                        V11AppTheme.MIDNIGHT to
+                            "Midnight",
+                        V11AppTheme.OCEAN to
+                            "Ocean",
+                        V11AppTheme.FOREST to
+                            "Forest",
+                        V11AppTheme.SAND to
+                            "Sand",
+                        V11AppTheme.MONO to
+                            "Mono"
+                    ),
+                    selected =
+                        uiSettings.appTheme,
+                    onSelected = {
+                        onUiSettingsChange(
+                            uiSettings.copy(
+                                appTheme = it
+                            )
+                        )
+                    }
+                )
+
+                SettingsChoiceCard(
+                    title = "شكل التقويم",
+                    options = listOf(
+                        V11CalendarStyle.CLASSIC to
+                            "Classic",
+                        V11CalendarStyle.COMPACT to
+                            "Compact",
+                        V11CalendarStyle.CARDS to
+                            "Cards"
+                    ),
+                    selected =
+                        uiSettings.calendarStyle,
+                    onSelected = {
+                        onUiSettingsChange(
+                            uiSettings.copy(
+                                calendarStyle = it
+                            )
+                        )
+                    }
+                )
+
+                SettingsChoiceCard(
+                    title = "ثيم الويدجت",
+                    options = listOf(
+                        V11WidgetTheme.FOLLOW_APP to
+                            "يتبع التطبيق",
+                        V11WidgetTheme.LIGHT to
+                            "فاتح",
+                        V11WidgetTheme.DARK to
+                            "داكن",
+                        V11WidgetTheme.TRANSPARENT to
+                            "شفاف"
+                    ),
+                    selected =
+                        uiSettings.widgetTheme,
+                    onSelected = {
+                        onUiSettingsChange(
+                            uiSettings.copy(
+                                widgetTheme = it
+                            )
+                        )
+                    }
+                )
+
                 SettingsSwitch(
                     title = "أسماء أماكن العمل",
                     subtitle = "إظهار اسم مكان العمل داخل الشيفت في التقويم",
@@ -353,6 +426,62 @@ private fun SettingsSubPage(
 
         content()
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+
+@Composable
+private fun <T> SettingsChoiceCard(
+    title: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelected: (T) -> Unit
+) {
+    Card(
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(14.dp),
+            verticalArrangement =
+                Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                title,
+                fontWeight =
+                    FontWeight.Bold
+            )
+
+            options.forEach {
+                option ->
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(),
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected =
+                            selected ==
+                                option.first,
+                        onClick = {
+                            onSelected(
+                                option.first
+                            )
+                        }
+                    )
+
+                    Text(
+                        option.second,
+                        modifier =
+                            Modifier.weight(1f)
+                    )
+                }
+            }
+        }
     }
 }
 

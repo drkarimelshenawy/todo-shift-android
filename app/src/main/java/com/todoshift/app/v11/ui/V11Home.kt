@@ -1,11 +1,16 @@
 package com.todoshift.app.v11.ui
 
+import com.todoshift.app.widget.ToDoShiftWidget
+
 import androidx.compose.foundation.layout.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -254,6 +259,14 @@ fun V11Home(
     ) {
         uiSettings = value
         uiStore.save(value)
+
+        ToDoShiftWidget.refreshAll(
+            context.applicationContext
+        )
+    }
+
+    BackHandler(enabled = showWorkplaces) {
+        showWorkplaces = false
     }
 
     val sectionTitle =
@@ -274,14 +287,25 @@ fun V11Home(
                 "الإعدادات"
         }
 
+    V11AppThemeProvider(
+        theme = uiSettings.appTheme
+    ) {
     Scaffold(
         containerColor =
-            Color(0xFFF7F8FA),
+            MaterialTheme.colorScheme.background,
         contentWindowInsets =
             WindowInsets(0, 0, 0, 0),
         topBar = {
             V11GlobalHeader(
-                title = sectionTitle
+                title = sectionTitle,
+                showMoneyAction =
+                    tab == 2 &&
+                    !showWorkplaces &&
+                    accountsUnlocked,
+                moneyVisible = moneyVisible,
+                onToggleMoney = {
+                    moneyVisible = !moneyVisible
+                }
             )
         },
         bottomBar = {
@@ -472,6 +496,10 @@ fun V11Home(
                                 moneyVisible =
                                     !moneyVisible
                             },
+                            securitySettings =
+                                securitySettings,
+                            securityStore =
+                                securityStore,
                             onDatabaseChange = {
                                 saveDb(it)
                             }
@@ -522,17 +550,20 @@ fun V11Home(
         }
     }
 }
-
+}
 
 @Composable
 private fun V11GlobalHeader(
-    title: String
+    title: String,
+    showMoneyAction: Boolean = false,
+    moneyVisible: Boolean = true,
+    onToggleMoney: () -> Unit = {}
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding(),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
         shadowElevation = 1.dp
     ) {
@@ -562,7 +593,9 @@ private fun V11GlobalHeader(
                 Modifier.width(10.dp)
             )
 
-            Column {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     "ToDo Shift",
                     style =
@@ -583,6 +616,25 @@ private fun V11GlobalHeader(
                             .onSurfaceVariant,
                     maxLines = 1
                 )
+            }
+
+            if (showMoneyAction) {
+                IconButton(
+                    onClick = onToggleMoney
+                ) {
+                    Icon(
+                        imageVector =
+                            if (moneyVisible)
+                                Icons.Default.Visibility
+                            else
+                                Icons.Default.VisibilityOff,
+                        contentDescription =
+                            if (moneyVisible)
+                                "إخفاء المبالغ"
+                            else
+                                "إظهار المبالغ"
+                    )
+                }
             }
         }
     }

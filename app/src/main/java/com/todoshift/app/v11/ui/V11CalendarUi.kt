@@ -16,6 +16,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -83,6 +84,10 @@ fun V11CalendarScreen(
     var openDay by remember { mutableStateOf<LocalDate?>(null) }
     var showCalendarManager by remember { mutableStateOf(false) }
 
+    BackHandler(enabled = openDay != null) {
+        openDay = null
+    }
+
     var pendingConflict by remember {
         mutableStateOf<V11PendingPaintConflict?>(null)
     }
@@ -108,7 +113,8 @@ fun V11CalendarScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF7F8FA),
+        containerColor =
+            MaterialTheme.colorScheme.background,
         contentWindowInsets =
             WindowInsets(0, 0, 0, 0),
         floatingActionButtonPosition =
@@ -266,7 +272,7 @@ fun V11CalendarScreen(
                         if (paintMode)
                             Color(0xFF2E7D32)
                         else
-                            Color(0xFF213555),
+                            MaterialTheme.colorScheme.primary,
                     contentColor = Color.White,
                     modifier = Modifier
                         .padding(bottom = 0.dp)
@@ -943,7 +949,7 @@ private fun V11CalendarGrid(
                     fontWeight =
                         FontWeight.Bold,
                     color =
-                        Color(0xFF4B5563)
+                        MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -1042,9 +1048,36 @@ private fun V11DayCell(
         it.segments
     }
 
-    val shape = RoundedCornerShape(9.dp)
+    val shape =
+        when (
+            uiSettings.calendarStyle
+        ) {
+            V11CalendarStyle.CLASSIC ->
+                RoundedCornerShape(9.dp)
+
+            V11CalendarStyle.COMPACT ->
+                RoundedCornerShape(5.dp)
+
+            V11CalendarStyle.CARDS ->
+                RoundedCornerShape(14.dp)
+        }
+
+    val cellPadding =
+        when (
+            uiSettings.calendarStyle
+        ) {
+            V11CalendarStyle.CLASSIC ->
+                0.dp
+
+            V11CalendarStyle.COMPACT ->
+                1.dp
+
+            V11CalendarStyle.CARDS ->
+                2.dp
+        }
 
     var modifier = cellModifier
+        .padding(cellPadding)
         .fillMaxSize()
         .alpha(
             if (muted)
@@ -1065,14 +1098,15 @@ private fun V11DayCell(
                         uiSettings.todayHighlightColor
                     ).copy(alpha = 0.10f)
 
-                else -> Color.White
+                else ->
+                    MaterialTheme.colorScheme.surface
             }
         )
 
     if (paintSelected) {
         modifier = modifier.border(
             3.dp,
-            Color(0xFF213555),
+            MaterialTheme.colorScheme.primary,
             shape
         )
     } else if (
@@ -1093,13 +1127,22 @@ private fun V11DayCell(
     } else if (selected) {
         modifier = modifier.border(
             2.dp,
-            Color(0xFF4F709C),
+            MaterialTheme.colorScheme.secondary,
             shape
         )
     } else {
         modifier = modifier.border(
             1.dp,
-            Color(0xFFE5E7EB),
+            MaterialTheme.colorScheme.outline.copy(
+                alpha =
+                    if (
+                        uiSettings.calendarStyle ==
+                        V11CalendarStyle.CARDS
+                    )
+                        0.85f
+                    else
+                        0.55f
+            ),
             shape
         )
     }

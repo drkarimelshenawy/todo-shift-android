@@ -30,6 +30,8 @@ fun V11FinanceScreen(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onToggleMoney: () -> Unit,
+    securitySettings: V11SecuritySettings,
+    securityStore: V11SecurityStore,
     onDatabaseChange: (V11Database) -> Unit
 ) {
     val result = remember(db, month) {
@@ -59,6 +61,26 @@ fun V11FinanceScreen(
         mutableStateOf<String?>(null)
     }
 
+    var workplaceDetailsId by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var paymentDetails by remember {
+        mutableStateOf<PaymentV11?>(null)
+    }
+
+    var editingPayment by remember {
+        mutableStateOf<PaymentV11?>(null)
+    }
+
+    var editingObligation by remember {
+        mutableStateOf<ObligationV11?>(null)
+    }
+
+    var pendingProtectedAction by remember {
+        mutableStateOf<(() -> Unit)?>(null)
+    }
+
     val obligationDue =
         V11AccountsController
             .monthObligationDue(
@@ -74,37 +96,6 @@ fun V11FinanceScreen(
             )
             .padding(14.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            TextButton(
-                onClick = onToggleMoney
-            ) {
-                Text(
-                    if (moneyVisible)
-                        "إخفاء المبالغ"
-                    else
-                        "إظهار المبالغ"
-                )
-            }
-
-            Spacer(Modifier.weight(1f))
-
-            Text(
-                "المستحقات والمدفوعات والالتزامات",
-                style =
-                    MaterialTheme.typography
-                        .bodyMedium,
-                color =
-                    MaterialTheme.colorScheme
-                        .onSurfaceVariant
-            )
-        }
-
-        Spacer(Modifier.height(10.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment =
@@ -283,13 +274,51 @@ fun V11FinanceScreen(
                         ?.name
                         ?: "غير محدد"
 
-                AccountLine(
-                    name,
-                    money(
-                        summary.amount,
-                        moneyVisible
-                    )
-                )
+                Surface(
+                    onClick = {
+                        workplaceDetailsId =
+                            summary.workplaceId
+                    },
+                    shape =
+                        MaterialTheme.shapes.medium,
+                    color =
+                        MaterialTheme.colorScheme
+                            .surfaceVariant
+                            .copy(alpha = 0.45f),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp)
+                ) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    horizontal = 10.dp,
+                                    vertical = 8.dp
+                                ),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween,
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Text(
+                            name,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+
+                        Text(
+                            money(
+                                summary.amount,
+                                moneyVisible
+                            ),
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
             }
 
         Spacer(Modifier.height(20.dp))
@@ -344,6 +373,9 @@ fun V11FinanceScreen(
                         }
 
                 Card(
+                    onClick = {
+                        paymentDetails = payment
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
@@ -494,21 +526,46 @@ fun V11FinanceScreen(
                     modifier =
                         Modifier.padding(12.dp)
                 ) {
-                    Text(
-                        obligation.name,
-                        fontWeight =
-                            FontWeight.Black
-                    )
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier =
+                                Modifier.weight(1f)
+                        ) {
+                            Text(
+                                obligation.name,
+                                fontWeight =
+                                    FontWeight.Black
+                            )
 
-                    Text(
-                        obligationLabel(
-                            obligation.type
-                        ),
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelSmall
-                    )
+                            Text(
+                                obligationLabel(
+                                    obligation.type
+                                ),
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelSmall
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                editingObligation =
+                                    obligation
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription =
+                                    "تعديل الالتزام"
+                            )
+                        }
+                    }
 
                     Spacer(
                         Modifier.height(6.dp)
@@ -607,6 +664,123 @@ fun V11FinanceScreen(
         }
 
         Spacer(Modifier.height(30.dp))
+    }
+
+    workplaceDetailsId?.let { workplaceId ->
+        V11WorkplaceDueDetailsDialog(
+            workplaceId = workplaceId,
+            month = month,
+            db = db,
+            workplaces = workplaces,
+            moneyVisible = moneyVisible,
+            onDismiss = {
+                workplaceDetailsId = null
+            }
+        )
+    }
+
+    paymentDetails?.let { payment ->
+        V11PaymentDetailsDialog(
+            payment = payment,
+            db = db,
+            moneyVisible = moneyVisible,
+            onDismiss = {
+                paymentDetails = null
+            },
+            onEdit = {
+                paymentDetails = null
+                editingPayment = payment
+            }
+        )
+    }
+
+    editingPayment?.let { payment ->
+        V11EditPaymentDialog(
+            payment = payment,
+            db = db,
+            onDismiss = {
+                editingPayment = null
+            },
+            onSave = { updated ->
+                val saveAction = {
+                    onDatabaseChange(
+                        db.copy(
+                            payments =
+                                db.payments.map {
+                                    if (it.id == updated.id)
+                                        updated
+                                    else
+                                        it
+                                }
+                        )
+                    )
+                    editingPayment = null
+                }
+
+                val securityEnabled =
+                    securitySettings.mode !=
+                        V11LockMode.NONE ||
+                        securitySettings.biometricEnabled
+
+                if (securityEnabled) {
+                    pendingProtectedAction =
+                        saveAction
+                } else {
+                    saveAction()
+                }
+            }
+        )
+    }
+
+    editingObligation?.let { obligation ->
+        V11EditObligationDialog(
+            obligation = obligation,
+            onDismiss = {
+                editingObligation = null
+            },
+            onSave = { updated ->
+                val saveAction = {
+                    onDatabaseChange(
+                        db.copy(
+                            obligations =
+                                db.obligations.map {
+                                    if (it.id == updated.id)
+                                        updated
+                                    else
+                                        it
+                                }
+                        )
+                    )
+                    editingObligation = null
+                }
+
+                val securityEnabled =
+                    securitySettings.mode !=
+                        V11LockMode.NONE ||
+                        securitySettings.biometricEnabled
+
+                if (securityEnabled) {
+                    pendingProtectedAction =
+                        saveAction
+                } else {
+                    saveAction()
+                }
+            }
+        )
+    }
+
+    pendingProtectedAction?.let { action ->
+        V11FinancialVerificationDialog(
+            settings = securitySettings,
+            store = securityStore,
+            onDismiss = {
+                pendingProtectedAction = null
+            },
+            onVerified = {
+                pendingProtectedAction = null
+                action()
+            }
+        )
     }
 
     if (paymentOpen) {
@@ -713,6 +887,738 @@ fun V11FinanceScreen(
             }
         }
 }
+
+
+@Composable
+private fun V11WorkplaceDueDetailsDialog(
+    workplaceId: String?,
+    month: YearMonth,
+    db: V11Database,
+    workplaces: List<Workplace>,
+    moneyVisible: Boolean,
+    onDismiss: () -> Unit
+) {
+    val workplaceName =
+        workplaces.firstOrNull {
+            it.id == workplaceId
+        }?.name ?: "غير محدد"
+
+    val rows =
+        db.days
+            .filter {
+                it.date.startsWith(
+                    month.toString()
+                )
+            }
+            .flatMap { day ->
+                day.segments.map {
+                    day to it
+                }
+            }
+            .filter {
+                it.second.kind != ShiftKind.OFF &&
+                    it.second.workplaceId ==
+                        workplaceId
+            }
+
+    val groups =
+        rows.groupBy {
+            it.second.kind
+        }
+
+    val total =
+        rows.sumOf { (day, segment) ->
+            V11RateEngine.segmentAmount(
+                segment = segment,
+                date = day.date,
+                rates = db.rates
+            )
+        }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(workplaceName)
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                AccountLine(
+                    "عدد الشفتات",
+                    rows.size.toString()
+                )
+
+                HorizontalDivider()
+
+                ShiftKind.entries
+                    .filter {
+                        it != ShiftKind.OFF
+                    }
+                    .forEach { kind ->
+                        val kindRows =
+                            groups[kind]
+                                .orEmpty()
+
+                        if (kindRows.isNotEmpty()) {
+                            val subtotal =
+                                kindRows.sumOf {
+                                    (day, segment) ->
+                                    V11RateEngine
+                                        .segmentAmount(
+                                            segment,
+                                            day.date,
+                                            db.rates
+                                        )
+                                }
+
+                            val unitRates =
+                                kindRows.map {
+                                    (day, segment) ->
+                                    V11RateEngine
+                                        .segmentAmount(
+                                            segment,
+                                            day.date,
+                                            db.rates
+                                        )
+                                }.distinct()
+
+                            Text(
+                                shiftKindLabelV11(
+                                    kind
+                                ),
+                                fontWeight =
+                                    FontWeight.Black,
+                                modifier =
+                                    Modifier.padding(
+                                        top = 10.dp
+                                    )
+                            )
+
+                            AccountLine(
+                                "العدد",
+                                kindRows.size
+                                    .toString()
+                            )
+
+                            AccountLine(
+                                "قيمة الوحدة",
+                                if (
+                                    unitRates.size == 1
+                                ) {
+                                    money(
+                                        unitRates.first(),
+                                        moneyVisible
+                                    )
+                                } else {
+                                    "متغيرة"
+                                }
+                            )
+
+                            AccountLine(
+                                "الإجمالي",
+                                money(
+                                    subtotal,
+                                    moneyVisible
+                                )
+                            )
+                        }
+                    }
+
+                HorizontalDivider(
+                    modifier =
+                        Modifier.padding(
+                            vertical = 8.dp
+                        )
+                )
+
+                AccountLine(
+                    "الإجمالي الكلي",
+                    money(
+                        total,
+                        moneyVisible
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("إغلاق")
+            }
+        }
+    )
+}
+
+@Composable
+private fun V11PaymentDetailsDialog(
+    payment: PaymentV11,
+    db: V11Database,
+    moneyVisible: Boolean,
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit
+) {
+    val source =
+        db.incomeSources
+            .firstOrNull {
+                it.id == payment.sourceId
+            }
+
+    val method =
+        db.paymentMethods
+            .firstOrNull {
+                it.id ==
+                    payment.paymentMethodId
+            }
+
+    val workplace =
+        source?.workplaceId
+            ?.let { workplaceId ->
+                db.workplaces
+                    .firstOrNull {
+                        it.id == workplaceId
+                    }
+            }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("تفاصيل المبلغ المستلم")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                AccountLine(
+                    "المبلغ",
+                    money(
+                        payment.amount,
+                        moneyVisible
+                    )
+                )
+
+                AccountLine(
+                    "تاريخ الاستلام",
+                    payment.receivedDate
+                )
+
+                AccountLine(
+                    "شهر الاستحقاق",
+                    payment.accrualMonth
+                )
+
+                source?.let {
+                    AccountLine(
+                        "مصدر الدخل",
+                        it.name
+                    )
+                }
+
+                workplace?.let {
+                    AccountLine(
+                        "مكان العمل",
+                        it.name
+                    )
+                }
+
+                method?.let {
+                    AccountLine(
+                        "طريقة الدفع",
+                        it.name
+                    )
+                }
+
+                if (
+                    payment.note.isNotBlank()
+                ) {
+                    AccountLine(
+                        "ملاحظة",
+                        payment.note
+                    )
+                }
+
+                if (
+                    payment.allocations
+                        .isNotEmpty()
+                ) {
+                    Spacer(
+                        Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        "توزيع الدفعة",
+                        fontWeight =
+                            FontWeight.Black
+                    )
+
+                    payment.allocations
+                        .forEach {
+                            AccountLine(
+                                it.accrualMonth,
+                                money(
+                                    it.amount,
+                                    moneyVisible
+                                )
+                            )
+                        }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onEdit) {
+                Icon(
+                    Icons.Default.Edit,
+                    null
+                )
+                Spacer(Modifier.width(5.dp))
+                Text("تعديل")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("إغلاق")
+            }
+        }
+    )
+}
+
+@Composable
+private fun V11EditPaymentDialog(
+    payment: PaymentV11,
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onSave: (PaymentV11) -> Unit
+) {
+    var amount by remember(payment.id) {
+        mutableStateOf(
+            payment.amount.toString()
+        )
+    }
+
+    var date by remember(payment.id) {
+        mutableStateOf(
+            payment.receivedDate
+        )
+    }
+
+    var note by remember(payment.id) {
+        mutableStateOf(payment.note)
+    }
+
+    var sourceId by remember(payment.id) {
+        mutableStateOf(payment.sourceId)
+    }
+
+    var methodId by remember(payment.id) {
+        mutableStateOf(
+            payment.paymentMethodId
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("تعديل المبلغ المستلم")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = {
+                        amount =
+                            it.filter { c ->
+                                c.isDigit() ||
+                                    c == '.'
+                            }
+                    },
+                    label = {
+                        Text("المبلغ")
+                    },
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = {
+                        date = it
+                    },
+                    label = {
+                        Text("تاريخ الاستلام")
+                    },
+                    singleLine = true
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    "مصدر الدخل",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                db.incomeSources
+                    .filter {
+                        it.active ||
+                            it.id == sourceId
+                    }
+                    .sortedBy { it.order }
+                    .forEach { source ->
+                        Row(
+                            verticalAlignment =
+                                Alignment
+                                    .CenterVertically
+                        ) {
+                            RadioButton(
+                                selected =
+                                    sourceId ==
+                                        source.id,
+                                onClick = {
+                                    sourceId =
+                                        source.id
+                                }
+                            )
+                            Text(source.name)
+                        }
+                    }
+
+                Text(
+                    "طريقة الدفع",
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                db.paymentMethods
+                    .filter {
+                        it.active ||
+                            it.id == methodId
+                    }
+                    .sortedBy { it.order }
+                    .forEach { method ->
+                        Row(
+                            verticalAlignment =
+                                Alignment
+                                    .CenterVertically
+                        ) {
+                            RadioButton(
+                                selected =
+                                    methodId ==
+                                        method.id,
+                                onClick = {
+                                    methodId =
+                                        method.id
+                                }
+                            )
+                            Text(method.name)
+                        }
+                    }
+
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = {
+                        note = it
+                    },
+                    label = {
+                        Text("ملاحظة")
+                    }
+                )
+
+                if (
+                    payment.allocations
+                        .isNotEmpty()
+                ) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "سيتم الحفاظ على توزيع الدفعة الحالي.",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val newAmount =
+                        amount.toDoubleOrNull()
+                            ?: return@Button
+
+                    val oldAmount =
+                        payment.amount
+
+                    val newAllocations =
+                        if (
+                            payment.allocations
+                                .isEmpty() ||
+                            oldAmount <= 0.0
+                        ) {
+                            payment.allocations
+                        } else {
+                            val ratio =
+                                newAmount /
+                                    oldAmount
+
+                            payment.allocations
+                                .map {
+                                    it.copy(
+                                        amount =
+                                            it.amount *
+                                                ratio
+                                    )
+                                }
+                        }
+
+                    onSave(
+                        payment.copy(
+                            amount = newAmount,
+                            receivedDate = date,
+                            sourceId = sourceId,
+                            paymentMethodId =
+                                methodId,
+                            note = note,
+                            allocations =
+                                newAllocations
+                        )
+                    )
+                },
+                enabled =
+                    amount.toDoubleOrNull() !=
+                        null
+            ) {
+                Text("حفظ التعديل")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("إلغاء")
+            }
+        }
+    )
+}
+
+@Composable
+private fun V11EditObligationDialog(
+    obligation: ObligationV11,
+    onDismiss: () -> Unit,
+    onSave: (ObligationV11) -> Unit
+) {
+    var name by remember(obligation.id) {
+        mutableStateOf(obligation.name)
+    }
+
+    var total by remember(obligation.id) {
+        mutableStateOf(
+            obligation.totalAmount
+                ?.toString()
+                .orEmpty()
+        )
+    }
+
+    var installment by remember(
+        obligation.id
+    ) {
+        mutableStateOf(
+            obligation.installmentAmount
+                ?.toString()
+                .orEmpty()
+        )
+    }
+
+    var dueDay by remember(obligation.id) {
+        mutableStateOf(
+            obligation.dueDay
+                ?.toString()
+                .orEmpty()
+        )
+    }
+
+    var count by remember(obligation.id) {
+        mutableStateOf(
+            obligation.installmentCount
+                ?.toString()
+                .orEmpty()
+        )
+    }
+
+    var note by remember(obligation.id) {
+        mutableStateOf(obligation.note)
+    }
+
+    var type by remember(obligation.id) {
+        mutableStateOf(obligation.type)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("تعديل الالتزام")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = {
+                        Text("اسم الالتزام")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = total,
+                    onValueChange = {
+                        total =
+                            it.filter { c ->
+                                c.isDigit() ||
+                                    c == '.'
+                            }
+                    },
+                    label = {
+                        Text("إجمالي المبلغ")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = installment,
+                    onValueChange = {
+                        installment =
+                            it.filter { c ->
+                                c.isDigit() ||
+                                    c == '.'
+                            }
+                    },
+                    label = {
+                        Text("قيمة القسط")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = dueDay,
+                    onValueChange = {
+                        dueDay =
+                            it.filter(
+                                Char::isDigit
+                            )
+                    },
+                    label = {
+                        Text("يوم الاستحقاق")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = count,
+                    onValueChange = {
+                        count =
+                            it.filter(
+                                Char::isDigit
+                            )
+                    },
+                    label = {
+                        Text("عدد الأقساط")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = {
+                        note = it
+                    },
+                    label = {
+                        Text("ملاحظة")
+                    }
+                )
+
+                ObligationTypeV11.entries
+                    .forEach { item ->
+                        Row(
+                            verticalAlignment =
+                                Alignment
+                                    .CenterVertically
+                        ) {
+                            RadioButton(
+                                selected =
+                                    type == item,
+                                onClick = {
+                                    type = item
+                                }
+                            )
+                            Text(
+                                obligationLabel(
+                                    item
+                                )
+                            )
+                        }
+                    }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(
+                        obligation.copy(
+                            name = name,
+                            type = type,
+                            totalAmount =
+                                total.toDoubleOrNull(),
+                            installmentAmount =
+                                installment
+                                    .toDoubleOrNull(),
+                            dueDay =
+                                dueDay.toIntOrNull()
+                                    ?.coerceIn(
+                                        1,
+                                        31
+                                    ),
+                            installmentCount =
+                                count.toIntOrNull(),
+                            note = note
+                        )
+                    )
+                },
+                enabled =
+                    name.isNotBlank()
+            ) {
+                Text("حفظ التعديل")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("إلغاء")
+            }
+        }
+    )
+}
+
+private fun shiftKindLabelV11(
+    kind: ShiftKind
+): String =
+    when (kind) {
+        ShiftKind.FULL_DAY -> "يوم كامل"
+        ShiftKind.LONG -> "طويل"
+        ShiftKind.NIGHT -> "ليلي"
+        ShiftKind.MORNING -> "صباحي"
+        ShiftKind.EVENING -> "مسائي"
+        ShiftKind.OFF -> "إجازة"
+    }
 
 @Composable
 private fun AccountCard(

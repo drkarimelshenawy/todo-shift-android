@@ -12,6 +12,9 @@ import com.todoshift.app.v11.ShiftKind
 import com.todoshift.app.v11.ShiftSegmentV11
 import com.todoshift.app.v11.V11Database
 import com.todoshift.app.v11.V11Runtime
+import com.todoshift.app.v11.V11AppTheme
+import com.todoshift.app.v11.V11WidgetTheme
+import com.todoshift.app.v11.V11UiSettingsStore
 import java.time.LocalDate
 
 class CalendarWidgetFactory(
@@ -40,6 +43,20 @@ class CalendarWidgetFactory(
 
     private var workplaceColors:
         Map<String, Int> = emptyMap()
+
+    private var widgetPrimaryText =
+        Color.rgb(
+            23,
+            32,
+            51
+        )
+
+    private var widgetSecondaryText =
+        Color.rgb(
+            71,
+            85,
+            105
+        )
 
     /*
      * 12 fixed visual bands.
@@ -74,6 +91,59 @@ class CalendarWidgetFactory(
             }.getOrElse {
                 V11Database()
             }
+
+        val uiSettings =
+            V11UiSettingsStore(
+                context.applicationContext
+            ).load()
+
+        val resolvedWidgetTheme =
+            when (
+                uiSettings.widgetTheme
+            ) {
+                V11WidgetTheme.FOLLOW_APP ->
+                    if (
+                        uiSettings.appTheme ==
+                        V11AppTheme.MIDNIGHT
+                    )
+                        V11WidgetTheme.DARK
+                    else
+                        V11WidgetTheme.LIGHT
+
+                else ->
+                    uiSettings.widgetTheme
+            }
+
+        if (
+            resolvedWidgetTheme ==
+            V11WidgetTheme.DARK
+        ) {
+            widgetPrimaryText =
+                Color.rgb(
+                    230,
+                    237,
+                    243
+                )
+            widgetSecondaryText =
+                Color.rgb(
+                    170,
+                    183,
+                    196
+                )
+        } else {
+            widgetPrimaryText =
+                Color.rgb(
+                    23,
+                    32,
+                    51
+                )
+            widgetSecondaryText =
+                Color.rgb(
+                    71,
+                    85,
+                    105
+                )
+        }
 
         /*
          * IMPORTANT:
@@ -457,11 +527,12 @@ class CalendarWidgetFactory(
 
         views.setTextColor(
             R.id.day_number,
-            Color.rgb(
-                23,
-                32,
-                51
-            )
+            widgetPrimaryText
+        )
+
+        views.setTextColor(
+            R.id.day_shift,
+            widgetSecondaryText
         )
 
         bandIds()

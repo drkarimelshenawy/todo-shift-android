@@ -3,6 +3,8 @@ package com.todoshift.app.v11.ui
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
@@ -162,9 +164,11 @@ fun V11AccountsUnlockScreen(
         ) {
             Column(
                 modifier =
-                    Modifier.padding(
-                        20.dp
-                    ),
+                    Modifier
+                        .padding(20.dp)
+                        .verticalScroll(
+                            rememberScrollState()
+                        ),
                 horizontalAlignment =
                     Alignment
                         .CenterHorizontally
@@ -409,5 +413,366 @@ fun V11AccountsUnlockScreen(
                 }
             }
         }
+    }
+}
+
+
+
+@Composable
+private fun V11BiometricVerificationEffect(
+    onResult: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+
+    val activity =
+        remember(context) {
+            context as? FragmentActivity
+        }
+
+    LaunchedEffect(Unit) {
+        if (activity == null) {
+            onResult(false)
+            return@LaunchedEffect
+        }
+
+        val allowed =
+            BiometricManager
+                .Authenticators
+                .BIOMETRIC_STRONG or
+                BiometricManager
+                    .Authenticators
+                    .DEVICE_CREDENTIAL
+
+        if (
+            BiometricManager
+                .from(context)
+                .canAuthenticate(
+                    allowed
+                ) !=
+            BiometricManager
+                .BIOMETRIC_SUCCESS
+        ) {
+            onResult(false)
+            return@LaunchedEffect
+        }
+
+        val executor =
+            androidx.core.content
+                .ContextCompat
+                .getMainExecutor(
+                    context
+                )
+
+        val prompt =
+            BiometricPrompt(
+                activity,
+                executor,
+                object :
+                    BiometricPrompt
+                        .AuthenticationCallback() {
+
+                    override fun
+                        onAuthenticationSucceeded(
+                        result:
+                            BiometricPrompt
+                                .AuthenticationResult
+                    ) {
+                        super
+                            .onAuthenticationSucceeded(
+                                result
+                            )
+
+                        onResult(true)
+                    }
+
+                    override fun
+                        onAuthenticationError(
+                        errorCode: Int,
+                        errString:
+                            CharSequence
+                    ) {
+                        super
+                            .onAuthenticationError(
+                                errorCode,
+                                errString
+                            )
+
+                        onResult(false)
+                    }
+
+                    override fun
+                        onAuthenticationFailed() {
+                        super
+                            .onAuthenticationFailed()
+                    }
+                }
+            )
+
+        val info =
+            BiometricPrompt
+                .PromptInfo
+                .Builder()
+                .setTitle(
+                    "تأكيد التعديل المالي"
+                )
+                .setSubtitle(
+                    "استخدم البصمة أو قفل الجهاز"
+                )
+                .setAllowedAuthenticators(
+                    allowed
+                )
+                .build()
+
+        prompt.authenticate(info)
+    }
+}
+
+@Composable
+fun V11FinancialVerificationDialog(
+    settings: V11SecuritySettings,
+    store: V11SecurityStore,
+    onDismiss: () -> Unit,
+    onVerified: () -> Unit
+) {
+    var pin by remember {
+        mutableStateOf("")
+    }
+
+    var patternGeneration by remember {
+        mutableIntStateOf(0)
+    }
+
+    var errorText by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var biometricRequested by remember {
+        mutableStateOf(false)
+    }
+
+    val hasPin =
+        settings.mode == V11LockMode.PIN &&
+            store.hasPin()
+
+    val hasPattern =
+        settings.mode == V11LockMode.PATTERN &&
+            store.hasPattern()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("تأكيد التعديل")
+        },
+        text = {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(
+                            rememberScrollState()
+                        ),
+                horizontalAlignment =
+                    Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "تحقق من هويتك قبل حفظ التعديل المالي.",
+                    style =
+                        MaterialTheme.typography
+                            .bodyMedium
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                if (hasPin) {
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin =
+                                it.filter(
+                                    Char::isDigit
+                                ).take(12)
+                            errorText = null
+                        },
+                        label = {
+                            Text("PIN")
+                        },
+                        singleLine = true,
+                        visualTransformation =
+                            PasswordVisualTransformation(),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType =
+                                    KeyboardType.NumberPassword
+                            ),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(
+                        Modifier.height(8.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            if (
+                                store.verifyPin(pin)
+                            ) {
+                                onVerified()
+                            } else {
+                                errorText =
+                                    "PIN غير صحيح"
+                            }
+                        },
+                        enabled =
+                            pin.isNotBlank(),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Text("تحقق وحفظ")
+                    }
+                }
+
+                if (hasPattern) {
+                    Text(
+                        "ارسم نمط الحماية",
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+
+                    Spacer(
+                        Modifier.height(8.dp)
+                    )
+
+                    key(patternGeneration) {
+                        V11PatternInput(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(
+                                        min = 190.dp,
+                                        max = 240.dp
+                                    ),
+                            onPatternComplete = {
+                                if (
+                                    store.verifyPattern(
+                                        it
+                                    )
+                                ) {
+                                    onVerified()
+                                } else {
+                                    errorText =
+                                        "النمط غير صحيح"
+                                    patternGeneration++
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (
+                    settings.biometricEnabled
+                ) {
+                    if (
+                        hasPin ||
+                        hasPattern
+                    ) {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        vertical = 8.dp
+                                    ),
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+                            HorizontalDivider(
+                                modifier =
+                                    Modifier.weight(1f)
+                            )
+                            Text(
+                                "  أو  ",
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodySmall
+                            )
+                            HorizontalDivider(
+                                modifier =
+                                    Modifier.weight(1f)
+                            )
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            biometricRequested =
+                                true
+                        },
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Fingerprint,
+                            null
+                        )
+                        Spacer(
+                            Modifier.width(6.dp)
+                        )
+                        Text("التحقق بالبصمة")
+                    }
+                }
+
+                if (
+                    !hasPin &&
+                    !hasPattern &&
+                    !settings.biometricEnabled
+                ) {
+                    Text(
+                        "لا توجد وسيلة تحقق مفعلة.",
+                        color =
+                            MaterialTheme.colorScheme
+                                .error
+                    )
+                }
+
+                errorText?.let {
+                    Spacer(
+                        Modifier.height(8.dp)
+                    )
+                    Text(
+                        it,
+                        color =
+                            MaterialTheme.colorScheme
+                                .error,
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("إلغاء")
+            }
+        }
+    )
+
+    if (biometricRequested) {
+        V11BiometricVerificationEffect(
+            onResult = { success ->
+                biometricRequested = false
+
+                if (success) {
+                    onVerified()
+                } else {
+                    errorText =
+                        "تعذر التحقق بالبصمة"
+                }
+            }
+        )
     }
 }

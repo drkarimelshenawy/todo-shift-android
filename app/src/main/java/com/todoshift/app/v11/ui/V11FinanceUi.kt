@@ -683,6 +683,17 @@ fun V11FinanceScreen(
         V11PaymentDetailsDialog(
             payment = payment,
             db = db,
+            workplaceName = payment.sourceId
+                ?.let { sourceId ->
+                    db.incomeSources
+                        .firstOrNull { it.id == sourceId }
+                        ?.workplaceId
+                }
+                ?.let { workplaceId ->
+                    workplaces
+                        .firstOrNull { it.id == workplaceId }
+                        ?.name
+                },
             moneyVisible = moneyVisible,
             onDismiss = {
                 paymentDetails = null
@@ -1056,6 +1067,7 @@ private fun V11WorkplaceDueDetailsDialog(
 private fun V11PaymentDetailsDialog(
     payment: PaymentV11,
     db: V11Database,
+    workplaceName: String?,
     moneyVisible: Boolean,
     onDismiss: () -> Unit,
     onEdit: () -> Unit
@@ -1071,15 +1083,6 @@ private fun V11PaymentDetailsDialog(
             .firstOrNull {
                 it.id ==
                     payment.paymentMethodId
-            }
-
-    val workplace =
-        source?.workplaceId
-            ?.let { workplaceId ->
-                db.workplaces
-                    .firstOrNull {
-                        it.id == workplaceId
-                    }
             }
 
     AlertDialog(
@@ -1119,10 +1122,10 @@ private fun V11PaymentDetailsDialog(
                     )
                 }
 
-                workplace?.let {
+                workplaceName?.let { name ->
                     AccountLine(
                         "مكان العمل",
-                        it.name
+                        name
                     )
                 }
 

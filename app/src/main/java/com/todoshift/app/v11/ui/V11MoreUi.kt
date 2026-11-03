@@ -313,13 +313,8 @@ private fun SettingsPageContainer(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Black
-        )
-
-        Spacer(Modifier.height(2.dp))
+        // Main section title is rendered once by V11GlobalHeader.
+        // Keep this container focused on the settings content.
         content()
         Spacer(Modifier.height(24.dp))
     }

@@ -529,63 +529,61 @@ private fun V11GlobalHeader(
     title: String
 ) {
     Surface(
-        modifier =
-            Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding(),
         color = Color.White,
-        tonalElevation = 1.dp,
+        tonalElevation = 0.dp,
         shadowElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp)
-                .padding(horizontal = 12.dp),
+                .height(64.dp)
+                .padding(
+                    horizontal = 18.dp
+                ),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             androidx.compose.foundation.Image(
-                painter =
-                    painterResource(
-                        R.drawable
-                            .todo_shift_icon_source
-                    ),
-                contentDescription =
-                    "ToDo Shift",
+                painter = painterResource(
+                    R.drawable.todo_shift_icon_source
+                ),
+                contentDescription = "ToDo Shift",
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(40.dp)
                     .clip(
-                        MaterialTheme
-                            .shapes.small
+                        MaterialTheme.shapes.medium
                     )
             )
 
             Spacer(
-                Modifier.width(8.dp)
+                Modifier.width(10.dp)
             )
 
-            Text(
-                "ToDo Shift",
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleMedium,
-                fontWeight =
-                    FontWeight.Black
-            )
+            Column {
+                Text(
+                    "ToDo Shift",
+                    style =
+                        MaterialTheme.typography
+                            .titleMedium,
+                    fontWeight =
+                        FontWeight.Black,
+                    maxLines = 1
+                )
 
-            Spacer(
-                Modifier.weight(1f)
-            )
-
-            Text(
-                title,
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleMedium,
-                fontWeight =
-                    FontWeight.Black
-            )
+                Text(
+                    title,
+                    style =
+                        MaterialTheme.typography
+                            .labelMedium,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

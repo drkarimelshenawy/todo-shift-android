@@ -92,24 +92,15 @@ fun V11FinanceScreen(
 
             Spacer(Modifier.weight(1f))
 
-            Column(
-                horizontalAlignment =
-                    Alignment.End
-            ) {
-                Text(
-                    "الحسابات",
-                    fontSize = 25.sp,
-                    fontWeight =
-                        FontWeight.Black
-                )
-
-                Text(
-                    "المستحقات والمدفوعات والالتزامات",
-                    style =
-                        MaterialTheme.typography
-                            .labelSmall
-                )
-            }
+            Text(
+                "المستحقات والمدفوعات والالتزامات",
+                style =
+                    MaterialTheme.typography
+                        .bodyMedium,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+            )
         }
 
         Spacer(Modifier.height(10.dp))

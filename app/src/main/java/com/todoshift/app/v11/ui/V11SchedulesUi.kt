@@ -75,15 +75,10 @@ fun V11SchedulesScreen(
             .padding(14.dp)
     ) {
         Text(
-            "جداولي",
+            "إدارة التقاويم والجداول وملخص الشهر",
             style =
                 MaterialTheme.typography
-                    .headlineMedium,
-            fontWeight = FontWeight.Black
-        )
-
-        Text(
-            "إدارة التقاويم والجداول وملخص الشهر",
+                    .bodyMedium,
             color = Color.Gray
         )
 

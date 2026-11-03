@@ -337,6 +337,54 @@ class V11Storage(context: Context) {
                 }
             })
 
+            put("tasks", JSONArray().apply {
+                db.tasks.forEach { item ->
+                    put(JSONObject().apply {
+                        put("id", item.id)
+                        put("title", item.title)
+                        put("details", item.details)
+                        put("date", item.date)
+
+                        if (item.time == null)
+                            put("time", JSONObject.NULL)
+                        else
+                            put("time", item.time)
+
+                        put("priority", item.priority.name)
+                        put("status", item.status.name)
+                        put("repeat", item.repeat.name)
+
+                        if (item.reminderAt == null)
+                            put("reminderAt", JSONObject.NULL)
+                        else
+                            put("reminderAt", item.reminderAt)
+
+                        if (item.workplaceId == null)
+                            put("workplaceId", JSONObject.NULL)
+                        else
+                            put("workplaceId", item.workplaceId)
+
+                        if (item.calendarId == null)
+                            put("calendarId", JSONObject.NULL)
+                        else
+                            put("calendarId", item.calendarId)
+
+                        if (item.linkedShiftId == null)
+                            put("linkedShiftId", JSONObject.NULL)
+                        else
+                            put("linkedShiftId", item.linkedShiftId)
+
+                        put("createdAt", item.createdAt)
+                        put("updatedAt", item.updatedAt)
+
+                        if (item.completedAt == null)
+                            put("completedAt", JSONObject.NULL)
+                        else
+                            put("completedAt", item.completedAt)
+                    })
+                }
+            })
+
             put("obligations", JSONArray().apply {
                 db.obligations.forEach { item ->
                     put(JSONObject().apply {
@@ -748,6 +796,82 @@ class V11Storage(context: Context) {
             )
         }
 
+        val tasks =
+            mutableListOf<TaskV11>()
+
+        val taskArray =
+            root.optJSONArray("tasks") ?: JSONArray()
+
+        for (i in 0 until taskArray.length()) {
+            val o = taskArray.getJSONObject(i)
+
+            val priority = runCatching {
+                TaskPriorityV11.valueOf(
+                    o.optString(
+                        "priority",
+                        TaskPriorityV11.NORMAL.name
+                    )
+                )
+            }.getOrDefault(TaskPriorityV11.NORMAL)
+
+            val status = runCatching {
+                TaskStatusV11.valueOf(
+                    o.optString(
+                        "status",
+                        TaskStatusV11.TODO.name
+                    )
+                )
+            }.getOrDefault(TaskStatusV11.TODO)
+
+            val repeat = runCatching {
+                TaskRepeatV11.valueOf(
+                    o.optString(
+                        "repeat",
+                        TaskRepeatV11.NONE.name
+                    )
+                )
+            }.getOrDefault(TaskRepeatV11.NONE)
+
+            tasks += TaskV11(
+                id = o.optString("id"),
+                title = o.optString("title"),
+                details = o.optString("details", ""),
+                date = o.optString("date"),
+                time = nullableString(o, "time"),
+                priority = priority,
+                status = status,
+                repeat = repeat,
+                reminderAt =
+                    if (
+                        o.has("reminderAt") &&
+                        !o.isNull("reminderAt")
+                    ) o.optLong("reminderAt")
+                    else null,
+                workplaceId =
+                    nullableString(o, "workplaceId"),
+                calendarId =
+                    nullableString(o, "calendarId"),
+                linkedShiftId =
+                    nullableString(o, "linkedShiftId"),
+                createdAt =
+                    o.optLong(
+                        "createdAt",
+                        System.currentTimeMillis()
+                    ),
+                updatedAt =
+                    o.optLong(
+                        "updatedAt",
+                        System.currentTimeMillis()
+                    ),
+                completedAt =
+                    if (
+                        o.has("completedAt") &&
+                        !o.isNull("completedAt")
+                    ) o.optLong("completedAt")
+                    else null
+            )
+        }
+
         val obligations =
             mutableListOf<ObligationV11>()
 
@@ -848,7 +972,7 @@ class V11Storage(context: Context) {
         }
 
         return V11Database(
-            schemaVersion = 12,
+            schemaVersion = 13,
             calendars = calendars,
             days = days,
             rates = rates,
@@ -859,6 +983,7 @@ class V11Storage(context: Context) {
             monthSnapshots = snapshots,
             auditLog = audit,
             dayItems = dayItems,
+            tasks = tasks,
             obligations = obligations,
             obligationPayments = obligationPayments
         )

@@ -104,6 +104,49 @@ data class DayItemV11(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+enum class TaskPriorityV11 {
+    LOW,
+    NORMAL,
+    HIGH,
+    URGENT
+}
+
+enum class TaskStatusV11 {
+    TODO,
+    IN_PROGRESS,
+    COMPLETED
+}
+
+enum class TaskRepeatV11 {
+    NONE,
+    DAILY,
+    WEEKLY,
+    MONTHLY
+}
+
+data class TaskV11(
+    val id: String,
+    val title: String,
+    val details: String = "",
+    val date: String,
+    val time: String? = null,
+    val priority: TaskPriorityV11 =
+        TaskPriorityV11.NORMAL,
+    val status: TaskStatusV11 =
+        TaskStatusV11.TODO,
+    val repeat: TaskRepeatV11 =
+        TaskRepeatV11.NONE,
+    val reminderAt: Long? = null,
+    val workplaceId: String? = null,
+    val calendarId: String? = null,
+    val linkedShiftId: String? = null,
+    val createdAt: Long =
+        System.currentTimeMillis(),
+    val updatedAt: Long =
+        System.currentTimeMillis(),
+    val completedAt: Long? = null
+)
+
 data class DayEntryV11(
     val id: String,
     val date: String,
@@ -263,7 +306,7 @@ data class AuditEntryV11(
 )
 
 data class V11Database(
-    val schemaVersion: Int = 12,
+    val schemaVersion: Int = 13,
 
     val calendars:
         List<AppCalendarV11> = emptyList(),
@@ -294,6 +337,9 @@ data class V11Database(
 
     val dayItems:
         List<DayItemV11> = emptyList(),
+
+    val tasks:
+        List<TaskV11> = emptyList(),
 
     val obligations:
         List<ObligationV11> = emptyList(),

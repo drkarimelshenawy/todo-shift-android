@@ -497,7 +497,13 @@ fun V11Home(
                     )
 
                 4 ->
-                    V11TasksPlaceholderScreen()
+                    V11TasksScreen(
+                        db = db,
+                        workplaces = oldData.workplaces,
+                        onDatabaseChange = {
+                            saveDb(it)
+                        }
+                    )
 
                 else ->
                     V11CalendarScreen(
@@ -729,42 +735,6 @@ private fun V11CalendarHeroDestination(
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Black,
                 maxLines = 1
-            )
-        }
-    }
-}
-
-@Composable
-private fun V11TasksPlaceholderScreen() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                Icons.Default.CheckCircle,
-                contentDescription = null,
-                modifier = Modifier.size(52.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            Text(
-                "المهام",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(6.dp))
-
-            Text(
-                "سيتم بناء To-Do List في المرحلة التالية",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

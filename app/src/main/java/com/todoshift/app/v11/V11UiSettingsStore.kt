@@ -65,7 +65,9 @@ class V11UiSettingsStore(
             calendarStyle =
                 calendarStyle,
             widgetTheme =
-                widgetTheme
+                widgetTheme,
+            experience = enumValue("experience", V11Experience.CLASSIC),
+            premiumBrightness = enumValue("premiumBrightness", V11PremiumBrightness.SYSTEM)
         )
     }
 
@@ -103,6 +105,8 @@ class V11UiSettingsStore(
                 "widgetTheme",
                 settings.widgetTheme.name
             )
+            .putString("experience", settings.experience.name)
+            .putString("premiumBrightness", settings.premiumBrightness.name)
             .apply()
     }
 

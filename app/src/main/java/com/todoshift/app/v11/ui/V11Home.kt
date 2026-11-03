@@ -307,7 +307,9 @@ fun V11Home(
         }
 
     V11AppThemeProvider(
-        theme = uiSettings.appTheme
+        theme = uiSettings.appTheme,
+        experience = uiSettings.experience,
+        premiumBrightness = uiSettings.premiumBrightness
     ) {
     Scaffold(
         containerColor =
@@ -328,13 +330,17 @@ fun V11Home(
             )
         },
         bottomBar = {
-            V11HeroBottomBar(
-                selectedTab = tab,
-                onSelectTab = { destination ->
+            if (uiSettings.experience == V11Experience.PREMIUM) {
+                V11PremiumBottomBar(selectedTab = tab, onSelectTab = { destination ->
                     showWorkplaces = false
                     tab = destination
-                }
-            )
+                })
+            } else {
+                V11HeroBottomBar(selectedTab = tab, onSelectTab = { destination ->
+                    showWorkplaces = false
+                    tab = destination
+                })
+            }
         }
     ) { padding ->
 
@@ -829,6 +835,31 @@ private fun V11GlobalHeader(
                     )
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp
+    ) {
+        listOf(
+            Triple(1, "جداولي", Icons.Default.DateRange),
+            Triple(4, "المهام", Icons.Default.CheckCircle),
+            Triple(0, "التقويم", Icons.Default.CalendarMonth),
+            Triple(2, "الحسابات", Icons.Default.Payments),
+            Triple(3, "الإعدادات", Icons.Default.Settings)
+        ).forEach { (index, label, icon) ->
+            NavigationBarItem(
+                selected = selectedTab == index,
+                onClick = { onSelectTab(index) },
+                icon = { Icon(icon, contentDescription = label) },
+                label = { Text(label) },
+                alwaysShowLabel = false
+            )
         }
     }
 }

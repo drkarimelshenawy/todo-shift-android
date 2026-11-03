@@ -48,6 +48,8 @@ fun V11DayDetailsScreen(
         mutableStateOf<DayItemTypeV11?>(null)
     }
 
+    var editingSegmentId by remember { mutableStateOf<String?>(null) }
+
     var pendingDeleteSegmentId by remember {
         mutableStateOf<String?>(null)
     }
@@ -84,6 +86,23 @@ fun V11DayDetailsScreen(
     val items = db.dayItems
         .filter { it.date == date.toString() }
         .sortedBy { it.createdAt }
+
+    val editingSegment = entries.flatMap { it.segments }
+        .firstOrNull { it.id == editingSegmentId }
+    if (editingSegment != null) {
+        V11ShiftEditDialog(
+            segment = editingSegment, workplaces = workplaces,
+            onDismiss = { editingSegmentId = null },
+            onSave = { kind, workplaceId, amount, note ->
+                val updated = V11DayController.editSegment(
+                    db, editingSegment.id, kind, workplaceId, amount, note,
+                    workplaces.map { it.id }.toSet()
+                )
+                onDatabaseChange(updated)
+                editingSegmentId = null
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -207,6 +226,9 @@ fun V11DayDetailsScreen(
                             verticalAlignment =
                                 Alignment.CenterVertically
                         ) {
+                            IconButton(onClick = { editingSegmentId = segment.id }) {
+                                Icon(Icons.Default.Edit, "تعديل الشيفت")
+                            }
                             IconButton(
                                 onClick = {
                                     pendingDeleteSegmentId =
@@ -924,4 +946,80 @@ private fun timeText(
     val m = minute % 60
 
     return "%02d:%02d".format(h, m)
+}
+
+
+@Composable
+private fun V11ShiftEditDialog(
+    segment: ShiftSegmentV11, workplaces: List<Workplace>,
+    onDismiss: () -> Unit,
+    onSave: (ShiftKind, String?, Double?, String) -> Unit
+) {
+    var kind by remember(segment.id) { mutableStateOf(segment.kind) }
+    var workplaceId by remember(segment.id) { mutableStateOf(segment.workplaceId) }
+    var amount by remember(segment.id) {
+        mutableStateOf(segment.exceptionalAmount?.toString() ?: "")
+    }
+    var note by remember(segment.id) { mutableStateOf(segment.note) }
+    var error by remember(segment.id) { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("تعديل الشيفت") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("نوع الشيفت")
+                ShiftKind.values().forEach { choice ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = kind == choice,
+                            onClick = {
+                                kind = choice
+                                if (
+                                    choice != ShiftKind.OFF &&
+                                    workplaces.none { it.id == workplaceId }
+                                ) {
+                                    workplaceId = workplaces.firstOrNull()?.id
+                                }
+                            }
+                        )
+                        Text(V11Labels.shift(choice))
+                    }
+                }
+                if (kind != ShiftKind.OFF) {
+                    Text("مكان العمل")
+                    workplaces.forEach { place ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = workplaceId == place.id,
+                                onClick = { workplaceId = place.id })
+                            Text(place.name)
+                        }
+                    }
+                    OutlinedTextField(value = amount, onValueChange = { amount = it },
+                        label = { Text("مبلغ استثنائي (اختياري)") },
+                        singleLine = true)
+                }
+                OutlinedTextField(value = note, onValueChange = { note = it },
+                    label = { Text("ملاحظة") })
+                if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = { TextButton(onClick = {
+            val parsed = amount.trim().takeIf { it.isNotEmpty() }?.toDoubleOrNull()
+            if (kind != ShiftKind.OFF && amount.isNotBlank() && parsed == null) {
+                error = "المبلغ غير صالح"
+            } else {
+                runCatching {
+                    onSave(kind, if (kind == ShiftKind.OFF) null else workplaceId,
+                        if (kind == ShiftKind.OFF) null else parsed, note)
+                }.onFailure { error = it.message ?: "تعذر تعديل الشيفت" }
+            }
+        }) { Text("حفظ") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } }
+    )
 }

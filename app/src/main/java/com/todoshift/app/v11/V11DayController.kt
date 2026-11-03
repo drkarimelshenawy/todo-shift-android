@@ -56,6 +56,42 @@ object V11DayController {
         )
     }
 
+    fun editSegment(
+        db: V11Database, segmentId: String,
+        kind: ShiftKind, workplaceId: String?,
+        exceptionalAmount: Double?, note: String,
+        validWorkplaceIds: Set<String>
+    ): V11Database {
+        require(note.length <= 2000) { "الملاحظة طويلة جدًا" }
+        require(exceptionalAmount == null ||
+            (exceptionalAmount.isFinite() && exceptionalAmount >= 0.0)) { "المبلغ غير صالح" }
+        if (kind != ShiftKind.OFF) {
+            require(workplaceId != null && workplaceId in validWorkplaceIds) {
+                "اختر مكان عمل صالحًا حتى لا تصبح قيمة الشيفت صفرًا"
+            }
+        }
+        val owners = db.days.filter { day ->
+            day.segments.any { it.id == segmentId }
+        }
+        require(owners.size == 1) { "تعذر تحديد الشيفت بأمان" }
+        val owner = owners.single()
+        val original = owner.segments.single { it.id == segmentId }
+        val updated = original.copy(
+            kind = kind, workplaceId = if (kind == ShiftKind.OFF) null else workplaceId,
+            exceptionalAmount = if (kind == ShiftKind.OFF) null else exceptionalAmount,
+            note = note, startMinute = original.startMinute, endMinute = original.endMinute
+        )
+        val others = owner.segments.filterNot { it.id == segmentId }
+        require(V11ShiftConflictEngine.analyse(others, updated).canAddDirectly) {
+            "تعارض مع شيفت آخر؛ لم يتم تغيير البيانات"
+        }
+        return db.copy(days = db.days.map { day ->
+            if (day.id == owner.id) day.copy(
+                segments = day.segments.map { if (it.id == segmentId) updated else it }
+            ) else day
+        })
+    }
+
     fun deleteSegment(
         db: V11Database,
         segmentId: String

@@ -29,6 +29,14 @@ enum class V11CalendarStyle {
     CARDS
 }
 
+enum class V11Experience {
+    CLASSIC, PREMIUM
+}
+
+enum class V11PremiumBrightness {
+    SYSTEM, LIGHT, DARK
+}
+
 enum class V11WidgetTheme {
     FOLLOW_APP,
     LIGHT,
@@ -47,5 +55,7 @@ data class V11UiSettings(
     val calendarStyle: V11CalendarStyle =
         V11CalendarStyle.CLASSIC,
     val widgetTheme: V11WidgetTheme =
-        V11WidgetTheme.FOLLOW_APP
+        V11WidgetTheme.FOLLOW_APP,
+    val experience: V11Experience = V11Experience.CLASSIC,
+    val premiumBrightness: V11PremiumBrightness = V11PremiumBrightness.SYSTEM
 )

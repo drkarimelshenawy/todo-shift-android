@@ -142,6 +142,29 @@ fun V11MoreScreen(
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsChoiceCard(
+                    title = "واجهة التطبيق",
+                    options = listOf(
+                        V11Experience.CLASSIC to "Classic (الافتراضية)",
+                        V11Experience.PREMIUM to "Premium Clean"
+                    ),
+                    selected = uiSettings.experience,
+                    onSelected = { onUiSettingsChange(uiSettings.copy(experience = it)) }
+                )
+
+                if (uiSettings.experience == V11Experience.PREMIUM) {
+                    SettingsChoiceCard(
+                        title = "إضاءة Premium",
+                        options = listOf(
+                            V11PremiumBrightness.SYSTEM to "حسب النظام",
+                            V11PremiumBrightness.LIGHT to "فاتح",
+                            V11PremiumBrightness.DARK to "داكن"
+                        ),
+                        selected = uiSettings.premiumBrightness,
+                        onSelected = { onUiSettingsChange(uiSettings.copy(premiumBrightness = it)) }
+                    )
+                }
+
+                SettingsChoiceCard(
                     title = "ثيم التطبيق",
                     options = listOf(
                         V11AppTheme.TODO_SHIFT to

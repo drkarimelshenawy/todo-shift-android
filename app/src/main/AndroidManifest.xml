@@ -60,6 +60,7 @@
 
         <receiver
             android:name=".widget.TasksWidgetProvider"
+            android:label="@string/tasks_widget_label"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

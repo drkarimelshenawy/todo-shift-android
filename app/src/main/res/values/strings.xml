@@ -3,4 +3,7 @@
     <string name="notification_channel_name">تذكيرات الشيفتات</string>
     <string name="notification_channel_description">تنبيهات الشيفتات والمهام القادمة</string>
     <string name="widget_description">تقويم ToDo Shift للشيفتات</string>
+
+    <string name="tasks_widget_label">مهامي - ToDo Shift</string>
+    <string name="tasks_widget_description">قائمة المهام التفاعلية على الشاشة الرئيسية</string>
 </resources>

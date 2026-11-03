@@ -79,12 +79,11 @@ fun V11BackupRestoreDialog(
             }
 
             storage.importJson(raw)
-        }.onSuccess { restored ->
+            .also { onDatabaseRestored(it) }
+        }.onSuccess {
             error = false
             message =
                 "تمت استعادة النسخة الاحتياطية بنجاح"
-
-            onDatabaseRestored(restored)
         }.onFailure {
             error = true
             message =

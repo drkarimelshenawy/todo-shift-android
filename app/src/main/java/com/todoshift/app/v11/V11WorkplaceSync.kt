@@ -165,41 +165,52 @@ object V11WorkplaceSync {
                 ?.toString()
                 ?: LocalDate.now().toString()
 
-        val workplaceIds =
-            workplaces
-                .map { it.id }
-                .toSet()
+        val today = LocalDate.now().toString()
+        val additions = mutableListOf<RateHistoryEntryV11>()
+        val replacements = mutableMapOf<String, RateHistoryEntryV11>()
 
-        val retained =
-            db.rates.filterNot { rate ->
-                rate.workplaceId in workplaceIds &&
-                    rate.shiftKind in payableKinds
-            }
-
-        val synced =
-            workplaces.flatMap { workplace ->
-                payableKinds.map { kind ->
-                    RateHistoryEntryV11(
-                        id =
-                            UUID.randomUUID()
-                                .toString(),
-                        workplaceId =
-                            workplace.id,
-                        shiftKind =
-                            kind,
-                        effectiveFrom =
-                            earliestDate,
-                        amount =
-                            amount(
-                                workplace,
-                                kind
-                            )
+        workplaces.forEach { workplace ->
+            payableKinds.forEach { kind ->
+                val currentAmount = amount(workplace, kind)
+                val latest = db.rates
+                    .filter {
+                        it.workplaceId == workplace.id &&
+                            it.shiftKind == kind
+                    }
+                    .maxWithOrNull(
+                        compareBy<RateHistoryEntryV11> { it.effectiveFrom }
+                            .thenBy { it.id }
                     )
+
+                when {
+                    latest == null -> additions += RateHistoryEntryV11(
+                        id = UUID.randomUUID().toString(),
+                        workplaceId = workplace.id,
+                        shiftKind = kind,
+                        effectiveFrom = earliestDate,
+                        amount = currentAmount
+                    )
+                    latest.amount == currentAmount -> Unit
+                    latest.effectiveFrom == today -> {
+                        // Correct today's rate without changing its ID.
+                        replacements[latest.id] = latest.copy(amount = currentAmount)
+                    }
+                    latest.effectiveFrom < today -> additions += RateHistoryEntryV11(
+                        id = UUID.randomUUID().toString(),
+                        workplaceId = workplace.id,
+                        shiftKind = kind,
+                        effectiveFrom = today,
+                        amount = currentAmount
+                    )
+                    // A future-dated rate must not be overwritten implicitly.
+                    else -> Unit
                 }
             }
+        }
 
+        if (additions.isEmpty() && replacements.isEmpty()) return db
         return db.copy(
-            rates = retained + synced
+            rates = db.rates.map { replacements[it.id] ?: it } + additions
         )
     }
 

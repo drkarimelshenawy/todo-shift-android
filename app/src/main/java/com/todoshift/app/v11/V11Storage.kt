@@ -61,9 +61,61 @@ class V11Storage(context: Context) {
         toJson(db).toString(2)
 
     fun importJson(raw: String): V11Database {
-        val db = fromJson(JSONObject(raw))
-        save(db)
-        return db
+        val root = JSONObject(raw)
+
+        require(root.has("schemaVersion")) {
+            "ملف النسخة الاحتياطية لا يحتوي على إصدار قاعدة البيانات"
+        }
+        require(root.getInt("schemaVersion") == 13) {
+            "إصدار قاعدة البيانات غير مدعوم"
+        }
+
+        val requiredArrays = listOf(
+            "calendars", "days", "rates",
+            "incomeSources", "paymentMethods",
+            "payments", "settlements",
+            "monthSnapshots", "auditLog",
+            "dayItems", "tasks",
+            "obligations", "obligationPayments"
+        )
+
+        requiredArrays.forEach { key ->
+            require(root.optJSONArray(key) != null) {
+                "ملف النسخة الاحتياطية ناقص أو غير صالح: $key"
+            }
+        }
+
+        // Reject malformed nested entries before invoking the permissive parser.
+        requiredArrays.forEach { key ->
+            val array = root.getJSONArray(key)
+            for (i in 0 until array.length()) {
+                require(array.optJSONObject(i) != null) {
+                    "عنصر غير صالح في $key عند الفهرس $i"
+                }
+            }
+        }
+        val calendarIds = mutableSetOf<String>()
+        root.getJSONArray("calendars").let { array ->
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                val id = item.optString("id")
+                require(id.isNotBlank() && calendarIds.add(id)) {
+                    "معرف تقويم فارغ أو مكرر"
+                }
+            }
+        }
+        root.getJSONArray("days").let { array ->
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                require(item.optString("calendarId") in calendarIds) {
+                    "يوم مرتبط بتقويم غير موجود"
+                }
+                require(item.optJSONArray("segments") != null) {
+                    "يوم لا يحتوي على قائمة الشيفتات الصحيحة"
+                }
+            }
+        }
+        return fromJson(root)
     }
 
     private fun toJson(db: V11Database): JSONObject =

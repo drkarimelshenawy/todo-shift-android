@@ -101,14 +101,20 @@ object V11CalendarController {
     ): V11Database {
         if (db.calendars.size <= 1) return db
 
+        // Preserve calendars referenced by operational or financial records.
+        val isReferenced =
+            db.days.any { it.calendarId == calendarId } ||
+            db.dayItems.any { it.calendarId == calendarId } ||
+            db.tasks.any { it.calendarId == calendarId } ||
+            db.incomeSources.any { it.calendarId == calendarId } ||
+            db.settlements.any { it.calendarId == calendarId }
+
+        if (isReferenced) return db
+
         return db.copy(
             calendars =
                 db.calendars.filterNot {
                     it.id == calendarId
-                },
-            days =
-                db.days.filterNot {
-                    it.calendarId == calendarId
                 }
         )
     }

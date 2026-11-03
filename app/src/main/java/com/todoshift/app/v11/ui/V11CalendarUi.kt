@@ -254,11 +254,13 @@ fun V11CalendarScreen(
                                 continueQueue(db)
                             }
 
-                            paintMode = false
-                            paintDates = emptySet()
-                            selectedPaintKind = null
-                            selectedWorkplace = null
-                            paletteOpen = false
+                            if (pendingConflict == null) {
+                                paintMode = false
+                                paintDates = emptySet()
+                                selectedPaintKind = null
+                                selectedWorkplace = null
+                                paletteOpen = false
+                            }
                         } else {
                             paletteOpen = !paletteOpen
 
@@ -406,8 +408,12 @@ fun V11CalendarScreen(
             onDismissRequest = {
                 pendingConflict = null
                 pendingPaintDb = null
-                pendingPaintQueue =
-                    emptyList()
+                pendingPaintQueue = emptyList()
+                paintMode = false
+                paintDates = emptySet()
+                selectedPaintKind = null
+                selectedWorkplace = null
+                paletteOpen = false
             },
             title = {
                 Text("تعارض في الشيفت")
@@ -479,6 +485,11 @@ fun V11CalendarScreen(
                                         onDatabaseChange(
                                             updated
                                         )
+                                        paintMode = false
+                                        paintDates = emptySet()
+                                        selectedPaintKind = null
+                                        selectedWorkplace = null
+                                        paletteOpen = false
                                     } else {
                                         val queue =
                                             remaining
@@ -553,6 +564,11 @@ fun V11CalendarScreen(
                                         onDatabaseChange(
                                             updated
                                         )
+                                        paintMode = false
+                                        paintDates = emptySet()
+                                        selectedPaintKind = null
+                                        selectedWorkplace = null
+                                        paletteOpen = false
                                     }
                                 },
                                 modifier =
@@ -595,12 +611,14 @@ fun V11CalendarScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        pendingConflict =
-                            null
-                        pendingPaintDb =
-                            null
-                        pendingPaintQueue =
-                            emptyList()
+                        pendingConflict = null
+                        pendingPaintDb = null
+                        pendingPaintQueue = emptyList()
+                        paintMode = false
+                        paintDates = emptySet()
+                        selectedPaintKind = null
+                        selectedWorkplace = null
+                        paletteOpen = false
                     }
                 ) {
                     Text(

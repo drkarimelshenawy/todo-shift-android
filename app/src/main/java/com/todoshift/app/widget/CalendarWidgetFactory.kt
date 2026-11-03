@@ -183,7 +183,7 @@ class CalendarWidgetFactory(
 
         // Saturday = first column.
         val offset =
-            (first.dayOfWeek.value + 2) % 7
+            (first.dayOfWeek.value + 1) % 7
 
         repeat(offset) {
             cells +=

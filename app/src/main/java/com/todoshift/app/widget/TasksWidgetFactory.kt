@@ -88,6 +88,7 @@ class TasksWidgetFactory(
         )
 
         val completeIntent = Intent().apply {
+            action = TasksWidgetProvider.ACTION_COMPLETE
             putExtra(
                 TasksWidgetProvider.EXTRA_TASK_ID,
                 task.id
@@ -97,6 +98,46 @@ class TasksWidgetFactory(
         views.setOnClickFillInIntent(
             R.id.task_widget_check,
             completeIntent
+        )
+
+        val openIntent = Intent().apply {
+            action = TasksWidgetProvider.ACTION_OPEN
+            putExtra(
+                TasksWidgetProvider.EXTRA_TASK_ID,
+                task.id
+            )
+        }
+
+        views.setOnClickFillInIntent(
+            R.id.task_widget_content,
+            openIntent
+        )
+
+        val settings =
+            com.todoshift.app.v11.V11UiSettingsStore(
+                context.applicationContext
+            ).load()
+
+        val dark =
+            settings.widgetTheme ==
+                com.todoshift.app.v11.V11WidgetTheme.DARK ||
+                (
+                    settings.widgetTheme ==
+                        com.todoshift.app.v11.V11WidgetTheme.FOLLOW_APP &&
+                    settings.appTheme ==
+                        com.todoshift.app.v11.V11AppTheme.MIDNIGHT
+                )
+
+        views.setTextColor(
+            R.id.task_widget_name,
+            if (dark) android.graphics.Color.WHITE
+            else android.graphics.Color.rgb(23, 32, 51)
+        )
+
+        views.setTextColor(
+            R.id.task_widget_meta,
+            if (dark) android.graphics.Color.LTGRAY
+            else android.graphics.Color.GRAY
         )
 
         return views

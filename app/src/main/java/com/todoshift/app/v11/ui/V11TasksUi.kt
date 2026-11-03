@@ -45,7 +45,9 @@ private enum class TaskFilterV11 {
 fun V11TasksScreen(
     db: V11Database,
     workplaces: List<Workplace>,
-    onDatabaseChange: (V11Database) -> Unit
+    onDatabaseChange: (V11Database) -> Unit,
+    initialAction: String? = null,
+    initialTaskId: String? = null
 ) {
     val context = LocalContext.current
 
@@ -86,6 +88,25 @@ fun V11TasksScreen(
 
     var showEditor by remember {
         mutableStateOf(false)
+    }
+
+    LaunchedEffect(initialAction, initialTaskId) {
+        when (initialAction) {
+            "add" -> {
+                editingTask = null
+                showEditor = true
+            }
+            "open" -> {
+                val requestedTask =
+                    db.tasks.firstOrNull {
+                        it.id == initialTaskId
+                    }
+                if (requestedTask != null) {
+                    editingTask = requestedTask
+                    showEditor = true
+                }
+            }
+        }
     }
 
     val today = LocalDate.now().toString()

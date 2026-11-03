@@ -34,7 +34,10 @@ import java.time.YearMonth
 
 @Composable
 fun V11Home(
-    initialDate: LocalDate? = null
+    initialDate: LocalDate? = null,
+    initialTab: Int = 0,
+    initialTaskAction: String? = null,
+    initialTaskId: String? = null
 ) {
     val context = LocalContext.current
 
@@ -228,8 +231,8 @@ fun V11Home(
         )
     }
 
-    var tab by remember {
-        mutableIntStateOf(0)
+    var tab by remember(initialTab) {
+        mutableIntStateOf(initialTab)
     }
 
     var showWorkplaces by remember {
@@ -500,6 +503,8 @@ fun V11Home(
                     V11TasksScreen(
                         db = db,
                         workplaces = oldData.workplaces,
+                        initialAction = initialTaskAction,
+                        initialTaskId = initialTaskId,
                         onDatabaseChange = {
                             saveDb(it)
                         }

@@ -17,6 +17,9 @@ import com.todoshift.app.v11.V11Runtime
 class TasksWidgetProvider : AppWidgetProvider() {
 
     companion object {
+        const val ACTION_OPEN =
+            "com.todoshift.app.widget.TASK_OPEN"
+
         const val ACTION_COMPLETE =
             "com.todoshift.app.widget.TASK_COMPLETE"
 
@@ -44,6 +47,68 @@ class TasksWidgetProvider : AppWidgetProvider() {
                     R.id.tasks_widget_list
                 )
             }
+        }
+
+        private fun applyTasksTheme(
+            context: Context,
+            views: RemoteViews
+        ) {
+            val settings =
+                com.todoshift.app.v11.V11UiSettingsStore(
+                    context.applicationContext
+                ).load()
+
+            val resolved =
+                when (settings.widgetTheme) {
+                    com.todoshift.app.v11.V11WidgetTheme.FOLLOW_APP ->
+                        if (
+                            settings.appTheme ==
+                            com.todoshift.app.v11.V11AppTheme.MIDNIGHT
+                        ) {
+                            com.todoshift.app.v11.V11WidgetTheme.DARK
+                        } else {
+                            com.todoshift.app.v11.V11WidgetTheme.LIGHT
+                        }
+                    else -> settings.widgetTheme
+                }
+
+            val background: Int
+            val foreground: Int
+            val secondary: Int
+
+            when (resolved) {
+                com.todoshift.app.v11.V11WidgetTheme.DARK -> {
+                    background = android.graphics.Color.rgb(22, 27, 34)
+                    foreground = android.graphics.Color.WHITE
+                    secondary = android.graphics.Color.LTGRAY
+                }
+                com.todoshift.app.v11.V11WidgetTheme.TRANSPARENT -> {
+                    background = android.graphics.Color.TRANSPARENT
+                    foreground = android.graphics.Color.rgb(23, 32, 51)
+                    secondary = android.graphics.Color.GRAY
+                }
+                else -> {
+                    background = android.graphics.Color.rgb(248, 250, 252)
+                    foreground = android.graphics.Color.rgb(23, 32, 51)
+                    secondary = android.graphics.Color.GRAY
+                }
+            }
+
+            views.setInt(
+                R.id.tasks_widget_root,
+                "setBackgroundColor",
+                background
+            )
+
+            views.setTextColor(
+                R.id.tasks_widget_title,
+                foreground
+            )
+
+            views.setTextColor(
+                R.id.tasks_widget_count,
+                secondary
+            )
         }
 
         private fun updateWidget(
@@ -93,13 +158,30 @@ class TasksWidgetProvider : AppWidgetProvider() {
                 R.id.tasks_widget_empty
             )
 
+            fun taskActivityIntent(
+                actionName: String,
+                taskId: String? = null
+            ): Intent =
+                Intent(context, MainActivity::class.java).apply {
+                    putExtra(
+                        "todo_shift_task_action",
+                        actionName
+                    )
+                    taskId?.let {
+                        putExtra(
+                            "todo_shift_task_open_id",
+                            it
+                        )
+                    }
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+
             val openApp = PendingIntent.getActivity(
                 context,
                 id * 100 + 1,
-                Intent(
-                    context,
-                    MainActivity::class.java
-                ),
+                taskActivityIntent("list"),
                 PendingIntent.FLAG_UPDATE_CURRENT or
                     PendingIntent.FLAG_IMMUTABLE
             )
@@ -109,9 +191,17 @@ class TasksWidgetProvider : AppWidgetProvider() {
                 openApp
             )
 
+            val addTask = PendingIntent.getActivity(
+                context,
+                id * 100 + 3,
+                taskActivityIntent("add"),
+                PendingIntent.FLAG_UPDATE_CURRENT or
+                    PendingIntent.FLAG_IMMUTABLE
+            )
+
             views.setOnClickPendingIntent(
                 R.id.tasks_widget_add,
-                openApp
+                addTask
             )
 
             val complete = Intent(
@@ -138,6 +228,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
                 template
             )
 
+            applyTasksTheme(context, views)
             manager.updateAppWidget(id, views)
         }
     }
@@ -157,6 +248,32 @@ class TasksWidgetProvider : AppWidgetProvider() {
         intent: Intent
     ) {
         super.onReceive(context, intent)
+
+        if (intent.action == ACTION_OPEN) {
+            val taskId =
+                intent.getStringExtra(EXTRA_TASK_ID)
+                    ?: return
+
+            val openTask = Intent(
+                context,
+                MainActivity::class.java
+            ).apply {
+                putExtra(
+                    "todo_shift_task_action",
+                    "open"
+                )
+                putExtra(
+                    "todo_shift_task_open_id",
+                    taskId
+                )
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+
+            context.startActivity(openTask)
+            return
+        }
 
         if (intent.action != ACTION_COMPLETE) return
 

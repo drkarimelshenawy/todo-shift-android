@@ -106,6 +106,12 @@ class MainActivity : FragmentActivity() {
                     }.getOrNull()
                 }
 
+        val widgetTaskAction =
+            intent?.getStringExtra("todo_shift_task_action")
+
+        val widgetTaskId =
+            intent?.getStringExtra("todo_shift_task_open_id")
+
         setContent {
             MaterialTheme(
                 colorScheme = lightColorScheme(
@@ -116,7 +122,11 @@ class MainActivity : FragmentActivity() {
                 )
             ) {
                 V11Home(
-                    initialDate = widgetOpenDate
+                    initialDate = widgetOpenDate,
+                    initialTab =
+                        if (widgetTaskAction != null) 4 else 0,
+                    initialTaskAction = widgetTaskAction,
+                    initialTaskId = widgetTaskId
                 )
             }
         }

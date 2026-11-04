@@ -66,10 +66,11 @@ fun NeoCalendarArea(
     Column(modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
-            val toolbarWidth = maxOf(maxWidth, 240.dp + 100.dp * fontScale)
+            val availableWidth = maxWidth
+            val toolbarWidth = maxOf(availableWidth, 240.dp + 100.dp * fontScale)
             Row(Modifier.horizontalScroll(rememberScrollState()).width(toolbarWidth).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { move(-1) }, modifier = Modifier.size(40.dp)) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, neoLabel("السابق", "Previous")) }
-                Text(month.atDay(1).format(DateTimeFormatter.ofPattern(if (maxWidth < 420.dp) "MM/yyyy" else "MMMM yyyy", locale)),
+                Text(month.atDay(1).format(DateTimeFormatter.ofPattern(if (availableWidth < 420.dp) "MM/yyyy" else "MMMM yyyy", locale)),
                     modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
                 IconButton(onClick = { move(1) }, modifier = Modifier.size(40.dp)) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next")) }

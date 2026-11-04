@@ -96,6 +96,9 @@ fun V11FinanceScreen(
             )
             .padding(14.dp)
     ) {
+        if (LocalV11NeoEnabled.current) {
+            V11NeoSectionHero("الملخص المالي", "الحسابات والمدفوعات • ${month}")
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment =

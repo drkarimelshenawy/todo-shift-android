@@ -650,10 +650,15 @@ private fun V11CompactHeader(
     activeCalendarName: String,
     onManageCalendars: () -> Unit
 ) {
+    val neo = LocalV11NeoEnabled.current
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(if (neo) 64.dp else 52.dp)
+            .then(if (neo) Modifier.clip(RoundedCornerShape(20.dp))
+                .background(colors.surfaceVariant.copy(alpha = 0.45f))
+                .padding(horizontal = 12.dp) else Modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
@@ -673,7 +678,7 @@ private fun V11CompactHeader(
                 "ToDo Shift",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF162A46),
+                color = if (neo) colors.onSurface else Color(0xFF162A46),
                 maxLines = 1
             )
 
@@ -681,7 +686,7 @@ private fun V11CompactHeader(
                 activeCalendarName,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF4F709C),
+                color = if (neo) colors.onSurfaceVariant else Color(0xFF4F709C),
                 maxLines = 1
             )
         }
@@ -709,10 +714,16 @@ private fun V11MonthSelector(
     onNext: () -> Unit,
     onToday: () -> Unit
 ) {
+    val neo = LocalV11NeoEnabled.current
+    val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp),
+            .height(if (neo) 68.dp else 58.dp)
+            .then(if (neo) Modifier.clip(RoundedCornerShape(22.dp))
+                .background(colors.surface)
+                .border(1.dp, colors.outlineVariant, RoundedCornerShape(22.dp))
+                .padding(horizontal = 10.dp) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -736,7 +747,7 @@ private fun V11MonthSelector(
                 "${monthName(month.monthValue)} ${month.year}",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF16181D)
+                color = if (neo) colors.onSurface else Color(0xFF16181D)
             )
 
             TextButton(
@@ -750,7 +761,7 @@ private fun V11MonthSelector(
                 Text(
                     "انتقل لتاريخ اليوم",
                     fontSize = 9.sp,
-                    color = Color(0xFF4F709C)
+                    color = if (neo) colors.primary else Color(0xFF4F709C)
                 )
             }
         }
@@ -1327,12 +1338,17 @@ private fun V11SelectedDayPanel(
             it.calendarId in visibleCalendarIds
     }
 
+    val neo = LocalV11NeoEnabled.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 150.dp),
+            .heightIn(max = if (neo) 190.dp else 150.dp),
+        shape = if (neo) RoundedCornerShape(22.dp) else CardDefaults.shape,
+        border = if (neo) androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outlineVariant
+        ) else null,
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = if (neo) MaterialTheme.colorScheme.surface else Color.White
         )
     ) {
         Column(

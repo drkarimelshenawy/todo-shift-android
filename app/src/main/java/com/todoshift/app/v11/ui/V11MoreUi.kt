@@ -60,6 +60,9 @@ fun V11MoreScreen(
     when (page) {
         V11SettingsPage.HOME -> {
             SettingsPageContainer(title = "الإعدادات") {
+                if (uiSettings.experience == V11Experience.PREMIUM) {
+                    V11NeoSectionHero("تخصيص تجربتك", "المظهر • الخصوصية • النسخ الاحتياطي")
+                }
                 SettingsAction(
                     "التقويم والعمل",
                     "أماكن العمل والأسعار والتقاويم"

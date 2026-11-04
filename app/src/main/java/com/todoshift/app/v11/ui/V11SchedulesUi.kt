@@ -74,6 +74,9 @@ fun V11SchedulesScreen(
             )
             .padding(14.dp)
     ) {
+        if (LocalV11NeoEnabled.current) {
+            V11NeoSectionHero("جداول العمل", "التقاويم والشيفتات • ${month}")
+        }
         Text(
             "إدارة التقاويم والجداول وملخص الشهر",
             style =

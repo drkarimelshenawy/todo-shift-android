@@ -312,6 +312,9 @@ fun V11Home(
         experience = uiSettings.experience,
         premiumBrightness = uiSettings.premiumBrightness
     ) {
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalV11NeoEnabled provides (uiSettings.experience == V11Experience.PREMIUM)
+    ) {
     Scaffold(
         containerColor =
             MaterialTheme.colorScheme.background,
@@ -559,6 +562,8 @@ fun V11Home(
     }
 }
 }
+}
+
 
 @Composable
 private fun V11HeroBottomBar(
@@ -855,7 +860,7 @@ private fun V11GlobalHeader(
 @Composable
 private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 0.dp
     ) {
         listOf(
@@ -913,10 +918,11 @@ private fun V11PremiumQuickActions(onNavigate: (Int) -> Unit) {
 private fun V11PremiumOverview(calendarCount: Int, taskCount: Int) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             var expanded by rememberSaveable { mutableStateOf(true) }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

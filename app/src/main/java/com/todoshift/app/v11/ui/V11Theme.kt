@@ -25,7 +25,7 @@ fun V11AppThemeProvider(
     }
     MaterialTheme(
         colorScheme = if (experience == V11Experience.PREMIUM)
-            v11PremiumColorScheme(dark) else v11ColorScheme(theme),
+            v11PremiumColorScheme(dark, theme) else v11ColorScheme(theme),
         content = content
     )
 }
@@ -185,17 +185,63 @@ fun v11ColorScheme(
     }
 
 
-fun v11PremiumColorScheme(dark: Boolean): ColorScheme =
-    if (dark) darkColorScheme(
-        primary = Color(0xFFD8C49B), secondary = Color(0xFF9BB9B0),
-        background = Color(0xFF10151B), surface = Color(0xFF1A222B),
-        surfaceVariant = Color(0xFF27313B), onPrimary = Color(0xFF171C21),
-        onBackground = Color(0xFFF2F0EB), onSurface = Color(0xFFF2F0EB),
-        outline = Color(0xFF52606A)
+/**
+ * Neo Luxury visual tokens; classic color schemes remain unchanged.
+ * Existing appTheme preference selects a Neo accent without database migrations.
+ */
+fun v11PremiumColorScheme(
+    dark: Boolean,
+    theme: V11AppTheme = V11AppTheme.TODO_SHIFT
+): ColorScheme {
+    val accent = when (theme) {
+        V11AppTheme.TODO_SHIFT -> Color(0xFF36E4EF)
+        V11AppTheme.MIDNIGHT -> Color(0xFFA78BFA)
+        V11AppTheme.OCEAN -> Color(0xFF5C9DFF)
+        V11AppTheme.FOREST -> Color(0xFF69F0BD)
+        V11AppTheme.SAND -> Color(0xFFE6BD83)
+        V11AppTheme.MONO -> Color(0xFFCFD8E3)
+    }
+    val lightAccent = when (theme) {
+        V11AppTheme.TODO_SHIFT -> Color(0xFF087CAA)
+        V11AppTheme.MIDNIGHT -> Color(0xFF7053C4)
+        V11AppTheme.OCEAN -> Color(0xFF285BC4)
+        V11AppTheme.FOREST -> Color(0xFF087E68)
+        V11AppTheme.SAND -> Color(0xFF79532B)
+        V11AppTheme.MONO -> Color(0xFF344054)
+    }
+    return if (dark) darkColorScheme(
+        primary = accent,
+        onPrimary = Color(0xFF08111B),
+        primaryContainer = Color(0xFF1C3042),
+        onPrimaryContainer = Color(0xFFE8F5FF),
+        secondary = Color(0xFFA78BFA),
+        onSecondary = Color(0xFF101124),
+        background = Color(0xFF080B16),
+        onBackground = Color(0xFFF5F7FF),
+        surface = Color(0xFF11182B),
+        onSurface = Color(0xFFF5F7FF),
+        surfaceVariant = Color(0xFF1B2740),
+        onSurfaceVariant = Color(0xFFB0BED3),
+        surfaceTint = accent,
+        outline = Color(0xFF34435F),
+        outlineVariant = Color(0xFF26324B),
+        error = Color(0xFFFF8F9C)
     ) else lightColorScheme(
-        primary = Color(0xFF283E52), secondary = Color(0xFF6D857C),
-        background = Color(0xFFF6F5F1), surface = Color(0xFFFFFFFF),
-        surfaceVariant = Color(0xFFEBEEE9), onPrimary = Color.White,
-        onBackground = Color(0xFF172631), onSurface = Color(0xFF172631),
-        outline = Color(0xFFD2DAD7)
+        primary = lightAccent,
+        onPrimary = Color.White,
+        primaryContainer = Color(0xFFDCEFF8),
+        onPrimaryContainer = Color(0xFF15283A),
+        secondary = Color(0xFF7053C4),
+        onSecondary = Color.White,
+        background = Color(0xFFF4F7FC),
+        onBackground = Color(0xFF17243D),
+        surface = Color.White,
+        onSurface = Color(0xFF17243D),
+        surfaceVariant = Color(0xFFE7EDF7),
+        onSurfaceVariant = Color(0xFF53657F),
+        surfaceTint = lightAccent,
+        outline = Color(0xFFCCD8E8),
+        outlineVariant = Color(0xFFDEE6F1),
+        error = Color(0xFFB32637)
     )
+}

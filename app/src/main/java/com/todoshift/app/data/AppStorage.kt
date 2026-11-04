@@ -41,6 +41,8 @@ class AppStorage(context: Context) {
     fun exportJson(data: AppData): String =
         toJson(data).toString(2)
 
+    fun parseImport(raw: String): AppData = fromJson(JSONObject(raw))
+
     fun importJson(raw: String): AppData {
         val data = fromJson(JSONObject(raw))
         save(data)

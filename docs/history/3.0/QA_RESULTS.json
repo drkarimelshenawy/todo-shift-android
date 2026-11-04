@@ -1,0 +1,36 @@
+{
+  "delivery_date": "2026-11-04",
+  "baseline_commit": "520534c0e341ba24b425200c2edbeb55f879c007",
+  "input_archive_sha256": "7ef2622ee3199aaf5904616efcf43bf501ad157682d240f6a81f0526c79e002a",
+  "original_files": 108,
+  "unchanged_original_files": 96,
+  "modified_original_files": 12,
+  "static_guard_exit_code": 0,
+  "static_guard_output": [
+    "CHECK: 96 unchanged baseline files",
+    "CHECK: strings, comments, templates and delimiters in 80 Kotlin files (lexical only)",
+    "CHECK: 18 XML files and duplicate definitions",
+    "CHECK: local string/drawable/layout/xml/color/mipmap references",
+    "CHECK: read/write paths for 24 appearance settings (not a process-restart test)",
+    "CHECK: identity, Classic branch, privacy guards and excluded artifacts",
+    "PASS: static source guards. Kotlin compilation, rendering, persistence and runtime behavior remain unverified."
+  ],
+  "android_build": {
+    "status": "BLOCKED",
+    "exit_code": 127,
+    "reason": "gradle: command not found; Android SDK unavailable"
+  },
+  "kotlin_jvm_fixtures": {
+    "status": "BLOCKED",
+    "exit_code": 127,
+    "reason": "Kotlin compiler (kotlinc) is unavailable"
+  },
+  "device_tests": "NOT_RUN",
+  "visual_tests": "NOT_RUN",
+  "archive_validation": {
+    "crc": "PASS",
+    "extraction_and_content_comparison": "PASS",
+    "files": 127,
+    "original_files_retained": 108
+  }
+}

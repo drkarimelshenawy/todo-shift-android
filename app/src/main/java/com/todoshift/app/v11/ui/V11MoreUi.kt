@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 
+private val LocalNeoSettingsQuery = staticCompositionLocalOf { "" }
+
 private enum class V11SettingsPage {
     HOME,
     CALENDAR_WORK,
@@ -26,7 +28,9 @@ private enum class V11SettingsPage {
     PRIVACY,
     BACKUP,
     SYNC,
-    ABOUT
+    ABOUT,
+    WIDGETS,
+    LEGAL
 }
 
 @Composable
@@ -40,7 +44,10 @@ fun V11MoreScreen(
     onDatabaseRestored: (V11Database) -> Unit,
     onUiSettingsChange: (V11UiSettings) -> Unit,
     onToggleMoney: () -> Unit,
-    onOpenWorkplaces: () -> Unit
+    onOpenWorkplaces: () -> Unit,
+    financeAuthorized: Boolean = false,
+    onAccountsUnlocked: () -> Unit = {},
+    onNeoRestored: (com.todoshift.app.backup.Neo4RestoredState) -> Unit = {}
 ) {
     var page by remember { mutableStateOf(V11SettingsPage.HOME) }
     var securityOpen by remember { mutableStateOf(false) }
@@ -66,13 +73,27 @@ fun V11MoreScreen(
         return
     }
 
+    if (uiSettings.experience == V11Experience.PREMIUM && page in listOf(V11SettingsPage.BACKUP, V11SettingsPage.SYNC)) {
+        Neo4AccountBackupPage(db, financeAuthorized, securitySettings, securityStore, onAccountsUnlocked, onNeoRestored,
+            onBack = { page = V11SettingsPage.HOME }, onPolicy = { page = V11SettingsPage.LEGAL })
+        return
+    }
+    if (page == V11SettingsPage.WIDGETS) { Neo4WidgetStudio { page = V11SettingsPage.HOME }; return }
+    if (page == V11SettingsPage.LEGAL) { Neo4LegalHub { page = V11SettingsPage.HOME }; return }
+
     when (page) {
+        V11SettingsPage.WIDGETS, V11SettingsPage.LEGAL -> Unit
         V11SettingsPage.HOME -> {
             SettingsPageContainer(title = neoLiteral("الإعدادات", "Settings")) {
                 if (uiSettings.experience == V11Experience.PREMIUM) {
-                    V11NeoSectionHero(neoLabel(neoLiteral("تخصيص تجربتك", "Make it yours"), "Make it yours"), neoLabel("Neo Luxury 3.0 • المظهر والخصوصية", "Neo Luxury 3.0 • appearance and privacy"))
+                    V11NeoSectionHero(neoLabel(neoLiteral("تخصيص تجربتك", "Make it yours"), "Make it yours"), neoLabel("Neo Luxury 4.0 • المظهر والخصوصية", "Neo Luxury 4.0 • appearance and privacy"))
                     SettingsAction(neoLabel(neoLiteral("استوديو المظهر", "Appearance Studio"), "Appearance Studio"), neoLabel("الثيمات • الخطوط • التخطيط • الحركة • اللغة", "Themes • typography • layout • motion • language")) { studioSection = NeoStudioSection.THEMES; page = V11SettingsPage.APPEARANCE }
+                    SettingsAction(neoLabel("استوديو الويدجت", "Widget Studio"), neoLabel("ألوان وخصوصية وأحجام الشاشة الرئيسية", "Launcher appearance and privacy")) { page = V11SettingsPage.WIDGETS }
+                    SettingsAction(neoLabel("الخصوصية والسياسات", "Privacy & Legal"), neoLabel("الخصوصية والاستخدام والنسخ وبيانات Google", "Privacy, terms, backup and Google data")) { page = V11SettingsPage.LEGAL }
                     listOf(
+                        Triple(NeoStudioSection.BACKGROUND, neoLabel("الخلفيات والتدرجات", "Backgrounds and gradients"), neoLabel("صور اختيارية وخلفية شخصية", "Optional illustrations and personal photo")),
+                        Triple(NeoStudioSection.PAINT, neoLabel("ألوان الشيفتات", "Shift Paint Studio"), neoLabel("هندسة ثابتة وألوان مستقلة", "Fixed geometry, independent colors")),
+                        Triple(NeoStudioSection.PROFILES, neoLabel("تخطيطات محفوظة", "Layout profiles"), neoLabel("حفظ معاينات الواجهة والتبديل بينها", "Save and switch appearance profiles")),
                         Triple(NeoStudioSection.TYPE, neoLabel("الخطوط", "Typography"), neoLabel("نمط الكتابة وحجم الخط", "Type style and text size")),
                         Triple(NeoStudioSection.LAYOUT, neoLabel("التخطيط والكثافة", "Layout and density"), neoLabel("البطاقات والزجاج والأيقونات", "Cards, glass and icons")),
                         Triple(NeoStudioSection.MOTION, neoLabel("الحركات", "Animations"), neoLabel("مستوى الحركة وتقليلها", "Motion level and reduction")),
@@ -413,7 +434,7 @@ fun V11MoreScreen(
             ) {
                 SettingsInfo(
                     "ToDo Shift",
-                    if (uiSettings.experience == V11Experience.PREMIUM) "Neo Luxury 3.0 • Schema ${db.schemaVersion}" else "V1.1 • Schema ${db.schemaVersion}"
+                    if (uiSettings.experience == V11Experience.PREMIUM) "Neo Luxury 4.0 • Schema ${db.schemaVersion}" else "V1.1 • Schema ${db.schemaVersion}"
                 )
             }
         }
@@ -452,7 +473,11 @@ private fun SettingsPageContainer(
     ) {
         // Main section title is rendered once by V11GlobalHeader.
         // Keep this container focused on the settings content.
-        content()
+        if (LocalV11NeoEnabled.current) {
+            var query by remember { mutableStateOf("") }
+            OutlinedTextField(query, { query = it }, label = { Text(neoLabel("ابحث في الإعدادات", "Search settings")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            CompositionLocalProvider(LocalNeoSettingsQuery provides query) { content() }
+        } else content()
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -610,6 +635,8 @@ private fun SettingsAction(
     subtitle: String,
     onClick: () -> Unit
 ) {
+    val query = LocalNeoSettingsQuery.current
+    if (LocalV11NeoEnabled.current && query.isNotBlank() && !title.contains(query, ignoreCase = true) && !subtitle.contains(query, ignoreCase = true)) return
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth()

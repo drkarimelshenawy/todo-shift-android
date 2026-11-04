@@ -14,9 +14,11 @@ class V11Runtime(context: Context) {
     private val storage = V11Storage(appContext)
 
     fun start(): V11Database {
+        return synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+        com.todoshift.app.backup.Neo4LocalBackup(appContext).recoverIfNeeded()
 
         if (storage.hasDatabase()) {
-            return storage.load()
+            return@synchronized storage.load()
         }
 
         val oldData = oldStorage.load()
@@ -38,16 +40,17 @@ class V11Runtime(context: Context) {
                 ?.toString()
                 ?: LocalDate.now().toString()
 
-        return storage.migrateIfNeeded(
+        storage.migrateIfNeeded(
             oldData = oldData,
             effectiveFrom = effectiveFrom
         )
     }
 
-    fun save(db: V11Database) {
+    }
+
+    fun save(db: V11Database) = synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
         storage.save(db)
-        ToDoShiftWidget.refreshAll(appContext)
-        TasksWidgetProvider.refreshAll(appContext)
+        com.todoshift.app.widget.Neo4WidgetRefresh.schedule(appContext)
     }
 
     fun exportJson(db: V11Database): String =

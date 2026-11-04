@@ -1,0 +1,28 @@
+Backup & Sync Policy
+
+Current status
+Review draft dated 4 November 2026. Local export and restore exist in source. No active direct Drive service or multi-device sync is provided.
+
+Archive contents
+The Neo 4 archive includes V11 data, supported legacy and workplace data, appearance settings, layout profiles, widget settings and referenced personal images. Its manifest records format and app versions, creation time, sections, sizes and SHA-256 checksums. PINs, biometrics, Google tokens and Android keys are excluded.
+
+Validation and restore
+Version, paths, sizes, checksums and data are validated before a preview is shown. Selecting a file does not write data. Confirmation triggers revalidation and a local rollback journal around preference commits. Interruption and failure recovery still require device testing before build approval.
+
+Confidentiality
+The archive is not encrypted by the app. Checksums detect corruption but do not authenticate a sender; a malicious editor can recompute them. Protect exported files and do not rely on the interface PIN to secure an archive.
+
+Legacy compatibility
+Older V11 JSON can be inspected. It does not contain every appearance setting or workplace record; the app explains this and preserves missing sections from the current device. Unsupported formats are rejected rather than guessed.
+
+Location and retention
+You choose an Android document destination and manage or delete the exported file there. A successful local export does not mean a cloud backup succeeded. Future schedule choices are saved preferences only and do not currently start recurring work.
+
+Future Drive integration
+The architecture separates identity authentication from Drive authorization. A future implementation may use drive.appdata for private app snapshots. OAuth setup alone cannot activate missing SDK adapters; upload, download, deletion and revocation must be implemented and tested first.
+
+Backup is not sync
+A backup is a snapshot that replaces included data on restore. It does not automatically merge two devices. Real sync needs revisions, conflict resolution and deletion semantics and is not implemented here.
+
+Support
+Complete operator and support information and publish final retention and deletion details before enabling a cloud service.

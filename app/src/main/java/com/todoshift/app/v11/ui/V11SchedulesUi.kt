@@ -88,7 +88,7 @@ fun V11SchedulesScreen(
             V11NeoSectionHero(neoLabel(neoLiteral("خطك الزمني", "Your timeline"), "Shift timeline"), neoLabel("الشيفتات والتقاويم • $month", "Shifts and calendars • $month"))
             NeoShiftTimeline(db, workplaces, month, onMonthChange, onOpenDay = { date, calendarId -> timelineDay = date to calendarId })
         }
-        Text(
+        if (!LocalV11NeoEnabled.current || LocalNeoAppearance.current.showDescriptions) Text(
             neoLiteral("إدارة التقاويم والجداول وملخص الشهر", "Manage calendars, schedules and monthly overview"),
             style =
                 MaterialTheme.typography

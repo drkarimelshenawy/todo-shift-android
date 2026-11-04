@@ -22,14 +22,14 @@ class NeoAppearanceStore(context: Context) {
             "FOREST" -> NeoPalette.EMERALD_LUXURY
             "SAND" -> NeoPalette.CHAMPAGNE_GOLD
             "MONO" -> NeoPalette.MONOCHROME
-            else -> NeoPalette.NEO_CYAN
+            else -> NeoPalette.MINT_AURA
         }
         val order = prefs.getString("dashboardOrder", "")!!.split(",").mapNotNull { name ->
             runCatching { enumValueOf<NeoDashboardCard>(name) }.getOrNull()
         }.distinct()
         val hidden = prefs.getStringSet("hiddenCards", emptySet()).orEmpty()
         val actions = prefs.getStringSet("quickActions", NeoQuickAction.entries.map { it.name }.toSet()).orEmpty()
-        return NeoAppearance(
+        val legacyValue = NeoAppearance(
             brightness = readEnum("brightness", oldBrightness), palette = readEnum("palette", oldPalette),
             accentHex = prefs.getString("accentHex", "").orEmpty().takeIf { it.matches(Regex("#[0-9a-fA-F]{6}")) }.orEmpty(),
             intensity = prefs.getFloat("intensity", 0.65f).takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0.65f,
@@ -39,17 +39,19 @@ class NeoAppearanceStore(context: Context) {
             density = readEnum("density", NeoDensity.BALANCED), fontScale = prefs.getFloat("fontScale", 1f).takeIf { it.isFinite() }?.coerceIn(0.85f, 1.3f) ?: 1f,
             typeface = readEnum("typeface", NeoTypeface.SYSTEM), iconStyle = readEnum("iconStyle", NeoIconStyle.ROUNDED),
             calendarView = readEnum("calendarView", NeoCalendarView.MONTH), calendarDensity = readEnum("calendarDensity", NeoDensity.BALANCED),
-            language = readEnum("language", NeoLanguage.SYSTEM), dashboardExpanded = prefs.getBoolean("dashboardExpanded", true),
+            language = readEnum("language", NeoLanguage.SYSTEM), dashboardExpanded = prefs.getBoolean("dashboardExpanded", false),
             dashboardOrder = order + NeoDashboardCard.entries.filterNot { it in order },
             hiddenCards = NeoDashboardCard.entries.filter { it.name in hidden }.toSet(),
             quickActions = NeoQuickAction.entries.filter { it.name in actions }.toSet(),
             showShiftNotes = prefs.getBoolean("showShiftNotes", true), timelineFilter = readEnum("timelineFilter", NeoTimelineFilter.ALL),
-            showFinanceChart = prefs.getBoolean("showFinanceChart", true)
+            showFinanceChart = prefs.getBoolean("showFinanceChart", false)
         )
+        return runCatching { prefs.getString("neo4Appearance", null)?.let { Neo4AppearanceCodec.decode(org.json.JSONObject(it), legacyValue) } ?: legacyValue }.getOrDefault(legacyValue)
     }
 
     fun save(value: NeoAppearance) {
         prefs.edit().apply {
+            putString("neo4Appearance", Neo4AppearanceCodec.encode(value).toString())
             putString("brightness", value.brightness.name); putString("palette", value.palette.name)
             putString("accentHex", value.accentHex); putFloat("intensity", value.intensity)
             putString("cardStyle", value.cardStyle.name); putInt("cornerRadius", value.cornerRadius)

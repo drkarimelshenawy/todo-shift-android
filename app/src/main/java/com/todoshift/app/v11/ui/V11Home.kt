@@ -76,9 +76,33 @@ fun V11Home(
         )
     }
 
+    var bootAttempt by remember { mutableIntStateOf(0) }
+    var bootFailure by remember { mutableStateOf(false) }
+    val boot by produceState<com.todoshift.app.backup.Neo4BootState?>(null, bootAttempt) {
+        bootFailure = false
+        try {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.todoshift.app.backup.Neo4BootState(runtime.start(), oldStorage.load(), uiStore.load(),
+                    NeoAppearanceStore(context.applicationContext).load(), securityStore.load(), activeCalendarStore.load())
+            }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { bootFailure = true }
+    }
+    val loaded = boot
+    if (loaded == null) {
+        Surface(Modifier.fillMaxSize()) { Box(contentAlignment = Alignment.Center) {
+            if (bootFailure) Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("تعذر فتح البيانات بأمان / Unable to open data safely")
+                Text("لا إعادة ضبط تلقائية / No automatic data reset")
+                Button(onClick = { bootAttempt++ }) { Text("إعادة المحاولة / Retry") }
+            } else CircularProgressIndicator()
+        } }
+        return
+    }
+
     var securitySettings by remember {
         mutableStateOf(
-            securityStore.load()
+            loaded.security
         )
     }
 
@@ -176,18 +200,18 @@ fun V11Home(
     }
 
     var db by remember {
-        mutableStateOf(runtime.start())
+        mutableStateOf(loaded.database)
     }
 
     var oldData by remember {
         mutableStateOf(
-            oldStorage.load()
+            loaded.legacy
         )
     }
 
     var activeCalendarId by remember {
         mutableStateOf(
-            activeCalendarStore.load()
+            loaded.activeCalendarId
         )
     }
 
@@ -232,15 +256,17 @@ fun V11Home(
 
     var uiSettings by remember {
         mutableStateOf(
-            uiStore.load()
+            loaded.ui
         )
     }
 
     val neoStore = remember { NeoAppearanceStore(context.applicationContext) }
-    var neoAppearance by remember { mutableStateOf(neoStore.load()) }
+    var neoAppearance by remember { mutableStateOf(loaded.appearance) }
     var quickTask by remember { mutableStateOf(false) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
     var calendarActionId by remember { mutableIntStateOf(0) }
+    var calendarManagerRequest by remember { mutableIntStateOf(0) }
+    var overviewOpen by remember { mutableStateOf(false) }
 
     val contentAlpha = remember { androidx.compose.animation.core.Animatable(1f) }
     var tab by remember(initialTab) {
@@ -272,6 +298,11 @@ fun V11Home(
         )
     }
 
+    LaunchedEffect(moneyVisible, securitySettings.protectAccounts, securitySettings.hideAmounts) {
+        com.todoshift.app.widget.Neo4WidgetPrivacy.update(context.applicationContext,
+            !moneyVisible || securitySettings.protectAccounts || securitySettings.hideAmounts)
+    }
+
     fun saveDb(value: V11Database) {
         db = value
         runtime.save(value)
@@ -283,9 +314,7 @@ fun V11Home(
         uiSettings = value
         uiStore.save(value)
 
-        ToDoShiftWidget.refreshAll(
-            context.applicationContext
-        )
+        com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext)
     }
 
     BackHandler(enabled = showWorkplaces) {
@@ -328,7 +357,7 @@ fun V11Home(
     NeoEnvironment(
         appearance = neoAppearance,
         enabled = uiSettings.experience == V11Experience.PREMIUM,
-        onChange = { value -> neoAppearance = value; neoStore.save(value) }
+        onChange = { value -> neoAppearance = value; neoStore.save(value); com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext) }
     ) {
     V11AppThemeProvider(
         theme = uiSettings.appTheme,
@@ -339,12 +368,16 @@ fun V11Home(
         LocalV11NeoEnabled provides (uiSettings.experience == V11Experience.PREMIUM)
     ) {
     Scaffold(
-        containerColor =
-            MaterialTheme.colorScheme.background,
+        containerColor = if (uiSettings.experience == V11Experience.PREMIUM) Color.Transparent else MaterialTheme.colorScheme.background,
         contentWindowInsets =
             WindowInsets(0, 0, 0, 0),
         topBar = {
             V11GlobalHeader(
+                calendarActions = tab == 0 && !showWorkplaces,
+                onToday = { calendarAction = NeoQuickAction.TODAY; calendarActionId++ },
+                onAdd = { calendarAction = NeoQuickAction.ADD_SHIFT; calendarActionId++ },
+                onManage = { calendarManagerRequest++ },
+                onOverview = { overviewOpen = true },
                 title = if (uiSettings.experience == V11Experience.PREMIUM) when {
                     showWorkplaces -> neoLabel("أماكن العمل", "Workplaces")
                     tab == 0 -> neoLabel("التقويم", "Calendar")
@@ -389,6 +422,7 @@ fun V11Home(
                 .then(if (uiSettings.experience == V11Experience.PREMIUM)
                     Modifier.graphicsLayer { alpha = contentAlpha.value } else Modifier)
         ) {
+            if (uiSettings.experience == V11Experience.PREMIUM) Neo4Atmosphere(Modifier.matchParentSize())
             if (showWorkplaces) {
                 V11WorkplacesScreen(
                     workplaces = oldData.workplaces,
@@ -418,14 +452,10 @@ fun V11Home(
                 when (tab) {
                 0 ->
                     Column(modifier = Modifier.fillMaxSize()) {
-                        if (uiSettings.experience == V11Experience.PREMIUM) {
-                            NeoDashboard(db = db, workplaces = oldData.workplaces, onQuickAction = { action ->
-                                if (action == NeoQuickAction.ADD_TASK) { calendarAction = null; quickTask = true; tab = 4 }
-                                else { calendarAction = action; calendarActionId++ }
-                            })
-                        }
                         Box(modifier = Modifier.weight(1f)) {
                             V11CalendarScreen(
+                        managerRequest = calendarManagerRequest,
+                        onManagerHandled = { calendarManagerRequest = 0 },
                         onOpenWorkplaces = { showWorkplaces = true },
                         financeAuthorized = accountsUnlocked,
                         financeAmountsVisible = moneyVisible,
@@ -525,6 +555,11 @@ fun V11Home(
 
                 3 ->
                     V11MoreScreen(
+                        financeAuthorized = accountsUnlocked,
+                        onAccountsUnlocked = { accountsUnlocked = true },
+                        onNeoRestored = { state ->
+                            db = state.database; oldData = state.legacy; uiSettings = state.ui; neoAppearance = state.appearance; activeCalendarId = state.activeCalendarId
+                        },
                         db = db,
                         uiSettings =
                             uiSettings,
@@ -576,6 +611,8 @@ fun V11Home(
 
                 else ->
                     V11CalendarScreen(
+                        managerRequest = calendarManagerRequest,
+                        onManagerHandled = { calendarManagerRequest = 0 },
                         onOpenWorkplaces = { showWorkplaces = true },
                         financeAuthorized = accountsUnlocked,
                         financeAmountsVisible = moneyVisible,
@@ -606,6 +643,12 @@ fun V11Home(
             }
         }
     }
+    if (overviewOpen && uiSettings.experience == V11Experience.PREMIUM) Neo4OverviewSheet(db, oldData.workplaces, accountsUnlocked, moneyVisible,
+        onAction = { action ->
+            if (action == NeoQuickAction.ADD_TASK) { calendarAction = null; quickTask = true; tab = 4 }
+            else { tab = 0; calendarAction = action; calendarActionId++ }
+        }, onDismiss = { overviewOpen = false })
+
 }
 }
 }
@@ -820,8 +863,16 @@ private fun V11GlobalHeader(
     title: String,
     showMoneyAction: Boolean = false,
     moneyVisible: Boolean = true,
-    onToggleMoney: () -> Unit = {}
+    onToggleMoney: () -> Unit = {},
+    calendarActions: Boolean = false,
+    onToday: () -> Unit = {}, onAdd: () -> Unit = {}, onManage: () -> Unit = {}, onOverview: () -> Unit = {}
 ) {
+    if (LocalV11NeoEnabled.current) {
+        val p = LocalNeoAppearance.current
+        Neo4CompactHeader(title, calendarActions, showMoneyAction, moneyVisible, onToggleMoney, onToday, onAdd, onManage,
+            p.showGreeting || p.dashboardExpanded || p.dashboardOrder.any { p.cardVisible(it) } || p.showFinanceSummary, onOverview)
+        return
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -908,7 +959,7 @@ private fun V11GlobalHeader(
 private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
     val p = LocalNeoAppearance.current
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shadowElevation = if (p.glow) 4.dp else 0.dp) {
+        shadowElevation = if (p.showEffects && p.glow) 4.dp else 0.dp) {
     NavigationBar(
         containerColor = Color.Transparent,
         tonalElevation = 0.dp

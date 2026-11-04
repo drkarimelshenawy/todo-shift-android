@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 
-enum class NeoStudioSection { THEMES, TYPE, LAYOUT, MOTION, CALENDAR, DASHBOARD, PREFERENCES }
+enum class NeoStudioSection { THEMES, BACKGROUND, TYPE, LAYOUT, MOTION, CALENDAR, PAINT, DASHBOARD, PROFILES, PREFERENCES }
 
 @Composable
 fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSection: NeoStudioSection = NeoStudioSection.THEMES) {
@@ -44,6 +44,9 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
             NeoStudioSection.entries.forEach { item ->
                 FilterChip(selected = section == item, onClick = { section = item }, label = { Text(when (item) {
                     NeoStudioSection.THEMES -> neoLabel("الثيمات", "Themes")
+                    NeoStudioSection.BACKGROUND -> neoLabel("الخلفيات", "Backgrounds")
+                    NeoStudioSection.PAINT -> neoLabel("تلوين الشيفتات", "Shift paint")
+                    NeoStudioSection.PROFILES -> neoLabel("التخطيطات المحفوظة", "Profiles")
                     NeoStudioSection.TYPE -> neoLabel("الخطوط", "Typography")
                     NeoStudioSection.LAYOUT -> neoLabel("التخطيط", "Layout")
                     NeoStudioSection.MOTION -> neoLabel("الحركات", "Motion")
@@ -54,28 +57,7 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
             }
         }
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item {
-                val density = androidx.compose.ui.platform.LocalDensity.current
-                CompositionLocalProvider(LocalNeoAppearance provides draft,
-                    androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, density.fontScale / saved.fontScale * draft.fontScale)) {
-                    V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
-                        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.background) {
-                            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(neoLabel("معاينة قبل التطبيق", "Preview before applying"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                                Text("ToDo Shift • 24:00", style = MaterialTheme.typography.headlineSmall)
-                                Card(Modifier.fillMaxWidth()) {
-                                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Text(neoLabel("يوم منظم، بلمستك", "Your day, thoughtfully arranged"), style = MaterialTheme.typography.titleMedium)
-                                        Text(neoLabel("العربية واضحة ومريحة للقراءة", "Clear typography. Calm surfaces."), style = MaterialTheme.typography.bodyMedium)
-                                        LinearProgressIndicator(progress = { 0.64f }, modifier = Modifier.fillMaxWidth())
-                                        Text(neoLabel("عينة تصميم فقط", "Design sample only"), style = MaterialTheme.typography.labelSmall)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            item { Neo4ThemePreview(draft, saved.fontScale) }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     when (section) {
@@ -104,6 +86,9 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
                                 isError = !validAccent, singleLine = true, modifier = Modifier.fillMaxWidth())
                             NeoSlider(neoLabel("كثافة اللون", "Color intensity"), draft.intensity, 0f..1f) { draft = draft.copy(intensity = it) }
                         }
+                        NeoStudioSection.BACKGROUND -> Neo4BackgroundControls(draft) { draft = it }
+                        NeoStudioSection.PAINT -> Neo4PaintStudio(draft) { draft = it }
+                        NeoStudioSection.PROFILES -> Neo4ProfilesStudio(draft) { draft = it }
                         NeoStudioSection.TYPE -> {
                             NeoChoice(neoLabel("نمط الكتابة", "Type style"), NeoTypeface.entries, draft.typeface,
                                 { neoEnumLabel(it) }, { draft = draft.copy(typeface = it) })
@@ -113,6 +98,7 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
                             Text(neoLabel("يُضاف هذا الحجم إلى تكبير الخط من إعدادات الهاتف.", "This scale combines with the phone's font size."), style = MaterialTheme.typography.bodySmall)
                         }
                         NeoStudioSection.LAYOUT -> {
+                            Neo4VisibilityControls(draft) { draft = it }
                             NeoChoice(neoLabel("كثافة المعلومات", "Information density"), NeoDensity.entries, draft.density,
                                 { neoEnumLabel(it) }, { draft = draft.copy(density = it) })
                             NeoChoice(neoLabel("شكل البطاقات", "Card style"), NeoCardStyle.entries, draft.cardStyle,
@@ -141,8 +127,8 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
                             draft.dashboardOrder.forEachIndexed { index, card ->
                                 Card(Modifier.fillMaxWidth()) {
                                     Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Switch(checked = card !in draft.hiddenCards, onCheckedChange = { show ->
-                                            draft = draft.copy(hiddenCards = if (show) draft.hiddenCards - card else draft.hiddenCards + card)
+                                        Switch(checked = draft.cardVisible(card), onCheckedChange = { show ->
+                                            draft = draft.withDashboardCard(card, show)
                                         })
                                         Text(neoCardLabel(card), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                                         IconButton(enabled = index > 0, onClick = {

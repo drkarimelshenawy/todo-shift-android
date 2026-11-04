@@ -163,11 +163,11 @@ fun V11TasksScreen(
             if (neo) {
                 NeoTaskSearch(searchQuery, { searchQuery = it }, priorityFilter, { priorityFilter = it }, categoryFilter, { categoryFilter = it }, db)
                 val complete = db.tasks.count { it.status == TaskStatusV11.COMPLETED }
-                if (db.tasks.isNotEmpty()) {
+                if (LocalNeoAppearance.current.showTaskSummary && db.tasks.isNotEmpty()) {
                     LinearProgressIndicator(progress = { complete.toFloat() / db.tasks.size }, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp))
                 }
             }
-            TaskSummaryV11(
+            if (!neo || LocalNeoAppearance.current.showTaskSummary) TaskSummaryV11(
                 tasks = db.tasks,
                 today = today
             )
@@ -494,6 +494,10 @@ private fun TaskCardV11(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (LocalV11NeoEnabled.current) {
+                Checkbox(checked = task.status == TaskStatusV11.COMPLETED, onCheckedChange = { onToggleComplete() },
+                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp))
+            } else {
             Icon(
                 imageVector =
                     if (
@@ -520,6 +524,7 @@ private fun TaskCardV11(
                             .onSurfaceVariant
             )
 
+            }
             Spacer(Modifier.width(10.dp))
 
             Column(

@@ -1,0 +1,28 @@
+Privacy Policy
+
+Document status
+Review draft prepared on 4 November 2026. The final effective date must be set by the developer when publishing. No verified legal operator identity or support contact was available in the project; complete these before public publication.
+
+Local data
+ToDo Shift stores calendars, shifts, workplaces and rates, tasks, notes, payments, settlements, obligations and appearance settings locally. Core features work without a Google Account. Data belongs to the local installation rather than a mandatory cloud identity.
+
+Photos and files
+Users choose images and backup files through Android pickers. This upgrade adds no broad storage permission. A selected background is resized and copied into private app storage. You choose the export destination, which can be a local document provider or an independent cloud provider offered by Android.
+
+Current Google status
+Google sign-in, direct Drive backup and multi-device sync are not activated in this build. The app contains readiness interfaces and disabled controls. This path does not send your database to Google or a developer server. Android device backup settings may operate separately from the app export feature.
+
+Security limitations
+Supported PIN, pattern and biometric controls remain local. Neo 4 exports exclude verification credentials and device keys. This upgrade does not claim encryption of the database or exported archive. Locking the interface does not encrypt an exported file. Only restore backups from a trusted source.
+
+Widgets
+Selected data can appear on the launcher outside the app. Content can be hidden. Finance widgets always mask protected accounts and start with amounts hidden. A launcher may retain earlier snapshots; review device and launcher privacy settings.
+
+Retention and deletion
+Local data remains until removed through app functions, app-data clearing or uninstall, subject to Android behavior. Exported files are managed at the destination you selected and are not automatically deleted when uninstalling. Hiding a card or changing a theme does not delete records.
+
+Future connections
+Before enabling Google, the developer must review authorization, retention, deletion and disconnection behavior and update this policy. This build has no active app-managed Google session or cloud application account to delete.
+
+Contact
+Legal operator name, support email, public policy URL and applicable jurisdiction are not configured in source. Do not publish this draft as final until accurate details and review are complete.

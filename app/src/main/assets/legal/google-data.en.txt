@@ -1,0 +1,22 @@
+Google Account Data Usage
+
+No active connection
+Review explanation dated 4 November 2026. This build has no active Google authentication or Drive authorization adapter. Controls are disabled and do not request Google permissions.
+
+Identity versus authorization
+The architecture separates account identity through Credential Manager from Drive access authorization through AuthorizationClient. An identity token does not grant permission to read Drive files.
+
+Intended data use
+A reviewed future adapter may use an account name, email and subject identifier to show the chosen account and bind authorization to it. A user-selected backup archive and descriptive metadata may then be stored in that account’s app data space. This data is not requested or uploaded by the current readiness interfaces.
+
+Least privilege
+The planned path uses drive.appdata where suitable rather than broad access to all Drive files. App data files differ from ordinary Drive files and may not appear in the normal Drive interface.
+
+Choice and control
+Sign-in must remain optional. Future linking must show the account and scopes before consent. Signing out must not delete the local database. Cloud-backup deletion and authorization revocation are separate operations that must be implemented, explained and tested.
+
+Storage and protection
+OAuth secrets and access tokens must not be included in source or exported backups. This build implements no encrypted archive or cross-device key exchange. Any future protection must be described as actually implemented rather than presumed from using Google.
+
+Before activation
+Complete developer details and public policy URLs, configure OAuth and signing certificates, implement SDK adapters, review Limited Use and retention/deletion behavior, and test account changes and denied or revoked permissions. This build does not claim Google verification or Google Play approval.

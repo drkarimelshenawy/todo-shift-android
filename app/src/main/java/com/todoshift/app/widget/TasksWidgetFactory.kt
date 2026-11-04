@@ -27,6 +27,7 @@ class TasksWidgetFactory(
     }
 
     private fun reload() {
+        if (Neo4WidgetSettings(context).load(Neo4WidgetKind.TASKS).hideContent) { tasks = emptyList(); return }
         val today = LocalDate.now().toString()
 
         tasks = runCatching {
@@ -140,6 +141,14 @@ class TasksWidgetFactory(
             else android.graphics.Color.GRAY
         )
 
+        val neoSettings = Neo4WidgetSettings(context)
+        if (neoSettings.modern(Neo4WidgetKind.TASKS)) {
+            val skin = neoSettings.skin(Neo4WidgetKind.TASKS)
+            views.setTextColor(R.id.task_widget_name, skin.text); views.setTextColor(R.id.task_widget_meta, skin.secondary)
+            val en = neoSettings.english()
+            views.setTextViewText(R.id.task_widget_meta, (if (overdue) (if (en) "Overdue • " else "متأخرة • ") else "") + task.date + (task.time?.let { " • $it" } ?: ""))
+            if (!neoSettings.load(Neo4WidgetKind.TASKS).showDetails) views.setViewVisibility(R.id.task_widget_meta, android.view.View.GONE)
+        }
         return views
     }
 

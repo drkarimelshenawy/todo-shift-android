@@ -1,5 +1,7 @@
 package com.todoshift.app.widget
 
+import kotlinx.coroutines.launch
+
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -229,6 +231,14 @@ class TasksWidgetProvider : AppWidgetProvider() {
             )
 
             applyTasksTheme(context, views)
+            val neoSettings = Neo4WidgetSettings(context)
+            if (neoSettings.modern(Neo4WidgetKind.TASKS)) {
+                val options = neoSettings.load(Neo4WidgetKind.TASKS)
+                neoSettings.skin(Neo4WidgetKind.TASKS).apply(views, R.id.tasks_widget_root, R.id.tasks_widget_title, R.id.tasks_widget_count, R.id.tasks_widget_empty)
+                views.setViewVisibility(R.id.tasks_widget_list, if (options.hideContent) android.view.View.GONE else android.view.View.VISIBLE)
+                if (options.hideContent) { views.setViewVisibility(R.id.tasks_widget_empty, android.view.View.VISIBLE); views.setTextViewText(R.id.tasks_widget_count, ""); views.setTextViewText(R.id.tasks_widget_empty, if (neoSettings.english()) "Content hidden" else "المحتوى مخفي") }
+                views.setTextViewText(R.id.tasks_widget_title, if (neoSettings.english()) "Tasks" else "المهام")
+            }
             manager.updateAppWidget(id, views)
         }
     }
@@ -281,6 +291,13 @@ class TasksWidgetProvider : AppWidgetProvider() {
             intent.getStringExtra(EXTRA_TASK_ID)
                 ?: return
 
+        val pending = goAsync()
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
+            try { completeTaskOnIo(context.applicationContext, taskId) } finally { pending.finish() }
+        }
+    }
+    private fun completeTaskOnIo(context: Context, taskId: String) {
+        synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
         val runtime = V11Runtime(context)
         val db = runCatching {
             runtime.start()
@@ -315,5 +332,6 @@ class TasksWidgetProvider : AppWidgetProvider() {
 
         runtime.save(updated)
         refreshAll(context)
+    }
     }
 }

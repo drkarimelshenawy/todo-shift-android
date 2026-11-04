@@ -1,36 +1,84 @@
 {
-  "delivery_date": "2026-11-04",
-  "baseline_commit": "520534c0e341ba24b425200c2edbeb55f879c007",
-  "input_archive_sha256": "7ef2622ee3199aaf5904616efcf43bf501ad157682d240f6a81f0526c79e002a",
-  "original_files": 108,
-  "unchanged_original_files": 96,
-  "modified_original_files": 12,
-  "static_guard_exit_code": 0,
-  "static_guard_output": [
-    "CHECK: 96 unchanged baseline files",
-    "CHECK: strings, comments, templates and delimiters in 80 Kotlin files (lexical only)",
-    "CHECK: 18 XML files and duplicate definitions",
-    "CHECK: local string/drawable/layout/xml/color/mipmap references",
-    "CHECK: read/write paths for 24 appearance settings (not a process-restart test)",
-    "CHECK: identity, Classic branch, privacy guards and excluded artifacts",
-    "PASS: static source guards. Kotlin compilation, rendering, persistence and runtime behavior remain unverified."
-  ],
+  "edition": "Neo Luxury 4.0 Ultimate",
+  "date": "2026-11-04",
+  "quality_gate": "BLOCKED",
+  "verified_head": "7ad1f0658df968b213179a129e7facec05f11961",
+  "input_archive_sha256": "742e8521c388f2a0669a59ff898ecf8229f6c60d2124c87499acca03f66d5eb6",
+  "input_source_zip_bytes": 3465969,
   "android_build": {
-    "status": "BLOCKED",
+    "result": "BLOCKED",
     "exit_code": 127,
-    "reason": "gradle: command not found; Android SDK unavailable"
+    "command": "gradle :app:compileDebugKotlin :app:assembleDebug --offline",
+    "reason": "gradle: command not found; SDK/emulator unavailable"
   },
-  "kotlin_jvm_fixtures": {
-    "status": "BLOCKED",
+  "kotlin_fixtures": {
+    "result": "BLOCKED",
     "exit_code": 127,
-    "reason": "Kotlin compiler (kotlinc) is unavailable"
+    "reason": "kotlinc unavailable"
   },
-  "device_tests": "NOT_RUN",
-  "visual_tests": "NOT_RUN",
+  "shell_syntax": "PASS",
+  "classic_color_function_byte_comparison": "PASS",
+  "v11_storage_blob_matches_verified_head": "acc4b54fcf8e94eea273e8c1f0a68803096e8a91",
+  "device_tests": "NOT TESTED",
+  "restore_failure_recovery": "NOT TESTED",
+  "benchmarks": "NOT TESTED",
+  "google_cloud": "DISABLED: adapters and external setup required",
   "archive_validation": {
     "crc": "PASS",
-    "extraction_and_content_comparison": "PASS",
-    "files": 127,
-    "original_files_retained": 108
+    "extraction_sha256_comparison": "PASS",
+    "files": 187,
+    "all_127_baseline_paths_retained": true,
+    "excluded_build_cache_signing_credentials": true
+  },
+  "static_checks": {
+    "status": "PASS",
+    "checks": [
+      {
+        "check": "baseline",
+        "result": "PASS",
+        "detail": "All 127 baseline files retained; 42 core files unchanged by SHA-256"
+      },
+      {
+        "check": "kotlin_lexical",
+        "result": "PASS",
+        "detail": "99 files: strings/comments/templates/delimiters only; NOT Kotlin parsing or type checking"
+      },
+      {
+        "check": "resources",
+        "result": "PASS",
+        "detail": "29 XML files parsed and local Kotlin resource references checked; AAPT NOT RUN"
+      },
+      {
+        "check": "appearance_persistence_source",
+        "result": "PASS",
+        "detail": "48 fields have encode/decode paths; process-restart test NOT RUN"
+      },
+      {
+        "check": "calendar_source",
+        "result": "PASS",
+        "detail": "Mandatory coverage constants, full-cell renderer, grid weight, single toolbar sequence and sheet presence checked; rendered geometry NOT TESTED"
+      },
+      {
+        "check": "identity_and_safety_source",
+        "result": "PASS",
+        "detail": "Build/signing preserved, no added permissions/dependencies, disabled cloud, explicit restore/rollback and widget privacy guards found; runtime NOT TESTED"
+      },
+      {
+        "check": "legal_and_assets",
+        "result": "PASS",
+        "detail": "Eight in-app texts, eight HTML pages and relative links, six original vector themes checked; legal approval NOT CLAIMED"
+      }
+    ],
+    "failures": [],
+    "android_build": "BLOCKED: Gradle/SDK unavailable",
+    "device_tests": "NOT TESTED",
+    "benchmarks": "NOT TESTED"
+  },
+  "inventory": {
+    "baseline_files": 127,
+    "retained_baseline_files": 127,
+    "unchanged_count": 94,
+    "modified_count": 33,
+    "new_count": 60
   }
 }

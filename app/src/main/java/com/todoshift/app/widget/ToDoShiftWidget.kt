@@ -247,6 +247,15 @@ class ToDoShiftWidget :
                 template
             )
 
+            val neoSettings = Neo4WidgetSettings(context)
+            if (neoSettings.modern(Neo4WidgetKind.CALENDAR)) {
+                val options = neoSettings.load(Neo4WidgetKind.CALENDAR)
+                neoSettings.skin(Neo4WidgetKind.CALENDAR).apply(views, R.id.widget_root, R.id.widget_title, R.id.widget_summary, R.id.widget_prev, R.id.widget_next)
+                views.setViewVisibility(R.id.widget_grid, if (options.hideContent) android.view.View.GONE else android.view.View.VISIBLE)
+                views.setViewVisibility(R.id.widget_summary, if (options.showDetails && !options.hideContent) android.view.View.VISIBLE else android.view.View.GONE)
+                views.setTextViewText(R.id.widget_title, month.atDay(1).format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", if (neoSettings.english()) java.util.Locale.ENGLISH else java.util.Locale.forLanguageTag("ar"))))
+            }
+
             manager.updateAppWidget(
                 widgetId,
                 views

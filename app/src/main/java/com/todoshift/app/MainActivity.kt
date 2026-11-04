@@ -124,7 +124,7 @@ class MainActivity : FragmentActivity() {
                 V11Home(
                     initialDate = widgetOpenDate,
                     initialTab =
-                        if (widgetTaskAction != null) 4 else 0,
+                        if (widgetTaskAction != null) 4 else intent?.getIntExtra("neo4_open_tab", 0) ?: 0,
                     initialTaskAction = widgetTaskAction,
                     initialTaskId = widgetTaskId
                 )

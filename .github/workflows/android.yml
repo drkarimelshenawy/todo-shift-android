@@ -60,5 +60,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-NeoLuxury-3.0-Test
+          name: ToDoShift-NeoLuxury-4.0-Ultimate-Test
           path: app/build/outputs/apk/debug/app-debug.apk

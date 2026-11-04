@@ -34,18 +34,7 @@ val LocalNeoEnglish = staticCompositionLocalOf { false }
 @Composable
 fun neoLabel(ar: String, en: String): String = if (LocalNeoEnglish.current) en else ar
 
-fun neoAccent(palette: NeoPalette): Color = Color(when (palette) {
-    NeoPalette.NEO_CYAN -> 0xFF43DDE7
-    NeoPalette.ROYAL_VIOLET -> 0xFFBA9AFF
-    NeoPalette.MIDNIGHT_BLUE -> 0xFF83ACFF
-    NeoPalette.EMERALD_LUXURY -> 0xFF70DBAC
-    NeoPalette.CHAMPAGNE_GOLD -> 0xFFE5C381
-    NeoPalette.TITANIUM_SILVER -> 0xFFC4CFDF
-    NeoPalette.ROSE_QUARTZ -> 0xFFF3A4C3
-    NeoPalette.ARCTIC_WHITE -> 0xFF91D3F5
-    NeoPalette.SUNSET_COPPER -> 0xFFEAA27E
-    NeoPalette.MONOCHROME -> 0xFFE9EDF4
-})
+fun neoAccent(palette: NeoPalette): Color = Color(neo4AccentArgb(palette))
 
 fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val dark = when (p.brightness) {
@@ -144,12 +133,12 @@ fun Card(
         val c = MaterialTheme.colorScheme
         androidx.compose.material3.Card(
             modifier = modifier, shape = neoCardShape(),
-            colors = CardDefaults.cardColors(containerColor = if (p.cardStyle == NeoCardStyle.FLAT) c.surface else c.surfaceContainerLow),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (p.glow && p.cardStyle == NeoCardStyle.LAYERED) 3.dp else 0.dp),
-            border = if (p.cardStyle == NeoCardStyle.FLAT) null else BorderStroke(1.dp, if (p.glow) c.primary.copy(alpha = 0.18f + 0.12f * p.intensity) else c.outlineVariant)
+            colors = CardDefaults.cardColors(containerColor = (if (p.cardStyle == NeoCardStyle.FLAT) c.surface else c.surfaceContainerLow).copy(alpha = p.cardOpacity)),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (p.showEffects && p.glow && p.cardStyle == NeoCardStyle.LAYERED) 3.dp else 0.dp),
+            border = if (p.cardStyle == NeoCardStyle.FLAT) null else BorderStroke(1.dp, if (p.showEffects && p.glow) c.primary.copy(alpha = 0.18f + 0.12f * p.intensity) else c.outlineVariant)
         ) {
-            Column(Modifier.then(if (p.glass && p.cardStyle != NeoCardStyle.FLAT)
-                Modifier.background(Brush.linearGradient(listOf(c.primary.copy(alpha = 0.025f + 0.035f * p.intensity), Color.Transparent))) else Modifier), content = content)
+            Column(Modifier.then(if (p.showEffects && p.glass && p.cardStyle != NeoCardStyle.FLAT)
+                Modifier.background(Brush.linearGradient(listOf(c.primary.copy(alpha = p.glassStrength * 0.2f), Color.Transparent))) else Modifier), content = content)
         }
     }
 }
@@ -166,13 +155,13 @@ fun Card(
     val p = LocalNeoAppearance.current
     val source = interactionSource ?: remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (neo && pressed && !p.reduceMotion && p.motion != 0) 0.985f else 1f,
+    val scale by animateFloatAsState(if (neo && pressed && p.motionMillis > 0) 0.985f else 1f,
         animationSpec = tween(if (neo) p.motionMillis else 0), label = "neoCardPress")
     androidx.compose.material3.Card(
         onClick = onClick, modifier = if (neo) modifier.graphicsLayer { scaleX = scale; scaleY = scale } else modifier, enabled = enabled,
         shape = if (neo) neoCardShape() else shape,
-        colors = if (neo) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else colors,
-        elevation = if (neo) CardDefaults.cardElevation(defaultElevation = if (p.glow) 2.dp else 0.dp, pressedElevation = if (p.reduceMotion) 0.dp else 1.dp) else elevation,
+        colors = if (neo) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = p.cardOpacity)) else colors,
+        elevation = if (neo) CardDefaults.cardElevation(defaultElevation = if (p.showEffects && p.glow) 2.dp else 0.dp, pressedElevation = if (p.reduceMotion) 0.dp else 1.dp) else elevation,
         border = if (neo) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else border,
         interactionSource = if (neo) source else interactionSource, content = content
     )
@@ -182,7 +171,7 @@ fun Card(
 fun NeoEmptyState(title: String, detail: String, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(neoSpacing()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (!LocalV11NeoEnabled.current || LocalNeoAppearance.current.showDescriptions) Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

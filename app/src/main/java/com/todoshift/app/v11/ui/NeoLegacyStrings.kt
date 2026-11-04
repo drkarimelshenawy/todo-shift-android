@@ -16,11 +16,11 @@ internal fun neoLiteral(ar: String, en: String): String = if (NeoLegacyLocale.en
 internal fun neoShiftText(kind: ShiftKind): String {
     if (!NeoLegacyLocale.premium) return V11Labels.shift(kind)
     return when (kind) {
-        ShiftKind.FULL_DAY -> neoLiteral("24 ساعة", "24 hours")
-        ShiftKind.LONG -> neoLiteral("طويل", "Long")
-        ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
-        ShiftKind.MORNING -> neoLiteral("صباحي", "Morning")
-        ShiftKind.EVENING -> neoLiteral("مسائي", "Evening")
+        ShiftKind.FULL_DAY -> "24h"
+        ShiftKind.LONG -> "Long"
+        ShiftKind.NIGHT -> "Night"
+        ShiftKind.MORNING -> "Morning"
+        ShiftKind.EVENING -> "Evening"
         ShiftKind.OFF -> neoLiteral("إجازة", "Off")
     }
 }

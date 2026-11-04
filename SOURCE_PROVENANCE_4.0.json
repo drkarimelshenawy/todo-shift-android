@@ -1,0 +1,11 @@
+{
+  "base_archive": "ToDoShift_NeoLuxury_3.0_Source.zip",
+  "archive_sha256": "742e8521c388f2a0669a59ff898ecf8229f6c60d2124c87499acca03f66d5eb6",
+  "verified_repository": "drkarimelshenawy/todo-shift-android",
+  "verified_branch": "Premium-V-byWork",
+  "verified_head": "7ad1f0658df968b213179a129e7facec05f11961",
+  "verified_date": "2026-11-04",
+  "remote_mutations": false,
+  "workspace": "independent extraction of attached Neo Luxury 3.0",
+  "remote_workflow_reconciled": true
+}

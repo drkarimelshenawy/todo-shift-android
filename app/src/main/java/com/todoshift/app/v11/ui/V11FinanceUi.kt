@@ -127,7 +127,7 @@ fun V11FinanceScreen(
         Spacer(Modifier.height(12.dp))
 
         if (LocalV11NeoEnabled.current) {
-            NeoFinanceOverview(result, moneyVisible)
+            if (LocalNeoAppearance.current.showFinanceSummary) NeoFinanceOverview(result, moneyVisible)
         } else {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -160,7 +160,7 @@ fun V11FinanceScreen(
 
         Spacer(Modifier.height(10.dp))
 
-        Card(
+        if (!LocalV11NeoEnabled.current || LocalNeoAppearance.current.showSecondaryCards)         Card(
             modifier =
                 Modifier.fillMaxWidth()
         ) {
@@ -270,7 +270,7 @@ fun V11FinanceScreen(
             fontSize = 17.sp
         )
 
-        result.byWorkplace
+        if (!LocalV11NeoEnabled.current || LocalNeoAppearance.current.showSecondaryCards)         result.byWorkplace
             .forEach { summary ->
                 val name =
                     workplaces

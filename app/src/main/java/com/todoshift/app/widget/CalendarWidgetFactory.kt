@@ -29,6 +29,12 @@ class CalendarWidgetFactory(
             -1
         )
 
+    private var neo4Modern = false
+    private var neo4Options = Neo4WidgetOptions()
+    private var neo4Skin = Neo4WidgetSkin(Color.WHITE, Color.BLACK, Color.GRAY, Color.BLUE)
+    private var neo4Appearance = com.todoshift.app.v11.NeoAppearance()
+    private var neo4Entries = emptyMap<String, List<com.todoshift.app.v11.ShiftSegmentV11>>()
+
     private var month =
         CalendarWidgetState.month(
             context,
@@ -91,6 +97,14 @@ class CalendarWidgetFactory(
             }.getOrElse {
                 V11Database()
             }
+
+        val neo4Settings = Neo4WidgetSettings(context)
+        neo4Modern = neo4Settings.modern(Neo4WidgetKind.CALENDAR)
+        neo4Options = neo4Settings.load(Neo4WidgetKind.CALENDAR)
+        neo4Skin = neo4Settings.skin(Neo4WidgetKind.CALENDAR)
+        neo4Appearance = com.todoshift.app.v11.NeoAppearanceStore(context).load()
+        val neo4Ids = db.calendars.filter { it.visible }.map { it.id }.toSet()
+        neo4Entries = db.days.filter { it.calendarId in neo4Ids }.groupBy { it.date }.mapValues { (_, entries) -> entries.flatMap { it.segments } }
 
         val uiSettings =
             V11UiSettingsStore(
@@ -369,7 +383,14 @@ class CalendarWidgetFactory(
     private fun shortLabel(
         kind: ShiftKind
     ): String =
-        when (kind) {
+        if (neo4Modern) when(kind) {
+            ShiftKind.FULL_DAY -> "24h"
+            ShiftKind.LONG -> "Long"
+            ShiftKind.NIGHT -> "Night"
+            ShiftKind.MORNING -> "Morning"
+            ShiftKind.EVENING -> "Evening"
+            ShiftKind.OFF -> "Off"
+        } else when (kind) {
 
             ShiftKind.FULL_DAY ->
                 "24س"
@@ -421,6 +442,7 @@ class CalendarWidgetFactory(
             views
         )
 
+        views.setViewVisibility(R.id.day_paint, android.view.View.GONE)
         val date =
             cell.date
                 ?: return views
@@ -462,6 +484,21 @@ class CalendarWidgetFactory(
             views,
             cell.bands
         )
+
+        if (neo4Modern) {
+            val options = neo4Options
+            val skin = neo4Skin
+            views.setTextColor(R.id.day_number, skin.text)
+            views.setInt(R.id.day_number, "setBackgroundColor", skin.background)
+            views.setViewVisibility(R.id.day_timeline, android.view.View.GONE)
+            views.setViewVisibility(R.id.day_shift, if (options.showDetails && !options.hideContent) android.view.View.VISIBLE else android.view.View.GONE)
+            views.setTextColor(R.id.day_shift, skin.secondary)
+            if (!options.hideContent) {
+                val segments = neo4Entries[date.toString()].orEmpty()
+                views.setImageViewBitmap(R.id.day_paint, Neo4WidgetPainter.render(segments, workplaceColors, neo4Appearance))
+                views.setViewVisibility(R.id.day_paint, android.view.View.VISIBLE)
+            }
+        }
 
         val fill =
             Intent().apply {

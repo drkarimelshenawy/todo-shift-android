@@ -140,11 +140,11 @@ fun NeoShiftSummary(item: NeoShiftOccurrence, workplaces: List<Workplace>) {
 
 @Composable
 fun neoShiftLabel(kind: ShiftKind): String = when (kind) {
-    ShiftKind.FULL_DAY -> neoLabel("24 ساعة", "24 hours")
-    ShiftKind.LONG -> neoLabel("طويل", "Long")
-    ShiftKind.NIGHT -> neoLabel("ليلي", "Night")
-    ShiftKind.MORNING -> neoLabel("صباحي", "Morning")
-    ShiftKind.EVENING -> neoLabel("مسائي", "Evening")
+    ShiftKind.FULL_DAY -> "24h"
+    ShiftKind.LONG -> "Long"
+    ShiftKind.NIGHT -> "Night"
+    ShiftKind.MORNING -> "Morning"
+    ShiftKind.EVENING -> "Evening"
     ShiftKind.OFF -> neoLabel("إجازة", "Off")
 }
 

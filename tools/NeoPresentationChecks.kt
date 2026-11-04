@@ -40,7 +40,26 @@ fun main() {
     check(!resolved.canAddDirectly && resolved.conflicts.isNotEmpty())
     val finance = V11FinanceEngine.month(db, YearMonth.of(2026, 11))
     check(finance.expected == 750.0 && finance.received == 100.0 && finance.settlements == 50.0 && finance.difference == 600.0)
-    check(NeoPalette.entries.size == 10)
+    check(NeoPalette.entries.size == 22)
     check(NeoAppearance(reduceMotion = true, motion = 2).motionMillis == 0)
+    val geometry = mapOf(ShiftKind.FULL_DAY to (0f to 1f), ShiftKind.LONG to (0f to 0.5f), ShiftKind.NIGHT to (0.5f to 1f),
+        ShiftKind.MORNING to (0f to 1f / 3f), ShiftKind.EVENING to (1f / 3f to 2f / 3f))
+    geometry.forEach { (kind, expected) ->
+        val coverage = neo4Coverage(kind) ?: error("Missing geometry")
+        check(coverage.top == expected.first && coverage.bottom == expected.second)
+    }
+    check(neo4Coverage(ShiftKind.OFF) == null)
+    val overlap = neo4PaintBands(listOf(ShiftKind.FULL_DAY, ShiftKind.NIGHT, ShiftKind.MORNING))
+    check(overlap.flatMap { it.owners }.toSet() == setOf(0, 1, 2))
+    check(overlap.any { it.owners == listOf(0, 1) })
+    check(ShiftKind.EVENING.defaultTimeRangeV11()!!.durationMinutes == 240)
+    check(neo4Coverage(ShiftKind.EVENING)!!.bottom - neo4Coverage(ShiftKind.EVENING)!!.top == 1f / 3f)
+    check(neo4PaintPresets.size == 16)
+    check(!NeoAppearance().showFinanceSummary && !NeoAppearance().showTaskSummary && !NeoAppearance().showDailySummary)
+    check(NeoAppearance().withPreset(NeoLayoutPreset.MINIMAL).dashboardExpanded == false)
+    check(NeoAppearance().withPreset(NeoLayoutPreset.RICH).showFinanceSummary)
+    check(NeoAppearance(optionalTransitions = false, reduceMotion = false, motion = 2).motionMillis == 0)
+    check(com.todoshift.app.cloud.BackupSchedulePlanner.nextDue(java.time.Instant.parse("2026-01-31T00:00:00Z"),
+        com.todoshift.app.cloud.BackupSchedule(com.todoshift.app.cloud.BackupFrequency.MONTHLY), java.time.ZoneId.of("UTC")) == java.time.Instant.parse("2026-02-28T00:00:00Z"))
     println("PASS: overnight, 24h, visibility, immutability, overlap, finance, palettes and reduced motion")
 }

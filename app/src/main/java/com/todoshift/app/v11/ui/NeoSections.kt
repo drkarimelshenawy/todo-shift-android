@@ -24,6 +24,7 @@ fun NeoShiftTimeline(db: V11Database, workplaces: List<Workplace>, month: YearMo
     val update = LocalNeoOnChange.current
     val now = neoNow()
     var workplace by remember { mutableStateOf<String?>(null) }
+    var filtersExpanded by remember { mutableStateOf(false) }
     var from by remember(month) { mutableStateOf(month.atDay(1).toString()) }
     var to by remember(month) { mutableStateOf(month.atEndOfMonth().toString()) }
     var limit by remember(month, p.timelineFilter, workplace, from, to) { mutableIntStateOf(20) }
@@ -43,17 +44,21 @@ fun NeoShiftTimeline(db: V11Database, workplaces: List<Workplace>, month: YearMo
             TextButton(onClick = { onMonthChange(month.minusMonths(1)) }) { Text(neoLabel("السابق", "Previous")) }
             Text(month.toString(), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = { onMonthChange(month.plusMonths(1)) }) { Text(neoLabel("التالي", "Next")) }
+            TextButton(onClick = { filtersExpanded = !filtersExpanded }) { Text(neoLabel("فلاتر", "Filters")) }
         }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             NeoTimelineFilter.entries.forEach { filter ->
                 FilterChip(selected = filter == p.timelineFilter, onClick = { update(p.copy(timelineFilter = filter)) }, label = { Text(neoEnumLabel(filter)) })
             }
         }
+        if (filtersExpanded) {
         NeoChoice(neoLabel("مكان العمل", "Workplace"), listOf<String?>(null) + workplaces.map { it.id }, workplace,
             { id -> workplaces.firstOrNull { it.id == id }?.name ?: neoLabel("جميع الأماكن", "All workplaces") }, { workplace = it })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(from, { from = it.take(10) }, label = { Text(neoLabel("من YYYY-MM-DD", "From YYYY-MM-DD")) }, singleLine = true, isError = !validDates, modifier = Modifier.weight(1f))
             OutlinedTextField(to, { to = it.take(10) }, label = { Text(neoLabel("إلى YYYY-MM-DD", "To YYYY-MM-DD")) }, singleLine = true, isError = !validDates, modifier = Modifier.weight(1f))
+        }
+            TextButton(onClick = { workplace = null; from = month.atDay(1).toString(); to = month.atEndOfMonth().toString() }) { Text(neoLabel("إعادة الفلاتر", "Reset filters")) }
         }
         if (!validDates) Text(neoLabel("أدخل نطاق تاريخ صحيح", "Enter a valid date range"), color = MaterialTheme.colorScheme.error)
         else if (filtered.isEmpty()) NeoEmptyState(neoLabel("لا توجد شيفتات مطابقة", "No matching shifts"), neoLabel("غيّر الفلتر أو أضف شيفتًا من التقويم", "Change filters or add a shift from the calendar"))
@@ -69,7 +74,7 @@ fun NeoShiftTimeline(db: V11Database, workplaces: List<Workplace>, month: YearMo
                     NeoShiftSummary(item, workplaces)
                     Text(db.calendars.firstOrNull { it.id == item.entry.calendarId }?.name.orEmpty(), style = MaterialTheme.typography.labelSmall)
                     if (neoHasConflict(item, all)) Text(neoLabel("تعارض زمني • راجع التفاصيل", "Time conflict • review details"), color = MaterialTheme.colorScheme.error)
-                    if (p.showShiftNotes && item.segment.note.isNotBlank()) Text(item.segment.note, style = MaterialTheme.typography.bodySmall)
+                    if (p.showDescriptions && p.showShiftNotes && item.segment.note.isNotBlank()) Text(item.segment.note, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

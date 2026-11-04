@@ -17,6 +17,7 @@ val LocalV11NeoEnabled = compositionLocalOf { false }
 /** Decorative premium layer only: no persistence, finance or scheduling changes. */
 @Composable
 fun V11NeoSectionHero(title: String, subtitle: String, modifier: Modifier = Modifier) {
+    if (LocalV11NeoEnabled.current && !LocalNeoAppearance.current.showDescriptions) return
     val colors = MaterialTheme.colorScheme
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),

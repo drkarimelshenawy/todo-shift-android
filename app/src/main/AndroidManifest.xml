@@ -70,5 +70,13 @@
                 android:resource="@xml/tasks_widget_info" />
         </receiver>
 
+        <receiver android:name=".widget.Neo4TodayWidget" android:exported="true" android:label="@string/neo4_today_widget_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/neo4_today_widget_info" />
+        </receiver>
+        <receiver android:name=".widget.Neo4FinanceWidget" android:exported="true" android:label="@string/neo4_finance_widget_label">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/neo4_finance_widget_info" />
+        </receiver>
     </application>
 </manifest>

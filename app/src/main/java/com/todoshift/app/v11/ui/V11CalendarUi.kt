@@ -76,7 +76,9 @@ fun V11CalendarScreen(
     quickActionId: Int = 0,
     financeAuthorized: Boolean = false,
     financeAmountsVisible: Boolean = false,
-    onOpenWorkplaces: () -> Unit = {}
+    onOpenWorkplaces: () -> Unit = {},
+    managerRequest: Int = 0,
+    onManagerHandled: () -> Unit = {}
 ) {
     var selectedDate by remember(initialDate) {
         mutableStateOf(initialDate)
@@ -89,9 +91,10 @@ fun V11CalendarScreen(
     var openDay by remember { mutableStateOf<LocalDate?>(null) }
     var showCalendarManager by remember { mutableStateOf(false) }
     var quickAddOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(managerRequest) { if (managerRequest > 0) { showCalendarManager = true; onManagerHandled() } }
     LaunchedEffect(quickActionId) {
         if (quickActionId > 0) when (quickAction) {
-            NeoQuickAction.ADD_SHIFT -> openDay = selectedDate
+            NeoQuickAction.ADD_SHIFT -> quickAddOpen = true
             NeoQuickAction.TODAY -> { selectedDate = LocalDate.now(); onMonthChange(YearMonth.from(selectedDate)) }
             else -> Unit
         }
@@ -126,8 +129,7 @@ fun V11CalendarScreen(
     }
 
     Scaffold(
-        containerColor =
-            MaterialTheme.colorScheme.background,
+        containerColor = if (LocalV11NeoEnabled.current) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.background,
         contentWindowInsets =
             WindowInsets(0, 0, 0, 0),
         floatingActionButtonPosition =
@@ -136,6 +138,7 @@ fun V11CalendarScreen(
             else
                 FabPosition.End,
         floatingActionButton = {
+            if (uiSettings.experience == V11Experience.CLASSIC || paintMode || paletteOpen) {
             Column(
                 horizontalAlignment =
                     if (uiSettings.fabSide == FabSide.LEFT)
@@ -312,6 +315,7 @@ fun V11CalendarScreen(
                     )
                 }
             }
+            }
         }
     ) { innerPadding ->
 
@@ -321,6 +325,7 @@ fun V11CalendarScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 10.dp)
         ) {
+            if (uiSettings.experience == V11Experience.CLASSIC) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -357,12 +362,13 @@ fun V11CalendarScreen(
                 }
             }
 
+            }
             if (uiSettings.experience == V11Experience.PREMIUM) {
                 NeoCalendarArea(month = month, db = db, workplaces = workplaces, visibleCalendarIds = visibleCalendarIds,
                     selectedDate = selectedDate, paintMode = paintMode, paintDates = paintDates,
                     onSelectedDate = { date ->
                         if (paintMode) paintDates = if (date in paintDates) paintDates - date else paintDates + date
-                        else if (date == selectedDate) openDay = date else selectedDate = date
+                        else selectedDate = date
                     },
                     onMonthChange = onMonthChange,
                     onToday = { selectedDate = LocalDate.now(); onMonthChange(YearMonth.from(selectedDate)) },

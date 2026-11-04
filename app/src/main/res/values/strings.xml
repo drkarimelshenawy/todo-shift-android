@@ -6,4 +6,24 @@
 
     <string name="tasks_widget_label">مهامي - ToDo Shift</string>
     <string name="tasks_widget_description">قائمة المهام التفاعلية على الشاشة الرئيسية</string>
+
+    <string name="premium_nav_schedules">جداولي</string>
+    <string name="premium_nav_tasks">المهام</string>
+    <string name="premium_nav_calendar">التقويم</string>
+    <string name="premium_nav_finance">الحسابات</string>
+    <string name="premium_nav_settings">الإعدادات</string>
+    <string name="premium_settings_experience">واجهة التطبيق</string>
+    <string name="premium_settings_brightness">إضاءة Premium</string>
+    <string name="premium_settings_classic">Classic (الافتراضية)</string>
+    <string name="premium_settings_premium">Premium Clean</string>
+    <string name="premium_settings_system">حسب النظام</string>
+    <string name="premium_settings_light">فاتح</string>
+    <string name="premium_settings_dark">داكن</string>
+    <string name="premium_title_workplaces">أماكن العمل</string>
+
+    <string name="premium_overview_title">نظرة عامة</string>
+    <string name="premium_overview_calendars">التقويمات</string>
+    <string name="premium_overview_tasks">المهام</string>
+    <string name="premium_overview_collapse">إخفاء</string>
+    <string name="premium_overview_expand">إظهار</string>
 </resources>

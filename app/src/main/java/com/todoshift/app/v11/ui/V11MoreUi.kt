@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.todoshift.app.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -142,10 +144,10 @@ fun V11MoreScreen(
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsChoiceCard(
-                    title = "واجهة التطبيق",
+                    title = stringResource(R.string.premium_settings_experience),
                     options = listOf(
-                        V11Experience.CLASSIC to "Classic (الافتراضية)",
-                        V11Experience.PREMIUM to "Premium Clean"
+                        V11Experience.CLASSIC to stringResource(R.string.premium_settings_classic),
+                        V11Experience.PREMIUM to stringResource(R.string.premium_settings_premium)
                     ),
                     selected = uiSettings.experience,
                     onSelected = { onUiSettingsChange(uiSettings.copy(experience = it)) }
@@ -153,11 +155,11 @@ fun V11MoreScreen(
 
                 if (uiSettings.experience == V11Experience.PREMIUM) {
                     SettingsChoiceCard(
-                        title = "إضاءة Premium",
+                        title = stringResource(R.string.premium_settings_brightness),
                         options = listOf(
-                            V11PremiumBrightness.SYSTEM to "حسب النظام",
-                            V11PremiumBrightness.LIGHT to "فاتح",
-                            V11PremiumBrightness.DARK to "داكن"
+                            V11PremiumBrightness.SYSTEM to stringResource(R.string.premium_settings_system),
+                            V11PremiumBrightness.LIGHT to stringResource(R.string.premium_settings_light),
+                            V11PremiumBrightness.DARK to stringResource(R.string.premium_settings_dark)
                         ),
                         selected = uiSettings.premiumBrightness,
                         onSelected = { onUiSettingsChange(uiSettings.copy(premiumBrightness = it)) }

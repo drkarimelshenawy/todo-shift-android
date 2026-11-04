@@ -3,6 +3,11 @@ package com.todoshift.app.v11
 import java.util.UUID
 
 object V11SettlementEngine {
+    private fun requireOpenMonth(db: V11Database, month: String) {
+        require(db.monthSnapshots.none { it.month == month && it.reopenedAt == null }) {
+            "الشهر المالي مغلق؛ افتحه قبل تسجيل حركة جديدة"
+        }
+    }
 
     fun addPayment(
         db: V11Database,
@@ -15,7 +20,9 @@ object V11SettlementEngine {
         linkedShiftIds: List<String> = emptyList()
     ): V11Database {
 
-        require(amount >= 0.0)
+        require(amount.isFinite() && amount >= 0.0)
+        require(Regex("\\d{4}-(0[1-9]|1[0-2])").matches(accrualMonth))
+        requireOpenMonth(db, accrualMonth)
 
         val payment = PaymentV11(
             id = UUID.randomUUID().toString(),
@@ -51,7 +58,9 @@ object V11SettlementEngine {
         calendarId: String? = null
     ): V11Database {
 
-        require(amount >= 0.0)
+        require(amount.isFinite() && amount >= 0.0)
+        require(Regex("\\d{4}-(0[1-9]|1[0-2])").matches(month))
+        requireOpenMonth(db, month)
 
         val settlement = SettlementV11(
             id = UUID.randomUUID().toString(),
@@ -86,6 +95,11 @@ object V11SettlementEngine {
         difference: Double
     ): V11Database {
 
+        require(Regex("\\d{4}-(0[1-9]|1[0-2])").matches(month))
+        require(listOf(expected, received, settlementAmount, difference).all { it.isFinite() })
+        require(db.monthSnapshots.none { it.month == month && it.reopenedAt == null }) {
+            "الشهر مغلق بالفعل؛ لا يمكن استبدال لقطة مالية مغلقة"
+        }
         val snapshot = MonthSnapshotV11(
             id = UUID.randomUUID().toString(),
             month = month,

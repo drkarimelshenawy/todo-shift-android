@@ -75,7 +75,7 @@ data class ShiftSegmentV11(
             start != null &&
             end != null &&
             start in 0..1439 &&
-            end in 1..1440 &&
+            end in 1..2879 &&
             end > start
         ) {
             ShiftTimeRangeV11(start, end)

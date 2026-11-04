@@ -48,7 +48,7 @@ fun V11DayDetailsScreen(
         mutableStateOf<DayItemTypeV11?>(null)
     }
 
-    var editingSegmentId by remember { mutableStateOf<String?>(null) }
+    var pendingEditSegmentId by remember { mutableStateOf<String?>(null) }
 
     var pendingDeleteSegmentId by remember {
         mutableStateOf<String?>(null)
@@ -86,23 +86,6 @@ fun V11DayDetailsScreen(
     val items = db.dayItems
         .filter { it.date == date.toString() }
         .sortedBy { it.createdAt }
-
-    val editingSegment = entries.flatMap { it.segments }
-        .firstOrNull { it.id == editingSegmentId }
-    if (editingSegment != null) {
-        V11ShiftEditDialog(
-            segment = editingSegment, workplaces = workplaces,
-            onDismiss = { editingSegmentId = null },
-            onSave = { kind, workplaceId, amount, note ->
-                val updated = V11DayController.editSegment(
-                    db, editingSegment.id, kind, workplaceId, amount, note,
-                    workplaces.map { it.id }.toSet()
-                )
-                onDatabaseChange(updated)
-                editingSegmentId = null
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -226,9 +209,6 @@ fun V11DayDetailsScreen(
                             verticalAlignment =
                                 Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = { editingSegmentId = segment.id }) {
-                                Icon(Icons.Default.Edit, "تعديل الشيفت")
-                            }
                             IconButton(
                                 onClick = {
                                     pendingDeleteSegmentId =
@@ -242,6 +222,12 @@ fun V11DayDetailsScreen(
                                         MaterialTheme.colorScheme
                                             .error
                                 )
+                            }
+
+                            if (segment.kind != ShiftKind.OFF) {
+                                IconButton(onClick = { pendingEditSegmentId = segment.id }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "تعديل وقت الشيفت")
+                                }
                             }
 
                             Spacer(Modifier.weight(1f))
@@ -584,6 +570,65 @@ fun V11DayDetailsScreen(
             }
 
             Spacer(Modifier.height(30.dp))
+        }
+    }
+
+    pendingEditSegmentId?.let { segmentId ->
+        val segment = db.days.flatMap { it.segments }.firstOrNull { it.id == segmentId }
+        if (segment == null) {
+            LaunchedEffect(segmentId) { pendingEditSegmentId = null }
+        } else {
+            val range = segment.timeRange()
+            var startText by remember(segmentId) {
+                mutableStateOf(range?.startMinute?.let { "%02d:%02d".format(it / 60, it % 60) } ?: "")
+            }
+            var endText by remember(segmentId) {
+                mutableStateOf(range?.endMinute?.let { if (it == 1440) "24:00" else "%02d:%02d".format(it / 60, it % 60) } ?: "")
+            }
+            var editError by remember(segmentId) { mutableStateOf<String?>(null) }
+            fun parseTime(value: String, end: Boolean): Int? {
+                val parts = value.trim().split(":")
+                if (parts.size != 2) return null
+                val h = parts[0].toIntOrNull() ?: return null
+                val m = parts[1].toIntOrNull() ?: return null
+                if (m !in 0..59 || h !in 0..24 || (h == 24 && (m != 0 || !end))) return null
+                return h * 60 + m
+            }
+            AlertDialog(
+                onDismissRequest = { pendingEditSegmentId = null },
+                title = { Text("تعديل أوقات الشيفت") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("الشيفت العابر لمنتصف الليل يظل في يوم بدايته فقط، بحد أقصى 24 ساعة.")
+                        OutlinedTextField(value = startText, onValueChange = { startText = it },
+                            label = { Text("البداية HH:mm") }, singleLine = true)
+                        OutlinedTextField(value = endText, onValueChange = { endText = it },
+                            label = { Text("النهاية HH:mm") }, singleLine = true)
+                        editError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val start = parseTime(startText, false)
+                        val end = parseTime(endText, true)
+                        if (start == null || end == null) {
+                            editError = "أدخل الوقت بصيغة HH:mm"
+                        } else {
+                            try {
+                                val normalizedEnd = if (end <= start) end + 1440 else end
+                                val updated = V11DayController.editSegmentTime(db, segmentId, start, normalizedEnd)
+                                onDatabaseChange(updated)
+                                pendingEditSegmentId = null
+                            } catch (e: IllegalArgumentException) {
+                                editError = e.message ?: "تعذر تعديل الوقت"
+                            }
+                        }
+                    }) { Text("حفظ") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingEditSegmentId = null }) { Text("إلغاء") }
+                }
+            )
         }
     }
 
@@ -946,80 +991,4 @@ private fun timeText(
     val m = minute % 60
 
     return "%02d:%02d".format(h, m)
-}
-
-
-@Composable
-private fun V11ShiftEditDialog(
-    segment: ShiftSegmentV11, workplaces: List<Workplace>,
-    onDismiss: () -> Unit,
-    onSave: (ShiftKind, String?, Double?, String) -> Unit
-) {
-    var kind by remember(segment.id) { mutableStateOf(segment.kind) }
-    var workplaceId by remember(segment.id) { mutableStateOf(segment.workplaceId) }
-    var amount by remember(segment.id) {
-        mutableStateOf(segment.exceptionalAmount?.toString() ?: "")
-    }
-    var note by remember(segment.id) { mutableStateOf(segment.note) }
-    var error by remember(segment.id) { mutableStateOf<String?>(null) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("تعديل الشيفت") },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 480.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("نوع الشيفت")
-                ShiftKind.values().forEach { choice ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = kind == choice,
-                            onClick = {
-                                kind = choice
-                                if (
-                                    choice != ShiftKind.OFF &&
-                                    workplaces.none { it.id == workplaceId }
-                                ) {
-                                    workplaceId = workplaces.firstOrNull()?.id
-                                }
-                            }
-                        )
-                        Text(V11Labels.shift(choice))
-                    }
-                }
-                if (kind != ShiftKind.OFF) {
-                    Text("مكان العمل")
-                    workplaces.forEach { place ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(selected = workplaceId == place.id,
-                                onClick = { workplaceId = place.id })
-                            Text(place.name)
-                        }
-                    }
-                    OutlinedTextField(value = amount, onValueChange = { amount = it },
-                        label = { Text("مبلغ استثنائي (اختياري)") },
-                        singleLine = true)
-                }
-                OutlinedTextField(value = note, onValueChange = { note = it },
-                    label = { Text("ملاحظة") })
-                if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
-            }
-        },
-        confirmButton = { TextButton(onClick = {
-            val parsed = amount.trim().takeIf { it.isNotEmpty() }?.toDoubleOrNull()
-            if (kind != ShiftKind.OFF && amount.isNotBlank() && parsed == null) {
-                error = "المبلغ غير صالح"
-            } else {
-                runCatching {
-                    onSave(kind, if (kind == ShiftKind.OFF) null else workplaceId,
-                        if (kind == ShiftKind.OFF) null else parsed, note)
-                }.onFailure { error = it.message ?: "تعذر تعديل الشيفت" }
-            }
-        }) { Text("حفظ") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء") } }
-    )
 }

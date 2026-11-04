@@ -15,11 +15,13 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -283,27 +285,26 @@ fun V11Home(
     }
 
     val sectionTitle =
-        when {
-            showWorkplaces ->
-                "أماكن العمل"
-
-            tab == 0 ->
-                "التقويم"
-
-            tab == 1 ->
-                "جداولي"
-
-            tab == 2 ->
-                "الحسابات"
-
-            tab == 3 ->
-                "الإعدادات"
-
-            tab == 4 ->
-                "المهام"
-
-            else ->
-                "التقويم"
+        if (uiSettings.experience == V11Experience.PREMIUM) {
+            when {
+                showWorkplaces -> stringResource(R.string.premium_title_workplaces)
+                tab == 0 -> stringResource(R.string.premium_nav_calendar)
+                tab == 1 -> stringResource(R.string.premium_nav_schedules)
+                tab == 2 -> stringResource(R.string.premium_nav_finance)
+                tab == 3 -> stringResource(R.string.premium_nav_settings)
+                tab == 4 -> stringResource(R.string.premium_nav_tasks)
+                else -> stringResource(R.string.premium_nav_calendar)
+            }
+        } else {
+            when {
+                showWorkplaces -> "أماكن العمل"
+                tab == 0 -> "التقويم"
+                tab == 1 -> "جداولي"
+                tab == 2 -> "الحسابات"
+                tab == 3 -> "الإعدادات"
+                tab == 4 -> "المهام"
+                else -> "التقويم"
+            }
         }
 
     V11AppThemeProvider(
@@ -377,7 +378,16 @@ fun V11Home(
             } else {
                 when (tab) {
                 0 ->
-                    V11CalendarScreen(
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (uiSettings.experience == V11Experience.PREMIUM) {
+                            V11PremiumOverview(
+                                calendarCount = db.calendars.size,
+                                taskCount = db.tasks.size
+                            )
+                            V11PremiumQuickActions(onNavigate = { tab = it })
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            V11CalendarScreen(
                         month = month,
                         initialDate = launchDate,
                         db = db,
@@ -400,7 +410,9 @@ fun V11Home(
                         onUiSettingsChange = {
                             saveUi(it)
                         }
-                    )
+                            )
+                        }
+                    }
 
                 1 ->
                     V11SchedulesScreen(
@@ -847,19 +859,108 @@ private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         tonalElevation = 0.dp
     ) {
         listOf(
-            Triple(1, "جداولي", Icons.Default.DateRange),
-            Triple(4, "المهام", Icons.Default.CheckCircle),
-            Triple(0, "التقويم", Icons.Default.CalendarMonth),
-            Triple(2, "الحسابات", Icons.Default.Payments),
-            Triple(3, "الإعدادات", Icons.Default.Settings)
+            Triple(1, stringResource(R.string.premium_nav_schedules), Icons.Default.DateRange),
+            Triple(4, stringResource(R.string.premium_nav_tasks), Icons.Default.CheckCircle),
+            Triple(0, stringResource(R.string.premium_nav_calendar), Icons.Default.CalendarMonth),
+            Triple(2, stringResource(R.string.premium_nav_finance), Icons.Default.Payments),
+            Triple(3, stringResource(R.string.premium_nav_settings), Icons.Default.Settings)
         ).forEach { (index, label, icon) ->
             NavigationBarItem(
                 selected = selectedTab == index,
                 onClick = { onSelectTab(index) },
                 icon = { Icon(icon, contentDescription = label) },
-                label = { Text(label) },
-                alwaysShowLabel = false
+                label = { Text(label, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) },
+                alwaysShowLabel = true,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
+    }
+}
+
+@Composable
+private fun V11PremiumQuickActions(onNavigate: (Int) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf(
+            Triple(1, stringResource(R.string.premium_nav_schedules), Icons.Default.DateRange),
+            Triple(4, stringResource(R.string.premium_nav_tasks), Icons.Default.CheckCircle),
+            Triple(3, stringResource(R.string.premium_nav_settings), Icons.Default.Settings)
+        ).forEach { (destination, label, symbol) ->
+            FilledTonalButton(
+                onClick = { onNavigate(destination) },
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+            ) {
+                Icon(symbol, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(label, maxLines = 1, style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
+
+/** RC9 Premium-only overview; uses live DB counts, never modifies stored records. */
+@Composable
+private fun V11PremiumOverview(calendarCount: Int, taskCount: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            var expanded by rememberSaveable { mutableStateOf(true) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.premium_overview_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(stringResource(if (expanded) R.string.premium_overview_collapse else R.string.premium_overview_expand))
+                }
+            }
+            if (expanded) {
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                V11PremiumMetric(
+                    label = stringResource(R.string.premium_overview_calendars),
+                    value = calendarCount,
+                    modifier = Modifier.weight(1f)
+                )
+                V11PremiumMetric(
+                    label = stringResource(R.string.premium_overview_tasks),
+                    value = taskCount,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            }
+        }
+    }
+}
+
+@Composable
+private fun V11PremiumMetric(label: String, value: Int, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = value.toString(),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

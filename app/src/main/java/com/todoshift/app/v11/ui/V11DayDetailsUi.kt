@@ -38,8 +38,11 @@ fun V11DayDetailsScreen(
     workplaces: List<Workplace>,
     activeCalendarId: String?,
     onBack: () -> Unit,
-    onDatabaseChange: (V11Database) -> Unit
+    onDatabaseChange: (V11Database) -> Unit,
+    financeAuthorized: Boolean = false,
+    financeAmountsVisible: Boolean = false
 ) {
+    val showDayMoney = !LocalV11NeoEnabled.current || (financeAuthorized && financeAmountsVisible)
     var date by remember(initialDate) {
         mutableStateOf(initialDate)
     }
@@ -95,8 +98,7 @@ fun V11DayDetailsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
-                        .height(58.dp)
+                        .then(if (LocalV11NeoEnabled.current) Modifier.heightIn(min = 58.dp) else Modifier.statusBarsPadding().height(58.dp))
                         .padding(horizontal = 6.dp),
                     verticalAlignment =
                         Alignment.CenterVertically
@@ -106,7 +108,7 @@ fun V11DayDetailsScreen(
                     ) {
                         Icon(
                             Icons.Default.ArrowBack,
-                            "رجوع"
+                            neoLiteral("رجوع", "Back")
                         )
                     }
 
@@ -117,7 +119,7 @@ fun V11DayDetailsScreen(
                     ) {
                         Icon(
                             Icons.Default.ChevronLeft,
-                            "اليوم السابق"
+                            neoLiteral("اليوم السابق", "Previous day")
                         )
                     }
 
@@ -134,7 +136,7 @@ fun V11DayDetailsScreen(
 
                         if (date == LocalDate.now()) {
                             Text(
-                                "اليوم",
+                                neoLiteral("اليوم", "Today"),
                                 style =
                                     MaterialTheme.typography
                                         .labelSmall,
@@ -152,7 +154,7 @@ fun V11DayDetailsScreen(
                     ) {
                         Icon(
                             Icons.Default.ChevronRight,
-                            "اليوم التالي"
+                            neoLiteral("اليوم التالي", "Next day")
                         )
                     }
                 }
@@ -171,7 +173,7 @@ fun V11DayDetailsScreen(
         ) {
 
             Text(
-                "الشيفتات",
+                neoLiteral("الشيفتات", "Shifts"),
                 style =
                     MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black
@@ -181,7 +183,7 @@ fun V11DayDetailsScreen(
 
             if (entries.flatMap { it.segments }.isEmpty()) {
                 V11EmptyCard(
-                    "لا توجد شيفتات في هذا اليوم"
+                    neoLiteral("لا توجد شيفتات في هذا اليوم", "No shifts on this day")
                 )
             }
 
@@ -217,7 +219,7 @@ fun V11DayDetailsScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    "حذف",
+                                    neoLiteral("حذف", "Delete"),
                                     tint =
                                         MaterialTheme.colorScheme
                                             .error
@@ -226,7 +228,7 @@ fun V11DayDetailsScreen(
 
                             if (segment.kind != ShiftKind.OFF) {
                                 IconButton(onClick = { pendingEditSegmentId = segment.id }) {
-                                    Icon(Icons.Default.Edit, contentDescription = "تعديل وقت الشيفت")
+                                    Icon(Icons.Default.Edit, contentDescription = neoLiteral("تعديل وقت الشيفت", "Edit shift time"))
                                 }
                             }
 
@@ -237,7 +239,7 @@ fun V11DayDetailsScreen(
                                     Alignment.End
                             ) {
                                 Text(
-                                    V11Labels.shift(
+                                    neoShiftText(
                                         segment.kind
                                     ),
                                     fontWeight =
@@ -261,7 +263,7 @@ fun V11DayDetailsScreen(
                                             style =
                                                 MaterialTheme.typography
                                                     .labelSmall,
-                                            color = Color.Gray
+                                            color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
                                         )
                                     }
                             }
@@ -293,7 +295,7 @@ fun V11DayDetailsScreen(
             )
 
             Text(
-                "التزامات اليوم",
+                neoLiteral("التزامات اليوم", "Today's commitments"),
                 fontWeight =
                     FontWeight.Black,
                 fontSize = 18.sp
@@ -330,8 +332,7 @@ fun V11DayDetailsScreen(
                             )
 
                             Text(
-                                V11ObligationEngine
-                                    .stateLabel(
+                                neoObligationState(
                                         info.state
                                     ),
                                 style =
@@ -341,7 +342,7 @@ fun V11DayDetailsScreen(
                             )
 
                             Text(
-                                "المستحق: ${
+                                if (!showDayMoney) "••••••" else neoLiteral("المستحق: ${
                                     "%.2f".format(
                                         info.expected
                                     )
@@ -349,7 +350,15 @@ fun V11DayDetailsScreen(
                                     "%.2f".format(
                                         info.remaining
                                     )
-                                } ج",
+                                } ج", "Expected: ${
+                                    "%.2f".format(
+                                        info.expected
+                                    )
+                                } EGP • Remaining: ${
+                                    "%.2f".format(
+                                        info.remaining
+                                    )
+                                } EGP"),
                                 style =
                                     MaterialTheme
                                         .typography
@@ -370,7 +379,7 @@ fun V11DayDetailsScreen(
                     Arrangement.spacedBy(6.dp)
             ) {
                 V11AddItemButton(
-                    "مهمة",
+                    neoLiteral("مهمة", "Task"),
                     Icons.Default.TaskAlt,
                     Modifier.weight(1f)
                 ) {
@@ -378,7 +387,7 @@ fun V11DayDetailsScreen(
                 }
 
                 V11AddItemButton(
-                    "مشوار",
+                    neoLiteral("مشوار", "Errand"),
                     Icons.Default.DirectionsCar,
                     Modifier.weight(1f)
                 ) {
@@ -394,7 +403,7 @@ fun V11DayDetailsScreen(
                     Arrangement.spacedBy(6.dp)
             ) {
                 V11AddItemButton(
-                    "تذكير",
+                    neoLiteral("تذكير", "Reminder"),
                     Icons.Default.Notifications,
                     Modifier.weight(1f)
                 ) {
@@ -403,7 +412,7 @@ fun V11DayDetailsScreen(
                 }
 
                 V11AddItemButton(
-                    "ملاحظة",
+                    neoLiteral("ملاحظة", "Note"),
                     Icons.Default.Notes,
                     Modifier.weight(1f)
                 ) {
@@ -414,7 +423,7 @@ fun V11DayDetailsScreen(
             Spacer(Modifier.height(18.dp))
 
             Text(
-                "تنظيم اليوم",
+                neoLiteral("تنظيم اليوم", "Day organizer"),
                 style =
                     MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black
@@ -424,7 +433,7 @@ fun V11DayDetailsScreen(
 
             if (items.isEmpty()) {
                 V11EmptyCard(
-                    "لا توجد مهام أو مشاوير أو تذكيرات"
+                    neoLiteral("لا توجد مهام أو مشاوير أو تذكيرات", "No tasks, errands or reminders")
                 )
             }
 
@@ -459,7 +468,7 @@ fun V11DayDetailsScreen(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                "حذف"
+                                neoLiteral("حذف", "Delete")
                             )
                         }
 
@@ -536,7 +545,7 @@ fun V11DayDetailsScreen(
                                 style =
                                     MaterialTheme.typography
                                         .labelSmall,
-                                color = Color.Gray
+                                color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
                             )
 
                             item.reminderAt?.let { millis ->
@@ -551,10 +560,13 @@ fun V11DayDetailsScreen(
                                         )
 
                                 Text(
-                                    "تنبيه ${"%02d:%02d".format(
+                                    neoLiteral("تنبيه ${"%02d:%02d".format(
                                         reminderTime.hour,
                                         reminderTime.minute
-                                    )}",
+                                    )}", "Reminder ${"%02d:%02d".format(
+                                        reminderTime.hour,
+                                        reminderTime.minute
+                                    )}"),
                                     style =
                                         MaterialTheme.typography
                                             .labelSmall,
@@ -596,14 +608,14 @@ fun V11DayDetailsScreen(
             }
             AlertDialog(
                 onDismissRequest = { pendingEditSegmentId = null },
-                title = { Text("تعديل أوقات الشيفت") },
+                title = { Text(neoLiteral("تعديل أوقات الشيفت", "Edit shift times")) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("الشيفت العابر لمنتصف الليل يظل في يوم بدايته فقط، بحد أقصى 24 ساعة.")
+                        Text(neoLiteral("الشيفت العابر لمنتصف الليل يظل في يوم بدايته فقط، بحد أقصى 24 ساعة.", "An overnight shift stays on its start date, up to 24 hours."))
                         OutlinedTextField(value = startText, onValueChange = { startText = it },
-                            label = { Text("البداية HH:mm") }, singleLine = true)
+                            label = { Text(neoLiteral("البداية HH:mm", "Start HH:mm")) }, singleLine = true)
                         OutlinedTextField(value = endText, onValueChange = { endText = it },
-                            label = { Text("النهاية HH:mm") }, singleLine = true)
+                            label = { Text(neoLiteral("النهاية HH:mm", "End HH:mm")) }, singleLine = true)
                         editError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                 },
@@ -612,7 +624,7 @@ fun V11DayDetailsScreen(
                         val start = parseTime(startText, false)
                         val end = parseTime(endText, true)
                         if (start == null || end == null) {
-                            editError = "أدخل الوقت بصيغة HH:mm"
+                            editError = neoLiteral("أدخل الوقت بصيغة HH:mm", "Enter time in HH:mm format")
                         } else {
                             try {
                                 val normalizedEnd = if (end <= start) end + 1440 else end
@@ -620,13 +632,13 @@ fun V11DayDetailsScreen(
                                 onDatabaseChange(updated)
                                 pendingEditSegmentId = null
                             } catch (e: IllegalArgumentException) {
-                                editError = e.message ?: "تعذر تعديل الوقت"
+                                editError = e.message ?: neoLiteral("تعذر تعديل الوقت", "Cannot change time")
                             }
                         }
-                    }) { Text("حفظ") }
+                    }) { Text(neoLiteral("حفظ", "Save")) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingEditSegmentId = null }) { Text("إلغاء") }
+                    TextButton(onClick = { pendingEditSegmentId = null }) { Text(neoLiteral("إلغاء", "Cancel")) }
                 }
             )
         }
@@ -638,10 +650,10 @@ fun V11DayDetailsScreen(
                 pendingDeleteSegmentId = null
             },
             title = {
-                Text("حذف الشيفت")
+                Text(neoLiteral("حذف الشيفت", "Delete shift"))
             },
             text = {
-                Text("هل تريد حذف هذا الشيفت؟")
+                Text(neoLiteral("هل تريد حذف هذا الشيفت؟", "Delete this shift?"))
             },
             confirmButton = {
                 Button(
@@ -663,7 +675,7 @@ fun V11DayDetailsScreen(
                                     .error
                         )
                 ) {
-                    Text("حذف")
+                    Text(neoLiteral("حذف", "Delete"))
                 }
             },
             dismissButton = {
@@ -672,7 +684,7 @@ fun V11DayDetailsScreen(
                         pendingDeleteSegmentId = null
                     }
                 ) {
-                    Text("إلغاء")
+                    Text(neoLiteral("إلغاء", "Cancel"))
                 }
             }
         )
@@ -747,12 +759,12 @@ private fun V11EmptyCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF2F4F7)
+        color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF2F4F7)
     ) {
         Text(
             text,
             modifier = Modifier.padding(14.dp),
-            color = Color.Gray
+            color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
         )
     }
 }
@@ -819,7 +831,7 @@ private fun V11AddDayItemDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "إضافة ${itemTypeLabel(type)}"
+                neoLiteral("إضافة ${itemTypeLabel(type)}", "Add ${itemTypeLabel(type)}")
             )
         },
         text = {
@@ -830,7 +842,7 @@ private fun V11AddDayItemDialog(
                         title = it
                     },
                     label = {
-                        Text("العنوان")
+                        Text(neoLiteral("العنوان", "Title"))
                     },
                     modifier =
                         Modifier.fillMaxWidth()
@@ -844,7 +856,7 @@ private fun V11AddDayItemDialog(
                         details = it
                     },
                     label = {
-                        Text("التفاصيل")
+                        Text(neoLiteral("التفاصيل", "Details"))
                     },
                     modifier =
                         Modifier.fillMaxWidth()
@@ -879,7 +891,7 @@ private fun V11AddDayItemDialog(
                         )
 
                         Text(
-                            "تنبيه"
+                            neoLiteral("تنبيه", "Alert")
                         )
 
                         Spacer(
@@ -959,14 +971,14 @@ private fun V11AddDayItemDialog(
                 },
                 enabled = title.isNotBlank()
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -976,10 +988,10 @@ private fun itemTypeLabel(
     type: DayItemTypeV11
 ): String =
     when (type) {
-        DayItemTypeV11.TASK -> "مهمة"
-        DayItemTypeV11.ERRAND -> "مشوار"
-        DayItemTypeV11.REMINDER -> "تذكير"
-        DayItemTypeV11.NOTE -> "ملاحظة"
+        DayItemTypeV11.TASK -> neoLiteral("مهمة", "Task")
+        DayItemTypeV11.ERRAND -> neoLiteral("مشوار", "Errand")
+        DayItemTypeV11.REMINDER -> neoLiteral("تذكير", "Reminder")
+        DayItemTypeV11.NOTE -> neoLiteral("ملاحظة", "Note")
     }
 
 private fun timeText(

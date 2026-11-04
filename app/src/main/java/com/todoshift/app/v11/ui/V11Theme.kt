@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import com.todoshift.app.v11.V11Experience
 import com.todoshift.app.v11.V11PremiumBrightness
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.V11AppTheme
 
 @Composable
@@ -18,16 +19,21 @@ fun V11AppThemeProvider(
     premiumBrightness: V11PremiumBrightness = V11PremiumBrightness.SYSTEM,
     content: @Composable () -> Unit
 ) {
-    val dark = when (premiumBrightness) {
-        V11PremiumBrightness.SYSTEM -> isSystemInDarkTheme()
-        V11PremiumBrightness.LIGHT -> false
-        V11PremiumBrightness.DARK -> true
+    if (experience == V11Experience.CLASSIC) {
+        MaterialTheme(colorScheme = v11ColorScheme(theme), content = content)
+    } else {
+        val p = LocalNeoAppearance.current
+        MaterialTheme(
+            colorScheme = neoColorScheme(p, isSystemInDarkTheme()),
+            typography = neoTypography(p),
+            shapes = androidx.compose.material3.Shapes(
+                small = androidx.compose.foundation.shape.RoundedCornerShape((p.cornerRadius / 2).dp),
+                medium = androidx.compose.foundation.shape.RoundedCornerShape(p.cornerRadius.dp),
+                large = androidx.compose.foundation.shape.RoundedCornerShape(p.cornerRadius.dp),
+                extraLarge = androidx.compose.foundation.shape.RoundedCornerShape((p.cornerRadius + 4).dp)
+            ), content = content
+        )
     }
-    MaterialTheme(
-        colorScheme = if (experience == V11Experience.PREMIUM)
-            v11PremiumColorScheme(dark, theme) else v11ColorScheme(theme),
-        content = content
-    )
 }
 
 fun v11ColorScheme(

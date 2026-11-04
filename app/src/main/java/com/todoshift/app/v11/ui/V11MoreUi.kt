@@ -44,6 +44,7 @@ fun V11MoreScreen(
 ) {
     var page by remember { mutableStateOf(V11SettingsPage.HOME) }
     var securityOpen by remember { mutableStateOf(false) }
+    var studioSection by remember { mutableStateOf(NeoStudioSection.THEMES) }
     var backupOpen by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -57,44 +58,67 @@ fun V11MoreScreen(
         page = V11SettingsPage.HOME
     }
 
+    if (uiSettings.experience == V11Experience.PREMIUM && page == V11SettingsPage.APPEARANCE) {
+        NeoAppearanceStudio(initialSection = studioSection, onBack = { page = V11SettingsPage.HOME }, onClassic = {
+            onUiSettingsChange(uiSettings.copy(experience = V11Experience.CLASSIC))
+            page = V11SettingsPage.HOME
+        })
+        return
+    }
+
     when (page) {
         V11SettingsPage.HOME -> {
-            SettingsPageContainer(title = "الإعدادات") {
+            SettingsPageContainer(title = neoLiteral("الإعدادات", "Settings")) {
                 if (uiSettings.experience == V11Experience.PREMIUM) {
-                    V11NeoSectionHero("تخصيص تجربتك", "المظهر • الخصوصية • النسخ الاحتياطي")
+                    V11NeoSectionHero(neoLabel(neoLiteral("تخصيص تجربتك", "Make it yours"), "Make it yours"), neoLabel("Neo Luxury 3.0 • المظهر والخصوصية", "Neo Luxury 3.0 • appearance and privacy"))
+                    SettingsAction(neoLabel(neoLiteral("استوديو المظهر", "Appearance Studio"), "Appearance Studio"), neoLabel("الثيمات • الخطوط • التخطيط • الحركة • اللغة", "Themes • typography • layout • motion • language")) { studioSection = NeoStudioSection.THEMES; page = V11SettingsPage.APPEARANCE }
+                    listOf(
+                        Triple(NeoStudioSection.TYPE, neoLabel("الخطوط", "Typography"), neoLabel("نمط الكتابة وحجم الخط", "Type style and text size")),
+                        Triple(NeoStudioSection.LAYOUT, neoLabel("التخطيط والكثافة", "Layout and density"), neoLabel("البطاقات والزجاج والأيقونات", "Cards, glass and icons")),
+                        Triple(NeoStudioSection.MOTION, neoLabel("الحركات", "Animations"), neoLabel("مستوى الحركة وتقليلها", "Motion level and reduction")),
+                        Triple(NeoStudioSection.DASHBOARD, neoLabel("تخصيص لوحة اليوم", "Dashboard customization"), neoLabel("ترتيب البطاقات وإخفاؤها والاختصارات", "Card order, visibility and shortcuts")),
+                        Triple(NeoStudioSection.PREFERENCES, neoLabel("اللغة والتفضيلات", "Language and preferences"), neoLabel("العربية والإنجليزية وتفضيلات الشيفتات", "Arabic, English and shift preferences"))
+                    ).forEach { (section, title, subtitle) ->
+                        SettingsAction(title, subtitle) { studioSection = section; page = V11SettingsPage.APPEARANCE }
+                    }
+                    SettingsAction(neoLabel(neoLiteral("الإشعارات", "Notifications"), "Notifications"), neoLabel("إدارة إشعارات ToDo Shift من إعدادات الهاتف", "Manage supported notifications in Android settings")) {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
+                    }
                 }
                 SettingsAction(
-                    "التقويم والعمل",
-                    "أماكن العمل والأسعار والتقاويم"
+                    neoLiteral("التقويم والعمل", "Calendar and work"),
+                    neoLiteral("أماكن العمل والأسعار والتقاويم", "Workplaces, rates and calendars")
                 ) { page = V11SettingsPage.CALENDAR_WORK }
 
                 SettingsAction(
-                    "الحسابات والالتزامات",
-                    "المبالغ ومصادر الدخل وطرق الدفع والالتزامات"
+                    neoLiteral("الحسابات والالتزامات", "Finance and obligations"),
+                    neoLiteral("المبالغ ومصادر الدخل وطرق الدفع والالتزامات", "Amounts, income sources, payment methods and obligations")
                 ) { page = V11SettingsPage.FINANCE }
 
+                if (uiSettings.experience == V11Experience.CLASSIC) {
                 SettingsAction(
-                    "المظهر والتخصيص",
-                    "طريقة عرض التقويم وزر الإضافة وتمييز اليوم"
+                    neoLiteral("المظهر والتخصيص", "Appearance and customization"),
+                    neoLiteral("طريقة عرض التقويم وزر الإضافة وتمييز اليوم", "Calendar layout, add button and today's highlight")
                 ) { page = V11SettingsPage.APPEARANCE }
 
+                }
                 SettingsAction(
-                    "الأمان والخصوصية",
+                    neoLiteral("الأمان والخصوصية", "Privacy and security"),
                     securitySummary(securitySettings)
                 ) { page = V11SettingsPage.PRIVACY }
 
                 SettingsAction(
-                    "النسخ الاحتياطي والاستعادة",
-                    "تصدير واستعادة بيانات ToDo Shift"
+                    neoLiteral("النسخ الاحتياطي والاستعادة", "Backup and restore"),
+                    neoLiteral("تصدير واستعادة بيانات ToDo Shift", "Export and restore ToDo Shift data")
                 ) { page = V11SettingsPage.BACKUP }
 
                 SettingsAction(
-                    "الحساب والمزامنة",
+                    neoLiteral("الحساب والمزامنة", "Account and sync"),
                     "Google Sync"
                 ) { page = V11SettingsPage.SYNC }
 
                 SettingsAction(
-                    "حول التطبيق",
+                    neoLiteral("حول التطبيق", "About"),
                     "ToDo Shift V1.1"
                 ) { page = V11SettingsPage.ABOUT }
             }
@@ -102,48 +126,60 @@ fun V11MoreScreen(
 
         V11SettingsPage.CALENDAR_WORK -> {
             SettingsSubPage(
-                title = "التقويم والعمل",
+                title = neoLiteral("التقويم والعمل", "Calendar and work"),
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsAction(
-                    "أماكن العمل والأسعار",
-                    "إدارة الأماكن والألوان وأسعار الشيفتات",
+                    neoLiteral("أماكن العمل والأسعار", "Workplaces and rates"),
+                    neoLiteral("إدارة الأماكن والألوان وأسعار الشيفتات", "Manage workplaces, colors and shift rates"),
                     onOpenWorkplaces
                 )
 
+                if (uiSettings.experience == V11Experience.PREMIUM) {
+                    SettingsAction(neoLabel("تفضيلات التقويم", "Calendar preferences"), neoLabel("شهر وأسبوع ويوم وكثافة الخلايا", "Month, week, day and cell density")) {
+                        studioSection = NeoStudioSection.CALENDAR; page = V11SettingsPage.APPEARANCE
+                    }
+                }
+
                 SettingsInfo(
-                    "التقاويم",
-                    "${db.calendars.size} تقويم • ${db.calendars.count { it.visible }} ظاهر"
+                    neoLiteral("التقاويم", "Calendars"),
+                    neoLiteral("${db.calendars.size} تقويم • ${db.calendars.count { it.visible }} ظاهر", "${db.calendars.size} calendars • ${db.calendars.count { it.visible }} visible")
                 )
             }
         }
 
         V11SettingsPage.FINANCE -> {
             SettingsSubPage(
-                title = "الحسابات والالتزامات",
+                title = neoLiteral("الحسابات والالتزامات", "Finance and obligations"),
                 onBack = { page = V11SettingsPage.HOME }
             ) {
 
+                if (uiSettings.experience == V11Experience.PREMIUM) {
+                    val appearance = LocalNeoAppearance.current
+                    val update = LocalNeoOnChange.current
+                    NeoSwitch(neoLabel("عرض المؤشر المالي", "Show financial chart"), appearance.showFinanceChart) { update(appearance.copy(showFinanceChart = it)) }
+                }
+
                 SettingsInfo(
-                    "مصادر الدخل",
-                    "${db.incomeSources.size} مصدر"
+                    neoLiteral("مصادر الدخل", "Income sources"),
+                    neoLiteral("${db.incomeSources.size} مصدر", "${db.incomeSources.size} sources")
                 )
 
                 SettingsInfo(
-                    "طرق الدفع",
-                    "${db.paymentMethods.size} طريقة"
+                    neoLiteral("طرق الدفع", "Payment methods"),
+                    neoLiteral("${db.paymentMethods.size} طريقة", "${db.paymentMethods.size} methods")
                 )
 
                 SettingsInfo(
-                    "الالتزامات",
-                    "${db.obligations.count { it.status == ObligationStatusV11.ACTIVE }} التزام نشط"
+                    neoLiteral("الالتزامات", "Obligations"),
+                    neoLiteral("${db.obligations.count { it.status == ObligationStatusV11.ACTIVE }} التزام نشط", "${db.obligations.count { it.status == ObligationStatusV11.ACTIVE }} active obligations")
                 )
             }
         }
 
         V11SettingsPage.APPEARANCE -> {
             SettingsSubPage(
-                title = "المظهر والتخصيص",
+                title = neoLiteral("المظهر والتخصيص", "Appearance and customization"),
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsChoiceCard(
@@ -170,7 +206,7 @@ fun V11MoreScreen(
                 }
 
                 SettingsChoiceCard(
-                    title = "ثيم التطبيق",
+                    title = neoLiteral("ثيم التطبيق", "App theme"),
                     options = listOf(
                         V11AppTheme.TODO_SHIFT to
                             "ToDo Shift",
@@ -197,7 +233,7 @@ fun V11MoreScreen(
                 )
 
                 SettingsChoiceCard(
-                    title = "شكل التقويم",
+                    title = neoLiteral("شكل التقويم", "Calendar style"),
                     options = listOf(
                         V11CalendarStyle.CLASSIC to
                             "Classic",
@@ -218,16 +254,16 @@ fun V11MoreScreen(
                 )
 
                 SettingsChoiceCard(
-                    title = "ثيم الويدجت",
+                    title = neoLiteral("ثيم الويدجت", "Widget theme"),
                     options = listOf(
                         V11WidgetTheme.FOLLOW_APP to
-                            "يتبع التطبيق",
+                            neoLiteral("يتبع التطبيق", "Follow app"),
                         V11WidgetTheme.LIGHT to
-                            "فاتح",
+                            neoLiteral("فاتح", "Light"),
                         V11WidgetTheme.DARK to
-                            "داكن",
+                            neoLiteral("داكن", "Dark"),
                         V11WidgetTheme.TRANSPARENT to
-                            "شفاف"
+                            neoLiteral("شفاف", "Transparent")
                     ),
                     selected =
                         uiSettings.widgetTheme,
@@ -241,8 +277,8 @@ fun V11MoreScreen(
                 )
 
                 SettingsSwitch(
-                    title = "أسماء أماكن العمل",
-                    subtitle = "إظهار اسم مكان العمل داخل الشيفت في التقويم",
+                    title = neoLiteral("أسماء أماكن العمل", "Workplace names"),
+                    subtitle = neoLiteral("إظهار اسم مكان العمل داخل الشيفت في التقويم", "Show workplace names inside calendar shifts"),
                     checked = uiSettings.showWorkplaceNames,
                     onCheckedChange = {
                         onUiSettingsChange(
@@ -254,7 +290,7 @@ fun V11MoreScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp)) {
                         Text(
-                            "مكان زر الإضافة",
+                            neoLiteral("مكان زر الإضافة", "Add button position"),
                             fontWeight = FontWeight.Bold
                         )
 
@@ -272,7 +308,7 @@ fun V11MoreScreen(
                                         )
                                     )
                                 },
-                                label = { Text("يمين") }
+                                label = { Text(neoLiteral("يمين", "Right")) }
                             )
 
                             FilterChip(
@@ -285,7 +321,7 @@ fun V11MoreScreen(
                                         )
                                     )
                                 },
-                                label = { Text("يسار") }
+                                label = { Text(neoLiteral("يسار", "Left")) }
                             )
                         }
                     }
@@ -294,7 +330,7 @@ fun V11MoreScreen(
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp)) {
                         Text(
-                            "تمييز اليوم الحالي",
+                            neoLiteral("تمييز اليوم الحالي", "Highlight today"),
                             fontWeight = FontWeight.Bold
                         )
 
@@ -332,11 +368,11 @@ fun V11MoreScreen(
 
         V11SettingsPage.PRIVACY -> {
             SettingsSubPage(
-                title = "الأمان والخصوصية",
+                title = neoLiteral("الأمان والخصوصية", "Privacy and security"),
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsAction(
-                    "إعدادات الحماية",
+                    neoLiteral("إعدادات الحماية", "Security settings"),
                     securitySummary(securitySettings)
                 ) {
                     securityOpen = true
@@ -346,11 +382,11 @@ fun V11MoreScreen(
 
         V11SettingsPage.BACKUP -> {
             SettingsSubPage(
-                title = "النسخ الاحتياطي والاستعادة",
+                title = neoLiteral("النسخ الاحتياطي والاستعادة", "Backup and restore"),
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsAction(
-                    "فتح النسخ الاحتياطي والاستعادة",
+                    neoLiteral("فتح النسخ الاحتياطي والاستعادة", "Open backup and restore"),
                     "Schema ${db.schemaVersion}"
                 ) {
                     backupOpen = true
@@ -360,24 +396,24 @@ fun V11MoreScreen(
 
         V11SettingsPage.SYNC -> {
             SettingsSubPage(
-                title = "الحساب والمزامنة",
+                title = neoLiteral("الحساب والمزامنة", "Account and sync"),
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsInfo(
                     "Google Sync",
-                    "غير مفعّل حاليا — لن يظهر كمفتاح وهمي قبل تنفيذ المزامنة الحقيقية"
+                    neoLiteral("غير مفعّل حاليا — لن يظهر كمفتاح وهمي قبل تنفيذ المزامنة الحقيقية", "Not currently available. Sync will appear when implemented.")
                 )
             }
         }
 
         V11SettingsPage.ABOUT -> {
             SettingsSubPage(
-                title = "حول التطبيق",
+                title = neoLiteral("حول التطبيق", "About"),
                 onBack = { page = V11SettingsPage.HOME }
             ) {
                 SettingsInfo(
                     "ToDo Shift",
-                    "V1.1 • Schema ${db.schemaVersion}"
+                    if (uiSettings.experience == V11Experience.PREMIUM) "Neo Luxury 3.0 • Schema ${db.schemaVersion}" else "V1.1 • Schema ${db.schemaVersion}"
                 )
             }
         }
@@ -441,7 +477,7 @@ private fun SettingsSubPage(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.Default.ArrowBack,
-                    contentDescription = "رجوع"
+                    contentDescription = neoLiteral("رجوع", "Back")
                 )
             }
 
@@ -518,28 +554,28 @@ private fun securitySummary(
 ): String =
     when {
         !securitySettings.protectAccounts ->
-            "بدون قفل"
+            neoLiteral("بدون قفل", "No lock")
 
         securitySettings.mode == V11LockMode.PIN &&
             securitySettings.biometricEnabled ->
-            "PIN + بصمة • قفل تلقائي"
+            neoLiteral("PIN + بصمة • قفل تلقائي", "PIN + biometrics • auto-lock")
 
         securitySettings.mode == V11LockMode.PATTERN &&
             securitySettings.biometricEnabled ->
-            "نمط + بصمة • قفل تلقائي"
+            neoLiteral("نمط + بصمة • قفل تلقائي", "Pattern + biometrics • auto-lock")
 
         securitySettings.mode == V11LockMode.PIN ->
-            "PIN • قفل تلقائي"
+            neoLiteral("PIN • قفل تلقائي", "PIN • auto-lock")
 
         securitySettings.mode == V11LockMode.PATTERN ->
-            "نمط • قفل تلقائي"
+            neoLiteral("نمط • قفل تلقائي", "Pattern • auto-lock")
 
         securitySettings.mode == V11LockMode.NONE &&
             securitySettings.biometricEnabled ->
-            "بصمة / قفل الجهاز • قفل تلقائي"
+            neoLiteral("بصمة / قفل الجهاز • قفل تلقائي", "Biometrics / device lock • auto-lock")
 
         else ->
-            "بدون قفل"
+            neoLiteral("بدون قفل", "No lock")
     }
 
 @Composable
@@ -653,10 +689,10 @@ private fun SettingsSwitch(
 private fun highlightLabel(
     style: TodayHighlightStyle
 ): String = when (style) {
-    TodayHighlightStyle.BORDER -> "إطار"
-    TodayHighlightStyle.TINT -> "تظليل"
-    TodayHighlightStyle.RING -> "دائرة"
-    TodayHighlightStyle.BORDER_TINT -> "إطار وتظليل"
-    TodayHighlightStyle.NONE -> "بدون"
-    else -> "نبض"
+    TodayHighlightStyle.BORDER -> neoLiteral("إطار", "Border")
+    TodayHighlightStyle.TINT -> neoLiteral("تظليل", "Tint")
+    TodayHighlightStyle.RING -> neoLiteral("دائرة", "Ring")
+    TodayHighlightStyle.BORDER_TINT -> neoLiteral("إطار وتظليل", "Border and tint")
+    TodayHighlightStyle.NONE -> neoLiteral("بدون", "None")
+    else -> neoLiteral("نبض", "Pulse")
 }

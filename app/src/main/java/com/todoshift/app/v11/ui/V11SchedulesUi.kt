@@ -34,8 +34,18 @@ fun V11SchedulesScreen(
     month: YearMonth,
     db: V11Database,
     workplaces: List<Workplace>,
-    onDatabaseChange: (V11Database) -> Unit
+    onDatabaseChange: (V11Database) -> Unit,
+    onMonthChange: (YearMonth) -> Unit = {},
+    financeAuthorized: Boolean = false,
+    financeAmountsVisible: Boolean = false
 ) {
+    var timelineDay by remember { mutableStateOf<Pair<java.time.LocalDate, String>?>(null) }
+    androidx.activity.compose.BackHandler(enabled = timelineDay != null) { timelineDay = null }
+    timelineDay?.let { (date, calendarId) ->
+        V11DayDetailsScreen(date, db, workplaces, calendarId, onBack = { timelineDay = null }, onDatabaseChange = onDatabaseChange,
+            financeAuthorized = financeAuthorized, financeAmountsVisible = financeAmountsVisible)
+        return
+    }
     var newCalendarName by remember {
         mutableStateOf("")
     }
@@ -75,20 +85,21 @@ fun V11SchedulesScreen(
             .padding(14.dp)
     ) {
         if (LocalV11NeoEnabled.current) {
-            V11NeoSectionHero("جداول العمل", "التقاويم والشيفتات • ${month}")
+            V11NeoSectionHero(neoLabel(neoLiteral("خطك الزمني", "Your timeline"), "Shift timeline"), neoLabel("الشيفتات والتقاويم • $month", "Shifts and calendars • $month"))
+            NeoShiftTimeline(db, workplaces, month, onMonthChange, onOpenDay = { date, calendarId -> timelineDay = date to calendarId })
         }
         Text(
-            "إدارة التقاويم والجداول وملخص الشهر",
+            neoLiteral("إدارة التقاويم والجداول وملخص الشهر", "Manage calendars, schedules and monthly overview"),
             style =
                 MaterialTheme.typography
                     .bodyMedium,
-            color = Color.Gray
+            color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
         )
 
         Spacer(Modifier.height(16.dp))
 
         Text(
-            "تقويماتي",
+            neoLiteral("تقويماتي", "My calendars"),
             style =
                 MaterialTheme.typography
                     .titleLarge,
@@ -136,7 +147,7 @@ fun V11SchedulesScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    "حذف"
+                                    neoLiteral("حذف", "Delete")
                                 )
                             }
 
@@ -148,7 +159,7 @@ fun V11SchedulesScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Edit,
-                                    "تعديل"
+                                    neoLiteral("تعديل", "Edit")
                                 )
                             }
 
@@ -168,7 +179,7 @@ fun V11SchedulesScreen(
                                         Icons.Default.Visibility
                                     else
                                         Icons.Default.VisibilityOff,
-                                    "إظهار أو إخفاء"
+                                    neoLiteral("إظهار أو إخفاء", "Show or hide")
                                 )
                             }
 
@@ -188,14 +199,14 @@ fun V11SchedulesScreen(
 
                                 Text(
                                     if (calendar.visible)
-                                        "ظاهر في التقويم"
+                                        neoLiteral("ظاهر في التقويم", "Visible in calendar")
                                     else
-                                        "مخفي",
+                                        neoLiteral("مخفي", "Hidden"),
                                     style =
                                         MaterialTheme
                                             .typography
                                             .labelSmall,
-                                    color = Color.Gray
+                                    color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
                                 )
                             }
 
@@ -241,12 +252,12 @@ fun V11SchedulesScreen(
                                 Icon(
                                     Icons.Default
                                         .KeyboardArrowUp,
-                                    "تحريك لأعلى"
+                                    neoLiteral("تحريك لأعلى", "Move up")
                                 )
                             }
 
                             Text(
-                                "ترتيب ${index + 1}",
+                                neoLiteral("ترتيب ${index + 1}", "Order ${index + 1}"),
                                 modifier =
                                     Modifier
                                         .align(
@@ -278,7 +289,7 @@ fun V11SchedulesScreen(
                                 Icon(
                                     Icons.Default
                                         .KeyboardArrowDown,
-                                    "تحريك لأسفل"
+                                    neoLiteral("تحريك لأسفل", "Move down")
                                 )
                             }
                         }
@@ -311,7 +322,7 @@ fun V11SchedulesScreen(
                     Icons.Default.Add,
                     null
                 )
-                Text("إضافة")
+                Text(neoLiteral("إضافة", "Add"))
             }
 
             Spacer(Modifier.width(8.dp))
@@ -324,7 +335,7 @@ fun V11SchedulesScreen(
                 modifier =
                     Modifier.weight(1f),
                 label = {
-                    Text("تقويم جديد")
+                    Text(neoLiteral("تقويم جديد", "New calendar"))
                 },
                 singleLine = true
             )
@@ -333,7 +344,7 @@ fun V11SchedulesScreen(
         Spacer(Modifier.height(22.dp))
 
         Text(
-            "ملخص ${month}",
+            neoLiteral("ملخص ${month}", "Overview ${month}"),
             style =
                 MaterialTheme.typography
                     .titleLarge,
@@ -348,7 +359,7 @@ fun V11SchedulesScreen(
                 Arrangement.spacedBy(8.dp)
         ) {
             SummaryCard(
-                "أيام العمل",
+                neoLiteral("أيام العمل", "Work days"),
                 monthDays.count {
                     it.segments.any { segment ->
                         segment.kind !=
@@ -359,13 +370,13 @@ fun V11SchedulesScreen(
             )
 
             SummaryCard(
-                "الإجازات",
+                neoLiteral("الإجازات", "Days off"),
                 offCount,
                 Modifier.weight(1f)
             )
 
             SummaryCard(
-                "الشيفتات",
+                neoLiteral("الشيفتات", "Shifts"),
                 workSegments.size,
                 Modifier.weight(1f)
             )
@@ -399,7 +410,7 @@ fun V11SchedulesScreen(
                 )
 
                 Text(
-                    V11Labels.shift(kind)
+                    neoShiftText(kind)
                 )
             }
 
@@ -409,7 +420,7 @@ fun V11SchedulesScreen(
         Spacer(Modifier.height(22.dp))
 
         Text(
-            "أماكن العمل هذا الشهر",
+            neoLiteral("أماكن العمل هذا الشهر", "Workplaces this month"),
             fontWeight = FontWeight.Black
         )
 
@@ -431,7 +442,7 @@ fun V11SchedulesScreen(
                         Alignment.CenterVertically
                 ) {
                     Text(
-                        "$count شيفت"
+                        neoLiteral("$count شيفت", "$count shifts")
                     )
 
                     Spacer(Modifier.weight(1f))
@@ -516,7 +527,7 @@ private fun V11EditCalendarDialog(
         onDismissRequest =
             onDismiss,
         title = {
-            Text("تعديل التقويم")
+            Text(neoLiteral("تعديل التقويم", "Edit calendar"))
         },
         text = {
             Column {
@@ -526,7 +537,7 @@ private fun V11EditCalendarDialog(
                         name = it
                     },
                     label = {
-                        Text("اسم التقويم")
+                        Text(neoLiteral("اسم التقويم", "Calendar name"))
                     },
                     singleLine = true,
                     modifier =
@@ -538,7 +549,7 @@ private fun V11EditCalendarDialog(
                 )
 
                 Text(
-                    "لون التقويم",
+                    neoLiteral("لون التقويم", "Calendar color"),
                     fontWeight =
                         FontWeight.Bold
                 )
@@ -613,7 +624,7 @@ private fun V11EditCalendarDialog(
                 enabled =
                     name.isNotBlank()
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
@@ -621,7 +632,7 @@ private fun V11EditCalendarDialog(
                 onClick =
                     onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )

@@ -53,11 +53,11 @@ fun V11BackupRestoreDialog(
         }.onSuccess {
             error = false
             message =
-                "تم إنشاء النسخة الاحتياطية بنجاح"
+                neoLiteral("تم إنشاء النسخة الاحتياطية بنجاح", "Backup created successfully")
         }.onFailure {
             error = true
             message =
-                "فشل إنشاء النسخة الاحتياطية: ${it.message ?: "خطأ غير معروف"}"
+                neoLiteral("فشل إنشاء النسخة الاحتياطية: ${it.message ?: "خطأ غير معروف"}", "Backup failed: ${it.message ?: "Unknown error"}")
         }
     }
 
@@ -75,7 +75,7 @@ fun V11BackupRestoreDialog(
                     )
 
             require(raw.isNotBlank()) {
-                "ملف النسخة الاحتياطية فارغ"
+                neoLiteral("ملف النسخة الاحتياطية فارغ", "Backup file is empty")
             }
 
             storage.importJson(raw)
@@ -83,11 +83,11 @@ fun V11BackupRestoreDialog(
         }.onSuccess {
             error = false
             message =
-                "تمت استعادة النسخة الاحتياطية بنجاح"
+                neoLiteral("تمت استعادة النسخة الاحتياطية بنجاح", "Backup restored successfully")
         }.onFailure {
             error = true
             message =
-                "فشل الاستعادة: ${it.message ?: "الملف غير صالح"}"
+                neoLiteral("فشل الاستعادة: ${it.message ?: "الملف غير صالح"}", "Restore failed: ${it.message ?: "Invalid file"}")
         }
     }
 
@@ -119,7 +119,7 @@ fun V11BackupRestoreDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "النسخ الاحتياطي والاستعادة"
+                neoLiteral("النسخ الاحتياطي والاستعادة", "Backup and restore")
             )
         },
         text = {
@@ -134,7 +134,7 @@ fun V11BackupRestoreDialog(
                 )
 
                 Text(
-                    "النسخة تشمل التقاويم والشيفتات والحسابات والمدفوعات والالتزامات والمهام والإعدادات المخزنة داخل قاعدة بيانات ToDo Shift."
+                    neoLiteral("النسخة تشمل التقاويم والشيفتات والحسابات والمدفوعات والالتزامات والمهام والإعدادات المخزنة داخل قاعدة بيانات ToDo Shift.", "The backup includes calendars, shifts, finances, payments, obligations, tasks and settings stored in the ToDo Shift database.")
                 )
 
                 Button(
@@ -165,7 +165,7 @@ fun V11BackupRestoreDialog(
                     )
 
                     Text(
-                        "إنشاء نسخة احتياطية"
+                        neoLiteral("إنشاء نسخة احتياطية", "Create backup")
                     )
                 }
 
@@ -192,7 +192,7 @@ fun V11BackupRestoreDialog(
                     )
 
                     Text(
-                        "استعادة نسخة احتياطية"
+                        neoLiteral("استعادة نسخة احتياطية", "Restore backup")
                     )
                 }
 
@@ -216,7 +216,7 @@ fun V11BackupRestoreDialog(
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إغلاق")
+                Text(neoLiteral("إغلاق", "Close"))
             }
         }
     )

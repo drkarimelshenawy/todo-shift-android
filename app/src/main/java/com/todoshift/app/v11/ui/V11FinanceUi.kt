@@ -97,7 +97,7 @@ fun V11FinanceScreen(
             .padding(14.dp)
     ) {
         if (LocalV11NeoEnabled.current) {
-            V11NeoSectionHero("الملخص المالي", "الحسابات والمدفوعات • ${month}")
+            V11NeoSectionHero(neoLabel(neoLiteral("نظرة مالية", "Financial overview"), "Financial overview"), neoLabel("الحسابات والمدفوعات • $month", "Income and payments • $month"))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -126,31 +126,36 @@ fun V11FinanceScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        if (LocalV11NeoEnabled.current) {
+            NeoFinanceOverview(result, moneyVisible)
+        } else {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement =
                 Arrangement.spacedBy(7.dp)
         ) {
             AccountCard(
-                "المتبقي",
+                neoLiteral("المتبقي", "Remaining"),
                 result.difference,
                 moneyVisible,
                 Modifier.weight(1f)
             )
 
             AccountCard(
-                "المستلم",
+                neoLiteral("المستلم", "Received"),
                 result.received,
                 moneyVisible,
                 Modifier.weight(1f)
             )
 
             AccountCard(
-                "المستحق",
+                neoLiteral("المستحق", "Expected"),
                 result.expected,
                 moneyVisible,
                 Modifier.weight(1f)
             )
+        }
+
         }
 
         Spacer(Modifier.height(10.dp))
@@ -164,7 +169,7 @@ fun V11FinanceScreen(
                     Modifier.padding(14.dp)
             ) {
                 Text(
-                    "ملخص الشهر",
+                    neoLiteral("ملخص الشهر", "Monthly overview"),
                     fontWeight =
                         FontWeight.Black
                 )
@@ -174,26 +179,26 @@ fun V11FinanceScreen(
                 )
 
                 AccountLine(
-                    "عدد الشيفتات",
+                    neoLiteral("عدد الشيفتات", "Shift count"),
                     result.shiftCount.toString()
                 )
 
                 AccountLine(
-                    "حالة المستحقات",
+                    neoLiteral("حالة المستحقات", "Income status"),
                     when {
                         result.difference > 0 ->
-                            "متبقي"
+                            neoLiteral("متبقي", "Remaining")
                         result.difference < 0 ->
-                            "دفع زائد"
+                            neoLiteral("دفع زائد", "Overpaid")
                         result.expected > 0 ->
-                            "مسدد"
+                            neoLiteral("مسدد", "Paid")
                         else ->
-                            "لا توجد مستحقات"
+                            neoLiteral("لا توجد مستحقات", "No expected income")
                     }
                 )
 
                 AccountLine(
-                    "التزامات الشهر",
+                    neoLiteral("التزامات الشهر", "Monthly obligations"),
                     money(
                         obligationDue,
                         moneyVisible
@@ -201,7 +206,7 @@ fun V11FinanceScreen(
                 )
 
                 AccountLine(
-                    "الصافي بعد الالتزامات",
+                    neoLiteral("الصافي بعد الالتزامات", "Net after obligations"),
                     money(
                         result.expected -
                             obligationDue,
@@ -225,7 +230,7 @@ fun V11FinanceScreen(
                 null
             )
             Spacer(Modifier.width(5.dp))
-            Text("تسجيل مبلغ مستلم")
+            Text(neoLiteral("تسجيل مبلغ مستلم", "Record received payment"))
         }
 
         Spacer(Modifier.height(8.dp))
@@ -243,7 +248,7 @@ fun V11FinanceScreen(
                 modifier =
                     Modifier.weight(1f)
             ) {
-                Text("مصادر الدخل")
+                Text(neoLiteral("مصادر الدخل", "Income sources"))
             }
 
             FilledTonalButton(
@@ -253,14 +258,14 @@ fun V11FinanceScreen(
                 modifier =
                     Modifier.weight(1f)
             ) {
-                Text("طرق الدفع")
+                Text(neoLiteral("طرق الدفع", "Payment methods"))
             }
         }
 
         Spacer(Modifier.height(20.dp))
 
         Text(
-            "المستحق حسب مكان العمل",
+            neoLiteral("المستحق حسب مكان العمل", "Expected by workplace"),
             fontWeight = FontWeight.Black,
             fontSize = 17.sp
         )
@@ -275,7 +280,7 @@ fun V11FinanceScreen(
                                     .workplaceId
                         }
                         ?.name
-                        ?: "غير محدد"
+                        ?: neoLiteral("غير محدد", "Unspecified")
 
                 Surface(
                     onClick = {
@@ -327,7 +332,7 @@ fun V11FinanceScreen(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            "المبالغ المستلمة",
+            neoLiteral("المبالغ المستلمة", "Received payments"),
             fontWeight = FontWeight.Black,
             fontSize = 17.sp
         )
@@ -344,7 +349,7 @@ fun V11FinanceScreen(
 
         if (monthPayments.isEmpty()) {
             Text(
-                "لا توجد دفعات مسجلة",
+                neoLiteral("لا توجد دفعات مسجلة", "No payments recorded"),
                 color =
                     MaterialTheme.colorScheme
                         .onSurfaceVariant,
@@ -455,7 +460,7 @@ fun V11FinanceScreen(
                     Icons.Default.Add,
                     null
                 )
-                Text("إضافة")
+                Text(neoLiteral("إضافة", "Add"))
             }
 
             Spacer(Modifier.weight(1f))
@@ -465,14 +470,14 @@ fun V11FinanceScreen(
                     Alignment.End
             ) {
                 Text(
-                    "الالتزامات",
+                    neoLiteral("الالتزامات", "Obligations"),
                     fontSize = 19.sp,
                     fontWeight =
                         FontWeight.Black
                 )
 
                 Text(
-                    "أقساط • ديون • مدفوعات دورية",
+                    neoLiteral("أقساط • ديون • مدفوعات دورية", "Installments • debts • recurring payments"),
                     style =
                         MaterialTheme.typography
                             .labelSmall
@@ -488,7 +493,7 @@ fun V11FinanceScreen(
                     Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "لا توجد التزامات مسجلة",
+                    neoLiteral("لا توجد التزامات مسجلة", "No obligations recorded"),
                     modifier =
                         Modifier.padding(14.dp)
                 )
@@ -565,7 +570,7 @@ fun V11FinanceScreen(
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription =
-                                    "تعديل الالتزام"
+                                    neoLiteral("تعديل الالتزام", "Edit obligation")
                             )
                         }
                     }
@@ -575,9 +580,8 @@ fun V11FinanceScreen(
                     )
 
                     AccountLine(
-                        "حالة هذا الشهر",
-                        V11ObligationEngine
-                            .stateLabel(
+                        neoLiteral("حالة هذا الشهر", "This month's status"),
+                        neoObligationState(
                                 monthInfo.state
                             )
                     )
@@ -585,7 +589,7 @@ fun V11FinanceScreen(
                     monthInfo.dueDate
                         ?.let {
                             AccountLine(
-                                "تاريخ الاستحقاق",
+                                neoLiteral("تاريخ الاستحقاق", "Due date"),
                                 it.toString()
                             )
                         }
@@ -595,7 +599,7 @@ fun V11FinanceScreen(
                         0.0
                     ) {
                         AccountLine(
-                            "مستحق الشهر",
+                            neoLiteral("مستحق الشهر", "Month expected"),
                             money(
                                 monthInfo.expected,
                                 moneyVisible
@@ -603,7 +607,7 @@ fun V11FinanceScreen(
                         )
 
                         AccountLine(
-                            "المسدد للشهر",
+                            neoLiteral("المسدد للشهر", "Paid for month"),
                             money(
                                 monthInfo.paid,
                                 moneyVisible
@@ -611,7 +615,7 @@ fun V11FinanceScreen(
                         )
 
                         AccountLine(
-                            "متبقي الشهر",
+                            neoLiteral("متبقي الشهر", "Month remaining"),
                             money(
                                 monthInfo.remaining,
                                 moneyVisible
@@ -620,7 +624,7 @@ fun V11FinanceScreen(
                     }
 
                     AccountLine(
-                        "إجمالي المدفوع",
+                        neoLiteral("إجمالي المدفوع", "Total paid"),
                         money(
                             paid,
                             moneyVisible
@@ -629,7 +633,7 @@ fun V11FinanceScreen(
 
                     totalRemaining?.let {
                         AccountLine(
-                            "إجمالي المتبقي",
+                            neoLiteral("إجمالي المتبقي", "Total remaining"),
                             money(
                                 it,
                                 moneyVisible
@@ -656,9 +660,9 @@ fun V11FinanceScreen(
                                 monthInfo.paid >
                                 0.0
                             ) {
-                                "استكمال / سداد جزئي"
+                                neoLiteral("استكمال / سداد جزئي", "Continue / partial payment")
                             } else {
-                                "تسجيل سداد"
+                                neoLiteral("تسجيل سداد", "Record payment")
                             }
                         )
                     }
@@ -915,7 +919,7 @@ private fun V11WorkplaceDueDetailsDialog(
     val workplaceName =
         workplaces.firstOrNull {
             it.id == workplaceId
-        }?.name ?: "غير محدد"
+        }?.name ?: neoLiteral("غير محدد", "Unspecified")
 
     val rows =
         db.days
@@ -962,7 +966,7 @@ private fun V11WorkplaceDueDetailsDialog(
                     )
             ) {
                 AccountLine(
-                    "عدد الشفتات",
+                    neoLiteral("عدد الشفتات", "Shift count"),
                     rows.size.toString()
                 )
 
@@ -1013,13 +1017,13 @@ private fun V11WorkplaceDueDetailsDialog(
                             )
 
                             AccountLine(
-                                "العدد",
+                                neoLiteral("العدد", "Count"),
                                 kindRows.size
                                     .toString()
                             )
 
                             AccountLine(
-                                "قيمة الوحدة",
+                                neoLiteral("قيمة الوحدة", "Unit value"),
                                 if (
                                     unitRates.size == 1
                                 ) {
@@ -1028,12 +1032,12 @@ private fun V11WorkplaceDueDetailsDialog(
                                         moneyVisible
                                     )
                                 } else {
-                                    "متغيرة"
+                                    neoLiteral("متغيرة", "Variable")
                                 }
                             )
 
                             AccountLine(
-                                "الإجمالي",
+                                neoLiteral("الإجمالي", "Total"),
                                 money(
                                     subtotal,
                                     moneyVisible
@@ -1050,7 +1054,7 @@ private fun V11WorkplaceDueDetailsDialog(
                 )
 
                 AccountLine(
-                    "الإجمالي الكلي",
+                    neoLiteral("الإجمالي الكلي", "Grand total"),
                     money(
                         total,
                         moneyVisible
@@ -1060,7 +1064,7 @@ private fun V11WorkplaceDueDetailsDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("إغلاق")
+                Text(neoLiteral("إغلاق", "Close"))
             }
         }
     )
@@ -1091,7 +1095,7 @@ private fun V11PaymentDetailsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("تفاصيل المبلغ المستلم")
+            Text(neoLiteral("تفاصيل المبلغ المستلم", "Payment details"))
         },
         text = {
             Column(
@@ -1101,7 +1105,7 @@ private fun V11PaymentDetailsDialog(
                     )
             ) {
                 AccountLine(
-                    "المبلغ",
+                    neoLiteral("المبلغ", "Amount"),
                     money(
                         payment.amount,
                         moneyVisible
@@ -1109,32 +1113,32 @@ private fun V11PaymentDetailsDialog(
                 )
 
                 AccountLine(
-                    "تاريخ الاستلام",
+                    neoLiteral("تاريخ الاستلام", "Received date"),
                     payment.receivedDate
                 )
 
                 AccountLine(
-                    "شهر الاستحقاق",
+                    neoLiteral("شهر الاستحقاق", "Accrual month"),
                     payment.accrualMonth
                 )
 
                 source?.let {
                     AccountLine(
-                        "مصدر الدخل",
+                        neoLiteral("مصدر الدخل", "Income source"),
                         it.name
                     )
                 }
 
                 workplaceName?.let { name ->
                     AccountLine(
-                        "مكان العمل",
+                        neoLiteral("مكان العمل", "Workplace"),
                         name
                     )
                 }
 
                 method?.let {
                     AccountLine(
-                        "طريقة الدفع",
+                        neoLiteral("طريقة الدفع", "Payment method"),
                         it.name
                     )
                 }
@@ -1143,7 +1147,7 @@ private fun V11PaymentDetailsDialog(
                     payment.note.isNotBlank()
                 ) {
                     AccountLine(
-                        "ملاحظة",
+                        neoLiteral("ملاحظة", "Note"),
                         payment.note
                     )
                 }
@@ -1157,7 +1161,7 @@ private fun V11PaymentDetailsDialog(
                     )
 
                     Text(
-                        "توزيع الدفعة",
+                        neoLiteral("توزيع الدفعة", "Payment allocation"),
                         fontWeight =
                             FontWeight.Black
                     )
@@ -1182,12 +1186,12 @@ private fun V11PaymentDetailsDialog(
                     null
                 )
                 Spacer(Modifier.width(5.dp))
-                Text("تعديل")
+                Text(neoLiteral("تعديل", "Edit"))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إغلاق")
+                Text(neoLiteral("إغلاق", "Close"))
             }
         }
     )
@@ -1229,7 +1233,7 @@ private fun V11EditPaymentDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("تعديل المبلغ المستلم")
+            Text(neoLiteral("تعديل المبلغ المستلم", "Edit received payment"))
         },
         text = {
             Column(
@@ -1248,7 +1252,7 @@ private fun V11EditPaymentDialog(
                             }
                     },
                     label = {
-                        Text("المبلغ")
+                        Text(neoLiteral("المبلغ", "Amount"))
                     },
                     singleLine = true
                 )
@@ -1259,7 +1263,7 @@ private fun V11EditPaymentDialog(
                         date = it
                     },
                     label = {
-                        Text("تاريخ الاستلام")
+                        Text(neoLiteral("تاريخ الاستلام", "Received date"))
                     },
                     singleLine = true
                 )
@@ -1267,7 +1271,7 @@ private fun V11EditPaymentDialog(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    "مصدر الدخل",
+                    neoLiteral("مصدر الدخل", "Income source"),
                     fontWeight =
                         FontWeight.Bold
                 )
@@ -1298,7 +1302,7 @@ private fun V11EditPaymentDialog(
                     }
 
                 Text(
-                    "طريقة الدفع",
+                    neoLiteral("طريقة الدفع", "Payment method"),
                     fontWeight =
                         FontWeight.Bold
                 )
@@ -1334,7 +1338,7 @@ private fun V11EditPaymentDialog(
                         note = it
                     },
                     label = {
-                        Text("ملاحظة")
+                        Text(neoLiteral("ملاحظة", "Note"))
                     }
                 )
 
@@ -1344,7 +1348,7 @@ private fun V11EditPaymentDialog(
                 ) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "سيتم الحفاظ على توزيع الدفعة الحالي.",
+                        neoLiteral("سيتم الحفاظ على توزيع الدفعة الحالي.", "The existing payment allocation will be preserved."),
                         style =
                             MaterialTheme.typography
                                 .bodySmall,
@@ -1404,12 +1408,12 @@ private fun V11EditPaymentDialog(
                     amount.toDoubleOrNull() !=
                         null
             ) {
-                Text("حفظ التعديل")
+                Text(neoLiteral("حفظ التعديل", "Save change"))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -1470,7 +1474,7 @@ private fun V11EditObligationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("تعديل الالتزام")
+            Text(neoLiteral("تعديل الالتزام", "Edit obligation"))
         },
         text = {
             Column(
@@ -1485,7 +1489,7 @@ private fun V11EditObligationDialog(
                         name = it
                     },
                     label = {
-                        Text("اسم الالتزام")
+                        Text(neoLiteral("اسم الالتزام", "Obligation name"))
                     }
                 )
 
@@ -1499,7 +1503,7 @@ private fun V11EditObligationDialog(
                             }
                     },
                     label = {
-                        Text("إجمالي المبلغ")
+                        Text(neoLiteral("إجمالي المبلغ", "Total amount"))
                     }
                 )
 
@@ -1513,7 +1517,7 @@ private fun V11EditObligationDialog(
                             }
                     },
                     label = {
-                        Text("قيمة القسط")
+                        Text(neoLiteral("قيمة القسط", "Installment amount"))
                     }
                 )
 
@@ -1526,7 +1530,7 @@ private fun V11EditObligationDialog(
                             )
                     },
                     label = {
-                        Text("يوم الاستحقاق")
+                        Text(neoLiteral("يوم الاستحقاق", "Due day"))
                     }
                 )
 
@@ -1539,7 +1543,7 @@ private fun V11EditObligationDialog(
                             )
                     },
                     label = {
-                        Text("عدد الأقساط")
+                        Text(neoLiteral("عدد الأقساط", "Installment count"))
                     }
                 )
 
@@ -1549,7 +1553,7 @@ private fun V11EditObligationDialog(
                         note = it
                     },
                     label = {
-                        Text("ملاحظة")
+                        Text(neoLiteral("ملاحظة", "Note"))
                     }
                 )
 
@@ -1603,12 +1607,12 @@ private fun V11EditObligationDialog(
                 enabled =
                     name.isNotBlank()
             ) {
-                Text("حفظ التعديل")
+                Text(neoLiteral("حفظ التعديل", "Save change"))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -1618,12 +1622,12 @@ private fun shiftKindLabelV11(
     kind: ShiftKind
 ): String =
     when (kind) {
-        ShiftKind.FULL_DAY -> "يوم كامل"
-        ShiftKind.LONG -> "طويل"
-        ShiftKind.NIGHT -> "ليلي"
-        ShiftKind.MORNING -> "صباحي"
-        ShiftKind.EVENING -> "مسائي"
-        ShiftKind.OFF -> "إجازة"
+        ShiftKind.FULL_DAY -> neoLiteral("يوم كامل", "Full day")
+        ShiftKind.LONG -> neoLiteral("طويل", "Long")
+        ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
+        ShiftKind.MORNING -> neoLiteral("صباحي", "Morning")
+        ShiftKind.EVENING -> neoLiteral("مسائي", "Evening")
+        ShiftKind.OFF -> neoLiteral("إجازة", "Off")
     }
 
 @Composable
@@ -1685,14 +1689,10 @@ private fun AccountLine(
     HorizontalDivider()
 }
 
-private fun money(
-    value: Double,
-    visible: Boolean
-): String =
-    if (visible)
-        "${"%.2f".format(value)} ج"
-    else
-        "••••••"
+private fun money(value: Double, visible: Boolean): String =
+    if (!visible) "••••••"
+    else if (NeoLegacyLocale.premium) "\u2066" + String.format(java.util.Locale.US, "%,.2f", value) + "\u2069 " + neoLiteral("ج.م", "EGP")
+    else "${"%.2f".format(value)} ج"
 
 @Composable
 private fun V11PaymentDialog(
@@ -1737,7 +1737,7 @@ private fun V11PaymentDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("تسجيل مبلغ مستلم")
+            Text(neoLiteral("تسجيل مبلغ مستلم", "Record received payment"))
         },
         text = {
             Column(
@@ -1756,7 +1756,7 @@ private fun V11PaymentDialog(
                             }
                     },
                     label = {
-                        Text("المبلغ")
+                        Text(neoLiteral("المبلغ", "Amount"))
                     },
                     singleLine = true
                 )
@@ -1767,7 +1767,7 @@ private fun V11PaymentDialog(
                         date = it
                     },
                     label = {
-                        Text("تاريخ الاستلام")
+                        Text(neoLiteral("تاريخ الاستلام", "Received date"))
                     },
                     singleLine = true
                 )
@@ -1775,7 +1775,7 @@ private fun V11PaymentDialog(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    "مصدر الدخل",
+                    neoLiteral("مصدر الدخل", "Income source"),
                     fontWeight =
                         FontWeight.Bold
                 )
@@ -1804,7 +1804,7 @@ private fun V11PaymentDialog(
                     }
 
                 Text(
-                    "طريقة الدفع",
+                    neoLiteral("طريقة الدفع", "Payment method"),
                     fontWeight =
                         FontWeight.Bold
                 )
@@ -1838,7 +1838,7 @@ private fun V11PaymentDialog(
                         note = it
                     },
                     label = {
-                        Text("ملاحظة")
+                        Text(neoLiteral("ملاحظة", "Note"))
                     }
                 )
             }
@@ -1868,14 +1868,14 @@ private fun V11PaymentDialog(
                     )
                 }
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -1902,7 +1902,7 @@ private fun V11IncomeSourcesDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("مصادر الدخل")
+            Text(neoLiteral("مصادر الدخل", "Income sources"))
         },
         text = {
             Column(
@@ -1952,7 +1952,7 @@ private fun V11IncomeSourcesDialog(
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        "حذف"
+                                        neoLiteral("حذف", "Delete")
                                     )
                                 }
 
@@ -1964,7 +1964,7 @@ private fun V11IncomeSourcesDialog(
                                 ) {
                                     Icon(
                                         Icons.Default.Edit,
-                                        "تعديل"
+                                        neoLiteral("تعديل", "Edit")
                                     )
                                 }
 
@@ -1986,7 +1986,7 @@ private fun V11IncomeSourcesDialog(
                                         .fixedMonthlyAmount
                                         ?.let {
                                             Text(
-                                                "ثابت شهريا: %.2f ج"
+                                                neoLiteral("ثابت شهريا: %.2f ج", "Fixed monthly: %.2f EGP")
                                                     .format(it),
                                                 style =
                                                     MaterialTheme
@@ -2020,12 +2020,12 @@ private fun V11IncomeSourcesDialog(
                                     Icon(
                                         Icons.Default
                                             .KeyboardArrowUp,
-                                        "لأعلى"
+                                        neoLiteral("لأعلى", "Up")
                                     )
                                 }
 
                                 Text(
-                                    "ترتيب ${index + 1}",
+                                    neoLiteral("ترتيب ${index + 1}", "Order ${index + 1}"),
                                     modifier =
                                         Modifier.align(
                                             Alignment
@@ -2055,7 +2055,7 @@ private fun V11IncomeSourcesDialog(
                                     Icon(
                                         Icons.Default
                                             .KeyboardArrowDown,
-                                        "لأسفل"
+                                        neoLiteral("لأسفل", "Down")
                                     )
                                 }
                             }
@@ -2068,7 +2068,7 @@ private fun V11IncomeSourcesDialog(
                 )
 
                 Text(
-                    "إضافة مصدر دخل",
+                    neoLiteral("إضافة مصدر دخل", "Add income source"),
                     fontWeight =
                         FontWeight.Black
                 )
@@ -2079,7 +2079,7 @@ private fun V11IncomeSourcesDialog(
                         newName = it
                     },
                     label = {
-                        Text("اسم المصدر")
+                        Text(neoLiteral("اسم المصدر", "Source name"))
                     },
                     singleLine = true,
                     modifier =
@@ -2093,7 +2093,7 @@ private fun V11IncomeSourcesDialog(
                     },
                     label = {
                         Text(
-                            "راتب/دخل شهري ثابت - اختياري"
+                            neoLiteral("راتب/دخل شهري ثابت - اختياري", "Fixed monthly income - optional")
                         )
                     },
                     singleLine = true,
@@ -2132,7 +2132,7 @@ private fun V11IncomeSourcesDialog(
                     modifier =
                         Modifier.fillMaxWidth()
                 ) {
-                    Text("إضافة المصدر")
+                    Text(neoLiteral("إضافة المصدر", "Add source"))
                 }
             }
         },
@@ -2140,7 +2140,7 @@ private fun V11IncomeSourcesDialog(
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("تم")
+                Text(neoLiteral("تم", "Done"))
             }
         }
     )
@@ -2186,7 +2186,7 @@ private fun V11EditIncomeSourceDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("تعديل مصدر الدخل")
+            Text(neoLiteral("تعديل مصدر الدخل", "Edit income source"))
         },
         text = {
             Column {
@@ -2196,7 +2196,7 @@ private fun V11EditIncomeSourceDialog(
                         name = it
                     },
                     label = {
-                        Text("الاسم")
+                        Text(neoLiteral("الاسم", "Name"))
                     },
                     singleLine = true
                 )
@@ -2208,7 +2208,7 @@ private fun V11EditIncomeSourceDialog(
                     },
                     label = {
                         Text(
-                            "الدخل الشهري الثابت"
+                            neoLiteral("الدخل الشهري الثابت", "Fixed monthly income")
                         )
                     },
                     singleLine = true
@@ -2235,14 +2235,14 @@ private fun V11EditIncomeSourceDialog(
                 enabled =
                     name.isNotBlank()
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -2265,7 +2265,7 @@ private fun V11PaymentMethodsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("طرق الدفع")
+            Text(neoLiteral("طرق الدفع", "Payment methods"))
         },
         text = {
             Column(
@@ -2313,7 +2313,7 @@ private fun V11PaymentMethodsDialog(
                             ) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    "حذف"
+                                    neoLiteral("حذف", "Delete")
                                 )
                             }
 
@@ -2325,7 +2325,7 @@ private fun V11PaymentMethodsDialog(
                             ) {
                                 Icon(
                                     Icons.Default.Edit,
-                                    "تعديل"
+                                    neoLiteral("تعديل", "Edit")
                                 )
                             }
 
@@ -2346,7 +2346,7 @@ private fun V11PaymentMethodsDialog(
                                 Icon(
                                     Icons.Default
                                         .KeyboardArrowUp,
-                                    "لأعلى"
+                                    neoLiteral("لأعلى", "Up")
                                 )
                             }
 
@@ -2368,7 +2368,7 @@ private fun V11PaymentMethodsDialog(
                                 Icon(
                                     Icons.Default
                                         .KeyboardArrowDown,
-                                    "لأسفل"
+                                    neoLiteral("لأسفل", "Down")
                                 )
                             }
 
@@ -2395,7 +2395,7 @@ private fun V11PaymentMethodsDialog(
                         newName = it
                     },
                     label = {
-                        Text("طريقة دفع جديدة")
+                        Text(neoLiteral("طريقة دفع جديدة", "New payment method"))
                     },
                     singleLine = true,
                     modifier =
@@ -2420,7 +2420,7 @@ private fun V11PaymentMethodsDialog(
                     modifier =
                         Modifier.fillMaxWidth()
                 ) {
-                    Text("إضافة طريقة الدفع")
+                    Text(neoLiteral("إضافة طريقة الدفع", "Add payment method"))
                 }
             }
         },
@@ -2428,7 +2428,7 @@ private fun V11PaymentMethodsDialog(
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("تم")
+                Text(neoLiteral("تم", "Done"))
             }
         }
     )
@@ -2443,7 +2443,7 @@ private fun V11PaymentMethodsDialog(
                 editing = null
             },
             title = {
-                Text("تعديل طريقة الدفع")
+                Text(neoLiteral("تعديل طريقة الدفع", "Edit payment method"))
             },
             text = {
                 OutlinedTextField(
@@ -2452,7 +2452,7 @@ private fun V11PaymentMethodsDialog(
                         name = it
                     },
                     label = {
-                        Text("الاسم")
+                        Text(neoLiteral("الاسم", "Name"))
                     },
                     singleLine = true
                 )
@@ -2477,7 +2477,7 @@ private fun V11PaymentMethodsDialog(
                         }
                     }
                 ) {
-                    Text("حفظ")
+                    Text(neoLiteral("حفظ", "Save"))
                 }
             },
             dismissButton = {
@@ -2486,7 +2486,7 @@ private fun V11PaymentMethodsDialog(
                         editing = null
                     }
                 ) {
-                    Text("إلغاء")
+                    Text(neoLiteral("إلغاء", "Cancel"))
                 }
             }
         )
@@ -2528,7 +2528,7 @@ private fun V11ObligationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("إضافة التزام")
+            Text(neoLiteral("إضافة التزام", "Add obligation"))
         },
         text = {
             Column(
@@ -2543,7 +2543,7 @@ private fun V11ObligationDialog(
                         name = it
                     },
                     label = {
-                        Text("اسم الالتزام")
+                        Text(neoLiteral("اسم الالتزام", "Obligation name"))
                     }
                 )
 
@@ -2557,7 +2557,7 @@ private fun V11ObligationDialog(
                             }
                     },
                     label = {
-                        Text("إجمالي المبلغ")
+                        Text(neoLiteral("إجمالي المبلغ", "Total amount"))
                     }
                 )
 
@@ -2571,7 +2571,7 @@ private fun V11ObligationDialog(
                             }
                     },
                     label = {
-                        Text("قيمة القسط")
+                        Text(neoLiteral("قيمة القسط", "Installment amount"))
                     }
                 )
 
@@ -2585,7 +2585,7 @@ private fun V11ObligationDialog(
                     },
                     label = {
                         Text(
-                            "يوم الاستحقاق"
+                            neoLiteral("يوم الاستحقاق", "Due day")
                         )
                     }
                 )
@@ -2599,7 +2599,7 @@ private fun V11ObligationDialog(
                             )
                     },
                     label = {
-                        Text("عدد الأقساط")
+                        Text(neoLiteral("عدد الأقساط", "Installment count"))
                     }
                 )
 
@@ -2665,14 +2665,14 @@ private fun V11ObligationDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -2683,19 +2683,19 @@ private fun obligationLabel(
 ): String =
     when (type) {
         ObligationTypeV11.INSTALLMENT ->
-            "قسط"
+            neoLiteral("قسط", "Installment")
         ObligationTypeV11.DEBT ->
-            "دين"
+            neoLiteral("دين", "Debt")
         ObligationTypeV11.LOAN ->
-            "قرض"
+            neoLiteral("قرض", "Loan")
         ObligationTypeV11.CREDIT_CARD ->
-            "بطاقة ائتمان"
+            neoLiteral("بطاقة ائتمان", "Credit card")
         ObligationTypeV11.ASSOCIATION ->
-            "جمعية"
+            neoLiteral("جمعية", "Savings group")
         ObligationTypeV11.RECURRING_BILL ->
-            "مدفوع دوري"
+            neoLiteral("مدفوع دوري", "Recurring payment")
         ObligationTypeV11.OTHER ->
-            "أخرى"
+            neoLiteral("أخرى", "Other")
     }
 
 
@@ -2738,17 +2738,21 @@ private fun V11ObligationPaymentDialog(
             onDismiss,
         title = {
             Text(
-                "سداد ${obligation.name}"
+                neoLiteral("سداد ${obligation.name}", "Payment for ${obligation.name}")
             )
         },
         text = {
             Column {
                 Text(
-                    "المتبقي لهذا الشهر: ${
+                    neoLiteral("المتبقي لهذا الشهر: ${
                         "%.2f".format(
                             remaining
                         )
-                    } ج"
+                    } ج", "Remaining this month: ${
+                        "%.2f".format(
+                            remaining
+                        )
+                    } EGP")
                 )
 
                 Spacer(
@@ -2761,7 +2765,7 @@ private fun V11ObligationPaymentDialog(
                         amount = it
                     },
                     label = {
-                        Text("المبلغ")
+                        Text(neoLiteral("المبلغ", "Amount"))
                     },
                     singleLine = true,
                     modifier =
@@ -2777,7 +2781,7 @@ private fun V11ObligationPaymentDialog(
                     )
 
                     Text(
-                        "طريقة الدفع",
+                        neoLiteral("طريقة الدفع", "Payment method"),
                         fontWeight =
                             FontWeight.Bold
                     )
@@ -2843,7 +2847,7 @@ private fun V11ObligationPaymentDialog(
                             ?: 0.0
                     ) > 0.0
             ) {
-                Text("حفظ السداد")
+                Text(neoLiteral("حفظ السداد", "Save payment"))
             }
         },
         dismissButton = {
@@ -2851,7 +2855,7 @@ private fun V11ObligationPaymentDialog(
                 onClick =
                     onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )

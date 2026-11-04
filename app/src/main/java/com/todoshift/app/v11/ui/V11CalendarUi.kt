@@ -55,9 +55,9 @@ private fun v11Color(hex: String): Color =
 
 private fun monthName(month: Int): String =
     listOf(
-        "يناير", "فبراير", "مارس", "أبريل",
-        "مايو", "يونيو", "يوليو", "أغسطس",
-        "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+        neoLiteral("يناير", "January"), neoLiteral("فبراير", "February"), neoLiteral("مارس", "March"), neoLiteral("أبريل", "April"),
+        neoLiteral("مايو", "May"), neoLiteral("يونيو", "June"), neoLiteral("يوليو", "July"), neoLiteral("أغسطس", "August"),
+        neoLiteral("سبتمبر", "September"), neoLiteral("أكتوبر", "October"), neoLiteral("نوفمبر", "November"), neoLiteral("ديسمبر", "December")
     ).getOrElse(month - 1) { "" }
 
 @Composable
@@ -71,7 +71,12 @@ fun V11CalendarScreen(
     onActiveCalendarChange: (String) -> Unit,
     onMonthChange: (YearMonth) -> Unit,
     onDatabaseChange: (V11Database) -> Unit,
-    onUiSettingsChange: (V11UiSettings) -> Unit
+    onUiSettingsChange: (V11UiSettings) -> Unit,
+    quickAction: NeoQuickAction? = null,
+    quickActionId: Int = 0,
+    financeAuthorized: Boolean = false,
+    financeAmountsVisible: Boolean = false,
+    onOpenWorkplaces: () -> Unit = {}
 ) {
     var selectedDate by remember(initialDate) {
         mutableStateOf(initialDate)
@@ -83,6 +88,14 @@ fun V11CalendarScreen(
     var paintDates by remember { mutableStateOf(setOf<LocalDate>()) }
     var openDay by remember { mutableStateOf<LocalDate?>(null) }
     var showCalendarManager by remember { mutableStateOf(false) }
+    var quickAddOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(quickActionId) {
+        if (quickActionId > 0) when (quickAction) {
+            NeoQuickAction.ADD_SHIFT -> openDay = selectedDate
+            NeoQuickAction.TODAY -> { selectedDate = LocalDate.now(); onMonthChange(YearMonth.from(selectedDate)) }
+            else -> Unit
+        }
+    }
 
     BackHandler(enabled = openDay != null) {
         openDay = null
@@ -143,6 +156,8 @@ fun V11CalendarScreen(
                             paintMode = true
                             paletteOpen = false
                         },
+                        onAddWorkplace = if (uiSettings.experience == V11Experience.PREMIUM) ({ paletteOpen = false; onOpenWorkplaces() }) else null,
+                        onCustomTimes = if (uiSettings.experience == V11Experience.PREMIUM) ({ paletteOpen = false; openDay = selectedDate }) else null,
                         onClose = {
                             paletteOpen = false
                             selectedWorkplace = null
@@ -261,6 +276,9 @@ fun V11CalendarScreen(
                                 selectedWorkplace = null
                                 paletteOpen = false
                             }
+                        } else if (uiSettings.experience == V11Experience.PREMIUM) {
+                            if (paletteOpen) { paletteOpen = false; selectedWorkplace = null }
+                            else quickAddOpen = !quickAddOpen
                         } else {
                             paletteOpen = !paletteOpen
 
@@ -275,7 +293,7 @@ fun V11CalendarScreen(
                             Color(0xFF2E7D32)
                         else
                             MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White,
+                    contentColor = if (LocalV11NeoEnabled.current && !paintMode) MaterialTheme.colorScheme.onPrimary else Color.White,
                     modifier = Modifier
                         .padding(bottom = 0.dp)
                         .size(48.dp)
@@ -287,9 +305,9 @@ fun V11CalendarScreen(
                             Icons.Default.Add,
                         contentDescription =
                             if (paintMode)
-                                "حفظ"
+                                neoLiteral("حفظ", "Save")
                             else
-                                "إضافة",
+                                neoLiteral("إضافة", "Add"),
                         modifier = Modifier.size(25.dp)
                     )
                 }
@@ -312,7 +330,7 @@ fun V11CalendarScreen(
             ) {
                 Text(
                     activeCalendar?.name
-                        ?: "التقويم",
+                        ?: neoLiteral("التقويم", "Calendar"),
                     style =
                         MaterialTheme
                             .typography
@@ -335,11 +353,21 @@ fun V11CalendarScreen(
                             vertical = 0.dp
                         )
                 ) {
-                    Text("إدارة التقاويم")
+                    Text(neoLiteral("إدارة التقاويم", "Manage calendars"))
                 }
             }
 
-            V11AnimatedCalendarArea(
+            if (uiSettings.experience == V11Experience.PREMIUM) {
+                NeoCalendarArea(month = month, db = db, workplaces = workplaces, visibleCalendarIds = visibleCalendarIds,
+                    selectedDate = selectedDate, paintMode = paintMode, paintDates = paintDates,
+                    onSelectedDate = { date ->
+                        if (paintMode) paintDates = if (date in paintDates) paintDates - date else paintDates + date
+                        else if (date == selectedDate) openDay = date else selectedDate = date
+                    },
+                    onMonthChange = onMonthChange,
+                    onToday = { selectedDate = LocalDate.now(); onMonthChange(YearMonth.from(selectedDate)) },
+                    onOpenDay = { openDay = selectedDate }, modifier = Modifier.weight(1f))
+            } else V11AnimatedCalendarArea(
                 month = month,
                 db = db,
                 workplaces = workplaces,
@@ -389,8 +417,23 @@ fun V11CalendarScreen(
         }
     }
 
+    if (quickAddOpen) {
+        AlertDialog(onDismissRequest = { quickAddOpen = false },
+            title = { Text(neoLabel(neoLiteral("إضافة سريعة", "Quick add"), "Quick add")) },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilledTonalButton(onClick = { quickAddOpen = false; openDay = selectedDate }, modifier = Modifier.fillMaxWidth()) {
+                    Text(neoLabel(neoLiteral("شيفت أو مهمة أو موعد لليوم المختار", "Shift, task or event for selected day"), "Shift, task or event for selected day"))
+                }
+                OutlinedButton(onClick = { quickAddOpen = false; paletteOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(neoLabel(neoLiteral("رسم الشيفتات على التقويم", "Paint shifts on calendar"), "Paint shifts on calendar"))
+                }
+            } }, confirmButton = { TextButton(onClick = { quickAddOpen = false }) { Text(neoLabel(neoLiteral("إغلاق", "Close"), "Close")) } })
+    }
+
     openDay?.let { day ->
         V11DayDetailsScreen(
+            financeAuthorized = financeAuthorized,
+            financeAmountsVisible = financeAmountsVisible,
             initialDate = day,
             db = db,
             workplaces = workplaces,
@@ -416,7 +459,7 @@ fun V11CalendarScreen(
                 paletteOpen = false
             },
             title = {
-                Text("تعارض في الشيفت")
+                Text(neoLiteral("تعارض في الشيفت", "Shift conflict"))
             },
             text = {
                 Column(
@@ -426,11 +469,11 @@ fun V11CalendarScreen(
                         )
                 ) {
                     Text(
-                        "اليوم ${conflict.date} يحتوي على شيفت يتداخل زمنياً مع الشيفت الجديد."
+                        neoLiteral("اليوم ${conflict.date} يحتوي على شيفت يتداخل زمنياً مع الشيفت الجديد.", "Day ${conflict.date} has a shift overlapping the new shift.")
                     )
 
                     Text(
-                        "اختر طريقة حل التعارض. لن يتم إنشاء شيفتين متداخلين."
+                        neoLiteral("اختر طريقة حل التعارض. لن يتم إنشاء شيفتين متداخلين.", "Choose a conflict resolution. Overlapping shifts will not be created.")
                     )
 
                     conflict.analysis.options
@@ -581,26 +624,26 @@ fun V11CalendarScreen(
                                     ) {
                                         ShiftConflictActionV11
                                             .REPLACE ->
-                                            "استبدال الشيفت القديم"
+                                            neoLiteral("استبدال الشيفت القديم", "Replace existing shift")
 
                                         ShiftConflictActionV11
                                             .SPLIT_EXISTING ->
-                                            "تقسيم الشيفت القديم وحفظ الوقت المتبقي"
+                                            neoLiteral("تقسيم الشيفت القديم وحفظ الوقت المتبقي", "Split existing shift and keep remaining time")
 
                                         ShiftConflictActionV11
                                             .TRIM_EXISTING_BEFORE ->
-                                            "تقصير الشيفت القديم قبل الجديد"
+                                            neoLiteral("تقصير الشيفت القديم قبل الجديد", "Trim existing shift before the new one")
 
                                         ShiftConflictActionV11
                                             .TRIM_EXISTING_AFTER ->
-                                            "تقصير الشيفت القديم بعد الجديد"
+                                            neoLiteral("تقصير الشيفت القديم بعد الجديد", "Trim existing shift after the new one")
 
                                         ShiftConflictActionV11
                                             .ADD ->
-                                            "إضافة"
+                                            neoLiteral("إضافة", "Add")
 
                                         else ->
-                                            "الحل ${index + 1}"
+                                            neoLiteral("الحل ${index + 1}", "Option ${index + 1}")
                                     }
                                 )
                             }
@@ -622,7 +665,7 @@ fun V11CalendarScreen(
                     }
                 ) {
                     Text(
-                        "إلغاء بدون تغيير"
+                        neoLiteral("إلغاء بدون تغيير", "Cancel without changes")
                     )
                 }
             }
@@ -699,7 +742,7 @@ private fun V11CompactHeader(
             )
         ) {
             Text(
-                "إدارة التقاويم",
+                neoLiteral("إدارة التقاويم", "Manage calendars"),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -759,7 +802,7 @@ private fun V11MonthSelector(
                 )
             ) {
                 Text(
-                    "انتقل لتاريخ اليوم",
+                    neoLiteral("انتقل لتاريخ اليوم", "Go to today"),
                     fontSize = 9.sp,
                     color = if (neo) colors.primary else Color(0xFF4F709C)
                 )
@@ -960,13 +1003,13 @@ private fun V11CalendarGrid(
                 Modifier.fillMaxWidth()
         ) {
             listOf(
-                "السبت",
-                "الأحد",
-                "الاثنين",
-                "الثلاثاء",
-                "الأربعاء",
-                "الخميس",
-                "الجمعة"
+                neoLiteral("السبت", "Saturday"),
+                neoLiteral("الأحد", "Sunday"),
+                neoLiteral("الاثنين", "Monday"),
+                neoLiteral("الثلاثاء", "Tuesday"),
+                neoLiteral("الأربعاء", "Wednesday"),
+                neoLiteral("الخميس", "Thursday"),
+                neoLiteral("الجمعة", "Friday")
             ).forEach {
                 Text(
                     it,
@@ -1244,7 +1287,7 @@ private fun V11DayCell(
                                     segment.kind ==
                                     ShiftKind.OFF
                                 )
-                                    "إجازة"
+                                    neoLiteral("إجازة", "Off")
                                 else
                                     place?.name ?: "",
                                 fontSize =
@@ -1376,7 +1419,7 @@ private fun V11SelectedDayPanel(
                             Modifier.size(17.dp)
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text("إضافة شيفت")
+                    Text(neoLiteral("إضافة شيفت", "Add shift"))
                 }
 
                 Text(
@@ -1390,8 +1433,8 @@ private fun V11SelectedDayPanel(
             if (entries.isEmpty()) {
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "لا توجد شيفتات في هذا اليوم",
-                    color = Color.Gray,
+                    neoLiteral("لا توجد شيفتات في هذا اليوم", "No shifts on this day"),
+                    color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray,
                     modifier =
                         Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End
@@ -1416,7 +1459,7 @@ private fun V11SelectedDayPanel(
                                 )
                             )
                             .background(
-                                Color(0xFFF6F7F9)
+                                if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF6F7F9)
                             )
                             .padding(8.dp),
                         verticalAlignment =
@@ -1433,7 +1476,7 @@ private fun V11SelectedDayPanel(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                "حذف",
+                                neoLiteral("حذف", "Delete"),
                                 tint =
                                     Color(0xFFB3261E)
                             )
@@ -1448,7 +1491,7 @@ private fun V11SelectedDayPanel(
                                 Alignment.End
                         ) {
                             Text(
-                                V11Labels.shift(
+                                neoShiftText(
                                     segment.kind
                                 ),
                                 fontWeight =
@@ -1469,7 +1512,7 @@ private fun V11SelectedDayPanel(
                                     calendar?.name
                                 ).joinToString(" • "),
                                 fontSize = 11.sp,
-                                color = Color.Gray
+                                color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
                             )
                         }
 
@@ -1508,12 +1551,14 @@ private fun V11PaintPalette(
     selectedWorkplace: Workplace?,
     onWorkplace: (Workplace) -> Unit,
     onShiftKind: (ShiftKind) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onAddWorkplace: (() -> Unit)? = null,
+    onCustomTimes: (() -> Unit)? = null
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.surface else Color.White
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 8.dp
@@ -1521,16 +1566,17 @@ private fun V11PaintPalette(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(min = 190.dp, max = 245.dp)
+                .widthIn(min = 190.dp, max = if (LocalV11NeoEnabled.current) 280.dp else 245.dp)
+                .then(if (LocalV11NeoEnabled.current) Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()) else Modifier)
                 .padding(10.dp),
             horizontalAlignment = Alignment.End
         ) {
             if (selectedWorkplace == null) {
                 Text(
-                    "مكان العمل",
+                    neoLiteral("مكان العمل", "Workplace"),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B7280),
+                    color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280),
                     modifier = Modifier.padding(
                         horizontal = 6.dp,
                         vertical = 3.dp
@@ -1547,7 +1593,7 @@ private fun V11PaintPalette(
                 }
 
                 V11PaletteAddRow(
-                    text = "إضافة مكان"
+                    text = neoLiteral("إضافة مكان", "Add workplace"), onClick = onAddWorkplace
                 )
             } else {
                 Row(
@@ -1569,7 +1615,7 @@ private fun V11PaintPalette(
                             )
                     ) {
                         Text(
-                            "إلغاء",
+                            neoLiteral("إلغاء", "Cancel"),
                             fontSize = 10.sp
                         )
                     }
@@ -1609,7 +1655,7 @@ private fun V11PaintPalette(
                     ShiftKind.EVENING
                 ).forEach { kind ->
                     V11PaletteShiftRow(
-                        label = V11Labels.shift(kind),
+                        label = neoShiftText(kind),
                         colorHex =
                             selectedWorkplace.colorHex,
                         onClick = {
@@ -1619,7 +1665,8 @@ private fun V11PaintPalette(
                 }
 
                 V11PaletteAddRow(
-                    text = "إضافة نوع شيفت"
+                    text = if (LocalV11NeoEnabled.current) neoLabel("إدارة أوقات اليوم", "Edit day times") else neoLiteral("إضافة نوع شيفت", "Add shift type"),
+                    onClick = onCustomTimes
                 )
 
                 HorizontalDivider(
@@ -1628,7 +1675,7 @@ private fun V11PaintPalette(
                 )
 
                 V11PaletteShiftRow(
-                    label = V11Labels.shift(
+                    label = neoShiftText(
                         ShiftKind.OFF
                     ),
                     colorHex = "#ECEFF1",
@@ -1651,6 +1698,7 @@ private fun V11PaletteWorkplaceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (LocalV11NeoEnabled.current) Modifier.heightIn(min = 48.dp) else Modifier)
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(
@@ -1688,6 +1736,7 @@ private fun V11PaletteShiftRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (LocalV11NeoEnabled.current) Modifier.heightIn(min = 48.dp) else Modifier)
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(
@@ -1719,11 +1768,13 @@ private fun V11PaletteShiftRow(
 
 @Composable
 private fun V11PaletteAddRow(
-    text: String
+    text: String,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.heightIn(min = 48.dp).clickable(onClick = onClick) else Modifier)
             .padding(
                 horizontal = 7.dp,
                 vertical = 6.dp
@@ -1747,7 +1798,7 @@ private fun V11PaletteAddRow(
                 Icons.Default.Add,
                 contentDescription = null,
                 modifier = Modifier.size(17.dp),
-                tint = Color(0xFF4B5563)
+                tint = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF4B5563)
             )
         }
 
@@ -1756,7 +1807,7 @@ private fun V11PaletteAddRow(
         Text(
             text,
             fontSize = 12.sp,
-            color = Color(0xFF4B5563)
+            color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF4B5563)
         )
     }
 }
@@ -1771,7 +1822,7 @@ private fun V11PaintStatusBar(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(13.dp),
-        color = Color.White,
+        color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.surface else Color.White,
         tonalElevation = 1.dp
     ) {
         Row(
@@ -1790,7 +1841,7 @@ private fun V11PaintStatusBar(
                 )
             ) {
                 Text(
-                    "إلغاء",
+                    neoLiteral("إلغاء", "Cancel"),
                     fontSize = 11.sp
                 )
             }
@@ -1804,7 +1855,7 @@ private fun V11PaintStatusBar(
                     buildString {
                         append(
                             kind?.let {
-                                V11Labels.shift(it)
+                                neoShiftText(it)
                             } ?: ""
                         )
 
@@ -1822,11 +1873,11 @@ private fun V11PaintStatusBar(
 
                 Text(
                     if (count == 0)
-                        "حدد الأيام ثم اضغط ✓"
+                        neoLiteral("حدد الأيام ثم اضغط ✓", "Select days, then tap ✓")
                     else
-                        "تم تحديد $count يوم",
+                        neoLiteral("تم تحديد $count يوم", "$count days selected"),
                     fontSize = 10.sp,
-                    color = Color(0xFF6B7280)
+                    color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280)
                 )
             }
 
@@ -1907,12 +1958,12 @@ private fun V11CalendarManagerSheet(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        "إغلاق"
+                        neoLiteral("إغلاق", "Close")
                     )
                 }
 
                 Text(
-                    "إدارة التقاويم",
+                    neoLiteral("إدارة التقاويم", "Manage calendars"),
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Black
                 )
@@ -1948,7 +1999,7 @@ private fun V11CalendarManagerSheet(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                "حذف"
+                                neoLiteral("حذف", "Delete")
                             )
                         }
 
@@ -1968,7 +2019,7 @@ private fun V11CalendarManagerSheet(
                                     Icons.Default.Visibility
                                 else
                                     Icons.Default.VisibilityOff,
-                                "إظهار أو إخفاء"
+                                neoLiteral("إظهار أو إخفاء", "Show or hide")
                             )
                         }
 
@@ -2003,9 +2054,9 @@ private fun V11CalendarManagerSheet(
                                         calendar.id ==
                                         activeCalendarId
                                     )
-                                        "✓ التقويم النشط"
+                                        neoLiteral("✓ التقويم النشط", "✓ Active calendar")
                                     else
-                                        "تعيين كنشط",
+                                        neoLiteral("تعيين كنشط", "Set as active"),
                                     fontSize = 10.sp,
                                     color =
                                         if (
@@ -2041,7 +2092,7 @@ private fun V11CalendarManagerSheet(
             Spacer(Modifier.height(14.dp))
 
             Text(
-                "تقويم جديد",
+                neoLiteral("تقويم جديد", "New calendar"),
                 fontWeight = FontWeight.Bold
             )
 
@@ -2053,7 +2104,7 @@ private fun V11CalendarManagerSheet(
                     newName = it
                 },
                 label = {
-                    Text("اسم التقويم")
+                    Text(neoLiteral("اسم التقويم", "Calendar name"))
                 },
                 modifier =
                     Modifier.fillMaxWidth(),
@@ -2122,7 +2173,7 @@ private fun V11CalendarManagerSheet(
                     null
                 )
                 Spacer(Modifier.width(5.dp))
-                Text("إنشاء التقويم")
+                Text(neoLiteral("إنشاء التقويم", "Create calendar"))
             }
         }
     }

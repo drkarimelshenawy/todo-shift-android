@@ -71,11 +71,11 @@ fun V11WorkplacesScreen(
                 title = {
                     Column {
                         Text(
-                            "أماكن العمل",
+                            neoLiteral("أماكن العمل", "Workplaces"),
                             fontWeight = FontWeight.Black
                         )
                         Text(
-                            "${workplaces.size} أماكن",
+                            neoLiteral("${workplaces.size} أماكن", "${workplaces.size} workplaces"),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -84,7 +84,7 @@ fun V11WorkplacesScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.Default.ArrowBack,
-                            contentDescription = "رجوع"
+                            contentDescription = neoLiteral("رجوع", "Back")
                         )
                     }
                 }
@@ -98,7 +98,7 @@ fun V11WorkplacesScreen(
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = "إضافة مكان عمل"
+                    contentDescription = neoLiteral("إضافة مكان عمل", "Add workplace")
                 )
             }
         }
@@ -116,7 +116,7 @@ fun V11WorkplacesScreen(
                 )
         ) {
             Text(
-                "لون المكان هو اللون المستخدم داخل التقويم. الأسعار مستقلة لكل نوع شيفت.",
+                neoLiteral("لون المكان هو اللون المستخدم داخل التقويم. الأسعار مستقلة لكل نوع شيفت.", "Workplace color is used in the calendar. Rates are independent for each shift type."),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(
                     vertical = 8.dp
@@ -170,7 +170,7 @@ fun V11WorkplacesScreen(
                             )
 
                             Text(
-                                "24س ${workplace.fullDayRate.cleanMoney()}  •  " +
+                                neoLiteral("24س ${workplace.fullDayRate.cleanMoney()}  •  ", "24h ${workplace.fullDayRate.cleanMoney()}  •  ") +
                                     "Long ${workplace.longRate.cleanMoney()}  •  " +
                                     "Night ${workplace.nightRate.cleanMoney()}",
                                 style = MaterialTheme.typography.bodySmall
@@ -190,7 +190,7 @@ fun V11WorkplacesScreen(
                         ) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "تعديل"
+                                contentDescription = neoLiteral("تعديل", "Edit")
                             )
                         }
 
@@ -201,7 +201,7 @@ fun V11WorkplacesScreen(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "حذف"
+                                contentDescription = neoLiteral("حذف", "Delete")
                             )
                         }
                     }
@@ -221,7 +221,7 @@ fun V11WorkplacesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "لا توجد أماكن عمل",
+                            neoLiteral("لا توجد أماكن عمل", "No workplaces yet"),
                             fontWeight = FontWeight.Bold
                         )
 
@@ -230,7 +230,7 @@ fun V11WorkplacesScreen(
                         )
 
                         Text(
-                            "اضغط + لإضافة أول مكان عمل.",
+                            neoLiteral("اضغط + لإضافة أول مكان عمل.", "Tap + to add your first workplace."),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -277,12 +277,12 @@ fun V11WorkplacesScreen(
                 deleting = null
             },
             title = {
-                Text("حذف مكان العمل؟")
+                Text(neoLiteral("حذف مكان العمل؟", "Delete workplace?"))
             },
             text = {
                 Text(
-                    "سيتم حذف «${workplace.name}» من قائمة أماكن العمل. " +
-                        "لن نحذف الشيفتات القديمة تلقائيًا."
+                    neoLiteral("سيتم حذف «${workplace.name}» من قائمة أماكن العمل. ", "Remove «${workplace.name}» from workplaces. ") +
+                        neoLiteral("لن نحذف الشيفتات القديمة تلقائيًا.", "Existing shifts will not be deleted automatically.")
                 )
             },
             confirmButton = {
@@ -296,7 +296,7 @@ fun V11WorkplacesScreen(
                         deleting = null
                     }
                 ) {
-                    Text("حذف")
+                    Text(neoLiteral("حذف", "Delete"))
                 }
             },
             dismissButton = {
@@ -305,7 +305,7 @@ fun V11WorkplacesScreen(
                         deleting = null
                     }
                 ) {
-                    Text("إلغاء")
+                    Text(neoLiteral("إلغاء", "Cancel"))
                 }
             }
         )
@@ -363,9 +363,9 @@ private fun V11WorkplaceEditor(
         title = {
             Text(
                 if (initial == null)
-                    "إضافة مكان عمل"
+                    neoLiteral("إضافة مكان عمل", "Add workplace")
                 else
-                    "تعديل مكان العمل"
+                    neoLiteral("تعديل مكان العمل", "Edit workplace")
             )
         },
         text = {
@@ -382,7 +382,7 @@ private fun V11WorkplaceEditor(
                         name = it
                     },
                     label = {
-                        Text("اسم مكان العمل")
+                        Text(neoLiteral("اسم مكان العمل", "Workplace name"))
                     },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -393,7 +393,7 @@ private fun V11WorkplaceEditor(
                 )
 
                 Text(
-                    "لون المكان",
+                    neoLiteral("لون المكان", "Workplace color"),
                     fontWeight = FontWeight.Bold
                 )
 
@@ -452,7 +452,7 @@ private fun V11WorkplaceEditor(
                 )
 
                 Text(
-                    "أسعار الشيفت",
+                    neoLiteral("أسعار الشيفت", "Shift rates"),
                     fontWeight = FontWeight.Bold
                 )
 
@@ -461,7 +461,7 @@ private fun V11WorkplaceEditor(
                 )
 
                 RateField(
-                    label = "24 ساعة",
+                    label = neoLiteral("24 ساعة", "24 hours"),
                     value = fullDay,
                     onValueChange = {
                         fullDay = it
@@ -525,14 +525,14 @@ private fun V11WorkplaceEditor(
                     )
                 }
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -560,7 +560,7 @@ private fun RateField(
             Text(label)
         },
         suffix = {
-            Text("ج")
+            Text(neoLiteral("ج", "EGP"))
         },
         singleLine = true,
         modifier = Modifier

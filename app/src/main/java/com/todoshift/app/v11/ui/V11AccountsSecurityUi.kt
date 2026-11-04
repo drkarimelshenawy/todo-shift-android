@@ -49,7 +49,7 @@ fun V11AccountsUnlockScreen(
 
         if (activity == null) {
             error =
-                "تعذر تشغيل البصمة على هذه الشاشة"
+                neoLiteral("تعذر تشغيل البصمة على هذه الشاشة", "Cannot start biometrics on this screen")
             return
         }
 
@@ -71,7 +71,7 @@ fun V11AccountsUnlockScreen(
                 .BIOMETRIC_SUCCESS
         ) {
             error =
-                "البصمة أو قفل الجهاز غير متاح"
+                neoLiteral("البصمة أو قفل الجهاز غير متاح", "Biometrics or device lock unavailable")
             return
         }
 
@@ -138,10 +138,10 @@ fun V11AccountsUnlockScreen(
                 .PromptInfo
                 .Builder()
                 .setTitle(
-                    "فتح الحسابات"
+                    neoLiteral("فتح الحسابات", "Unlock finances")
                 )
                 .setSubtitle(
-                    "استخدم البصمة أو قفل الجهاز"
+                    neoLiteral("استخدم البصمة أو قفل الجهاز", "Use biometrics or device lock")
                 )
                 .setAllowedAuthenticators(
                     allowed
@@ -189,7 +189,7 @@ fun V11AccountsUnlockScreen(
                 )
 
                 Text(
-                    "الحسابات محمية",
+                    neoLiteral("الحسابات محمية", "Finances are protected"),
                     style =
                         MaterialTheme
                             .typography
@@ -218,7 +218,7 @@ fun V11AccountsUnlockScreen(
                             },
                             label = {
                                 Text(
-                                    "الرقم السري"
+                                    neoLiteral("الرقم السري", "PIN")
                                 )
                             },
                             singleLine = true,
@@ -254,20 +254,20 @@ fun V11AccountsUnlockScreen(
                                     onUnlocked()
                                 } else {
                                     error =
-                                        "الرقم السري غير صحيح"
+                                        neoLiteral("الرقم السري غير صحيح", "Incorrect PIN")
                                 }
                             },
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                         ) {
-                            Text("فتح")
+                            Text(neoLiteral("فتح", "Open"))
                         }
                     }
 
                     V11LockMode.PATTERN -> {
                         Text(
-                            "ارسم نمط الفتح",
+                            neoLiteral("ارسم نمط الفتح", "Draw unlock pattern"),
                             fontWeight =
                                 FontWeight.Bold
                         )
@@ -297,7 +297,7 @@ fun V11AccountsUnlockScreen(
                                     onUnlocked()
                                 } else {
                                     error =
-                                        "النمط غير صحيح"
+                                        neoLiteral("النمط غير صحيح", "Incorrect pattern")
                                 }
                             }
                         )
@@ -315,7 +315,7 @@ fun V11AccountsUnlockScreen(
                             }
                         } else {
                             Text(
-                                "استخدم البصمة لفتح الحسابات",
+                                neoLiteral("استخدم البصمة لفتح الحسابات", "Use biometrics to unlock finances"),
                                 style =
                                     MaterialTheme
                                         .typography
@@ -348,7 +348,7 @@ fun V11AccountsUnlockScreen(
                         )
 
                         Text(
-                            "أو",
+                            neoLiteral("أو", "or"),
                             style =
                                 MaterialTheme
                                     .typography
@@ -389,7 +389,7 @@ fun V11AccountsUnlockScreen(
                         )
 
                         Text(
-                            "فتح بالبصمة"
+                            neoLiteral("فتح بالبصمة", "Unlock with biometrics")
                         )
                     }
                 }
@@ -513,10 +513,10 @@ private fun V11BiometricVerificationEffect(
                 .PromptInfo
                 .Builder()
                 .setTitle(
-                    "تأكيد التعديل المالي"
+                    neoLiteral("تأكيد التعديل المالي", "Confirm financial change")
                 )
                 .setSubtitle(
-                    "استخدم البصمة أو قفل الجهاز"
+                    neoLiteral("استخدم البصمة أو قفل الجهاز", "Use biometrics or device lock")
                 )
                 .setAllowedAuthenticators(
                     allowed
@@ -561,7 +561,7 @@ fun V11FinancialVerificationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("تأكيد التعديل")
+            Text(neoLiteral("تأكيد التعديل", "Confirm change"))
         },
         text = {
             Column(
@@ -575,7 +575,7 @@ fun V11FinancialVerificationDialog(
                     Alignment.CenterHorizontally
             ) {
                 Text(
-                    "تحقق من هويتك قبل حفظ التعديل المالي.",
+                    neoLiteral("تحقق من هويتك قبل حفظ التعديل المالي.", "Verify your identity before saving a financial change."),
                     style =
                         MaterialTheme.typography
                             .bodyMedium
@@ -620,7 +620,7 @@ fun V11FinancialVerificationDialog(
                                 onVerified()
                             } else {
                                 errorText =
-                                    "PIN غير صحيح"
+                                    neoLiteral("PIN غير صحيح", "Incorrect PIN")
                             }
                         },
                         enabled =
@@ -628,13 +628,13 @@ fun V11FinancialVerificationDialog(
                         modifier =
                             Modifier.fillMaxWidth()
                     ) {
-                        Text("تحقق وحفظ")
+                        Text(neoLiteral("تحقق وحفظ", "Verify and save"))
                     }
                 }
 
                 if (hasPattern) {
                     Text(
-                        "ارسم نمط الحماية",
+                        neoLiteral("ارسم نمط الحماية", "Draw security pattern"),
                         fontWeight =
                             FontWeight.Bold
                     )
@@ -661,7 +661,7 @@ fun V11FinancialVerificationDialog(
                                     onVerified()
                                 } else {
                                     errorText =
-                                        "النمط غير صحيح"
+                                        neoLiteral("النمط غير صحيح", "Incorrect pattern")
                                     patternGeneration++
                                 }
                             }
@@ -691,7 +691,7 @@ fun V11FinancialVerificationDialog(
                                     Modifier.weight(1f)
                             )
                             Text(
-                                "  أو  ",
+                                neoLiteral("  أو  ", "  or  "),
                                 style =
                                     MaterialTheme
                                         .typography
@@ -719,7 +719,7 @@ fun V11FinancialVerificationDialog(
                         Spacer(
                             Modifier.width(6.dp)
                         )
-                        Text("التحقق بالبصمة")
+                        Text(neoLiteral("التحقق بالبصمة", "Biometric authentication"))
                     }
                 }
 
@@ -729,7 +729,7 @@ fun V11FinancialVerificationDialog(
                     !settings.biometricEnabled
                 ) {
                     Text(
-                        "لا توجد وسيلة تحقق مفعلة.",
+                        neoLiteral("لا توجد وسيلة تحقق مفعلة.", "No authentication method is enabled."),
                         color =
                             MaterialTheme.colorScheme
                                 .error
@@ -756,7 +756,7 @@ fun V11FinancialVerificationDialog(
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -770,7 +770,7 @@ fun V11FinancialVerificationDialog(
                     onVerified()
                 } else {
                     errorText =
-                        "تعذر التحقق بالبصمة"
+                        neoLiteral("تعذر التحقق بالبصمة", "Biometric authentication failed")
                 }
             }
         )

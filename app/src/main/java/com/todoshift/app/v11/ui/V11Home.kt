@@ -5,6 +5,8 @@ import com.todoshift.app.widget.ToDoShiftWidget
 import androidx.compose.foundation.layout.*
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
@@ -19,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -233,10 +236,23 @@ fun V11Home(
         )
     }
 
+    val neoStore = remember { NeoAppearanceStore(context.applicationContext) }
+    var neoAppearance by remember { mutableStateOf(neoStore.load()) }
+    var quickTask by remember { mutableStateOf(false) }
+    var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
+    var calendarActionId by remember { mutableIntStateOf(0) }
+
+    val contentAlpha = remember { androidx.compose.animation.core.Animatable(1f) }
     var tab by remember(initialTab) {
         mutableIntStateOf(initialTab)
     }
 
+    LaunchedEffect(tab, uiSettings.experience, neoAppearance.motion, neoAppearance.reduceMotion, neoAppearance.palette, neoAppearance.brightness, neoAppearance.accentHex) {
+        if (uiSettings.experience == V11Experience.PREMIUM && neoAppearance.motionMillis > 0) {
+            contentAlpha.snapTo(0.86f)
+            contentAlpha.animateTo(1f, androidx.compose.animation.core.tween(neoAppearance.motionMillis))
+        } else contentAlpha.snapTo(1f)
+    }
     var showWorkplaces by remember {
         mutableStateOf(false)
     }
@@ -281,6 +297,8 @@ fun V11Home(
     BackHandler(
         enabled = !showWorkplaces && tab != 0
     ) {
+        quickTask = false
+        calendarAction = null
         tab = 0
     }
 
@@ -307,6 +325,11 @@ fun V11Home(
             }
         }
 
+    NeoEnvironment(
+        appearance = neoAppearance,
+        enabled = uiSettings.experience == V11Experience.PREMIUM,
+        onChange = { value -> neoAppearance = value; neoStore.save(value) }
+    ) {
     V11AppThemeProvider(
         theme = uiSettings.appTheme,
         experience = uiSettings.experience,
@@ -322,7 +345,14 @@ fun V11Home(
             WindowInsets(0, 0, 0, 0),
         topBar = {
             V11GlobalHeader(
-                title = sectionTitle,
+                title = if (uiSettings.experience == V11Experience.PREMIUM) when {
+                    showWorkplaces -> neoLabel("أماكن العمل", "Workplaces")
+                    tab == 0 -> neoLabel("التقويم", "Calendar")
+                    tab == 1 -> neoLabel("جداولي", "Shifts")
+                    tab == 2 -> neoLabel("الحسابات", "Finance")
+                    tab == 3 -> neoLabel("الإعدادات", "Settings")
+                    else -> neoLabel("المهام", "Tasks")
+                } else sectionTitle,
                 showMoneyAction =
                     tab == 2 &&
                     !showWorkplaces &&
@@ -337,11 +367,15 @@ fun V11Home(
             if (uiSettings.experience == V11Experience.PREMIUM) {
                 V11PremiumBottomBar(selectedTab = tab, onSelectTab = { destination ->
                     showWorkplaces = false
+                    quickTask = false
+                    calendarAction = null
                     tab = destination
                 })
             } else {
                 V11HeroBottomBar(selectedTab = tab, onSelectTab = { destination ->
                     showWorkplaces = false
+                    quickTask = false
+                    calendarAction = null
                     tab = destination
                 })
             }
@@ -352,6 +386,8 @@ fun V11Home(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .then(if (uiSettings.experience == V11Experience.PREMIUM)
+                    Modifier.graphicsLayer { alpha = contentAlpha.value } else Modifier)
         ) {
             if (showWorkplaces) {
                 V11WorkplacesScreen(
@@ -383,14 +419,18 @@ fun V11Home(
                 0 ->
                     Column(modifier = Modifier.fillMaxSize()) {
                         if (uiSettings.experience == V11Experience.PREMIUM) {
-                            V11PremiumOverview(
-                                calendarCount = db.calendars.size,
-                                taskCount = db.tasks.size
-                            )
-                            V11PremiumQuickActions(onNavigate = { tab = it })
+                            NeoDashboard(db = db, workplaces = oldData.workplaces, onQuickAction = { action ->
+                                if (action == NeoQuickAction.ADD_TASK) { calendarAction = null; quickTask = true; tab = 4 }
+                                else { calendarAction = action; calendarActionId++ }
+                            })
                         }
                         Box(modifier = Modifier.weight(1f)) {
                             V11CalendarScreen(
+                        onOpenWorkplaces = { showWorkplaces = true },
+                        financeAuthorized = accountsUnlocked,
+                        financeAmountsVisible = moneyVisible,
+                        quickAction = calendarAction,
+                        quickActionId = calendarActionId,
                         month = month,
                         initialDate = launchDate,
                         db = db,
@@ -419,6 +459,9 @@ fun V11Home(
 
                 1 ->
                     V11SchedulesScreen(
+                        financeAuthorized = accountsUnlocked,
+                        financeAmountsVisible = moneyVisible,
+                        onMonthChange = { month = it },
                         month = month,
                         db = db,
                         workplaces =
@@ -524,7 +567,7 @@ fun V11Home(
                     V11TasksScreen(
                         db = db,
                         workplaces = oldData.workplaces,
-                        initialAction = initialTaskAction,
+                        initialAction = if (quickTask) "add" else initialTaskAction,
                         initialTaskId = initialTaskId,
                         onDatabaseChange = {
                             saveDb(it)
@@ -533,6 +576,9 @@ fun V11Home(
 
                 else ->
                     V11CalendarScreen(
+                        onOpenWorkplaces = { showWorkplaces = true },
+                        financeAuthorized = accountsUnlocked,
+                        financeAmountsVisible = moneyVisible,
                         month = month,
                         initialDate = launchDate,
                         db = db,
@@ -564,6 +610,7 @@ fun V11Home(
 }
 }
 
+}
 
 @Composable
 private fun V11HeroBottomBar(
@@ -586,7 +633,7 @@ private fun V11HeroBottomBar(
         ) {
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = "جداولي",
+                label = neoLiteral("جداولي", "Shifts"),
                 selected = selectedTab == 1,
                 onClick = { onSelectTab(1) },
                 icon = {
@@ -599,7 +646,7 @@ private fun V11HeroBottomBar(
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = "المهام",
+                label = neoLiteral("المهام", "Tasks"),
                 selected = selectedTab == 4,
                 onClick = { onSelectTab(4) },
                 icon = {
@@ -618,7 +665,7 @@ private fun V11HeroBottomBar(
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = "الحسابات",
+                label = neoLiteral("الحسابات", "Finance"),
                 selected = selectedTab == 2,
                 onClick = { onSelectTab(2) },
                 icon = {
@@ -641,7 +688,7 @@ private fun V11HeroBottomBar(
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = "الإعدادات",
+                label = neoLiteral("الإعدادات", "Settings"),
                 selected = selectedTab == 3,
                 onClick = { onSelectTab(3) },
                 icon = {
@@ -743,7 +790,7 @@ private fun V11CalendarHeroDestination(
                 ) {
                     Icon(
                         Icons.Default.CalendarMonth,
-                        contentDescription = "التقويم",
+                        contentDescription = neoLiteral("التقويم", "Calendar"),
                         modifier = Modifier.size(28.dp),
                         tint =
                             if (selected)
@@ -758,7 +805,7 @@ private fun V11CalendarHeroDestination(
             Spacer(Modifier.height(2.dp))
 
             Text(
-                "التقويم",
+                neoLiteral("التقويم", "Calendar"),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Black,
@@ -786,7 +833,7 @@ private fun V11GlobalHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .then(if (LocalV11NeoEnabled.current) Modifier.heightIn(min = 64.dp) else Modifier.height(64.dp))
                 .padding(
                     horizontal = 18.dp
                 ),
@@ -846,9 +893,9 @@ private fun V11GlobalHeader(
                                 Icons.Default.VisibilityOff,
                         contentDescription =
                             if (moneyVisible)
-                                "إخفاء المبالغ"
+                                neoLiteral("إخفاء المبالغ", "Hide amounts")
                             else
-                                "إظهار المبالغ"
+                                neoLiteral("إظهار المبالغ", "Show amounts")
                     )
                 }
             }
@@ -859,26 +906,30 @@ private fun V11GlobalHeader(
 
 @Composable
 private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
+    val p = LocalNeoAppearance.current
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shadowElevation = if (p.glow) 4.dp else 0.dp) {
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = Color.Transparent,
         tonalElevation = 0.dp
     ) {
+        val outlined = p.iconStyle == NeoIconStyle.OUTLINED
         listOf(
-            Triple(1, stringResource(R.string.premium_nav_schedules), Icons.Default.DateRange),
-            Triple(4, stringResource(R.string.premium_nav_tasks), Icons.Default.CheckCircle),
-            Triple(0, stringResource(R.string.premium_nav_calendar), Icons.Default.CalendarMonth),
-            Triple(2, stringResource(R.string.premium_nav_finance), Icons.Default.Payments),
-            Triple(3, stringResource(R.string.premium_nav_settings), Icons.Default.Settings)
+            Triple(1, neoLabel(neoLiteral("جداولي", "Shifts"), "Shifts"), if (outlined) Icons.Outlined.DateRange else Icons.Rounded.DateRange),
+            Triple(4, neoLabel(neoLiteral("المهام", "Tasks"), "Tasks"), if (outlined) Icons.Outlined.CheckCircle else Icons.Rounded.CheckCircle),
+            Triple(0, neoLabel(neoLiteral("التقويم", "Calendar"), "Calendar"), if (outlined) Icons.Outlined.CalendarMonth else Icons.Rounded.CalendarMonth),
+            Triple(2, neoLabel(neoLiteral("الحسابات", "Finance"), "Finance"), if (outlined) Icons.Outlined.Payments else Icons.Rounded.Payments),
+            Triple(3, neoLabel(neoLiteral("الإعدادات", "Settings"), "Settings"), if (outlined) Icons.Outlined.Settings else Icons.Rounded.Settings)
         ).forEach { (index, label, icon) ->
             NavigationBarItem(
-                selected = selectedTab == index,
-                onClick = { onSelectTab(index) },
-                icon = { Icon(icon, contentDescription = label) },
-                label = { Text(label, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) },
+                selected = selectedTab == index, onClick = { onSelectTab(index) },
+                icon = { Icon(icon, contentDescription = null) },
+                label = { Text(label, style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) },
                 alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
                     indicatorColor = MaterialTheme.colorScheme.primaryContainer,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -886,87 +937,5 @@ private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
             )
         }
     }
-}
-
-@Composable
-private fun V11PremiumQuickActions(onNavigate: (Int) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        listOf(
-            Triple(1, stringResource(R.string.premium_nav_schedules), Icons.Default.DateRange),
-            Triple(4, stringResource(R.string.premium_nav_tasks), Icons.Default.CheckCircle),
-            Triple(3, stringResource(R.string.premium_nav_settings), Icons.Default.Settings)
-        ).forEach { (destination, label, symbol) ->
-            FilledTonalButton(
-                onClick = { onNavigate(destination) },
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
-            ) {
-                Icon(symbol, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(label, maxLines = 1, style = MaterialTheme.typography.labelSmall)
-            }
-        }
-    }
-}
-
-
-/** RC9 Premium-only overview; uses live DB counts, never modifies stored records. */
-@Composable
-private fun V11PremiumOverview(calendarCount: Int, taskCount: Int) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            var expanded by rememberSaveable { mutableStateOf(true) }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.premium_overview_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                TextButton(onClick = { expanded = !expanded }) {
-                    Text(stringResource(if (expanded) R.string.premium_overview_collapse else R.string.premium_overview_expand))
-                }
-            }
-            if (expanded) {
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                V11PremiumMetric(
-                    label = stringResource(R.string.premium_overview_calendars),
-                    value = calendarCount,
-                    modifier = Modifier.weight(1f)
-                )
-                V11PremiumMetric(
-                    label = stringResource(R.string.premium_overview_tasks),
-                    value = taskCount,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            }
-        }
-    }
-}
-
-@Composable
-private fun V11PremiumMetric(label: String, value: Int, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        Text(
-            text = value.toString(),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }

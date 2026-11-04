@@ -110,11 +110,17 @@ fun V11TasksScreen(
         }
     }
 
+    val neo = LocalV11NeoEnabled.current
+    var searchQuery by remember { mutableStateOf("") }
+    var priorityFilter by remember { mutableStateOf<TaskPriorityV11?>(null) }
+    var categoryFilter by remember { mutableStateOf<String?>(null) }
     val today = LocalDate.now().toString()
 
-    val filteredTasks = remember(db.tasks, filter, today) {
+    val filteredTasks = remember(db.tasks, filter, today, searchQuery, priorityFilter, categoryFilter, neo) {
         db.tasks
             .filter { task ->
+                (!neo || ((searchQuery.isBlank() || task.title.contains(searchQuery, ignoreCase = true) || task.details.contains(searchQuery, ignoreCase = true)) &&
+                    (priorityFilter == null || task.priority == priorityFilter) && (categoryFilter == null || task.calendarId == categoryFilter))) &&
                 when (filter) {
                     TaskFilterV11.TODAY ->
                         task.date == today &&
@@ -154,6 +160,13 @@ fun V11TasksScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+            if (neo) {
+                NeoTaskSearch(searchQuery, { searchQuery = it }, priorityFilter, { priorityFilter = it }, categoryFilter, { categoryFilter = it }, db)
+                val complete = db.tasks.count { it.status == TaskStatusV11.COMPLETED }
+                if (db.tasks.isNotEmpty()) {
+                    LinearProgressIndicator(progress = { complete.toFloat() / db.tasks.size }, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp))
+                }
+            }
             TaskSummaryV11(
                 tasks = db.tasks,
                 today = today
@@ -171,23 +184,30 @@ fun V11TasksScreen(
                         .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
+                    if (neo) {
+                        NeoEmptyState(
+                            neoLabel("لا توجد مهام مطابقة", "No matching tasks"),
+                            neoLabel("غيّر الفلاتر أو استخدم زر + لإضافة مهمة", "Change filters or use + to add a task")
+                        )
+                    } else {
                     Text(
                         text = when (filter) {
                             TaskFilterV11.TODAY ->
-                                "لا توجد مهام لليوم"
+                                neoLiteral("لا توجد مهام لليوم", "No tasks for today")
                             TaskFilterV11.UPCOMING ->
-                                "لا توجد مهام قادمة"
+                                neoLiteral("لا توجد مهام قادمة", "No upcoming tasks")
                             TaskFilterV11.OVERDUE ->
-                                "لا توجد مهام متأخرة"
+                                neoLiteral("لا توجد مهام متأخرة", "No overdue tasks")
                             TaskFilterV11.COMPLETED ->
-                                "لا توجد مهام مكتملة"
+                                neoLiteral("لا توجد مهام مكتملة", "No completed tasks")
                             TaskFilterV11.ALL ->
-                                "لا توجد مهام بعد"
+                                neoLiteral("لا توجد مهام بعد", "No tasks yet")
                         },
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
                     )
+                    }
                 }
             } else {
                 LazyColumn(
@@ -289,7 +309,7 @@ fun V11TasksScreen(
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = "إضافة مهمة"
+                contentDescription = neoLiteral("إضافة مهمة", "Add task")
             )
         }
     }
@@ -372,19 +392,19 @@ private fun TaskSummaryV11(
         TaskStatCardV11(
             modifier = Modifier.weight(1f),
             value = dueToday,
-            label = "اليوم"
+            label = neoLiteral("اليوم", "Today")
         )
 
         TaskStatCardV11(
             modifier = Modifier.weight(1f),
             value = overdue,
-            label = "متأخرة"
+            label = neoLiteral("متأخرة", "Overdue")
         )
 
         TaskStatCardV11(
             modifier = Modifier.weight(1f),
             value = completed,
-            label = "مكتملة"
+            label = neoLiteral("مكتملة", "Completed")
         )
     }
 }
@@ -445,11 +465,11 @@ private fun TaskFiltersV11(
                 label = {
                     Text(
                         when (filter) {
-                            TaskFilterV11.TODAY -> "اليوم"
-                            TaskFilterV11.UPCOMING -> "القادمة"
-                            TaskFilterV11.OVERDUE -> "المتأخرة"
-                            TaskFilterV11.COMPLETED -> "المكتملة"
-                            TaskFilterV11.ALL -> "الكل"
+                            TaskFilterV11.TODAY -> neoLiteral("اليوم", "Today")
+                            TaskFilterV11.UPCOMING -> neoLiteral("القادمة", "Upcoming")
+                            TaskFilterV11.OVERDUE -> neoLiteral("المتأخرة", "Overdue")
+                            TaskFilterV11.COMPLETED -> neoLiteral("المكتملة", "Completed")
+                            TaskFilterV11.ALL -> neoLiteral("الكل", "All")
                         }
                     )
                 }
@@ -483,9 +503,9 @@ private fun TaskCardV11(
                         Icons.Default.CheckCircle
                     else
                         Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = "تغيير حالة المهمة",
+                contentDescription = neoLiteral("تغيير حالة المهمة", "Toggle task completion"),
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(if (LocalV11NeoEnabled.current) 48.dp else 28.dp)
                     .clickable {
                         onToggleComplete()
                     },
@@ -505,6 +525,10 @@ private fun TaskCardV11(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
+                if (LocalV11NeoEnabled.current) {
+                    Text(neoPriorityLabel(task.priority), style = MaterialTheme.typography.labelSmall,
+                        color = if (task.priority in listOf(TaskPriorityV11.HIGH, TaskPriorityV11.URGENT)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                }
                 Text(
                     text = task.title,
                     fontWeight = FontWeight.Bold,
@@ -540,13 +564,13 @@ private fun TaskCardV11(
                         append(
                             when (task.priority) {
                                 TaskPriorityV11.LOW ->
-                                    "منخفضة"
+                                    neoLiteral("منخفضة", "Low")
                                 TaskPriorityV11.NORMAL ->
-                                    "عادية"
+                                    neoLiteral("عادية", "Normal")
                                 TaskPriorityV11.HIGH ->
-                                    "عالية"
+                                    neoLiteral("عالية", "High")
                                 TaskPriorityV11.URGENT ->
-                                    "عاجلة"
+                                    neoLiteral("عاجلة", "Urgent")
                             }
                         )
 
@@ -554,7 +578,7 @@ private fun TaskCardV11(
                             task.repeat !=
                             TaskRepeatV11.NONE
                         ) {
-                            append(" • متكررة")
+                            append(neoLiteral(" • متكررة", " • recurring"))
                         }
                     },
                     style =
@@ -569,7 +593,7 @@ private fun TaskCardV11(
             ) {
                 Icon(
                     Icons.Default.Edit,
-                    contentDescription = "تعديل"
+                    contentDescription = neoLiteral("تعديل", "Edit")
                 )
             }
 
@@ -578,7 +602,7 @@ private fun TaskCardV11(
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "حذف"
+                    contentDescription = neoLiteral("حذف", "Delete")
                 )
             }
         }
@@ -705,9 +729,9 @@ private fun TaskEditorDialogV11(
         title = {
             Text(
                 if (existing == null)
-                    "مهمة جديدة"
+                    neoLiteral("مهمة جديدة", "New task")
                 else
-                    "تعديل المهمة"
+                    neoLiteral("تعديل المهمة", "Edit task")
             )
         },
         text = {
@@ -723,7 +747,7 @@ private fun TaskEditorDialogV11(
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("عنوان المهمة") },
+                    label = { Text(neoLiteral("عنوان المهمة", "Task title")) },
                     singleLine = true
                 )
 
@@ -731,7 +755,7 @@ private fun TaskEditorDialogV11(
                     value = details,
                     onValueChange = { details = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("ملاحظات") },
+                    label = { Text(neoLiteral("ملاحظات", "Notes")) },
                     minLines = 2,
                     maxLines = 4
                 )
@@ -740,7 +764,7 @@ private fun TaskEditorDialogV11(
                     value = date,
                     onValueChange = { date = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("التاريخ YYYY-MM-DD") },
+                    label = { Text(neoLiteral("التاريخ YYYY-MM-DD", "Date YYYY-MM-DD")) },
                     singleLine = true
                 )
 
@@ -748,7 +772,7 @@ private fun TaskEditorDialogV11(
                     value = time,
                     onValueChange = { time = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("الوقت HH:MM - اختياري") },
+                    label = { Text(neoLiteral("الوقت HH:MM - اختياري", "Time HH:MM - optional")) },
                     singleLine = true
                 )
 
@@ -767,7 +791,7 @@ private fun TaskEditorDialogV11(
                                     it.id == workplaceId
                                 }
                                 ?.name
-                                ?: "مكان العمل: بدون ربط"
+                                ?: neoLiteral("مكان العمل: بدون ربط", "Workplace: none")
                         )
                     }
 
@@ -779,7 +803,7 @@ private fun TaskEditorDialogV11(
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text("بدون ربط")
+                                Text(neoLiteral("بدون ربط", "Not linked"))
                             },
                             onClick = {
                                 workplaceId = null
@@ -817,7 +841,7 @@ private fun TaskEditorDialogV11(
                                     it.id == calendarId
                                 }
                                 ?.name
-                                ?: "التقويم: بدون ربط"
+                                ?: neoLiteral("التقويم: بدون ربط", "Calendar: none")
                         )
                     }
 
@@ -829,7 +853,7 @@ private fun TaskEditorDialogV11(
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text("بدون ربط")
+                                Text(neoLiteral("بدون ربط", "Not linked"))
                             },
                             onClick = {
                                 calendarId = null
@@ -870,9 +894,9 @@ private fun TaskEditorDialogV11(
                         Text(
                             if (selected == null)
                                 if (dayShifts.isEmpty())
-                                    "لا توجد شفتات في هذا اليوم"
+                                    neoLiteral("لا توجد شفتات في هذا اليوم", "No shifts on this day")
                                 else
-                                    "الشفت: بدون ربط"
+                                    neoLiteral("الشفت: بدون ربط", "Shift: none")
                             else {
                                 val segment =
                                     selected.third
@@ -891,17 +915,17 @@ private fun TaskEditorDialogV11(
                                             segment.kind
                                         ) {
                                             ShiftKind.FULL_DAY ->
-                                                "يوم كامل"
+                                                neoLiteral("يوم كامل", "Full day")
                                             ShiftKind.LONG ->
-                                                "طويل"
+                                                neoLiteral("طويل", "Long")
                                             ShiftKind.NIGHT ->
-                                                "ليلي"
+                                                neoLiteral("ليلي", "Night")
                                             ShiftKind.MORNING ->
-                                                "صباحي"
+                                                neoLiteral("صباحي", "Morning")
                                             ShiftKind.EVENING ->
-                                                "مسائي"
+                                                neoLiteral("مسائي", "Evening")
                                             ShiftKind.OFF ->
-                                                "إجازة"
+                                                neoLiteral("إجازة", "Off")
                                         }
                                     )
 
@@ -924,7 +948,7 @@ private fun TaskEditorDialogV11(
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text("بدون ربط")
+                                Text(neoLiteral("بدون ربط", "Not linked"))
                             },
                             onClick = {
                                 linkedShiftId = null
@@ -944,17 +968,17 @@ private fun TaskEditorDialogV11(
                                                     segment.kind
                                                 ) {
                                                     ShiftKind.FULL_DAY ->
-                                                        "يوم كامل"
+                                                        neoLiteral("يوم كامل", "Full day")
                                                     ShiftKind.LONG ->
-                                                        "طويل"
+                                                        neoLiteral("طويل", "Long")
                                                     ShiftKind.NIGHT ->
-                                                        "ليلي"
+                                                        neoLiteral("ليلي", "Night")
                                                     ShiftKind.MORNING ->
-                                                        "صباحي"
+                                                        neoLiteral("صباحي", "Morning")
                                                     ShiftKind.EVENING ->
-                                                        "مسائي"
+                                                        neoLiteral("مسائي", "Evening")
                                                     ShiftKind.OFF ->
-                                                        "إجازة"
+                                                        neoLiteral("إجازة", "Off")
                                                 }
                                             )
 
@@ -1018,7 +1042,7 @@ private fun TaskEditorDialogV11(
                     Spacer(Modifier.width(10.dp))
 
                     Text(
-                        "تذكير بالمهمة",
+                        neoLiteral("تذكير بالمهمة", "Task reminder"),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1033,12 +1057,12 @@ private fun TaskEditorDialogV11(
                             Modifier.fillMaxWidth(),
                         label = {
                             Text(
-                                "وقت التذكير HH:MM"
+                                neoLiteral("وقت التذكير HH:MM", "Reminder time HH:MM")
                             )
                         },
                         supportingText = {
                             Text(
-                                "سيتم التنبيه في تاريخ المهمة"
+                                neoLiteral("سيتم التنبيه في تاريخ المهمة", "Reminder will trigger on task date")
                             )
                         },
                         singleLine = true
@@ -1046,7 +1070,7 @@ private fun TaskEditorDialogV11(
                 }
 
                 Text(
-                    "الأولوية",
+                    neoLiteral("الأولوية", "Priority"),
                     fontWeight = FontWeight.Bold
                 )
 
@@ -1069,13 +1093,13 @@ private fun TaskEditorDialogV11(
                                 Text(
                                     when (it) {
                                         TaskPriorityV11.LOW ->
-                                            "منخفضة"
+                                            neoLiteral("منخفضة", "Low")
                                         TaskPriorityV11.NORMAL ->
-                                            "عادية"
+                                            neoLiteral("عادية", "Normal")
                                         TaskPriorityV11.HIGH ->
-                                            "عالية"
+                                            neoLiteral("عالية", "High")
                                         TaskPriorityV11.URGENT ->
-                                            "عاجلة"
+                                            neoLiteral("عاجلة", "Urgent")
                                     }
                                 )
                             }
@@ -1084,7 +1108,7 @@ private fun TaskEditorDialogV11(
                 }
 
                 Text(
-                    "التكرار",
+                    neoLiteral("التكرار", "Repeat"),
                     fontWeight = FontWeight.Bold
                 )
 
@@ -1107,13 +1131,13 @@ private fun TaskEditorDialogV11(
                                 Text(
                                     when (it) {
                                         TaskRepeatV11.NONE ->
-                                            "بدون"
+                                            neoLiteral("بدون", "None")
                                         TaskRepeatV11.DAILY ->
-                                            "يومي"
+                                            neoLiteral("يومي", "Daily")
                                         TaskRepeatV11.WEEKLY ->
-                                            "أسبوعي"
+                                            neoLiteral("أسبوعي", "Weekly")
                                         TaskRepeatV11.MONTHLY ->
-                                            "شهري"
+                                            neoLiteral("شهري", "Monthly")
                                     }
                                 )
                             }
@@ -1233,14 +1257,14 @@ private fun TaskEditorDialogV11(
                     )
                 }
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )

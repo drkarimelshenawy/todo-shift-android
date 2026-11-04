@@ -126,12 +126,12 @@ fun V11SecuritySettingsDialog(
         title = {
             Column {
                 Text(
-                    "الأمان والخصوصية",
+                    neoLiteral("الأمان والخصوصية", "Privacy and security"),
                     fontWeight = FontWeight.Black
                 )
 
                 Text(
-                    "اختر طريقة حماية قسم الحسابات",
+                    neoLiteral("اختر طريقة حماية قسم الحسابات", "Choose how to protect your finances"),
                     style = MaterialTheme.typography.bodySmall,
                     color =
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -147,12 +147,12 @@ fun V11SecuritySettingsDialog(
                     )
             ) {
                 SecuritySectionTitle(
-                    "طريقة الحماية الأساسية"
+                    neoLiteral("طريقة الحماية الأساسية", "Primary authentication method")
                 )
 
                 SecurityModeCardV3(
-                    title = "بدون قفل",
-                    subtitle = "بدون PIN أو نمط",
+                    title = neoLiteral("بدون قفل", "No lock"),
+                    subtitle = neoLiteral("بدون PIN أو نمط", "Without PIN or pattern"),
                     selected =
                         settings.mode == V11LockMode.NONE,
                     actionText = null,
@@ -171,9 +171,9 @@ fun V11SecuritySettingsDialog(
                             settings.mode == V11LockMode.PIN &&
                             store.hasPin()
                         )
-                            "PIN مُعيّن حالياً"
+                            neoLiteral("PIN مُعيّن حالياً", "PIN is configured")
                         else
-                            "رقم سري من 4 إلى 12 رقماً",
+                            neoLiteral("رقم سري من 4 إلى 12 رقماً", "PIN of 4 to 12 digits"),
                     selected =
                         settings.mode == V11LockMode.PIN,
                     actionText =
@@ -181,9 +181,9 @@ fun V11SecuritySettingsDialog(
                             settings.mode == V11LockMode.PIN &&
                             store.hasPin()
                         )
-                            "تغيير PIN"
+                            neoLiteral("تغيير PIN", "Change PIN")
                         else
-                            "تحديد PIN",
+                            neoLiteral("تحديد PIN", "Set PIN"),
                     onSelect = {
                         if (
                             settings.mode == V11LockMode.PIN &&
@@ -213,15 +213,15 @@ fun V11SecuritySettingsDialog(
                 )
 
                 SecurityModeCardV3(
-                    title = "النمط",
+                    title = neoLiteral("النمط", "Pattern"),
                     subtitle =
                         if (
                             settings.mode == V11LockMode.PATTERN &&
                             store.hasPattern()
                         )
-                            "نمط حماية مُعيّن حالياً"
+                            neoLiteral("نمط حماية مُعيّن حالياً", "Security pattern is configured")
                         else
-                            "نمط حماية 3 × 3",
+                            neoLiteral("نمط حماية 3 × 3", "3 × 3 security pattern"),
                     selected =
                         settings.mode == V11LockMode.PATTERN,
                     actionText =
@@ -229,9 +229,9 @@ fun V11SecuritySettingsDialog(
                             settings.mode == V11LockMode.PATTERN &&
                             store.hasPattern()
                         )
-                            "تغيير النمط"
+                            neoLiteral("تغيير النمط", "Change pattern")
                         else
-                            "تحديد النمط",
+                            neoLiteral("تحديد النمط", "Set pattern"),
                     onSelect = {
                         if (
                             settings.mode == V11LockMode.PATTERN &&
@@ -262,7 +262,7 @@ fun V11SecuritySettingsDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                SecuritySectionTitle("البصمة")
+                SecuritySectionTitle(neoLiteral("البصمة", "Biometrics"))
 
                 SecuritySwitchCard(
                     icon = {
@@ -271,12 +271,12 @@ fun V11SecuritySettingsDialog(
                             null
                         )
                     },
-                    title = "استخدام البصمة",
+                    title = neoLiteral("استخدام البصمة", "Use biometrics"),
                     subtitle =
                         if (biometricAvailable)
-                            "اختيار إضافي مستقل لفتح الحسابات"
+                            neoLiteral("اختيار إضافي مستقل لفتح الحسابات", "An additional method to unlock finances")
                         else
-                            "البصمة أو قفل الجهاز غير متاح حالياً",
+                            neoLiteral("البصمة أو قفل الجهاز غير متاح حالياً", "Biometrics or device lock currently unavailable"),
                     checked = settings.biometricEnabled,
                     enabled = biometricAvailable,
                     onCheckedChange = {
@@ -291,7 +291,7 @@ fun V11SecuritySettingsDialog(
                 Spacer(Modifier.height(14.dp))
 
                 SecuritySectionTitle(
-                    "خيارات الحسابات"
+                    neoLiteral("خيارات الحسابات", "Finance options")
                 )
 
                 SecuritySwitchCard(
@@ -301,9 +301,9 @@ fun V11SecuritySettingsDialog(
                             null
                         )
                     },
-                    title = "قفل قسم الحسابات",
+                    title = neoLiteral("قفل قسم الحسابات", "Protect finances"),
                     subtitle =
-                        "اطلب التحقق قبل عرض الحسابات",
+                        neoLiteral("اطلب التحقق قبل عرض الحسابات", "Require authentication before showing finances"),
                     checked = settings.protectAccounts,
                     enabled = protectionAvailable,
                     onCheckedChange = {
@@ -322,9 +322,9 @@ fun V11SecuritySettingsDialog(
                         )
                     },
                     title =
-                        "إخفاء المبالغ افتراضياً",
+                        neoLiteral("إخفاء المبالغ افتراضياً", "Hide amounts by default"),
                     subtitle =
-                        "يمكن إظهارها من أيقونة العين في الحسابات",
+                        neoLiteral("يمكن إظهارها من أيقونة العين في الحسابات", "Use the eye icon in Finance to reveal amounts"),
                     checked = settings.hideAmounts,
                     enabled = true,
                     onCheckedChange = {
@@ -338,7 +338,7 @@ fun V11SecuritySettingsDialog(
                 Spacer(Modifier.height(14.dp))
 
                 SecuritySectionTitle(
-                    "القفل التلقائي"
+                    neoLiteral("القفل التلقائي", "Auto-lock")
                 )
 
                 Row(
@@ -347,10 +347,10 @@ fun V11SecuritySettingsDialog(
                         Arrangement.spacedBy(6.dp)
                 ) {
                     listOf(
-                        0 to "فوري",
-                        1 to "1 د",
-                        5 to "5 د",
-                        15 to "15 د"
+                        0 to neoLiteral("فوري", "Immediately"),
+                        1 to neoLiteral("1 د", "1 min"),
+                        5 to neoLiteral("5 د", "5 min"),
+                        15 to neoLiteral("15 د", "15 min")
                     ).forEach { (minutes, label) ->
                         FilterChip(
                             selected =
@@ -412,7 +412,7 @@ fun V11SecuritySettingsDialog(
                         !store.hasPin()
                     ) {
                         message =
-                            "حدد PIN أولاً"
+                            neoLiteral("حدد PIN أولاً", "Set a PIN first")
                         credentialDialog =
                             SecurityCredentialDialog.PIN
                         return@Button
@@ -424,7 +424,7 @@ fun V11SecuritySettingsDialog(
                         !store.hasPattern()
                     ) {
                         message =
-                            "حدد النمط أولاً"
+                            neoLiteral("حدد النمط أولاً", "Set a pattern first")
                         credentialDialog =
                             SecurityCredentialDialog.PATTERN
                         return@Button
@@ -449,13 +449,13 @@ fun V11SecuritySettingsDialog(
                     onDismiss()
                 }
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
 
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -633,9 +633,9 @@ private fun PinSetupDialogV3(
         title = {
             Text(
                 if (changingExisting)
-                    "تغيير PIN"
+                    neoLiteral("تغيير PIN", "Change PIN")
                 else
-                    "تحديد PIN"
+                    neoLiteral("تحديد PIN", "Set PIN")
             )
         },
         text = {
@@ -646,7 +646,7 @@ private fun PinSetupDialogV3(
                 if (changingExisting) {
                     SecurePinField(
                         value = currentPin,
-                        label = "PIN الحالي",
+                        label = neoLiteral("PIN الحالي", "Current PIN"),
                         onValueChange = {
                             currentPin = it
                             message = null
@@ -656,7 +656,7 @@ private fun PinSetupDialogV3(
 
                 SecurePinField(
                     value = newPin,
-                    label = "PIN الجديد",
+                    label = neoLiteral("PIN الجديد", "New PIN"),
                     onValueChange = {
                         newPin = it
                         message = null
@@ -665,7 +665,7 @@ private fun PinSetupDialogV3(
 
                 SecurePinField(
                     value = confirmPin,
-                    label = "تأكيد PIN",
+                    label = neoLiteral("تأكيد PIN", "Confirm PIN"),
                     onValueChange = {
                         confirmPin = it
                         message = null
@@ -691,7 +691,7 @@ private fun PinSetupDialogV3(
                                 currentPin
                             ) -> {
                             message =
-                                "PIN الحالي غير صحيح"
+                                neoLiteral("PIN الحالي غير صحيح", "Incorrect current PIN")
                         }
 
                         newPin.length !in 4..12 ||
@@ -699,29 +699,29 @@ private fun PinSetupDialogV3(
                                 Char::isDigit
                             ) -> {
                             message =
-                                "PIN يجب أن يكون من 4 إلى 12 رقماً"
+                                neoLiteral("PIN يجب أن يكون من 4 إلى 12 رقماً", "PIN must contain 4 to 12 digits")
                         }
 
                         newPin != confirmPin -> {
                             message =
-                                "تأكيد PIN غير مطابق"
+                                neoLiteral("تأكيد PIN غير مطابق", "PINs do not match")
                         }
 
                         !store.setPin(newPin) -> {
                             message =
-                                "تعذر حفظ PIN"
+                                neoLiteral("تعذر حفظ PIN", "Cannot save PIN")
                         }
 
                         else -> onSaved()
                     }
                 }
             ) {
-                Text("حفظ")
+                Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -758,16 +758,16 @@ private fun PatternSetupDialogV3(
     val title =
         when (step) {
             PatternSetupStep.VERIFY_CURRENT ->
-                "تحقق من النمط الحالي"
+                neoLiteral("تحقق من النمط الحالي", "Verify current pattern")
 
             PatternSetupStep.DRAW_NEW ->
                 if (changingExisting)
-                    "ارسم النمط الجديد"
+                    neoLiteral("ارسم النمط الجديد", "Draw a new pattern")
                 else
-                    "ارسم النمط"
+                    neoLiteral("ارسم النمط", "Draw pattern")
 
             PatternSetupStep.CONFIRM_NEW ->
-                "تأكيد النمط"
+                neoLiteral("تأكيد النمط", "Confirm pattern")
         }
 
     AlertDialog(
@@ -783,13 +783,13 @@ private fun PatternSetupDialogV3(
                 Text(
                     when (step) {
                         PatternSetupStep.VERIFY_CURRENT ->
-                            "ارسم النمط الحالي للمتابعة"
+                            neoLiteral("ارسم النمط الحالي للمتابعة", "Draw your current pattern to continue")
 
                         PatternSetupStep.DRAW_NEW ->
-                            "اربط 4 نقاط على الأقل"
+                            neoLiteral("اربط 4 نقاط على الأقل", "Connect at least 4 dots")
 
                         PatternSetupStep.CONFIRM_NEW ->
-                            "أعد رسم نفس النمط للتأكيد"
+                            neoLiteral("أعد رسم نفس النمط للتأكيد", "Draw the same pattern to confirm")
                     },
                     style =
                         MaterialTheme.typography.bodyMedium
@@ -820,7 +820,7 @@ private fun PatternSetupDialogV3(
                                         inputGeneration++
                                     } else {
                                         message =
-                                            "النمط الحالي غير صحيح"
+                                            neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern")
                                         inputGeneration++
                                     }
                                 }
@@ -828,7 +828,7 @@ private fun PatternSetupDialogV3(
                                 PatternSetupStep.DRAW_NEW -> {
                                     if (pattern.size < 4) {
                                         message =
-                                            "النمط يجب أن يحتوي على 4 نقاط على الأقل"
+                                            neoLiteral("النمط يجب أن يحتوي على 4 نقاط على الأقل", "Pattern must contain at least 4 dots")
                                         inputGeneration++
                                     } else {
                                         firstPattern = pattern
@@ -844,7 +844,7 @@ private fun PatternSetupDialogV3(
                                         firstPattern != pattern
                                     ) {
                                         message =
-                                            "النمط غير مطابق، أعد التأكيد"
+                                            neoLiteral("النمط غير مطابق، أعد التأكيد", "Patterns do not match. Try again.")
                                         inputGeneration++
                                     } else if (
                                         !store.setPattern(
@@ -852,7 +852,7 @@ private fun PatternSetupDialogV3(
                                         )
                                     ) {
                                         message =
-                                            "تعذر حفظ النمط"
+                                            neoLiteral("تعذر حفظ النمط", "Cannot save pattern")
                                         inputGeneration++
                                     } else {
                                         onSaved()
@@ -877,7 +877,7 @@ private fun PatternSetupDialogV3(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -900,13 +900,13 @@ private fun VerifyPinDialogV3(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("التحقق من PIN الحالي")
+            Text(neoLiteral("التحقق من PIN الحالي", "Verify current PIN"))
         },
         text = {
             Column {
                 SecurePinField(
                     value = pin,
-                    label = "PIN الحالي",
+                    label = neoLiteral("PIN الحالي", "Current PIN"),
                     onValueChange = {
                         pin = it
                         error = false
@@ -916,7 +916,7 @@ private fun VerifyPinDialogV3(
                 if (error) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "PIN الحالي غير صحيح",
+                        neoLiteral("PIN الحالي غير صحيح", "Incorrect current PIN"),
                         color =
                             MaterialTheme.colorScheme.error
                     )
@@ -933,12 +933,12 @@ private fun VerifyPinDialogV3(
                     }
                 }
             ) {
-                Text("تحقق")
+                Text(neoLiteral("تحقق", "Verify"))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )
@@ -961,7 +961,7 @@ private fun VerifyPatternDialogV3(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("التحقق من النمط الحالي")
+            Text(neoLiteral("التحقق من النمط الحالي", "Verify current pattern"))
         },
         text = {
             Column(
@@ -992,7 +992,7 @@ private fun VerifyPatternDialogV3(
 
                 if (error) {
                     Text(
-                        "النمط الحالي غير صحيح",
+                        neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern"),
                         color =
                             MaterialTheme.colorScheme.error
                     )
@@ -1002,7 +1002,7 @@ private fun VerifyPatternDialogV3(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("إلغاء")
+                Text(neoLiteral("إلغاء", "Cancel"))
             }
         }
     )

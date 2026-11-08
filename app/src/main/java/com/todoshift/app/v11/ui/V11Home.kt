@@ -238,8 +238,9 @@ fun V11Home(
         }
     }
 
-    // Repair RC7 workplace UUID mismatch and keep the V11 finance
-    // rate table aligned with the workplace editor.
+    // Reachable only after BOTH stores loaded successfully. Failed reads throw into
+    // the boot error screen above and never create editable state or run this effect.
+    // Repair RC7 workplace UUID mismatch and keep the V11 finance rate table aligned.
     LaunchedEffect(Unit) {
         val repaired =
             V11WorkplaceSync
@@ -249,8 +250,8 @@ fun V11Home(
                 )
 
         if (repaired != db) {
-            db = repaired
             runtime.save(repaired)
+            db = repaired
         }
     }
 
@@ -304,8 +305,8 @@ fun V11Home(
     }
 
     fun saveDb(value: V11Database) {
-        db = value
         runtime.save(value)
+        db = value
     }
 
     fun saveUi(

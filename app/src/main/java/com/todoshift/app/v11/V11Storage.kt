@@ -1,16 +1,14 @@
 package com.todoshift.app.v11
 
 import android.content.Context
+import android.content.SharedPreferences
+import com.todoshift.app.storage.*
 import com.todoshift.app.data.AppData
 import org.json.JSONArray
 import org.json.JSONObject
 
-class V11Storage(context: Context) {
-
-    private val prefs = context.getSharedPreferences(
-        "todo_shift_v11",
-        Context.MODE_PRIVATE
-    )
+class V11Storage internal constructor(private val prefs: SharedPreferences) {
+    constructor(context: Context) : this(context.getSharedPreferences("todo_shift_v11", Context.MODE_PRIVATE))
 
     companion object {
         private const val KEY_DATABASE = "database"
@@ -25,37 +23,44 @@ class V11Storage(context: Context) {
         effectiveFrom: String
     ): V11Database {
         if (hasDatabase()) return load()
+        check(!wasMigrated()) { "Previously migrated database is missing" }
 
         val migrated = V11MigrationEngine.migrate(
             old = oldData,
             effectiveFrom = effectiveFrom
         )
 
-        save(migrated)
-
-        prefs.edit()
-            .putBoolean(KEY_MIGRATED, true)
-            .apply()
-
+        val raw = toJson(migrated).toString()
+        fromJson(JSONObject(raw))
+        check(prefs.edit().putString(KEY_DATABASE, raw).putBoolean(KEY_MIGRATED, true).commit()) {
+            "Unable to persist migrated database"
+        }
         return migrated
     }
 
+    internal fun isPristine(): Boolean = prefs.all.isEmpty()
+
+    fun wasMigrated(): Boolean = prefs.getBoolean(KEY_MIGRATED, false)
+
     fun save(db: V11Database) {
-        prefs.edit()
-            .putString(KEY_DATABASE, toJson(db).toString())
-            .apply()
-    }
-
-    fun load(): V11Database {
-        val raw = prefs.getString(KEY_DATABASE, null)
-            ?: return V11Database()
-
-        return runCatching {
-            fromJson(JSONObject(raw))
-        }.getOrElse {
-            V11Database()
+        when (val current = read()) {
+            is StorageRead.Failed -> current.requireLoaded()
+            StorageRead.Missing -> error("Cannot save before explicit initialization or migration")
+            is StorageRead.Loaded -> Unit
         }
+        val raw = toJson(db).toString()
+        fromJson(JSONObject(raw))
+        check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { "Unable to persist database" }
     }
+
+    fun read(): StorageRead<V11Database> = try {
+        if (!prefs.contains(KEY_DATABASE)) StorageRead.Missing
+        else StorageRead.Loaded(fromJson(JSONObject(requireNotNull(prefs.getString(KEY_DATABASE, null)))))
+    } catch (failure: Exception) {
+        StorageRead.Failed(failure)
+    }
+
+    fun load(): V11Database = read().requireLoaded()
 
     fun exportJson(db: V11Database): String =
         toJson(db).toString(2)
@@ -522,7 +527,35 @@ class V11Storage(context: Context) {
             })
         }
 
+    private fun validateStoredStructure(root: JSONObject) {
+        val version = root.schemaVersion(setOf(11, 12, 13))
+        val base = listOf("calendars", "days", "rates", "incomeSources", "paymentMethods",
+            "payments", "settlements", "monthSnapshots", "auditLog")
+        val added12 = listOf("dayItems", "obligations", "obligationPayments")
+        (base + added12 + "tasks").forEach { key ->
+            root.objectArray(key, key in base || (version >= 12 && key in added12) || (version >= 13 && key == "tasks"))
+        }
+        val calendars = root.objectArray("calendars").map { it.nonBlankString("id") }
+        require(calendars.distinct().size == calendars.size) { "Duplicate calendar ID" }
+        root.objectArray("days").forEach { day ->
+            day.nonBlankString("id")
+            java.time.LocalDate.parse(day.nonBlankString("date"))
+            require(day.nonBlankString("calendarId") in calendars) { "Unknown shift calendar" }
+            day.objectArray("segments").forEach { segment ->
+                segment.nonBlankString("id")
+                ShiftKind.valueOf(segment.nonBlankString("kind"))
+            }
+        }
+        root.objectArray("payments").forEach { payment ->
+            val ids = payment.get("linkedShiftIds") as? JSONArray ?: error("Invalid linkedShiftIds")
+            for (i in 0 until ids.length()) require(ids.get(i) is String) { "Invalid linked shift ID" }
+            payment.objectArray("allocations", version >= 12)
+        }
+    }
+
     private fun fromJson(root: JSONObject): V11Database {
+        validateStoredStructure(root)
+
 
         fun nullableString(
             obj: JSONObject,

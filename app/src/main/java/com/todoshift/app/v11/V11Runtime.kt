@@ -1,56 +1,69 @@
 package com.todoshift.app.v11
 
-import com.todoshift.app.widget.ToDoShiftWidget
-import com.todoshift.app.widget.TasksWidgetProvider
-
 import android.content.Context
 import com.todoshift.app.data.AppStorage
+import com.todoshift.app.storage.StorageRead
 import java.time.LocalDate
 
-class V11Runtime(context: Context) {
-
-    private val appContext = context.applicationContext
-    private val oldStorage = AppStorage(appContext)
-    private val storage = V11Storage(appContext)
+class V11Runtime internal constructor(
+    private val oldStorage: AppStorage,
+    private val storage: V11Storage,
+    private val recover: () -> Unit,
+    private val refreshWidgets: () -> Unit
+) {
+    constructor(context: Context) : this(
+        AppStorage(context.applicationContext), V11Storage(context.applicationContext),
+        { com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).recoverIfNeeded() },
+        { com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext) }
+    )
 
     fun start(): V11Database {
         return synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
-        com.todoshift.app.backup.Neo4LocalBackup(appContext).recoverIfNeeded()
+            recover()
 
-        if (storage.hasDatabase()) {
-            return@synchronized storage.load()
-        }
-
-        val oldData = oldStorage.load()
-
-        /*
-         * RC1 did not store historical effective dates.
-         * We seed the imported rates from the earliest legacy
-         * shift date where possible so existing RC1 shifts remain
-         * financially calculable after migration.
-         */
-        val effectiveFrom =
-            oldData.shifts
-                .mapNotNull {
-                    runCatching {
-                        LocalDate.parse(it.date)
-                    }.getOrNull()
+            when (val result = storage.read()) {
+                is StorageRead.Loaded -> return@synchronized result.data
+                is StorageRead.Failed -> throw IllegalStateException("V11 load failed; no initialization allowed", result.cause)
+                StorageRead.Missing -> check(!storage.wasMigrated()) {
+                    "Previously migrated V11 database is missing; refusing to recreate it"
                 }
-                .minOrNull()
-                ?.toString()
-                ?: LocalDate.now().toString()
+            }
+            val oldData = when (val result = oldStorage.read()) {
+                is StorageRead.Loaded -> result.data
+                is StorageRead.Failed -> throw IllegalStateException("Legacy load failed; migration blocked", result.cause)
+                StorageRead.Missing -> {
+                    check(storage.isPristine()) { "V11 preferences exist; first install cannot be verified" }
+                    oldStorage.initializeFirstInstall()
+                }
+            }
 
-        storage.migrateIfNeeded(
-            oldData = oldData,
-            effectiveFrom = effectiveFrom
-        )
-    }
+            /*
+             * RC1 did not store historical effective dates.
+             * We seed the imported rates from the earliest legacy
+             * shift date where possible so existing RC1 shifts remain
+             * financially calculable after migration.
+             */
+            val effectiveFrom =
+                oldData.shifts
+                    .mapNotNull {
+                        runCatching {
+                            LocalDate.parse(it.date)
+                        }.getOrNull()
+                    }
+                    .minOrNull()
+                    ?.toString()
+                    ?: LocalDate.now().toString()
 
+            storage.migrateIfNeeded(
+                oldData = oldData,
+                effectiveFrom = effectiveFrom
+            )
+        }
     }
 
     fun save(db: V11Database) = synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
         storage.save(db)
-        com.todoshift.app.widget.Neo4WidgetRefresh.schedule(appContext)
+        refreshWidgets()
     }
 
     fun exportJson(db: V11Database): String =

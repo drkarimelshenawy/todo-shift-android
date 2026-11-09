@@ -364,6 +364,11 @@ fun V11CalendarScreen(
 
             }
             if (uiSettings.experience == V11Experience.PREMIUM) {
+                if (activeCalendar != null) Text(
+                    neoLabel("الإضافة إلى: ", "New entries: ") + activeCalendar.name +
+                        if (!activeCalendar.visible) neoLabel(" • مخفي — أظهره من إدارة التقاويم", " • hidden — show it in Manage calendars") else "",
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 NeoCalendarArea(month = month, db = db, workplaces = workplaces, visibleCalendarIds = visibleCalendarIds,
                     selectedDate = selectedDate, paintMode = paintMode, paintDates = paintDates,
                     onSelectedDate = { date ->
@@ -1355,7 +1360,7 @@ private fun V11DayCell(
                     horizontal = 5.dp,
                     vertical = 2.dp
                 ),
-            fontSize = 10.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Black,
             color = Color(0xFF111827)
         )
@@ -1482,7 +1487,7 @@ private fun V11SelectedDayPanel(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                neoLiteral("حذف", "Delete"),
+                                neoLiteral("حذف تقويم فارغ فقط", "Delete an empty calendar only"),
                                 tint =
                                     Color(0xFFB3261E)
                             )
@@ -1882,7 +1887,7 @@ private fun V11PaintStatusBar(
                         neoLiteral("حدد الأيام ثم اضغط ✓", "Select days, then tap ✓")
                     else
                         neoLiteral("تم تحديد $count يوم", "$count days selected"),
-                    fontSize = 10.sp,
+                    fontSize = 12.sp,
                     color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280)
                 )
             }
@@ -2001,11 +2006,16 @@ private fun V11CalendarManagerSheet(
                                 )
                             },
                             enabled =
-                                db.calendars.size > 1
+                                db.calendars.size > 1 &&
+                                    db.days.none { it.calendarId == calendar.id } &&
+                                    db.tasks.none { it.calendarId == calendar.id } &&
+                                    db.dayItems.none { it.calendarId == calendar.id } &&
+                                    db.incomeSources.none { it.calendarId == calendar.id } &&
+                                    db.settlements.none { it.calendarId == calendar.id }
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                neoLiteral("حذف", "Delete")
+                                neoLiteral("حذف تقويم فارغ فقط", "Delete an empty calendar only")
                             )
                         }
 
@@ -2060,18 +2070,18 @@ private fun V11CalendarManagerSheet(
                                         calendar.id ==
                                         activeCalendarId
                                     )
-                                        neoLiteral("✓ التقويم النشط", "✓ Active calendar")
+                                        neoLiteral("✓ الأساسي للإضافة", "✓ Primary for new entries")
                                     else
-                                        neoLiteral("تعيين كنشط", "Set as active"),
-                                    fontSize = 10.sp,
+                                        neoLiteral("تعيين كأساسي", "Set as primary"),
+                                    fontSize = 12.sp,
                                     color =
                                         if (
                                             calendar.id ==
                                             activeCalendarId
                                         )
-                                            Color(0xFF2E7D32)
+                                            MaterialTheme.colorScheme.primary
                                         else
-                                            Color(0xFF4F709C)
+                                            MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }

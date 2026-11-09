@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="مهامي"
+            android:text="@string/tasks_widget_label"
             android:textSize="19sp"
             android:textStyle="bold"
             android:textColor="#172033" />
@@ -28,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="6dp"
-            android:text="0"
+            android:text="@string/widget_zero"
             android:textColor="#172033" />
 
         <TextView
@@ -36,7 +36,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:gravity="center"
-            android:text="+"
+            android:text="@string/widget_add_glyph"
             android:textSize="28sp"
             android:textStyle="bold"
             android:textColor="#326732" />
@@ -55,7 +55,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="لا توجد مهام حالياً"
+        android:text="@string/tasks_widget_empty_text"
         android:textColor="#64748B"
         android:padding="12dp" />
 </LinearLayout>

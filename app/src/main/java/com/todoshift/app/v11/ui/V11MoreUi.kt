@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
@@ -73,7 +74,7 @@ fun V11MoreScreen(
         return
     }
 
-    if (uiSettings.experience == V11Experience.PREMIUM && page in listOf(V11SettingsPage.BACKUP, V11SettingsPage.SYNC)) {
+    if (page == V11SettingsPage.BACKUP || (uiSettings.experience == V11Experience.PREMIUM && page == V11SettingsPage.SYNC)) {
         Neo4AccountBackupPage(db, financeAuthorized, securitySettings, securityStore, onAccountsUnlocked, onNeoRestored,
             onBack = { page = V11SettingsPage.HOME }, onPolicy = { page = V11SettingsPage.LEGAL })
         return
@@ -86,26 +87,15 @@ fun V11MoreScreen(
         V11SettingsPage.HOME -> {
             SettingsPageContainer(title = neoLiteral("الإعدادات", "Settings")) {
                 if (uiSettings.experience == V11Experience.PREMIUM) {
-                    V11NeoSectionHero(neoLabel(neoLiteral("تخصيص تجربتك", "Make it yours"), "Make it yours"), neoLabel("Neo Luxury 4.0 • المظهر والخصوصية", "Neo Luxury 4.0 • appearance and privacy"))
+                    V11NeoSectionHero(neoLabel(neoLiteral("تخصيص تجربتك", "Make it yours"), "Make it yours"), neoLabel("Neo Luxury 4.1 Ultimate • المظهر والخصوصية", "Neo Luxury 4.1 Ultimate • appearance and privacy"))
                     SettingsAction(neoLabel(neoLiteral("استوديو المظهر", "Appearance Studio"), "Appearance Studio"), neoLabel("الثيمات • الخطوط • التخطيط • الحركة • اللغة", "Themes • typography • layout • motion • language")) { studioSection = NeoStudioSection.THEMES; page = V11SettingsPage.APPEARANCE }
                     SettingsAction(neoLabel("استوديو الويدجت", "Widget Studio"), neoLabel("ألوان وخصوصية وأحجام الشاشة الرئيسية", "Launcher appearance and privacy")) { page = V11SettingsPage.WIDGETS }
                     SettingsAction(neoLabel("الخصوصية والسياسات", "Privacy & Legal"), neoLabel("الخصوصية والاستخدام والنسخ وبيانات Google", "Privacy, terms, backup and Google data")) { page = V11SettingsPage.LEGAL }
-                    listOf(
-                        Triple(NeoStudioSection.BACKGROUND, neoLabel("الخلفيات والتدرجات", "Backgrounds and gradients"), neoLabel("صور اختيارية وخلفية شخصية", "Optional illustrations and personal photo")),
-                        Triple(NeoStudioSection.PAINT, neoLabel("ألوان الشيفتات", "Shift Paint Studio"), neoLabel("هندسة ثابتة وألوان مستقلة", "Fixed geometry, independent colors")),
-                        Triple(NeoStudioSection.PROFILES, neoLabel("تخطيطات محفوظة", "Layout profiles"), neoLabel("حفظ معاينات الواجهة والتبديل بينها", "Save and switch appearance profiles")),
-                        Triple(NeoStudioSection.TYPE, neoLabel("الخطوط", "Typography"), neoLabel("نمط الكتابة وحجم الخط", "Type style and text size")),
-                        Triple(NeoStudioSection.LAYOUT, neoLabel("التخطيط والكثافة", "Layout and density"), neoLabel("البطاقات والزجاج والأيقونات", "Cards, glass and icons")),
-                        Triple(NeoStudioSection.MOTION, neoLabel("الحركات", "Animations"), neoLabel("مستوى الحركة وتقليلها", "Motion level and reduction")),
-                        Triple(NeoStudioSection.DASHBOARD, neoLabel("تخصيص لوحة اليوم", "Dashboard customization"), neoLabel("ترتيب البطاقات وإخفاؤها والاختصارات", "Card order, visibility and shortcuts")),
-                        Triple(NeoStudioSection.PREFERENCES, neoLabel("اللغة والتفضيلات", "Language and preferences"), neoLabel("العربية والإنجليزية وتفضيلات الشيفتات", "Arabic, English and shift preferences"))
-                    ).forEach { (section, title, subtitle) ->
-                        SettingsAction(title, subtitle) { studioSection = section; page = V11SettingsPage.APPEARANCE }
-                    }
                     SettingsAction(neoLabel(neoLiteral("الإشعارات", "Notifications"), "Notifications"), neoLabel("إدارة إشعارات ToDo Shift من إعدادات الهاتف", "Manage supported notifications in Android settings")) {
                         context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
                     }
                 }
+                Text(neoLiteral("التنظيم والعمل", "Organization and work"), style = MaterialTheme.typography.titleSmall)
                 SettingsAction(
                     neoLiteral("التقويم والعمل", "Calendar and work"),
                     neoLiteral("أماكن العمل والأسعار والتقاويم", "Workplaces, rates and calendars")
@@ -123,6 +113,7 @@ fun V11MoreScreen(
                 ) { page = V11SettingsPage.APPEARANCE }
 
                 }
+                Text(neoLiteral("البيانات والخصوصية", "Data and privacy"), style = MaterialTheme.typography.titleSmall)
                 SettingsAction(
                     neoLiteral("الأمان والخصوصية", "Privacy and security"),
                     securitySummary(securitySettings)
@@ -140,7 +131,7 @@ fun V11MoreScreen(
 
                 SettingsAction(
                     neoLiteral("حول التطبيق", "About"),
-                    "ToDo Shift V1.1"
+                    "ToDo Shift ${com.todoshift.app.BuildConfig.VERSION_NAME} (${com.todoshift.app.BuildConfig.VERSION_CODE})"
                 ) { page = V11SettingsPage.ABOUT }
             }
         }
@@ -434,7 +425,7 @@ fun V11MoreScreen(
             ) {
                 SettingsInfo(
                     "ToDo Shift",
-                    if (uiSettings.experience == V11Experience.PREMIUM) "Neo Luxury 4.0 • Schema ${db.schemaVersion}" else "V1.1 • Schema ${db.schemaVersion}"
+                    "${com.todoshift.app.BuildConfig.VERSION_NAME} (${com.todoshift.app.BuildConfig.VERSION_CODE}) • Schema ${db.schemaVersion}\n${com.todoshift.app.BuildConfig.APPLICATION_ID}"
                 )
             }
         }
@@ -501,7 +492,7 @@ private fun SettingsSubPage(
         ) {
             IconButton(onClick = onBack) {
                 Icon(
-                    Icons.Default.ArrowBack,
+                    Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = neoLiteral("رجوع", "Back")
                 )
             }

@@ -1,0 +1,1 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item><shape><solid android:color="#071F45"/></shape></item><item android:drawable="@drawable/neo41_brand_emblem" android:width="144dp" android:height="144dp" android:gravity="center"/></layer-list>

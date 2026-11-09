@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.AtomicFile
 import com.todoshift.app.data.AppStorage
 import com.todoshift.app.v11.*
+import com.todoshift.app.storage.requireLoaded
 import com.todoshift.app.widget.Neo4WidgetRefresh
 import com.todoshift.app.reminders.ToDoShiftReminder
 import org.json.JSONArray
@@ -31,6 +32,8 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
 
     override fun export(database: V11Database, output: OutputStream) = synchronized(Neo4DataGate.monitor) {
         recoverIfNeeded()
+        val confirmedDatabase = storage.load()
+        check(confirmedDatabase == database) { "Data changed; reopen before exporting" }
         val sections = linkedMapOf<String, ByteArray>()
         sections["data/v11.json"] = bytes(storage.exportJson(database))
         sections["data/legacy.json"] = bytes(legacy.exportJson(legacy.load()))
@@ -43,7 +46,7 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         require(sections.values.sumOf { it.size.toLong() } <= Neo4BackupFormat.MAX_BYTES) { "Backup exceeds 32 MiB" }
         val manifest = JSONObject().put("formatVersion", Neo4BackupFormat.FORMAT).put("applicationId", "com.todoshift.app")
             .put("appVersion", app.packageManager.getPackageInfo(app.packageName, 0).versionName ?: "unknown")
-            .put("neoEdition", "4.0").put("createdAt", Instant.now().toString()).put("databaseSchema", 13)
+            .put("neoEdition", "4.1").put("createdAt", Instant.now().toString()).put("databaseSchema", 13)
             .put("compatibility", JSONObject().put("minReaderFormat", 2).put("legacySchema", 9))
             .put("encrypted", false).put("securityCredentialsIncluded", false)
             .put("dataManifest", JSONObject().put("calendars", database.calendars.size).put("days", database.days.size).put("tasks", database.tasks.size).put("payments", database.payments.size))
@@ -116,7 +119,7 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
             legacyData.shifts.mapNotNull { it.customAmount } + legacyData.templates.mapNotNull { it.customAmount } +
             legacyData.workplaces.flatMap { listOf(it.fullDayRate, it.longRate, it.nightRate, it.morningRate, it.eveningRate) }
         require(legacyAmounts.all { it.isFinite() }) { "Non-finite legacy financial value" }
-        uiPreferences.forEach { validatePreferences(json(all.getValue("prefs/$it.json"))) }
+        uiPreferences.forEach { validateUiPreferences(it, json(all.getValue("prefs/$it.json"))) }
         val appearancePrefs = json(all.getValue("prefs/todo_shift_neo3_appearance.json"))
         appearancePrefs.optJSONObject("neo4Appearance")?.optString("value")?.let { Neo4AppearanceCodec.decode(JSONObject(it)) }
         return Parsed(all, database, Neo4RestorePreview(manifest.getString("createdAt"), manifest.getString("appVersion"), database.calendars.size, database.days.size, database.tasks.size, database.payments.size, all.keys.count { Neo4BackupFormat.safeAsset(it) }, false))
@@ -151,10 +154,21 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         return database
     }
 
-    override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState = synchronized(Neo4DataGate.monitor) {
+    override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
+        restoreChecked(prepared, confirmedToken, false)
+
+    /** Only the authenticated boot recovery UI may explicitly request replacement of a failed store. */
+    fun recoverFromBackup(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
+        restoreChecked(prepared, confirmedToken, true)
+
+    private fun restoreChecked(prepared: Neo4PreparedRestore, confirmedToken: String, recovery: Boolean): Neo4RestoredState = synchronized(Neo4DataGate.monitor) {
         require(confirmedToken == prepared.token) { "Restore confirmation does not match preview" }
         validate(prepared); recoverIfNeeded()
         val parsed = parse(prepared.bytes)
+        val currentRead = storage.read()
+        val oldDatabase = if (recovery) (currentRead as? com.todoshift.app.storage.StorageRead.Loaded)?.data
+            else currentRead.requireLoaded()
+        if (recovery && parsed.preview.legacyJson) legacy.load()
         val targets = linkedMapOf<String, JSONObject>()
         targets["todo_shift_v11"] = capture(prefs("todo_shift_v11")).put("database", typed(String(parsed.sections.getValue("data/v11.json"), Charsets.UTF_8))).put("migrated_from_rc1", typed(true))
         parsed.sections["data/legacy.json"]?.let { targets["todo_shift_data"] = capture(prefs("todo_shift_data")).put("database", typed(String(it, Charsets.UTF_8))) }
@@ -168,8 +182,12 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         val previous = JSONObject(); targets.keys.forEach { name -> previous.put(name, capture(prefs(name))) }
         val journalBytes = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
         require(journalBytes.size <= 48 * 1024 * 1024) { "Rollback snapshot exceeds recovery limit" }
+        if (recovery) {
+            // Preserve exact raw preference values, including malformed payloads; never auto-delete.
+            val quarantine = AtomicFile(File(app.filesDir, "neo41-before-recovery-${java.util.UUID.randomUUID()}.json"))
+            writeAtomic(quarantine, journalBytes)
+        }
         writeAtomic(journal, journalBytes)
-        val oldDatabase = storage.load()
         try {
             targets.forEach { (name, data) -> writePreferences(prefs(name), data) }
             // Success becomes durable only after every preference commit has completed.
@@ -182,12 +200,37 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         }
         val warnings = mutableListOf<String>()
         runCatching {
-            oldDatabase.tasks.forEach { ToDoShiftReminder.cancel(app, it.id) }
-            oldDatabase.dayItems.forEach { ToDoShiftReminder.cancel(app, it.id) }
+            oldDatabase?.tasks?.forEach { ToDoShiftReminder.cancel(app, it.id) }
+            oldDatabase?.dayItems?.forEach { ToDoShiftReminder.cancel(app, it.id) }
             ToDoShiftReminder.rescheduleAll(app, parsed.database)
         }.onFailure { warnings += "Reminder scheduling requires review in Android settings" }
-        Neo4WidgetRefresh.schedule(app)
+        runCatching { Neo4WidgetRefresh.schedule(app) }
         Neo4RestoredState(parsed.database, legacy.load(), V11UiSettingsStore(app).load(), NeoAppearanceStore(app).load(), V11ActiveCalendarStore(app).load(), warnings)
+    }
+
+    fun updateWorkplaces(expectedLegacy: com.todoshift.app.data.AppData, expected: V11Database,
+        workplaces: List<com.todoshift.app.data.Workplace>): Pair<com.todoshift.app.data.AppData, V11Database> = synchronized(Neo4DataGate.monitor) {
+        recoverIfNeeded()
+        check(legacy.load() == expectedLegacy && storage.load() == expected) { "Data changed; reopen before editing workplaces" }
+        val updatedLegacy = expectedLegacy.copy(workplaces = workplaces)
+        val updated = V11WorkplaceSync.repairAndSync(expected, workplaces)
+        val previous = JSONObject().put("todo_shift_data", capture(prefs("todo_shift_data")))
+            .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+        val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+        require(snapshot.size <= 48 * 1024 * 1024)
+        writeAtomic(journal, snapshot)
+        try {
+            legacy.save(updatedLegacy)
+            storage.save(updated)
+            journal.delete()
+            check(!journal.baseFile.exists()) { "Unable to finalize workplace update" }
+        } catch (failure: Exception) {
+            try { previous.keys().forEach { writePreferences(prefs(it), previous.getJSONObject(it)) }; journal.delete() }
+            catch (rollback: Exception) { failure.addSuppressed(rollback) }
+            throw failure
+        }
+        runCatching { Neo4WidgetRefresh.schedule(app) }
+        updatedLegacy to updated
     }
 
     fun recoverIfNeeded() = synchronized(Neo4DataGate.monitor) {
@@ -211,6 +254,31 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
             else -> error("Unsupported preference type")
         }
     }
+    /** Known preference keys must retain the type consumed by existing readers. */
+    private fun validateUiPreferences(name: String, o: JSONObject) {
+        validatePreferences(o)
+        val expected = when (name) {
+            "todo_shift_v11_ui" -> mapOf("showWorkplaceNames" to "boolean").withDefault { "string" }
+            "todo_shift_v11_ui_state" -> mapOf("active_calendar_id" to "string")
+            "todo_shift_neo3_appearance" -> mapOf(
+                "intensity" to "float", "fontScale" to "float", "cornerRadius" to "int", "motion" to "int",
+                "glass" to "boolean", "glow" to "boolean", "reduceMotion" to "boolean", "dashboardExpanded" to "boolean",
+                "showShiftNotes" to "boolean", "showFinanceChart" to "boolean", "hiddenCards" to "strings", "quickActions" to "strings")
+            "todo_shift_neo4_profiles" -> mapOf("profiles" to "string")
+            "todo_shift_neo4_widgets" -> com.todoshift.app.widget.Neo4WidgetKind.entries.associate { it.name to "string" }
+            "todo_shift_cloud_readiness" -> mapOf("frequency" to "string", "wifiOnly" to "boolean")
+            else -> emptyMap()
+        }
+        o.keys().forEach { key ->
+            val type = when (name) {
+                "todo_shift_v11_ui" -> if (key == "showWorkplaceNames") "boolean" else if (key in listOf("todayHighlightStyle", "todayHighlightColor", "fabSide", "appTheme", "calendarStyle", "widgetTheme", "experience", "premiumBrightness")) "string" else null
+                "todo_shift_neo3_appearance" -> expected[key] ?: if (key in listOf("neo4Appearance", "brightness", "palette", "accentHex", "cardStyle", "density", "typeface", "iconStyle", "calendarView", "calendarDensity", "language", "dashboardOrder", "timelineFilter")) "string" else null
+                else -> expected[key]
+            }
+            if (type != null) require(o.getJSONObject(key).getString("type") == type) { "Invalid preference type in $name/$key" }
+        }
+    }
+
     private fun validatePreferences(o: JSONObject) {
         require(o.length() <= 256)
         o.keys().forEach { key ->

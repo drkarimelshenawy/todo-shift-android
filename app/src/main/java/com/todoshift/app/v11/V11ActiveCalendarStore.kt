@@ -18,7 +18,7 @@ class V11ActiveCalendarStore(
         )
 
     fun save(calendarId: String?) {
-        prefs.edit().apply {
+        val editor = prefs.edit().apply {
             if (calendarId == null) {
                 remove(KEY_ACTIVE_CALENDAR)
             } else {
@@ -27,7 +27,8 @@ class V11ActiveCalendarStore(
                     calendarId
                 )
             }
-        }.apply()
+        }
+        check(editor.commit()) { "Unable to save primary calendar" }
     }
 
     companion object {

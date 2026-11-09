@@ -1,4 +1,10 @@
 <resources>
+    <string name="widget_previous_glyph" translatable="false">‹</string>
+    <string name="widget_next_glyph" translatable="false">›</string>
+    <string name="widget_complete_glyph" translatable="false">○</string>
+    <string name="widget_add_glyph" translatable="false">+</string>
+    <string name="widget_zero" translatable="false">0</string>
+    <string name="tasks_widget_empty_text">لا توجد مهام حالياً</string>
     <string name="app_name">ToDo Shift</string>
     <string name="notification_channel_name">تذكيرات الشيفتات</string>
     <string name="notification_channel_description">تنبيهات الشيفتات والمهام القادمة</string>
@@ -15,7 +21,7 @@
     <string name="premium_settings_experience">واجهة التطبيق</string>
     <string name="premium_settings_brightness">إضاءة Premium</string>
     <string name="premium_settings_classic">Classic (الافتراضية)</string>
-    <string name="premium_settings_premium">Premium Clean</string>
+    <string name="premium_settings_premium">Neo Luxury 4.1</string>
     <string name="premium_settings_system">حسب النظام</string>
     <string name="premium_settings_light">فاتح</string>
     <string name="premium_settings_dark">داكن</string>

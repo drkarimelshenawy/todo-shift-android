@@ -1,4 +1,4 @@
-name: Build ToDo Shift APK
+name: Verify and build ToDo Shift 4.1
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
           TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
         run: |
           test -n "$TODOSHIFT_SIGNING_PASSWORD"
-          gradle assembleDebug --stacktrace
+          gradle testDebugUnitTest lintDebug assembleDebug --stacktrace
 
       - name: Verify APK signature
         run: |
@@ -60,5 +60,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-NeoLuxury-4.0-Ultimate-Test
+          name: ToDoShift-4.1.0-vc29-Test
           path: app/build/outputs/apk/debug/app-debug.apk

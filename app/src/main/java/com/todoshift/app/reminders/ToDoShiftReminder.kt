@@ -1,5 +1,6 @@
 package com.todoshift.app.reminders
 
+import kotlinx.coroutines.launch
 import android.Manifest
 import android.app.*
 import android.content.BroadcastReceiver
@@ -442,16 +443,14 @@ class ToDoShiftBootReceiver :
             return
         }
 
-        runCatching {
-            val db =
-                V11Runtime(context)
-                    .start()
-
-            ToDoShiftReminder
-                .rescheduleAll(
-                    context,
-                    db
-                )
+        val pending = goAsync()
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                runCatching {
+                    val db = V11Runtime(context.applicationContext).start()
+                    ToDoShiftReminder.rescheduleAll(context.applicationContext, db)
+                }
+            } finally { pending.finish() }
         }
     }
 }

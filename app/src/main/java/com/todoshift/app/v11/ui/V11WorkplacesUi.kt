@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -83,7 +84,7 @@ fun V11WorkplacesScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = neoLiteral("رجوع", "Back")
                         )
                     }
@@ -573,7 +574,7 @@ private fun Double.cleanMoney(): String =
     if (this % 1.0 == 0.0)
         toInt().toString()
     else
-        String.format("%.2f", this)
+        String.format(java.util.Locale.ROOT, "%.2f", this)
 
 private fun Double.editableMoney(): String =
     if (this == 0.0)

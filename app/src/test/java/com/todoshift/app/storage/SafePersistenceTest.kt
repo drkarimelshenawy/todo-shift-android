@@ -266,4 +266,22 @@ class SafePersistenceTest {
         assertEquals(0, current.writes)
     }
 
+    @Test fun staleSnapshotCannotOverwriteBackgroundChanges() {
+        val current = MemoryPrefs().apply { seed(json()) }
+        val store = V11Storage(current.prefs)
+        val original = store.load()
+        val background = original.copy(days = original.days.dropLast(1))
+        store.save(background)
+        expectFailure { runtime(MemoryPrefs(), current).saveIfCurrent(original, original.copy(days = emptyList())) }
+        assertEquals(background, store.load())
+        assertEquals(1, current.writes)
+    }
+    @Test fun confirmedSnapshotSavePreservesUnrelatedRecords() {
+        val current = MemoryPrefs().apply { seed(json()) }
+        val before = V11Storage(current.prefs).load()
+        val next = before.copy(days = before.days.mapIndexed { index, day -> if (index == 0) day.copy(note = "edited") else day })
+        runtime(MemoryPrefs(), current).saveIfCurrent(before, next)
+        assertEquals(next, V11Storage(current.prefs).load())
+        assertEquals(before.days.drop(1), next.days.drop(1))
+    }
 }

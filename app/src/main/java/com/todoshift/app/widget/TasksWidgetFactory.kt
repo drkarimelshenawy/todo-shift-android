@@ -31,12 +31,11 @@ class TasksWidgetFactory(
         val today = LocalDate.now().toString()
 
         tasks = runCatching {
-            V11Runtime(context)
-                .start()
-                .tasks
-                .filter {
-                    it.status != TaskStatusV11.COMPLETED
-                }
+            val db = V11Runtime(context).start()
+            val visible = db.calendars.filter { it.visible }.map { it.id }.toSet()
+            db.tasks.filter {
+                it.status != TaskStatusV11.COMPLETED && (it.calendarId == null || it.calendarId in visible)
+            }
                 .sortedWith(
                     compareBy<TaskV11> {
                         if (it.date <= today) 0 else 1

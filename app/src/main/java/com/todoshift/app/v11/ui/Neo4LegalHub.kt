@@ -17,9 +17,9 @@ fun Neo4LegalHub(onBack: () -> Unit) {
     val context = LocalContext.current; val en = LocalNeoEnglish.current
     var selected by remember { mutableStateOf<String?>(null) }
     BackHandler { if (selected == null) onBack() else selected = null }
-    val document by produceState<String?>(null, selected, en) {
-        value = null
-        selected?.let { slug -> value = withContext(Dispatchers.IO) { runCatching { context.assets.open("legal/$slug.${if (en) "en" else "ar"}.txt").bufferedReader().use { it.readText() } }.getOrDefault(if (en) "Document unavailable" else "المستند غير متاح") } }
+    var document by remember(selected, en) { mutableStateOf<String?>(null) }
+    LaunchedEffect(selected, en) {
+        selected?.let { slug -> document = withContext(Dispatchers.IO) { runCatching { context.assets.open("legal/$slug.${if (en) "en" else "ar"}.txt").bufferedReader().use { it.readText() } }.getOrDefault(if (en) "Document unavailable" else "المستند غير متاح") } }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         TextButton(onClick = { if (selected == null) onBack() else selected = null }) { Text(neoLabel("رجوع", "Back")) }

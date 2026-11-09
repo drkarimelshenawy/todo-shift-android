@@ -430,23 +430,13 @@ fun V11SecuritySettingsDialog(
                         return@Button
                     }
 
-                    if (
-                        finalSettings.mode !=
-                            V11LockMode.PIN
-                    ) {
-                        store.clearPin()
+                    try {
+                        store.save(finalSettings)
+                        onChanged(finalSettings)
+                        onDismiss()
+                    } catch (failure: Exception) {
+                        message = neoLiteral("تعذر حفظ الحماية؛ أغلق التطبيق وأعد فتحه للتحقق", "Security save could not be confirmed; close and reopen to verify")
                     }
-
-                    if (
-                        finalSettings.mode !=
-                            V11LockMode.PATTERN
-                    ) {
-                        store.clearPattern()
-                    }
-
-                    store.save(finalSettings)
-                    onChanged(finalSettings)
-                    onDismiss()
                 }
             ) {
                 Text(neoLiteral("حفظ", "Save"))

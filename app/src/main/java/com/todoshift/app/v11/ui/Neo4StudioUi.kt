@@ -20,7 +20,13 @@ import kotlinx.coroutines.withContext
 @Composable
 fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
     val density = androidx.compose.ui.platform.LocalDensity.current
-    CompositionLocalProvider(LocalNeoAppearance provides draft,
+    val english = when (draft.language) {
+        NeoLanguage.SYSTEM -> androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language != "ar"
+        NeoLanguage.ENGLISH -> true
+        NeoLanguage.ARABIC -> false
+    }
+    CompositionLocalProvider(LocalNeoAppearance provides draft, LocalNeoEnglish provides english,
+        androidx.compose.ui.platform.LocalLayoutDirection provides if (english) androidx.compose.ui.unit.LayoutDirection.Ltr else androidx.compose.ui.unit.LayoutDirection.Rtl,
         androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, density.fontScale / rootFontScale * draft.fontScale)) {
         V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
             Surface(shape = MaterialTheme.shapes.large, color = androidx.compose.ui.graphics.Color.Transparent) {
@@ -140,7 +146,7 @@ fun Neo4ProfilesStudio(draft: NeoAppearance, update: (NeoAppearance) -> Unit) {
     profiles.forEach { profile ->
         Row(Modifier.fillMaxWidth()) {
             OutlinedButton(onClick = { update(profile.appearance) }, modifier = Modifier.weight(1f)) { Text(profile.name) }
-            TextButton(onClick = { store.delete(profile.id); profiles = store.list() }) { Text(neoLabel("حذف", "Delete")) }
+            TextButton(onClick = { runCatching { store.delete(profile.id) }.onSuccess { profiles = store.list() }.onFailure { error = it.message } }) { Text(neoLabel("حذف", "Delete")) }
         }
     }
 }

@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
+import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.util.AtomicFile
 import java.io.File
@@ -26,7 +26,8 @@ object Neo4ImageStore {
     fun importPhoto(context: Context, uri: Uri): String {
         val resolver = context.contentResolver
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: error("Cannot read image")
+        val boundsSource = resolver.openInputStream(uri) ?: error("Cannot read image")
+        boundsSource.use { BitmapFactory.decodeStream(it, null, bounds) }
         require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Invalid image" }
         var sample = 1
         while ((maxOf(bounds.outWidth, bounds.outHeight).toLong() + sample - 1) / sample > 1600) sample *= 2

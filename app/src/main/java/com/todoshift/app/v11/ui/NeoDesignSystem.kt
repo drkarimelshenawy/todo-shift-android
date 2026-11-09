@@ -36,6 +36,16 @@ fun neoLabel(ar: String, en: String): String = if (LocalNeoEnglish.current) en e
 
 fun neoAccent(palette: NeoPalette): Color = Color(neo4AccentArgb(palette))
 
+/** Bounded contrast against neutral surfaces, also for user-defined black/white accents. */
+fun neoContrastAccent(raw: Color, dark: Boolean): Color {
+    var color = raw
+    repeat(24) {
+        if (dark && color.luminance() < 0.32f) color = lerp(color, Color.White, 0.08f)
+        else if (!dark && color.luminance() > 0.13f) color = lerp(color, Color.Black, 0.08f)
+    }
+    return color
+}
+
 fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val dark = when (p.brightness) {
         NeoBrightness.SYSTEM -> systemDark
@@ -44,11 +54,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     }
     val raw = runCatching { Color(android.graphics.Color.parseColor(p.accentHex)) }.getOrElse { neoAccent(p.palette) }
     // Bound custom accent contrast against both backgrounds; on-accent is computed separately.
-    val accent = if (dark) {
-        if (raw.luminance() < 0.28f) lerp(raw, Color.White, 0.55f) else raw
-    } else {
-        if (raw.luminance() > 0.16f) lerp(raw, Color.Black, 0.55f) else raw
-    }
+    val accent = neoContrastAccent(raw, dark)
     val bg = when {
         !dark -> Color(0xFFF3F6FA)
         p.brightness == NeoBrightness.AMOLED -> Color.Black

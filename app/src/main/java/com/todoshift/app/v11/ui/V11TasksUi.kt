@@ -48,7 +48,11 @@ fun V11TasksScreen(
     workplaces: List<Workplace>,
     onDatabaseChange: (V11Database) -> Unit,
     initialAction: String? = null,
-    initialTaskId: String? = null
+    initialTaskId: String? = null,
+    financeAuthorized: Boolean = false,
+    moneyVisible: Boolean = false,
+    onQuickAction: (NeoQuickAction) -> Unit = {},
+    onInitialActionHandled: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -87,6 +91,7 @@ fun V11TasksScreen(
         mutableStateOf<TaskV11?>(null)
     }
 
+    var pendingDelete by remember { mutableStateOf<TaskV11?>(null) }
     var showEditor by remember {
         mutableStateOf(false)
     }
@@ -108,16 +113,19 @@ fun V11TasksScreen(
                 }
             }
         }
+        if (initialAction != null) onInitialActionHandled()
     }
 
     val neo = LocalV11NeoEnabled.current
     var searchQuery by remember { mutableStateOf("") }
     var priorityFilter by remember { mutableStateOf<TaskPriorityV11?>(null) }
     var categoryFilter by remember { mutableStateOf<String?>(null) }
-    val today = LocalDate.now().toString()
+    val today = neoNow().toLocalDate().toString()
+    val visibleIds = remember(db.calendars) { db.calendars.filter { it.visible }.map { it.id }.toSet() }
+    val visibleTasks = remember(db.tasks, visibleIds, neo) { db.tasks.filter { !neo || it.calendarId == null || it.calendarId in visibleIds } }
 
-    val filteredTasks = remember(db.tasks, filter, today, searchQuery, priorityFilter, categoryFilter, neo) {
-        db.tasks
+    val filteredTasks = remember(visibleTasks, filter, today, searchQuery, priorityFilter, categoryFilter, neo) {
+        visibleTasks
             .filter { task ->
                 (!neo || ((searchQuery.isBlank() || task.title.contains(searchQuery, ignoreCase = true) || task.details.contains(searchQuery, ignoreCase = true)) &&
                     (priorityFilter == null || task.priority == priorityFilter) && (categoryFilter == null || task.calendarId == categoryFilter))) &&
@@ -157,18 +165,23 @@ fun V11TasksScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item(key = "task-controls") {
+            Column {
             if (neo) {
+                NeoDashboard(db, workplaces, onQuickAction = { action ->
+                    if (action == NeoQuickAction.ADD_TASK) { editingTask = null; showEditor = true }
+                    else onQuickAction(action)
+                }, financeAuthorized = financeAuthorized, moneyVisible = moneyVisible)
                 NeoTaskSearch(searchQuery, { searchQuery = it }, priorityFilter, { priorityFilter = it }, categoryFilter, { categoryFilter = it }, db)
-                val complete = db.tasks.count { it.status == TaskStatusV11.COMPLETED }
-                if (LocalNeoAppearance.current.showTaskSummary && db.tasks.isNotEmpty()) {
-                    LinearProgressIndicator(progress = { complete.toFloat() / db.tasks.size }, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp))
+                val complete = visibleTasks.count { it.status == TaskStatusV11.COMPLETED }
+                if (LocalNeoAppearance.current.showTaskSummary && visibleTasks.isNotEmpty()) {
+                    LinearProgressIndicator(progress = { complete.toFloat() / visibleTasks.size }, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp))
                 }
             }
-            if (!neo || LocalNeoAppearance.current.showTaskSummary) TaskSummaryV11(
-                tasks = db.tasks,
+            if (!neo) TaskSummaryV11(
+                tasks = visibleTasks,
                 today = today
             )
 
@@ -177,10 +190,13 @@ fun V11TasksScreen(
                 onSelected = { filter = it }
             )
 
+            }
+            }
             if (filteredTasks.isEmpty()) {
+                item(key = "empty-tasks") {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth().heightIn(min = 160.dp)
                         .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -209,18 +225,8 @@ fun V11TasksScreen(
                     )
                     }
                 }
+                }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 12.dp,
-                        end = 12.dp,
-                        top = 6.dp,
-                        bottom = 96.dp
-                    ),
-                    verticalArrangement =
-                        Arrangement.spacedBy(8.dp)
-                ) {
                     items(
                         items = filteredTasks,
                         key = { it.id }
@@ -250,18 +256,6 @@ fun V11TasksScreen(
                                         updatedAt = now
                                     )
 
-                                if (completed) {
-                                    ToDoShiftReminder.cancel(
-                                        context,
-                                        task.id
-                                    )
-                                } else {
-                                    ToDoShiftReminder.schedule(
-                                        context,
-                                        updatedTask
-                                    )
-                                }
-
                                 onDatabaseChange(
                                     db.copy(
                                         tasks = db.tasks.map {
@@ -277,24 +271,10 @@ fun V11TasksScreen(
                                 editingTask = task
                                 showEditor = true
                             },
-                            onDelete = {
-                                ToDoShiftReminder.cancel(
-                                    context,
-                                    task.id
-                                )
-
-                                onDatabaseChange(
-                                    db.copy(
-                                        tasks =
-                                            db.tasks.filterNot {
-                                                it.id == task.id
-                                            }
-                                    )
-                                )
+                            onDelete = { pendingDelete = task
                             }
                         )
                     }
-                }
             }
         }
 
@@ -312,6 +292,16 @@ fun V11TasksScreen(
                 contentDescription = neoLiteral("إضافة مهمة", "Add task")
             )
         }
+    }
+
+    pendingDelete?.let { task ->
+        AlertDialog(onDismissRequest = { pendingDelete = null },
+            title = { Text(neoLabel("حذف المهمة؟", "Delete task?")) }, text = { Text(task.title) },
+            confirmButton = { TextButton(onClick = {
+                pendingDelete = null
+                onDatabaseChange(db.copy(tasks = db.tasks.filterNot { it.id == task.id }))
+            }) { Text(neoLabel("حذف", "Delete")) } },
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text(neoLabel("إلغاء", "Cancel")) } })
     }
 
     if (showEditor) {
@@ -336,19 +326,13 @@ fun V11TasksScreen(
                         db.tasks + task
                     }
 
-                ToDoShiftReminder.cancel(
-                    context,
-                    task.id
-                )
+                Unit // Reminder effects follow a confirmed database commit in V11Home.
 
                 if (task.reminderAt != null) {
                     ensureNotificationPermission()
                 }
 
-                ToDoShiftReminder.schedule(
-                    context,
-                    task
-                )
+                Unit // Reminder effects follow a confirmed database commit in V11Home.
 
                 onDatabaseChange(
                     db.copy(tasks = updated)

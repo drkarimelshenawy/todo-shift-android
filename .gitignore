@@ -1,1 +1,8 @@
 *.bak
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+.kotlin/
+__pycache__/

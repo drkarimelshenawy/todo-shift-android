@@ -50,7 +50,7 @@ class NeoAppearanceStore(context: Context) {
     }
 
     fun save(value: NeoAppearance) {
-        prefs.edit().apply {
+        val editor = prefs.edit().apply {
             putString("neo4Appearance", Neo4AppearanceCodec.encode(value).toString())
             putString("brightness", value.brightness.name); putString("palette", value.palette.name)
             putString("accentHex", value.accentHex); putFloat("intensity", value.intensity)
@@ -66,6 +66,7 @@ class NeoAppearanceStore(context: Context) {
             putStringSet("quickActions", value.quickActions.map { it.name }.toSet())
             putBoolean("showShiftNotes", value.showShiftNotes); putString("timelineFilter", value.timelineFilter.name)
             putBoolean("showFinanceChart", value.showFinanceChart)
-        }.apply()
+        }
+        check(editor.commit()) { "Unable to save appearance" }
     }
 }

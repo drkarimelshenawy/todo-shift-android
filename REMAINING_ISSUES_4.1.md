@@ -1,0 +1,13 @@
+# Remaining issues and acceptance boundaries
+
+1. **Production-signature upgrade is blocked by unavailable production credentials.** The delivered APK is signed by a new local test key. It cannot replace an installed app signed by a different key. Do not uninstall or clear storage to get around this. Rebuild with the matching original key for a data-preserving upgrade.
+2. **No real-device/emulator installation was performed.** The available adb binary tried to create `/home/agent/.android` in a read-only location; environment probes found no configured emulator, KVM or USB device interface. Robolectric/Compose checks run on the host and are not physical-device tests.
+3. The original missing-color incident on the user's device has not been reproduced. Demonstrated renderer omissions now have regression coverage; no historical data-loss cause is claimed.
+4. Real Android filesystem write failure, abrupt process death, power loss, interrupted restore across an OS restart, long-running reminder delivery and OEM widget refresh behavior require further acceptance testing. Synthetic commit failures and Robolectric journals do not prove hardware durability.
+5. Real historical user exports were not supplied. Existing supported parser schemas and migration behavior are preserved; synthetic compatibility tests are not a substitute for validating a copy of those exports.
+6. Google sign-in/Drive synchronization remains explicitly unconfigured, as at baseline. Its future preference UI is retained in a collapsed section; there is no claimed cloud backup.
+7. Legal documents still contain draft developer/publication details from baseline; public-store legal approval is not claimed.
+8. Lint warnings and compiler deprecations, if any, are enumerated in QA_REPORT_4.1.md. No lint baseline or broad suppression was added to hide errors.
+9. Custom-image/glass combinations, launcher icon masks, Android 12+ splash timing, large-font landscape layouts, biometrics/device credentials, notification permission denial and upgrade preservation must be checked on representative devices. Base contrast and selected UI behavior are automated, not a complete visual certification.
+10. Save failure deliberately blocks editing rather than offering an unsafe blind retry. Reopen after checking device storage; use the explicit validated recovery flow if normal loading remains impossible. Private recovery snapshots can be large and contain sensitive user records; no automatic deletion policy is implemented.
+11. Cross-process/external writers are outside the in-process snapshot gate. The app manifest declares no separate process for its writers. Future new writers must use the same gate and expected-snapshot policy.

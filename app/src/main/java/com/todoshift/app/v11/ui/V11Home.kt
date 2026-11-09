@@ -34,6 +34,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.todoshift.app.data.AppStorage
 import com.todoshift.app.v11.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -76,17 +79,40 @@ fun V11Home(
         )
     }
 
+    val writeScope = rememberCoroutineScope()
+    var writeBusy by remember { mutableStateOf(false) }
+    var writeFailure by remember { mutableStateOf<String?>(null) }
+    var recoveryOpen by remember { mutableStateOf(false) }
     var bootAttempt by remember { mutableIntStateOf(0) }
     var bootFailure by remember { mutableStateOf(false) }
-    val boot by produceState<com.todoshift.app.backup.Neo4BootState?>(null, bootAttempt) {
+    var boot by remember(bootAttempt) { mutableStateOf<com.todoshift.app.backup.Neo4BootState?>(null) }
+    LaunchedEffect(bootAttempt) {
         bootFailure = false
         try {
-            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            boot = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 com.todoshift.app.backup.Neo4BootState(runtime.start(), oldStorage.load(), uiStore.load(),
                     NeoAppearanceStore(context.applicationContext).load(), securityStore.load(), activeCalendarStore.load())
             }
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (_: Exception) { bootFailure = true }
+    }
+    if (recoveryOpen) SafeStorageRecovery(onDismiss = { recoveryOpen = false }, onRecovered = {
+        // Recreate all remembered state only after a successful, explicitly confirmed recovery.
+        (context as? android.app.Activity)?.recreate()
+    })
+    if (writeBusy || writeFailure != null) androidx.compose.ui.window.Dialog(
+        onDismissRequest = {}, properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+    ) {
+        Surface(shape = MaterialTheme.shapes.large) {
+            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (writeFailure == null) { CircularProgressIndicator(); Text("جارٍ الحفظ… / Saving…") }
+                else {
+                    Text("تعذر تأكيد الحفظ / Save could not be confirmed", style = MaterialTheme.typography.titleMedium)
+                    Text("تم إيقاف التعديل لحماية البيانات. أغلق التطبيق وافتحه للتحقق؛ لا تمسح التخزين. / Editing is paused. Close and reopen to verify storage; do not clear app data.")
+                    Text(writeFailure!!, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
     }
     val loaded = boot
     if (loaded == null) {
@@ -95,6 +121,7 @@ fun V11Home(
                 Text("تعذر فتح البيانات بأمان / Unable to open data safely")
                 Text("لا إعادة ضبط تلقائية / No automatic data reset")
                 Button(onClick = { bootAttempt++ }) { Text("إعادة المحاولة / Retry") }
+                OutlinedButton(onClick = { recoveryOpen = true }) { Text("استعادة نسخة موثوقة / Recover from backup") }
             } else CircularProgressIndicator()
         } }
         return
@@ -115,6 +142,13 @@ fun V11Home(
                     !securitySettings.biometricEnabled
                 )
         )
+    }
+
+    DisposableEffect(securitySettings.protectAccounts) {
+        val window = (context as? android.app.Activity)?.window
+        if (securitySettings.protectAccounts) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
     }
 
     var backgroundAt by remember {
@@ -231,10 +265,8 @@ fun V11Home(
                     .firstOrNull()
                     ?.id
 
-            activeCalendarId = fallback
-            activeCalendarStore.save(
-                fallback
-            )
+            try { activeCalendarStore.save(fallback); activeCalendarId = fallback }
+            catch (failure: Exception) { writeFailure = failure.message ?: "Unable to save primary calendar" }
         }
     }
 
@@ -250,8 +282,12 @@ fun V11Home(
                 )
 
         if (repaired != db) {
-            runtime.save(repaired)
-            db = repaired
+            writeBusy = true
+            try {
+                withContext(Dispatchers.IO) { runtime.saveIfCurrent(db, repaired) }
+                db = repaired
+            } catch (failure: Exception) { writeFailure = failure.message ?: "Storage failure" }
+            finally { writeBusy = false }
         }
     }
 
@@ -263,11 +299,11 @@ fun V11Home(
 
     val neoStore = remember { NeoAppearanceStore(context.applicationContext) }
     var neoAppearance by remember { mutableStateOf(loaded.appearance) }
-    var quickTask by remember { mutableStateOf(false) }
+    var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction) }
+    var pendingTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
     var calendarActionId by remember { mutableIntStateOf(0) }
     var calendarManagerRequest by remember { mutableIntStateOf(0) }
-    var overviewOpen by remember { mutableStateOf(false) }
 
     val contentAlpha = remember { androidx.compose.animation.core.Animatable(1f) }
     var tab by remember(initialTab) {
@@ -305,15 +341,34 @@ fun V11Home(
     }
 
     fun saveDb(value: V11Database) {
-        runtime.save(value)
-        db = value
+        if (writeBusy || writeFailure != null) return
+        val expected = db
+        writeBusy = true
+        writeScope.launch {
+            try {
+                withContext(Dispatchers.IO) { runtime.saveIfCurrent(expected, value) }
+                db = value
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        val changedTasks = expected.tasks.filter { old -> value.tasks.none { it == old } }
+                        val changedEvents = expected.dayItems.filter { old -> value.dayItems.none { it == old } }
+                        changedTasks.forEach { com.todoshift.app.reminders.ToDoShiftReminder.cancel(context, it.id) }
+                        changedEvents.forEach { com.todoshift.app.reminders.ToDoShiftReminder.cancel(context, it.id) }
+                        value.tasks.filter { it !in expected.tasks }.forEach { com.todoshift.app.reminders.ToDoShiftReminder.schedule(context, it) }
+                        value.dayItems.filter { it !in expected.dayItems }.forEach { com.todoshift.app.reminders.ToDoShiftReminder.schedule(context, it) }
+                    }
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+            catch (failure: Exception) { writeFailure = failure.message ?: "Storage failure" }
+            finally { writeBusy = false }
+        }
     }
 
     fun saveUi(
         value: V11UiSettings
     ) {
-        uiSettings = value
-        uiStore.save(value)
+        try { uiStore.save(value); uiSettings = value }
+        catch (failure: Exception) { writeFailure = failure.message ?: "Settings save failed" }
 
         com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext)
     }
@@ -327,7 +382,7 @@ fun V11Home(
     BackHandler(
         enabled = !showWorkplaces && tab != 0
     ) {
-        quickTask = false
+        pendingTaskAction = null; pendingTaskId = null
         calendarAction = null
         tab = 0
     }
@@ -358,7 +413,10 @@ fun V11Home(
     NeoEnvironment(
         appearance = neoAppearance,
         enabled = uiSettings.experience == V11Experience.PREMIUM,
-        onChange = { value -> neoAppearance = value; neoStore.save(value); com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext) }
+        onChange = { value ->
+            try { neoStore.save(value); neoAppearance = value; com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext) }
+            catch (failure: Exception) { writeFailure = failure.message ?: "Appearance save failed" }
+        }
     ) {
     V11AppThemeProvider(
         theme = uiSettings.appTheme,
@@ -378,7 +436,7 @@ fun V11Home(
                 onToday = { calendarAction = NeoQuickAction.TODAY; calendarActionId++ },
                 onAdd = { calendarAction = NeoQuickAction.ADD_SHIFT; calendarActionId++ },
                 onManage = { calendarManagerRequest++ },
-                onOverview = { overviewOpen = true },
+                onOverview = { tab = 4 },
                 title = if (uiSettings.experience == V11Experience.PREMIUM) when {
                     showWorkplaces -> neoLabel("أماكن العمل", "Workplaces")
                     tab == 0 -> neoLabel("التقويم", "Calendar")
@@ -401,14 +459,14 @@ fun V11Home(
             if (uiSettings.experience == V11Experience.PREMIUM) {
                 V11PremiumBottomBar(selectedTab = tab, onSelectTab = { destination ->
                     showWorkplaces = false
-                    quickTask = false
+                    pendingTaskAction = null; pendingTaskId = null
                     calendarAction = null
                     tab = destination
                 })
             } else {
                 V11HeroBottomBar(selectedTab = tab, onSelectTab = { destination ->
                     showWorkplaces = false
-                    quickTask = false
+                    pendingTaskAction = null; pendingTaskId = null
                     calendarAction = null
                     tab = destination
                 })
@@ -431,22 +489,21 @@ fun V11Home(
                         showWorkplaces = false
                     },
                     onSaveWorkplaces = { workplaces ->
-                        val updated =
-                            oldData.copy(
-                                workplaces = workplaces
-                            )
-
-                        oldStorage.save(updated)
-                        oldData = updated
-
-                        val syncedDb =
-                            V11WorkplaceSync
-                                .repairAndSync(
-                                    db,
-                                    workplaces
-                                )
-
-                        saveDb(syncedDb)
+                        if (!writeBusy && writeFailure == null) {
+                            val expectedLegacy = oldData
+                            val expected = db
+                            writeBusy = true
+                            writeScope.launch {
+                                try {
+                                    val (savedLegacy, savedDb) = withContext(Dispatchers.IO) {
+                                        com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext)
+                                            .updateWorkplaces(expectedLegacy, expected, workplaces)
+                                    }
+                                    oldData = savedLegacy; db = savedDb
+                                } catch (failure: Exception) { writeFailure = failure.message ?: "Workplace save failed" }
+                                finally { writeBusy = false }
+                            }
+                        }
                     }
                 )
             } else {
@@ -472,8 +529,8 @@ fun V11Home(
                         activeCalendarId =
                             activeCalendarId,
                         onActiveCalendarChange = { id ->
-                            activeCalendarId = id
-                            activeCalendarStore.save(id)
+                            try { activeCalendarStore.save(id); activeCalendarId = id }
+                            catch (failure: Exception) { writeFailure = failure.message ?: "Unable to save primary calendar" }
                         },
                         onMonthChange = {
                             month = it
@@ -601,10 +658,14 @@ fun V11Home(
 
                 4 ->
                     V11TasksScreen(
+                        financeAuthorized = accountsUnlocked,
+                        moneyVisible = moneyVisible,
+                        onQuickAction = { action -> tab = 0; calendarAction = action; calendarActionId++ },
                         db = db,
                         workplaces = oldData.workplaces,
-                        initialAction = if (quickTask) "add" else initialTaskAction,
-                        initialTaskId = initialTaskId,
+                        initialAction = pendingTaskAction,
+                        initialTaskId = pendingTaskId,
+                        onInitialActionHandled = { pendingTaskAction = null; pendingTaskId = null },
                         onDatabaseChange = {
                             saveDb(it)
                         }
@@ -627,8 +688,8 @@ fun V11Home(
                         activeCalendarId =
                             activeCalendarId,
                         onActiveCalendarChange = { id ->
-                            activeCalendarId = id
-                            activeCalendarStore.save(id)
+                            try { activeCalendarStore.save(id); activeCalendarId = id }
+                            catch (failure: Exception) { writeFailure = failure.message ?: "Unable to save primary calendar" }
                         },
                         onMonthChange = {
                             month = it
@@ -644,11 +705,7 @@ fun V11Home(
             }
         }
     }
-    if (overviewOpen && uiSettings.experience == V11Experience.PREMIUM) Neo4OverviewSheet(db, oldData.workplaces, accountsUnlocked, moneyVisible,
-        onAction = { action ->
-            if (action == NeoQuickAction.ADD_TASK) { calendarAction = null; quickTask = true; tab = 4 }
-            else { tab = 0; calendarAction = action; calendarActionId++ }
-        }, onDismiss = { overviewOpen = false })
+
 
 }
 }
@@ -975,7 +1032,13 @@ private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         ).forEach { (index, label, icon) ->
             NavigationBarItem(
                 selected = selectedTab == index, onClick = { onSelectTab(index) },
-                icon = { Icon(icon, contentDescription = null) },
+                icon = { if (outlined) Icon(icon, contentDescription = null) else Icon(painterResource(when(index) {
+                    0 -> R.drawable.neo41_nav_calendar
+                    1 -> R.drawable.neo41_nav_shifts
+                    2 -> R.drawable.neo41_nav_finance
+                    3 -> R.drawable.neo41_nav_settings
+                    else -> R.drawable.neo41_nav_tasks
+                }), contentDescription = null) },
                 label = { Text(label, style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) },
                 alwaysShowLabel = true,

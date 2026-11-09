@@ -1,0 +1,501 @@
+{
+  "baseline": "f71bf40a87aa5df7cc10da7085b3e44ac196dad0",
+  "branch": "feat/neo-luxury-4.1-ultimate",
+  "committed": true,
+  "commit_reference": "Local preservation commit containing this index; resolve with git rev-parse HEAD.",
+  "files": [
+    {
+      "path": ".github/workflows/android.yml",
+      "status": "modified",
+      "bytes": 2156,
+      "sha256": "70068bead29dc3821f3b5fa29ad83fe040b442e9bf4476baf685e50b554e0814"
+    },
+    {
+      "path": ".gitignore",
+      "status": "modified",
+      "bytes": 81,
+      "sha256": "763329dd5fa18e0484c80029ac3792e36e8a036d208f8879d05aa43829985d3a"
+    },
+    {
+      "path": "IMPLEMENTATION_REPORT_4.1_ULTIMATE.md",
+      "status": "new",
+      "bytes": 11565,
+      "sha256": "e069a6c55c191024e68c3ab5993d125f41d75b3038fca0419c88ff4341237ac0"
+    },
+    {
+      "path": "INSTALL_4.1.md",
+      "status": "new",
+      "bytes": 5630,
+      "sha256": "9cf522977d9a034713e2315bbadda8a3d703ee6b63230f21567009f5adffad8f"
+    },
+    {
+      "path": "QA_REPORT_4.1.md",
+      "status": "new",
+      "bytes": 9806,
+      "sha256": "9118e39d0896d1c4312d18d827ffea724bb258c9db1feec09fae4d26ff6f7320"
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "bytes": 1839,
+      "sha256": "a14edfc524d6496ae18d5c781fcd4beb29f1b233e16eb91eb56727685f2cf5dd"
+    },
+    {
+      "path": "REMAINING_ISSUES_4.1.md",
+      "status": "new",
+      "bytes": 2718,
+      "sha256": "7c0c44c91606e30aababbbb5eace48fcd02ec138c5ca5dd13079f8055342b4cf"
+    },
+    {
+      "path": "app/build.gradle.kts",
+      "status": "modified",
+      "bytes": 2270,
+      "sha256": "5255c6006530226c2de892802c6bcd728c93c4a1affb11ab51b0b6e9df816ac6"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+      "status": "modified",
+      "bytes": 23011,
+      "sha256": "51fbd176c7354c5b8b0dcef9784fe12cf0e4765188cb60450919f7d3ce44546b"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt",
+      "status": "modified",
+      "bytes": 11331,
+      "sha256": "e7bbc5581128294eda59e84e9602fe869c7cc60489e248a436570e98e917c508"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/Neo4ImageStore.kt",
+      "status": "modified",
+      "bytes": 2916,
+      "sha256": "063c7628985085e1550f1b1c6ad8b7f98621c9697941802cc9619fb95824fb08"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/Neo4Profiles.kt",
+      "status": "modified",
+      "bytes": 1462,
+      "sha256": "2e958887e34f96f888700b6b5620275fd37eddd22de9452e373596a203799404"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+      "status": "modified",
+      "bytes": 5629,
+      "sha256": "b41fab148211557cfb60076362211ecac9e7f262d8ee6c9563fc0cd6dcefbb8e"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/NeoAppearanceStore.kt",
+      "status": "modified",
+      "bytes": 5164,
+      "sha256": "f2df651245461dee260ecb95c44818b9cf2c8ae3e1fe5d61536e6c219548dc66"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+      "status": "new",
+      "bytes": 1581,
+      "sha256": "c58405a25c385dacaa49b60e28b0cdd1baec9cbb3d92107bd76ad06e32536b4e"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/V11ActiveCalendarStore.kt",
+      "status": "modified",
+      "bytes": 885,
+      "sha256": "230eeed96b2b78e3a0846b8be2fddef9a1290028c738022167e43c28f20c907f"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+      "status": "modified",
+      "bytes": 3385,
+      "sha256": "7d8dbf33ee4f55636c0b16cc58afc3d2512d6c8a2186c17614ef968facc695b1"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt",
+      "status": "modified",
+      "bytes": 9357,
+      "sha256": "9490ff12b2523d71ba87ad79c58dcdd9342b89bfdee6c3f1a6a69de4c3592988"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/V11UiSettingsStore.kt",
+      "status": "modified",
+      "bytes": 3377,
+      "sha256": "5300cec5f5232a09ad8b3b2298072ad9f91c7eaa4ed8b26a5de0b71664737e93"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt",
+      "status": "modified",
+      "bytes": 12124,
+      "sha256": "f7e1c98469f56c46b5e8d5ccfc3e8432ce52d8399077d20c48b52dc452cf2158"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+      "status": "modified",
+      "bytes": 6941,
+      "sha256": "d774d20b9231b8613f63b77906742d99222aaa17a0749f54f9af9bcd7018de1a"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/Neo4LegalHub.kt",
+      "status": "modified",
+      "bytes": 2458,
+      "sha256": "402be0b53ce60f32bb60ca894001977209a0f0117a22343be9bc9006af6f1b81"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/Neo4Shell.kt",
+      "status": "modified",
+      "bytes": 2841,
+      "sha256": "4ed81958dae9cbee1efdd3b0e59ad9acd3fe4ab3fed68f819a8fd5d68576f6d1"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+      "status": "modified",
+      "bytes": 14870,
+      "sha256": "4acbded1bf587cf7f6d47ebf280aa2a663e04236bee426370dad908fc8133481"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt",
+      "status": "modified",
+      "bytes": 3939,
+      "sha256": "ded863171092ac1bf6688a36a33292320fa366858a6267d3a544f42602a48c4f"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+      "status": "modified",
+      "bytes": 19079,
+      "sha256": "637ec3a0ed53ac57efd0d42ed2f79abd54fbe715dfd57f9032c9b8084460237c"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+      "status": "modified",
+      "bytes": 13745,
+      "sha256": "6ccc12c08c3b299b0fea00a94ca50fe1a8ba524e8f979174f8d173f8df8f60d1"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/NeoDashboard.kt",
+      "status": "modified",
+      "bytes": 11036,
+      "sha256": "09080d752ba94a809deab800a474aeab8302ec8fef86aa9b7b4928b609891c94"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+      "status": "modified",
+      "bytes": 11592,
+      "sha256": "1cdb1e1a4f31746a03b81a963f9fa7c754a5ad4877b1bd8566320ea6fe4a756e"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/SafeStorageRecovery.kt",
+      "status": "new",
+      "bytes": 4714,
+      "sha256": "243b9b2030752c4cf75713984414f707c6130eb4a7b2e894f804fa4ef7e3fafb"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+      "status": "modified",
+      "bytes": 78750,
+      "sha256": "bf7732c4bf407d450acf07dc731fdd09e3c6266d295d8b07e57db96ae3068185"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt",
+      "status": "modified",
+      "bytes": 35588,
+      "sha256": "088676d368c492e28f664f9b92cd05f0b3716c4b8f8db02593218e8d71ce3105"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+      "status": "modified",
+      "bytes": 40937,
+      "sha256": "ed9b41bd8b46e681ca04797f58e56788908910e1594ab62ada2d39062c07db50"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+      "status": "modified",
+      "bytes": 28792,
+      "sha256": "ca727dfe1708680dcb47448fe50fcd76a88929a9d7114cad1f6658200d96c466"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/V11SecuritySettingsUi.kt",
+      "status": "modified",
+      "bytes": 40492,
+      "sha256": "e264e78c6c59999895d5683bcb74caf6a7bae7cb707a8b315ae8e088ad9fc183"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+      "status": "modified",
+      "bytes": 46674,
+      "sha256": "058bd76bc08918346e60f7c564a73679e1f6b609d2d2fc1555c839c302ea3c78"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+      "status": "modified",
+      "bytes": 18745,
+      "sha256": "da92a8d8953763b0b5261efb78043fa431cae79a0a50c7ceabf632498c95d905"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/widget/Neo4SummaryWidgets.kt",
+      "status": "modified",
+      "bytes": 6074,
+      "sha256": "ef2df7e00218ca3beaa4ed639bf7d66abdad88dacd67550605408fb43faef909"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt",
+      "status": "modified",
+      "bytes": 5336,
+      "sha256": "d1fcb8d9a1baa555c6a2f51bfd7769f243a0bc3424e4215effb8d6efdd833768"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/widget/TasksWidgetFactory.kt",
+      "status": "modified",
+      "bytes": 5135,
+      "sha256": "8b3b5c9bef870ca5374c10d6f54c43193ceba0ac4f04d5e822bbce22dad1ff9e"
+    },
+    {
+      "path": "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt",
+      "status": "modified",
+      "bytes": 10759,
+      "sha256": "120263516ceb43b37dadb071dbbfcfc7158bacece8732159fefb0ac1403a32b5"
+    },
+    {
+      "path": "app/src/main/res/drawable/ic_launcher_foreground.xml",
+      "status": "modified",
+      "bytes": 2122,
+      "sha256": "e04688b37bb44f0c609d94e6e2731b1e996cf754c07017c90e6cdfdc4c64fcd4"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_brand_emblem.xml",
+      "status": "new",
+      "bytes": 2022,
+      "sha256": "8e66ffca6fbfc3ec1c383722349e5b95c9bd87b0878b0f058c660b22ae18a300"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_icon_background.xml",
+      "status": "new",
+      "bytes": 190,
+      "sha256": "c98021f14ee624a4addcf8fd8fc20142b132fab8b1ebf6799c550fa32f11373e"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_monochrome.xml",
+      "status": "new",
+      "bytes": 574,
+      "sha256": "b4a0138c9b8bbadf88226d06fc8f1a6307096e5f712d5d6d5971cf88c2fbd273"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_nav_calendar.xml",
+      "status": "new",
+      "bytes": 495,
+      "sha256": "2241792cf04a91ba408767f63700aed1da6ae624968346725fec7eb9518e1438"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_nav_finance.xml",
+      "status": "new",
+      "bytes": 445,
+      "sha256": "9c6debf0c74ae6bc0cfc6493fb78f83c95a2be8616b33b9d988c0f8a1845d78f"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_nav_settings.xml",
+      "status": "new",
+      "bytes": 479,
+      "sha256": "5c65082beda3df511978efd4d9633ae53bf58e3c76c9b8c2b76ffc74b40f8915"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_nav_shifts.xml",
+      "status": "new",
+      "bytes": 477,
+      "sha256": "31dd16a52755ed64403cc0f902b975a66ef9363238b0e30687d5e595b052b0fb"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_nav_tasks.xml",
+      "status": "new",
+      "bytes": 441,
+      "sha256": "0599e2fc8c4fe5edbe89378a7ac01840f2d13d1c6e0857134abda6a5f982001c"
+    },
+    {
+      "path": "app/src/main/res/drawable/neo41_splash.xml",
+      "status": "new",
+      "bytes": 269,
+      "sha256": "65ec08a35753731acb67184bc3c6f91b0d8d553a6ffbf476b4dca45d631ccbae"
+    },
+    {
+      "path": "app/src/main/res/layout/widget_calendar.xml",
+      "status": "modified",
+      "bytes": 2384,
+      "sha256": "a5e799087199e465388f1e4bed2a9b5c2cfdaa8dd86dac24c06ce8ece985828e"
+    },
+    {
+      "path": "app/src/main/res/layout/widget_calendar_day.xml",
+      "status": "modified",
+      "bytes": 4396,
+      "sha256": "649c8b762cb192254b8d7677a1da74321bf4b378a92ae1bfa1da12b732710f53"
+    },
+    {
+      "path": "app/src/main/res/layout/widget_task_row.xml",
+      "status": "modified",
+      "bytes": 1491,
+      "sha256": "86706481c09c61a359d1c309b01860d0e7a2539550697fd0f2f71632f87c32c6"
+    },
+    {
+      "path": "app/src/main/res/layout/widget_tasks.xml",
+      "status": "modified",
+      "bytes": 2146,
+      "sha256": "ad2b9309b34459136a44a6715572b9c647d0949a8c8bc8a3024929b08c31efdc"
+    },
+    {
+      "path": "app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "status": "modified",
+      "bytes": 278,
+      "sha256": "372f58dda831026563b562bd1d3476fb9a5106ec71c439cc15021bbe6b8ff13f"
+    },
+    {
+      "path": "app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+      "status": "modified",
+      "bytes": 278,
+      "sha256": "372f58dda831026563b562bd1d3476fb9a5106ec71c439cc15021bbe6b8ff13f"
+    },
+    {
+      "path": "app/src/main/res/mipmap-anydpi-v33/ic_launcher.xml",
+      "status": "new",
+      "bytes": 278,
+      "sha256": "372f58dda831026563b562bd1d3476fb9a5106ec71c439cc15021bbe6b8ff13f"
+    },
+    {
+      "path": "app/src/main/res/mipmap-anydpi-v33/ic_launcher_round.xml",
+      "status": "new",
+      "bytes": 278,
+      "sha256": "372f58dda831026563b562bd1d3476fb9a5106ec71c439cc15021bbe6b8ff13f"
+    },
+    {
+      "path": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "status": "modified",
+      "bytes": 4281,
+      "sha256": "59bcf47784a8d78bb86bde6375539a2f4b931e13d5c7b1490ab7007de035b22c"
+    },
+    {
+      "path": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "status": "modified",
+      "bytes": 4281,
+      "sha256": "59bcf47784a8d78bb86bde6375539a2f4b931e13d5c7b1490ab7007de035b22c"
+    },
+    {
+      "path": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "status": "modified",
+      "bytes": 2685,
+      "sha256": "1efe6117c7f236ab9b7cbb80c0fe99cd9faf20fdc3cae0a1732a5953d3449e48"
+    },
+    {
+      "path": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "status": "modified",
+      "bytes": 2685,
+      "sha256": "1efe6117c7f236ab9b7cbb80c0fe99cd9faf20fdc3cae0a1732a5953d3449e48"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "status": "modified",
+      "bytes": 6045,
+      "sha256": "c2e0688ec4abc135da7441309b3aff717b312de501172e4f446d3e3a1a7c3743"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "status": "modified",
+      "bytes": 6045,
+      "sha256": "c2e0688ec4abc135da7441309b3aff717b312de501172e4f446d3e3a1a7c3743"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "status": "modified",
+      "bytes": 9496,
+      "sha256": "7f995d3f2e996732582df87828c9787f01dc20436402fba66ef7bcdce6d39791"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "status": "modified",
+      "bytes": 9496,
+      "sha256": "7f995d3f2e996732582df87828c9787f01dc20436402fba66ef7bcdce6d39791"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "status": "modified",
+      "bytes": 12841,
+      "sha256": "da34fd0bb646092bdc53c5efa55cb8e68e056893e9972a5a9d847453f44cc547"
+    },
+    {
+      "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "status": "modified",
+      "bytes": 12841,
+      "sha256": "da34fd0bb646092bdc53c5efa55cb8e68e056893e9972a5a9d847453f44cc547"
+    },
+    {
+      "path": "app/src/main/res/values-en/strings.xml",
+      "status": "modified",
+      "bytes": 1660,
+      "sha256": "24f2eb4b7a03624df93657c8843a502473c6528d8fbb1ce4f7a488f07dd0cfee"
+    },
+    {
+      "path": "app/src/main/res/values-v31/themes.xml",
+      "status": "modified",
+      "bytes": 473,
+      "sha256": "0ad12e4c1f2604e82a8545be54f4fb14e193076275aa29d04d86b541da82c774"
+    },
+    {
+      "path": "app/src/main/res/values/strings.xml",
+      "status": "modified",
+      "bytes": 2244,
+      "sha256": "294dcdb49f80d282ec59cc014c651cd27516b941c61995786cd4dbcbdce6561a"
+    },
+    {
+      "path": "app/src/main/res/values/themes.xml",
+      "status": "modified",
+      "bytes": 423,
+      "sha256": "629717292ba74dd0505aad8d6db12405f358442ca0b7e950ee6503dacffd129f"
+    },
+    {
+      "path": "app/src/test/java/com/todoshift/app/backup/BackupRecoveryTest.kt",
+      "status": "new",
+      "bytes": 7673,
+      "sha256": "3d5294c04e303d343bb4a09b2b9407a0cc52be613b50e3d27492c7e0463213ad"
+    },
+    {
+      "path": "app/src/test/java/com/todoshift/app/storage/SafePersistenceTest.kt",
+      "status": "modified",
+      "bytes": 16769,
+      "sha256": "3846f24a1e4ae16c8db2c7f8adacb4bce2b554c7b7271981e02d2f07a79eb3b3"
+    },
+    {
+      "path": "app/src/test/java/com/todoshift/app/v11/NeoCalendarPresentationTest.kt",
+      "status": "new",
+      "bytes": 4485,
+      "sha256": "6c6e2d54ae08025c975474e72a346b74934c1d8788192a296925c2c0e3ba2263"
+    },
+    {
+      "path": "app/src/test/java/com/todoshift/app/v11/PhotoImportTest.kt",
+      "status": "new",
+      "bytes": 1111,
+      "sha256": "5d71a62cc4c495726e62d8302e2ef95ed89c408f02139eeef6ff3f5c25a1324a"
+    },
+    {
+      "path": "app/src/test/java/com/todoshift/app/v11/ui/CalendarUiRegressionTest.kt",
+      "status": "new",
+      "bytes": 3529,
+      "sha256": "e2214751f71ae8162f22a65e61368f92bbf6396198564f18d5b15bd6fa3b186e"
+    },
+    {
+      "path": "app/src/test/java/com/todoshift/app/v11/ui/ScreenUiSmokeTest.kt",
+      "status": "new",
+      "bytes": 5028,
+      "sha256": "4c2e691586f7dd681b3c5e3d441fd59ec0fe5eea91ee8712385b5ca41ba0129c"
+    },
+    {
+      "path": "docs/neo41-brand.svg",
+      "status": "new",
+      "bytes": 1637,
+      "sha256": "8c7257cc4768aa9b6fa9093568b16e09cbf0463214b93f52613938af18ad0539"
+    },
+    {
+      "path": "tools/NEO41_BASELINE_SHA256.json",
+      "status": "new",
+      "bytes": 2169,
+      "sha256": "7ea7cc089c874a0d4554ea0721e9ad6a154aa2e9e264e16040e20e0eefb665ba"
+    },
+    {
+      "path": "tools/verify_neo41_source.py",
+      "status": "new",
+      "bytes": 2721,
+      "sha256": "93c8d7cc9d688519c445c2123925ed06872dfc16c224b877b121a4e6405ca3ae"
+    }
+  ],
+  "note": "This generated index excludes its own digest. Pre-commit delivery archives and APK were not rebuilt or modified."
+}

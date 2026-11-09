@@ -63,7 +63,15 @@ class V11Runtime internal constructor(
 
     fun save(db: V11Database) = synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
         storage.save(db)
-        refreshWidgets()
+        runCatching { refreshWidgets() }
+    }
+
+    /** Compare the complete expected snapshot under the same gate as restore. */
+    fun saveIfCurrent(expected: V11Database, next: V11Database) = synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+        check(storage.load() == expected) { "Data changed elsewhere. Reopen before editing; no overwrite was made." }
+        storage.save(next)
+        // A widget failure must not turn a successful database commit into a false failure.
+        runCatching { refreshWidgets() }
     }
 
     fun exportJson(db: V11Database): String =

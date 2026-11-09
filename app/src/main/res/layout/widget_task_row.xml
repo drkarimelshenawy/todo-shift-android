@@ -12,7 +12,7 @@
         android:layout_width="42dp"
         android:layout_height="42dp"
         android:gravity="center"
-        android:text="○"
+        android:text="@string/widget_complete_glyph"
         android:textSize="26sp"
         android:textColor="#326732" />
 

@@ -1,4 +1,11 @@
 <resources>
+    <string name="app_name">ToDo Shift</string>
+    <string name="notification_channel_name">Shift reminders</string>
+    <string name="notification_channel_description">Upcoming shift and task alerts</string>
+    <string name="widget_description">ToDo Shift calendar widget</string>
+    <string name="tasks_widget_label">My Tasks — ToDo Shift</string>
+    <string name="tasks_widget_description">Interactive tasks on your home screen</string>
+    <string name="tasks_widget_empty_text">No tasks right now</string>
     <string name="premium_nav_schedules">Schedules</string>
     <string name="premium_nav_tasks">Tasks</string>
     <string name="premium_nav_calendar">Calendar</string>
@@ -7,7 +14,7 @@
     <string name="premium_settings_experience">App experience</string>
     <string name="premium_settings_brightness">Premium appearance</string>
     <string name="premium_settings_classic">Classic (default)</string>
-    <string name="premium_settings_premium">Premium Clean</string>
+    <string name="premium_settings_premium">Neo Luxury 4.1</string>
     <string name="premium_settings_system">System default</string>
     <string name="premium_settings_light">Light</string>
     <string name="premium_settings_dark">Dark</string>

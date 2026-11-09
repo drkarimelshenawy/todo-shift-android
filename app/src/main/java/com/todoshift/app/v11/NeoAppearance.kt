@@ -65,7 +65,7 @@ data class NeoAppearance(
     val showDescriptions: Boolean = false,
     val showShiftPaint: Boolean = true,
     val showCalendarLegend: Boolean = false,
-    val showBrand: Boolean = false,
+    val showBrand: Boolean = true,
     val cardOpacity: Float = 0.92f,
     val glassStrength: Float = 0.2f,
     val optionalTransitions: Boolean = false,
@@ -83,7 +83,7 @@ fun NeoAppearance.withPreset(preset: NeoLayoutPreset): NeoAppearance = copy(
     showCalendarLegend = preset == NeoLayoutPreset.RICH, dashboardExpanded = false
 )
 
-fun NeoAppearance.cardVisible(card: NeoDashboardCard): Boolean = card !in hiddenCards && (dashboardExpanded || when(card) {
+fun NeoAppearance.cardVisible(card: NeoDashboardCard): Boolean = card !in hiddenCards && (when(card) {
     NeoDashboardCard.CURRENT_SHIFT, NeoDashboardCard.SUMMARY -> showDailySummary
     NeoDashboardCard.NEXT_SHIFT -> showNextShift
     NeoDashboardCard.TASKS -> showTaskSummary

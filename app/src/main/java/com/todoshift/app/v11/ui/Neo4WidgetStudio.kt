@@ -16,10 +16,15 @@ import com.todoshift.app.widget.*
 fun Neo4WidgetStudio(onBack: () -> Unit) {
     val context = LocalContext.current; val store = remember { Neo4WidgetSettings(context.applicationContext) }
     var kind by remember { mutableStateOf(Neo4WidgetKind.CALENDAR) }; var value by remember(kind) { mutableStateOf(store.load(kind)) }
-    fun save(v: Neo4WidgetOptions) { value = v; store.save(kind, v) }
+    var saveError by remember { mutableStateOf<String?>(null) }
+    fun save(v: Neo4WidgetOptions) {
+        try { store.save(kind, v); value = v; saveError = null }
+        catch (failure: Exception) { saveError = failure.message ?: "Widget settings could not be saved" }
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
         Text(neoLabel("استوديو الويدجت", "Widget Studio"), style = MaterialTheme.typography.titleLarge)
+        saveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         NeoChoice(neoLabel("الويدجت", "Widget"), Neo4WidgetKind.entries, kind, { neo4Label(it) }, { kind = it })
         val skin = store.skin(kind)
         Column(Modifier.fillMaxWidth().background(Color(skin.background), MaterialTheme.shapes.large).padding(18.dp)) {

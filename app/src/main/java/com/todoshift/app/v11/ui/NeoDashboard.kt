@@ -33,7 +33,7 @@ fun neoNow(): LocalDateTime {
 }
 
 @Composable
-fun NeoDashboard(db: V11Database, workplaces: List<Workplace>, onQuickAction: (NeoQuickAction) -> Unit) {
+fun NeoDashboard(db: V11Database, workplaces: List<Workplace>, onQuickAction: (NeoQuickAction) -> Unit, financeAuthorized: Boolean = false, moneyVisible: Boolean = false) {
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
     val now = neoNow()
@@ -55,7 +55,7 @@ fun NeoDashboard(db: V11Database, workplaces: List<Workplace>, onQuickAction: (N
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(greeting, style = MaterialTheme.typography.titleMedium)
+                Text(if (p.showGreeting) greeting else neoLabel("اليوم", "Today"), style = MaterialTheme.typography.titleMedium)
                 Text(now.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)), style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -66,11 +66,11 @@ fun NeoDashboard(db: V11Database, workplaces: List<Workplace>, onQuickAction: (N
         }
         AnimatedVisibility(visible = p.dashboardExpanded,
             enter = fadeIn(tween(p.motionMillis)), exit = fadeOut(tween(p.motionMillis))) {
-            BoxWithConstraints {
+            Box {
                 val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
                 Column(Modifier.heightIn(max = screenHeight * 0.38f).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    p.dashboardOrder.filterNot { it in p.hiddenCards }.forEach { card ->
+                    p.dashboardOrder.filter { p.cardVisible(it) }.forEach { card ->
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(neoSpacing()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(neoCardLabel(card), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -110,6 +110,10 @@ fun NeoDashboard(db: V11Database, workplaces: List<Workplace>, onQuickAction: (N
                                 }
                             }
                         }
+                    }
+                    if (p.showFinanceSummary) {
+                        if (financeAuthorized) NeoFinanceOverview(V11FinanceEngine.month(db, java.time.YearMonth.from(now)), moneyVisible)
+                        else Text(neoLabel("افتح الحسابات للتحقق قبل عرض المبالغ", "Unlock Finance before viewing protected amounts"))
                     }
                     if (p.quickActions.isNotEmpty()) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         p.quickActions.forEach { action ->

@@ -89,8 +89,8 @@ class V11SecurityStore(
                 V11LockMode.PATTERN.name ->
                     V11LockMode.PATTERN
 
-                else ->
-                    V11LockMode.NONE
+                V11LockMode.NONE.name, "BIOMETRIC" -> V11LockMode.NONE
+                else -> error("Unsupported security mode; refusing to disable protection")
             }
 
         val biometricEnabled =
@@ -136,7 +136,7 @@ class V11SecurityStore(
     fun save(
         settings: V11SecuritySettings
     ) {
-        prefs.edit()
+        val editor = prefs.edit()
             .putString(
                 KEY_MODE,
                 settings.mode.name
@@ -157,7 +157,11 @@ class V11SecurityStore(
                 KEY_AUTO_LOCK,
                 settings.autoLockMinutes
             )
-            .apply()
+            .apply {
+                if (settings.mode != V11LockMode.PIN) { remove(KEY_PIN_SALT); remove(KEY_PIN_HASH) }
+                if (settings.mode != V11LockMode.PATTERN) { remove(KEY_PATTERN_SALT); remove(KEY_PATTERN_HASH) }
+            }
+        check(editor.commit()) { "Unable to save security settings" }
     }
 
     // ========================================================
@@ -280,7 +284,7 @@ class V11SecurityStore(
                 salt = salt
             )
 
-        prefs.edit()
+        return prefs.edit()
             .putString(
                 saltKey,
                 Base64.encodeToString(
@@ -295,9 +299,8 @@ class V11SecurityStore(
                     Base64.NO_WRAP
                 )
             )
-            .apply()
+            .commit()
 
-        return true
     }
 
     private fun verifySecret(

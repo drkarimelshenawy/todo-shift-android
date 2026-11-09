@@ -23,8 +23,9 @@ class Neo4WidgetSettings(private val context: Context) {
             o.optBoolean("showDetails", false), o.optBoolean("hideContent", false), o.optBoolean("showAmounts", false))
     }.getOrDefault(Neo4WidgetOptions())
     fun save(kind: Neo4WidgetKind, value: Neo4WidgetOptions) {
-        prefs.edit().putString(kind.name, JSONObject().put("theme", value.theme.name).put("accent", value.accent)
-            .put("showDetails", value.showDetails).put("hideContent", value.hideContent).put("showAmounts", value.showAmounts).toString()).apply()
+        val editor = prefs.edit().putString(kind.name, JSONObject().put("theme", value.theme.name).put("accent", value.accent)
+            .put("showDetails", value.showDetails).put("hideContent", value.hideContent).put("showAmounts", value.showAmounts).toString())
+        check(editor.commit()) { "Unable to save widget settings" }
         Neo4WidgetRefresh.schedule(context)
     }
     fun skin(kind: Neo4WidgetKind): Neo4WidgetSkin {

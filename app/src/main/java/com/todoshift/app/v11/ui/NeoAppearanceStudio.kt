@@ -34,10 +34,17 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
     var section by remember { mutableStateOf(initialSection) }
     var accentInput by remember(saved.accentHex) { mutableStateOf(saved.accentHex) }
     val validAccent = accentInput.isEmpty() || accentInput.matches(Regex("#[0-9a-fA-F]{6}"))
-    BackHandler { onBack() }
+    var confirmExit by remember { mutableStateOf(false) }
+    fun leave() { if (draft != saved) confirmExit = true else onBack() }
+    BackHandler { leave() }
+    if (confirmExit) AlertDialog(onDismissRequest = { confirmExit = false },
+        title = { Text(neoLabel("تجاهل المعاينة؟", "Discard preview changes?")) },
+        text = { Text(neoLabel("لم تُحفظ هذه التعديلات. بياناتك لا تتغير.", "These appearance changes have not been saved.")) },
+        confirmButton = { TextButton(onClick = onBack) { Text(neoLabel("تجاهل", "Discard")) } },
+        dismissButton = { TextButton(onClick = { confirmExit = false }) { Text(neoLabel("متابعة التعديل", "Keep editing")) } })
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, neoLabel("رجوع", "Back")) }
+            IconButton(onClick = { leave() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, neoLabel("رجوع", "Back")) }
             Text(neoLabel("استوديو المظهر", "Appearance Studio"), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
         }
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -47,10 +47,10 @@ fun Neo4Atmosphere(modifier: Modifier = Modifier, appearance: NeoAppearance = Lo
     val c = MaterialTheme.colorScheme
     val dark = c.background.luminance() < 0.3f
     val context = LocalContext.current
-    val personal by produceState<Bitmap?>(null, appearance.customImageFile, appearance.background, appearance.imageTheme) {
-        value = null
+    var personal by remember(appearance.customImageFile, appearance.background, appearance.imageTheme) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(appearance.customImageFile, appearance.background, appearance.imageTheme) {
         if (appearance.background == NeoBackground.IMAGE && appearance.imageTheme == NeoImageTheme.PERSONAL && appearance.customImageFile.matches(Regex("neo4-theme-[a-zA-Z0-9-]+[.]jpg"))) {
-            value = withContext(Dispatchers.IO) { runCatching { Neo4ImageStore.load(context.applicationContext, appearance.customImageFile) }.getOrNull() }
+            personal = withContext(Dispatchers.IO) { runCatching { Neo4ImageStore.load(context.applicationContext, appearance.customImageFile) }.getOrNull() }
         }
     }
     Box(modifier.fillMaxSize().background(c.background)) {

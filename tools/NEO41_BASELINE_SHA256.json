@@ -1,0 +1,22 @@
+{
+  "baseline": "f71bf40a87aa5df7cc10da7085b3e44ac196dad0",
+  "versionCode": 28,
+  "files": {
+    "app/src/main/java/com/todoshift/app/v11/V11Models.kt": "3dd086e013b0810db774d279ec075e3a4184b0daee976aa6e6aa79154f1fa2a8",
+    "app/src/main/java/com/todoshift/app/v11/V11Storage.kt": "39edb8fc0b5059cd5af4d005b45befa71f4259cd9439aa1423667ac685d97d64",
+    "app/src/main/java/com/todoshift/app/v11/V11MigrationEngine.kt": "db9fa215f339ce85127377dd73ef8142efda917c79784808feff10be885279d2",
+    "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt": "26700e6a7bf7a45e7a7eae51941a1671c65e5a83872bc27f3953fa5695846aad",
+    "app/src/main/java/com/todoshift/app/v11/V11RateEngine.kt": "efbdf32f00023ca194a75d967f390c97d59fcf20f4683868023013cf0b3a2429",
+    "app/src/main/java/com/todoshift/app/v11/V11SettlementEngine.kt": "3a6d727a70b0e7081413e4a7ed4028abf0bc9ab1ed5ff75c1e09bde754fbf85f",
+    "app/src/main/java/com/todoshift/app/v11/V11ObligationEngine.kt": "e2c3371c0e06d1c73ecd91b52fc164a67d2f3741b0b203bc1a86c6f47b5d7be4",
+    "app/src/main/java/com/todoshift/app/v11/V11ShiftConflictEngine.kt": "db1a17be39107e09d99e54f82e41ca5871f6eb5d9cbf8397964d3dc1dfb38b7a",
+    "app/src/main/java/com/todoshift/app/v11/V11WorkplaceSync.kt": "ec881e2539a0dfbb87344ceb39b6570959520b2b8b09448d7e6f816668145bc4",
+    "app/src/main/java/com/todoshift/app/data/AppStorage.kt": "92b85e78a0c594d8dead9795853226333406f75432ccb5e0295661a90acf26db",
+    "app/src/main/java/com/todoshift/app/storage/StorageRead.kt": "411e89ae217f481c6ef1e063cb795341760f8450e925b419c916048454c57b92",
+    "app/src/main/java/com/todoshift/app/storage/StorageValidation.kt": "087fd4437163606179489cff7bf0093d5cf208ab686f1a0be58a1f4364a02b70",
+    "app/src/main/AndroidManifest.xml": "23540d71273292fd95c79120fee4a30526591e616ef769800380cca2b042e003",
+    "brand-references/ReBrand_4_Separated_References.zip": "2e08b25afae9434858471d9ec561927066976e43c894a182ac86f39b830c5ec9",
+    "brand-references/ToDoShift_Brand_Assets_v4_1_Draft.zip": "c742818998bbdd9cc6c38c5312feb86ceab83be38896bd4d6fac1c788130bc3a"
+  },
+  "signing_sha256": "1fd00f425e73fb9e2a32bdff4c7f0b5a5f395e55a84ec3de1c6eb15aeedd87df"
+}

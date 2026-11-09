@@ -124,17 +124,14 @@ class TasksWidgetProvider : AppWidgetProvider() {
             )
 
             val count = runCatching {
-                V11Runtime(context)
-                    .start()
-                    .tasks
-                    .count {
-                        it.status != TaskStatusV11.COMPLETED
-                    }
-            }.getOrDefault(0)
+                val db = V11Runtime(context).start()
+                val visible = db.calendars.filter { it.visible }.map { it.id }.toSet()
+                db.tasks.count { it.status != TaskStatusV11.COMPLETED && (it.calendarId == null || it.calendarId in visible) }
+            }.getOrNull()
 
             views.setTextViewText(
                 R.id.tasks_widget_count,
-                count.toString()
+                count?.toString() ?: "!"
             )
 
             val service = Intent(
@@ -293,7 +290,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
 
         val pending = goAsync()
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
-            try { completeTaskOnIo(context.applicationContext, taskId) } finally { pending.finish() }
+            try { runCatching { completeTaskOnIo(context.applicationContext, taskId) } } finally { pending.finish() }
         }
     }
     private fun completeTaskOnIo(context: Context, taskId: String) {
@@ -325,12 +322,8 @@ class TasksWidgetProvider : AppWidgetProvider() {
             }
         )
 
-        ToDoShiftReminder.cancel(
-            context,
-            taskId
-        )
-
-        runtime.save(updated)
+        runtime.saveIfCurrent(db, updated)
+        ToDoShiftReminder.cancel(context, taskId)
         refreshAll(context)
     }
     }

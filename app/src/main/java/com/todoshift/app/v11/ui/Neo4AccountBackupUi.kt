@@ -80,6 +80,17 @@ fun Neo4AccountBackupPage(db: V11Database, financeAuthorized: Boolean, security:
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
         Text(neoLabel("الحساب والنسخ الاحتياطي", "Account & Backup"), style = MaterialTheme.typography.titleLarge)
+        Text(neoLabel("نسخ محلي يعمل فعليًا", "Local backup is available"), style = MaterialTheme.typography.titleMedium)
+        Text(neoLabel("يشمل البيانات والإعدادات والتخطيطات والصور الشخصية المستخدمة. لا يشمل PIN أو البصمة أو مفاتيح الجهاز. الملف غير مشفر.", "Includes data, settings, profiles and referenced personal images. Excludes PINs, biometrics and device keys. The archive is not encrypted."), style = MaterialTheme.typography.bodySmall)
+        Button(enabled = !busy, onClick = { exportPicker.launch("ToDoShift-${java.time.LocalDate.now()}.zip") }, modifier = Modifier.fillMaxWidth()) { Text(neoLabel("تصدير نسخة محلية", "Export local backup")) }
+        OutlinedButton(enabled = !busy, onClick = { importPicker.launch(arrayOf("application/zip", "application/json", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text(neoLabel("فحص نسخة للاستعادة", "Inspect backup for restore")) }
+        Text(if (lastLocal > 0) neoLabel("آخر نسخة محلية: ", "Last local backup: ") + Instant.ofEpochMilli(lastLocal) + " • $lastBytes bytes" else neoLabel("لا توجد نسخة محلية ناجحة مسجلة", "No successful local backup recorded"), style = MaterialTheme.typography.bodySmall)
+        message?.let { Text(it, color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface) }
+        TextButton(onClick = onPolicy) { Text(neoLabel("سياسة النسخ والمزامنة", "Backup & Sync Policy")) }
+        HorizontalDivider()
+        var cloudExpanded by remember { mutableStateOf(false) }
+        TextButton(onClick = { cloudExpanded = !cloudExpanded }) { Text(neoLabel("خدمات Google الاختيارية (غير متاحة)", "Optional Google services (unavailable)")) }
+        if (cloudExpanded) {
         Text(neoLabel("يعمل التطبيق محليًا بالكامل دون حساب. خدمات Google غير مفعلة في هذه النسخة.", "The app works fully offline. Google services are not configured in this version."))
         Text(neoLabel("حساب Google: غير متصل", "Google Account: disconnected"))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -97,14 +108,8 @@ fun Neo4AccountBackupPage(db: V11Database, financeAuthorized: Boolean, security:
             BackupFrequency.WEEKLY -> neoLabel("أسبوعي", "Weekly"); BackupFrequency.MONTHLY -> neoLabel("شهري", "Monthly")
         } }, { schedule = schedule.copy(frequency = it); cloud.save(schedule) })
         NeoSwitch(neoLabel("Wi-Fi فقط عند تفعيل الخدمة مستقبلًا", "Wi-Fi only when cloud is implemented"), schedule.wifiOnly) { schedule = schedule.copy(wifiOnly = it); cloud.save(schedule) }
-        HorizontalDivider()
-        Text(neoLabel("نسخ محلي يعمل فعليًا", "Local backup is available"), style = MaterialTheme.typography.titleMedium)
-        Text(neoLabel("يشمل البيانات والإعدادات والتخطيطات والصور الشخصية المستخدمة. لا يشمل PIN أو البصمة أو مفاتيح الجهاز. الملف غير مشفر.", "Includes data, settings, profiles and referenced personal images. Excludes PINs, biometrics and device keys. The archive is not encrypted."), style = MaterialTheme.typography.bodySmall)
-        Button(enabled = !busy, onClick = { exportPicker.launch("ToDoShift-${java.time.LocalDate.now()}.zip") }, modifier = Modifier.fillMaxWidth()) { Text(neoLabel("تصدير نسخة محلية", "Export local backup")) }
-        OutlinedButton(enabled = !busy, onClick = { importPicker.launch(arrayOf("application/zip", "application/json", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text(neoLabel("فحص نسخة للاستعادة", "Inspect backup for restore")) }
-        Text(if (lastLocal > 0) neoLabel("آخر نسخة محلية: ", "Last local backup: ") + Instant.ofEpochMilli(lastLocal) + " • $lastBytes bytes" else neoLabel("لا توجد نسخة محلية ناجحة مسجلة", "No successful local backup recorded"), style = MaterialTheme.typography.bodySmall)
-        message?.let { Text(it, color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface) }
-        TextButton(onClick = onPolicy) { Text(neoLabel("سياسة النسخ والمزامنة", "Backup & Sync Policy")) }
+        }
+
     }
     prepared?.let { pending ->
         AlertDialog(onDismissRequest = { if (!busy) prepared = null },

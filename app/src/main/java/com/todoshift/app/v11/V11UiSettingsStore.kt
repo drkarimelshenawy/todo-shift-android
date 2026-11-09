@@ -74,7 +74,7 @@ class V11UiSettingsStore(
     fun save(
         settings: V11UiSettings
     ) {
-        prefs.edit()
+        val editor = prefs.edit()
             .putString(
                 "todayHighlightStyle",
                 settings
@@ -107,7 +107,7 @@ class V11UiSettingsStore(
             )
             .putString("experience", settings.experience.name)
             .putString("premiumBrightness", settings.premiumBrightness.name)
-            .apply()
+        check(editor.commit()) { "Unable to save UI settings" }
     }
 
     private inline fun <

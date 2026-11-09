@@ -17,7 +17,7 @@ class Neo4Profiles(context: Context) {
         val all = list(); require(all.size < 12) { "Maximum 12 profiles" }
         val o = JSONObject(prefs.getString("profiles", "{}") ?: "{}")
         o.put(UUID.randomUUID().toString(), JSONObject().put("name", name.trim()).put("appearance", Neo4AppearanceCodec.encode(appearance)))
-        prefs.edit().putString("profiles", o.toString()).apply()
+        check(prefs.edit().putString("profiles", o.toString()).commit()) { "Unable to save layout profiles" }
     }
-    fun delete(id: String) { val o = JSONObject(prefs.getString("profiles", "{}") ?: "{}"); o.remove(id); prefs.edit().putString("profiles", o.toString()).apply() }
+    fun delete(id: String) { val o = JSONObject(prefs.getString("profiles", "{}") ?: "{}"); o.remove(id); check(prefs.edit().putString("profiles", o.toString()).commit()) { "Unable to save layout profiles" } }
 }

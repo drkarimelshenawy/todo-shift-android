@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -107,7 +108,7 @@ fun V11DayDetailsScreen(
                         onClick = onBack
                     ) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             neoLiteral("رجوع", "Back")
                         )
                     }
@@ -452,10 +453,7 @@ fun V11DayDetailsScreen(
                     ) {
                         IconButton(
                             onClick = {
-                                ToDoShiftReminder.cancel(
-                                    context,
-                                    item.id
-                                )
+                                // Reminder effects follow a confirmed database commit in V11Home.
 
                                 onDatabaseChange(
                                     V11DayOrganizerController
@@ -736,10 +734,7 @@ fun V11DayDetailsScreen(
                 ) {
                     ensureNotificationPermission()
 
-                    ToDoShiftReminder.schedule(
-                        context,
-                        created
-                    )
+                    // Scheduling follows a confirmed commit in V11Home.
                 }
 
                 onDatabaseChange(

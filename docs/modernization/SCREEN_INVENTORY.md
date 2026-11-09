@@ -5,7 +5,7 @@ Inventory supports the audit; inclusion here does not assert every runtime path 
 - `app/src/main/java/com/todoshift/app/MainActivity.kt`: onCreate, hexColor, ToDoShiftApp, updateData, AppHeader, MonthSelector, CalendarScreen, WeekHeader, MonthGrid, DayCell, ShiftPart, WorkplaceLegend, DayEditorDialog, requiredSegments, normalizeSelection, ShiftTypeOption, SchedulesDashboard, DashboardCard, FinanceScreen, FinanceRow, PaymentDialog, V10DaySummaryCard, V10FinanceSettlementCard, V10FinanceLine, V10ReportsPanel, V10SearchPanel, V10BackupSettingsPanel, V10ReleaseStatusPanel, MoreScreen, V10SmartToolsPanel, V10TemplatesSection, V10TemplateDescription, V10CreateTemplateDialog, V10ToolButton, V10SmartToolDialog, selection, execute, V10DateField, V10ShiftTypeSelector, V10WorkplaceSelector, WorkplaceEditorDialog, RateField, InfoBox, BottomNavigation, shiftDescription, place, rateText, money, arabicMonth, V09CalendarScreen, V09PainterBanner, V09MonthGrid, V09DayCell, V09ShiftBackground, colorFor, V09ShiftChooserSheet, V09WorkplacePicker, V09DayCenterDialog, v09ShiftName, v09ArabicDay
 - `app/src/main/java/com/todoshift/app/QuickTaskActivity.kt`: finishAfterSave, onCreate
 - `app/src/main/java/com/todoshift/app/backup/BackupContracts.kt`: export, preview, validate, restore, sha256, safeAsset
-- `app/src/main/java/com/todoshift/app/backup/Neo4BootState.kt`: 
+- `app/src/main/java/com/todoshift/app/backup/Neo4BootState.kt`:
 - `app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt`: prefs, bytes, json, export, preview, validate, parse, validateDatabase, restore, recoverFromBackup, restoreChecked, updateWorkplaces, recoverIfNeeded, capture, typed, validateUiPreferences, validatePreferences, writePreferences, writeAtomic, readBounded
 - `app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt`: createNeoSafetyCopy
 - `app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt`: createChannel, schedule, cancel, rescheduleAll, show, requestCode, onReceive
@@ -33,7 +33,7 @@ Inventory supports the audit; inclusion here does not assert every runtime path 
 - `app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt`: TaskEditorDialogV11, leave
 - `app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt`: NeoFocusControls, NeoNotificationControls, save
 - `app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt`: NeoShiftTimeline, NeoFinanceOverview, amount, NeoTaskSearch, neoPriorityLabel
-- `app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt`: 
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt`:
 - `app/src/main/java/com/todoshift/app/v11/ui/SafeStorageRecovery.kt`: SafeStorageRecovery
 - `app/src/main/java/com/todoshift/app/v11/ui/V11AccountsSecurityUi.kt`: V11AccountsUnlockScreen, biometric, onAuthenticationSucceeded, onAuthenticationError, V11BiometricVerificationEffect, onAuthenticationFailed, V11FinancialVerificationDialog
 - `app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt`: V11BackupRestoreDialog, writeBackup, restoreBackup

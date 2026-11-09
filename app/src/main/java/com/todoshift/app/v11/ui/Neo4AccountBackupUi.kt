@@ -86,6 +86,11 @@ fun Neo4AccountBackupPage(db: V11Database, financeAuthorized: Boolean, security:
         OutlinedButton(enabled = !busy, onClick = { importPicker.launch(arrayOf("application/zip", "application/json", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text(neoLabel("فحص نسخة للاستعادة", "Inspect backup for restore")) }
         Text(if (lastLocal > 0) neoLabel("آخر نسخة محلية: ", "Last local backup: ") + Instant.ofEpochMilli(lastLocal) + " • $lastBytes bytes" else neoLabel("لا توجد نسخة محلية ناجحة مسجلة", "No successful local backup recorded"), style = MaterialTheme.typography.bodySmall)
         message?.let { Text(it, color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface) }
+        val safetyCopies=remember{java.io.File(app.filesDir,"safety-copies").listFiles()?.filter{it.extension=="zip"}?.sortedByDescending{it.lastModified()}.orEmpty()}
+        if(safetyCopies.isNotEmpty()) {
+            Text(neoLabel("نسخ أمان قبل التعديلات الكبرى", "Safety copies before major changes"),style=MaterialTheme.typography.titleSmall)
+            safetyCopies.take(5).forEach{file->TextButton(enabled=!busy,onClick={busy=true;scope.launch{try{prepared=withContext(Dispatchers.IO){file.inputStream().use{backup.preview(it)}}}catch(e:Exception){failed=true;message=e.message}finally{busy=false}}}){Text(neoLabel("فحص نسخة ", "Inspect copy ")+java.time.Instant.ofEpochMilli(file.lastModified()))}}
+        }
         TextButton(onClick = onPolicy) { Text(neoLabel("سياسة النسخ والمزامنة", "Backup & Sync Policy")) }
         HorizontalDivider()
         var cloudExpanded by remember { mutableStateOf(false) }

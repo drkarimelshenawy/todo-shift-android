@@ -10,6 +10,26 @@ object Neo4AppearanceCodec {
     private fun hex(s: String, fallback: String) = s.takeIf { it.matches(Regex("#[0-9a-fA-F]{6}")) } ?: fallback
     fun encode(p: NeoAppearance): JSONObject = JSONObject().apply {
         put("formatVersion", 1)
+        put("uiDirection", p.uiDirection.name)
+        put("navigationDirection", p.navigationDirection.name)
+        put("gridDirection", p.gridDirection.name)
+        put("weekdayDirection", p.weekdayDirection.name)
+        put("transition", p.transition.name)
+        put("transitionSpeed", p.transitionSpeed.name)
+        put("performance", p.performance.name)
+        put("todayStyle", p.todayStyle.name)
+        put("todaySpeed", p.todaySpeed.name)
+        put("cellSize", p.cellSize.name)
+        put("showNotes", p.showNotes)
+        put("showNoteIcons", p.showNoteIcons)
+        put("showShiftNames", p.showShiftNames)
+        put("showTaskIndicators", p.showTaskIndicators)
+        put("showOutsideDates", p.showOutsideDates)
+        put("showTomorrow", p.showTomorrow)
+        put("firstWeekday", p.firstWeekday)
+        put("todayColor", p.todayColor)
+        put("todayIntensity", p.todayIntensity)
+
         put("brightness", p.brightness.name)
         put("palette", p.palette.name)
         put("accentHex", p.accentHex)
@@ -62,6 +82,25 @@ object Neo4AppearanceCodec {
     fun decode(o: JSONObject, defaults: NeoAppearance = NeoAppearance()): NeoAppearance {
         require(o.optInt("formatVersion", 1) == 1) { "Unsupported appearance format" }
         val p = NeoAppearance(
+            uiDirection = enumOrNull<NeoDirection>(o.optString("uiDirection")) ?: when(enumOrNull<NeoLanguage>(o.optString("language")) ?: defaults.language) { NeoLanguage.ARABIC -> NeoDirection.RTL; NeoLanguage.ENGLISH -> NeoDirection.LTR; else -> defaults.uiDirection },
+            navigationDirection = enumOrNull<NeoDirection>(o.optString("navigationDirection")) ?: defaults.navigationDirection,
+            gridDirection = enumOrNull<NeoDirection>(o.optString("gridDirection")) ?: defaults.gridDirection,
+            weekdayDirection = enumOrNull<NeoDirection>(o.optString("weekdayDirection")) ?: defaults.weekdayDirection,
+            transition = enumOrNull<NeoTransition>(o.optString("transition")) ?: defaults.transition,
+            transitionSpeed = enumOrNull<NeoSpeed>(o.optString("transitionSpeed")) ?: defaults.transitionSpeed,
+            performance = enumOrNull<NeoPerformance>(o.optString("performance")) ?: defaults.performance,
+            todayStyle = enumOrNull<NeoTodayStyle>(o.optString("todayStyle")) ?: defaults.todayStyle,
+            todaySpeed = enumOrNull<NeoSpeed>(o.optString("todaySpeed")) ?: defaults.todaySpeed,
+            cellSize = enumOrNull<NeoCellSize>(o.optString("cellSize")) ?: defaults.cellSize,
+            showNotes = o.optBoolean("showNotes", defaults.showNotes),
+            showNoteIcons = o.optBoolean("showNoteIcons", defaults.showNoteIcons),
+            showShiftNames = o.optBoolean("showShiftNames", defaults.showShiftNames),
+            showTaskIndicators = o.optBoolean("showTaskIndicators", o.optBoolean("showSecondaryIndicators", defaults.showTaskIndicators)),
+            showOutsideDates = o.optBoolean("showOutsideDates", defaults.showOutsideDates),
+            showTomorrow = o.optBoolean("showTomorrow", defaults.showTomorrow),
+            firstWeekday = o.optInt("firstWeekday", 6).takeIf { it in listOf(6, 7, 1) } ?: 6,
+            todayColor = hex(o.optString("todayColor"), defaults.todayColor),
+            todayIntensity = o.optDouble("todayIntensity", .6).toFloat().takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: .6f,
             brightness = enumOrNull<NeoBrightness>(o.optString("brightness")) ?: defaults.brightness,
             palette = enumOrNull<NeoPalette>(o.optString("palette")) ?: defaults.palette,
             accentHex = o.optString("accentHex", defaults.accentHex),

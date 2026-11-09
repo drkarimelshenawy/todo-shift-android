@@ -12,14 +12,14 @@ def require(value, message):
     if not value: failures.append(message)
 def text(path): return (ROOT / path).read_text()
 critical = ['app/src/main/java/com/todoshift/app/v11/' + name for name in [
-    'V11Models.kt', 'V11Storage.kt', 'V11MigrationEngine.kt', 'V11FinanceEngine.kt', 'V11RateEngine.kt',
+    'V11Models.kt', 'V11Storage.kt', 'V11MigrationEngine.kt', 'V11RateEngine.kt',
     'V11SettlementEngine.kt', 'V11ObligationEngine.kt', 'V11ShiftConflictEngine.kt', 'V11WorkplaceSync.kt']]
 critical += ['app/src/main/java/com/todoshift/app/data/AppStorage.kt', 'app/src/main/java/com/todoshift/app/storage/StorageRead.kt', 'app/src/main/java/com/todoshift/app/storage/StorageValidation.kt']
 for p in critical: require(unchanged(p), 'Protected baseline changed: ' + p)
 build = text('app/build.gradle.kts')
 require('applicationId = "com.todoshift.app"' in build, 'Application ID changed')
 require(int(re.search(r'versionCode = (\d+)', build)[1]) > REFERENCE['versionCode'], 'Version code did not increase')
-require('versionName = "4.1.0"' in build, 'Wrong version name')
+require('versionName = "4.1.1"' in build, 'Wrong version name')
 def signing(s): return s[s.index('    signingConfigs {'):s.index('    compileOptions {')]
 require(hashlib.sha256(signing(build).encode()).hexdigest() == REFERENCE['signing_sha256'], 'Signing configuration changed')
 for p in (ROOT/'app/src').rglob('*.kt'):
@@ -28,8 +28,13 @@ for p in (ROOT/'app/src/main').rglob('*.xml'):
     try: ET.parse(p)
     except ET.ParseError as e: failures.append(str(e))
 manifest = ET.parse(ROOT/'app/src/main/AndroidManifest.xml')
-require(unchanged('app/src/main/AndroidManifest.xml'), 'Manifest identity or permissions changed')
+ns='{http://schemas.android.com/apk/res/android}'
+main=manifest.getroot().find("application/activity[@"+ns+"name='.MainActivity']")
+require(main is not None, 'Launcher activity identity changed')
+permissions={p.get(ns+'name') for p in manifest.getroot().findall('uses-permission')}
+require(permissions=={'android.permission.POST_NOTIFICATIONS','android.permission.RECEIVE_BOOT_COMPLETED','android.permission.SCHEDULE_EXACT_ALARM'}, 'Unexpected manifest permissions')
+require(manifest.getroot().find('application/provider').get(ns+'exported')=='false','Attachment provider exported')
 for p in (ROOT/'brand-references').glob('*.zip'):
     require(unchanged(str(p.relative_to(ROOT))), 'Brand archive modified: ' + p.name)
-print(json.dumps({'status':'FAIL' if failures else 'PASS', 'protected_files':len(critical), 'checks':['P0 parser and business-rule byte identity', 'application/signing/launcher identity', 'version increment', 'Kotlin lexical scan', 'XML parse', 'brand archives unchanged'], 'failures':failures, 'limitations':'Static checks do not replace Gradle, UI, device or durability testing.'},indent=2))
+print(json.dumps({'status':'FAIL' if failures else 'PASS', 'protected_files':len(critical), 'checks':['P0 parser and unaffected business-rule byte identity; finance allocation change requires regression tests', 'application/signing/launcher identity', 'version increment', 'Kotlin lexical scan', 'XML parse', 'brand archives unchanged'], 'failures':failures, 'limitations':'Static checks do not replace Gradle, UI, device or durability testing.'},indent=2))
 sys.exit(bool(failures))

@@ -6,12 +6,12 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -24,11 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.dp
-import com.todoshift.app.v11.*
+import androidx.core.content.ContextCompat
 import com.todoshift.app.data.Workplace
-import com.todoshift.app.reminders.ToDoShiftReminder
+import com.todoshift.app.v11.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -39,7 +38,7 @@ private enum class TaskFilterV11 {
     UPCOMING,
     OVERDUE,
     COMPLETED,
-    ALL
+    ALL,
 }
 
 @Composable
@@ -52,16 +51,12 @@ fun V11TasksScreen(
     financeAuthorized: Boolean = false,
     moneyVisible: Boolean = false,
     onQuickAction: (NeoQuickAction) -> Unit = {},
-    onInitialActionHandled: () -> Unit = {}
+    onInitialActionHandled: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
     val notificationPermissionLauncher =
-        rememberLauncherForActivityResult(
-            contract =
-                ActivityResultContracts
-                    .RequestPermission()
-        ) {
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission()) {
             // Scheduling remains valid.
             // Android will display notifications
             // once permission is granted.
@@ -70,31 +65,21 @@ fun V11TasksScreen(
     fun ensureNotificationPermission() {
         if (
             Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission
-                    .POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) != PackageManager.PERMISSION_GRANTED
         ) {
-            notificationPermissionLauncher.launch(
-                Manifest.permission
-                    .POST_NOTIFICATIONS
-            )
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
-    var filter by remember {
-        mutableStateOf(TaskFilterV11.TODAY)
-    }
+    var filter by remember { mutableStateOf(TaskFilterV11.TODAY) }
 
-    var editingTask by remember {
-        mutableStateOf<TaskV11?>(null)
-    }
+    var editingTask by remember { mutableStateOf<TaskV11?>(null) }
 
     var pendingDelete by remember { mutableStateOf<TaskV11?>(null) }
-    var showEditor by remember {
-        mutableStateOf(false)
-    }
+    var showEditor by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialAction, initialTaskId) {
         when (initialAction) {
@@ -103,10 +88,7 @@ fun V11TasksScreen(
                 showEditor = true
             }
             "open" -> {
-                val requestedTask =
-                    db.tasks.firstOrNull {
-                        it.id == initialTaskId
-                    }
+                val requestedTask = db.tasks.firstOrNull { it.id == initialTaskId }
                 if (requestedTask != null) {
                     editingTask = requestedTask
                     showEditor = true
@@ -121,160 +103,165 @@ fun V11TasksScreen(
     var priorityFilter by remember { mutableStateOf<TaskPriorityV11?>(null) }
     var categoryFilter by remember { mutableStateOf<String?>(null) }
     val today = neoNow().toLocalDate().toString()
-    val visibleIds = remember(db.calendars) { db.calendars.filter { it.visible }.map { it.id }.toSet() }
-    val visibleTasks = remember(db.tasks, visibleIds, neo) { db.tasks.filter { !neo || it.calendarId == null || it.calendarId in visibleIds } }
+    val visibleIds =
+        remember(db.calendars) { db.calendars.filter { it.visible }.map { it.id }.toSet() }
+    val visibleTasks =
+        remember(db.tasks, visibleIds, neo) {
+            db.tasks.filter { !neo || it.calendarId == null || it.calendarId in visibleIds }
+        }
 
-    val filteredTasks = remember(visibleTasks, filter, today, searchQuery, priorityFilter, categoryFilter, neo) {
-        visibleTasks
-            .filter { task ->
-                (!neo || ((searchQuery.isBlank() || task.title.contains(searchQuery, ignoreCase = true) || task.details.contains(searchQuery, ignoreCase = true)) &&
-                    (priorityFilter == null || task.priority == priorityFilter) && (categoryFilter == null || task.calendarId == categoryFilter))) &&
-                when (filter) {
-                    TaskFilterV11.TODAY ->
-                        task.date == today &&
-                            task.status != TaskStatusV11.COMPLETED
+    val filteredTasks =
+        remember(visibleTasks, filter, today, searchQuery, priorityFilter, categoryFilter, neo) {
+            visibleTasks
+                .filter { task ->
+                    (!neo ||
+                        ((searchQuery.isBlank() ||
+                            task.title.contains(searchQuery, ignoreCase = true) ||
+                            task.details.contains(searchQuery, ignoreCase = true)) &&
+                            (priorityFilter == null || task.priority == priorityFilter) &&
+                            (categoryFilter == null || task.calendarId == categoryFilter))) &&
+                        when (filter) {
+                            TaskFilterV11.TODAY ->
+                                task.date == today && task.status != TaskStatusV11.COMPLETED
 
-                    TaskFilterV11.UPCOMING ->
-                        task.date > today &&
-                            task.status != TaskStatusV11.COMPLETED
+                            TaskFilterV11.UPCOMING ->
+                                task.date > today && task.status != TaskStatusV11.COMPLETED
 
-                    TaskFilterV11.OVERDUE ->
-                        task.date < today &&
-                            task.status != TaskStatusV11.COMPLETED
+                            TaskFilterV11.OVERDUE ->
+                                task.date < today && task.status != TaskStatusV11.COMPLETED
 
-                    TaskFilterV11.COMPLETED ->
-                        task.status == TaskStatusV11.COMPLETED
+                            TaskFilterV11.COMPLETED -> task.status == TaskStatusV11.COMPLETED
 
-                    TaskFilterV11.ALL -> true
+                            TaskFilterV11.ALL -> true
+                        }
                 }
-            }
-            .sortedWith(
-                compareBy<TaskV11> { it.date }
-                    .thenBy { it.time ?: "99:99" }
-                    .thenByDescending {
-                        when (it.priority) {
-                            TaskPriorityV11.URGENT -> 4
-                            TaskPriorityV11.HIGH -> 3
-                            TaskPriorityV11.NORMAL -> 2
-                            TaskPriorityV11.LOW -> 1
+                .sortedWith(
+                    compareBy<TaskV11> { it.date }
+                        .thenBy { it.time ?: "99:99" }
+                        .thenByDescending {
+                            when (it.priority) {
+                                TaskPriorityV11.URGENT -> 4
+                                TaskPriorityV11.HIGH -> 3
+                                TaskPriorityV11.NORMAL -> 2
+                                TaskPriorityV11.LOW -> 1
+                            }
+                        }
+                )
+        }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item(key = "task-controls") {
+                Column {
+                    if (neo) {
+                        NeoDashboard(
+                            db,
+                            workplaces,
+                            onQuickAction = { action ->
+                                if (action == NeoQuickAction.ADD_TASK) {
+                                    editingTask = null
+                                    showEditor = true
+                                } else onQuickAction(action)
+                            },
+                            financeAuthorized = financeAuthorized,
+                            moneyVisible = moneyVisible,
+                        )
+                        NeoTaskSearch(
+                            searchQuery,
+                            { searchQuery = it },
+                            priorityFilter,
+                            { priorityFilter = it },
+                            categoryFilter,
+                            { categoryFilter = it },
+                            db,
+                        )
+                        val complete = visibleTasks.count { it.status == TaskStatusV11.COMPLETED }
+                        if (
+                            LocalNeoAppearance.current.showTaskSummary && visibleTasks.isNotEmpty()
+                        ) {
+                            LinearProgressIndicator(
+                                progress = { complete.toFloat() / visibleTasks.size },
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                            )
                         }
                     }
-            )
-    }
+                    if (!neo) TaskSummaryV11(tasks = visibleTasks, today = today)
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item(key = "task-controls") {
-            Column {
-            if (neo) {
-                NeoDashboard(db, workplaces, onQuickAction = { action ->
-                    if (action == NeoQuickAction.ADD_TASK) { editingTask = null; showEditor = true }
-                    else onQuickAction(action)
-                }, financeAuthorized = financeAuthorized, moneyVisible = moneyVisible)
-                NeoTaskSearch(searchQuery, { searchQuery = it }, priorityFilter, { priorityFilter = it }, categoryFilter, { categoryFilter = it }, db)
-                val complete = visibleTasks.count { it.status == TaskStatusV11.COMPLETED }
-                if (LocalNeoAppearance.current.showTaskSummary && visibleTasks.isNotEmpty()) {
-                    LinearProgressIndicator(progress = { complete.toFloat() / visibleTasks.size }, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp))
+                    TaskFiltersV11(selected = filter, onSelected = { filter = it })
                 }
-            }
-            if (!neo) TaskSummaryV11(
-                tasks = visibleTasks,
-                today = today
-            )
-
-            TaskFiltersV11(
-                selected = filter,
-                onSelected = { filter = it }
-            )
-
-            }
             }
             if (filteredTasks.isEmpty()) {
                 item(key = "empty-tasks") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth().heightIn(min = 160.dp)
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (neo) {
-                        NeoEmptyState(
-                            neoLabel("لا توجد مهام مطابقة", "No matching tasks"),
-                            neoLabel("غيّر الفلاتر أو استخدم زر + لإضافة مهمة", "Change filters or use + to add a task")
-                        )
-                    } else {
-                    Text(
-                        text = when (filter) {
-                            TaskFilterV11.TODAY ->
-                                neoLiteral("لا توجد مهام لليوم", "No tasks for today")
-                            TaskFilterV11.UPCOMING ->
-                                neoLiteral("لا توجد مهام قادمة", "No upcoming tasks")
-                            TaskFilterV11.OVERDUE ->
-                                neoLiteral("لا توجد مهام متأخرة", "No overdue tasks")
-                            TaskFilterV11.COMPLETED ->
-                                neoLiteral("لا توجد مهام مكتملة", "No completed tasks")
-                            TaskFilterV11.ALL ->
-                                neoLiteral("لا توجد مهام بعد", "No tasks yet")
-                        },
-                        color =
-                            MaterialTheme.colorScheme
-                                .onSurfaceVariant
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp).padding(24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (neo) {
+                            NeoEmptyState(
+                                neoLabel("لا توجد مهام مطابقة", "No matching tasks"),
+                                neoLabel(
+                                    "غيّر الفلاتر أو استخدم زر + لإضافة مهمة",
+                                    "Change filters or use + to add a task",
+                                ),
+                            )
+                        } else {
+                            Text(
+                                text =
+                                    when (filter) {
+                                        TaskFilterV11.TODAY ->
+                                            neoLiteral("لا توجد مهام لليوم", "No tasks for today")
+                                        TaskFilterV11.UPCOMING ->
+                                            neoLiteral("لا توجد مهام قادمة", "No upcoming tasks")
+                                        TaskFilterV11.OVERDUE ->
+                                            neoLiteral("لا توجد مهام متأخرة", "No overdue tasks")
+                                        TaskFilterV11.COMPLETED ->
+                                            neoLiteral("لا توجد مهام مكتملة", "No completed tasks")
+                                        TaskFilterV11.ALL ->
+                                            neoLiteral("لا توجد مهام بعد", "No tasks yet")
+                                    },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
-                }
                 }
             } else {
-                    items(
-                        items = filteredTasks,
-                        key = { it.id }
-                    ) { task ->
-                        TaskCardV11(
-                            task = task,
-                            onToggleComplete = {
-                                val now =
-                                    System.currentTimeMillis()
+                items(items = filteredTasks, key = { it.id }) { task ->
+                    TaskCardV11(
+                        task = task,
+                        onToggleComplete = {
+                            val now = System.currentTimeMillis()
 
-                                val completed =
-                                    task.status !=
-                                        TaskStatusV11.COMPLETED
+                            val completed = task.status != TaskStatusV11.COMPLETED
 
-                                val updatedTask =
-                                    task.copy(
-                                        status =
-                                            if (completed)
-                                                TaskStatusV11.COMPLETED
-                                            else
-                                                TaskStatusV11.TODO,
-                                        completedAt =
-                                            if (completed)
-                                                now
-                                            else
-                                                null,
-                                        updatedAt = now
-                                    )
-
-                                onDatabaseChange(
-                                    db.copy(
-                                        tasks = db.tasks.map {
-                                            if (it.id == task.id)
-                                                updatedTask
-                                            else
-                                                it
-                                        }
-                                    )
+                            val updatedTask =
+                                task.copy(
+                                    status =
+                                        if (completed) TaskStatusV11.COMPLETED
+                                        else TaskStatusV11.TODO,
+                                    completedAt = if (completed) now else null,
+                                    updatedAt = now,
                                 )
-                            },
-                            onEdit = {
-                                editingTask = task
-                                showEditor = true
-                            },
-                            onDelete = { pendingDelete = task
-                            }
-                        )
-                    }
+
+                            onDatabaseChange(
+                                db.copy(
+                                    tasks =
+                                        db.tasks.map { if (it.id == task.id) updatedTask else it }
+                                )
+                            )
+                        },
+                        onEdit = {
+                            editingTask = task
+                            showEditor = true
+                        },
+                        onDelete = { pendingDelete = task },
+                    )
+                }
             }
         }
 
@@ -283,25 +270,31 @@ fun V11TasksScreen(
                 editingTask = null
                 showEditor = true
             },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
+            modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = neoLiteral("إضافة مهمة", "Add task")
-            )
+            Icon(Icons.Default.Add, contentDescription = neoLiteral("إضافة مهمة", "Add task"))
         }
     }
 
     pendingDelete?.let { task ->
-        AlertDialog(onDismissRequest = { pendingDelete = null },
-            title = { Text(neoLabel("حذف المهمة؟", "Delete task?")) }, text = { Text(task.title) },
-            confirmButton = { TextButton(onClick = {
-                pendingDelete = null
-                onDatabaseChange(db.copy(tasks = db.tasks.filterNot { it.id == task.id }))
-            }) { Text(neoLabel("حذف", "Delete")) } },
-            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text(neoLabel("إلغاء", "Cancel")) } })
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text(neoLabel("حذف المهمة؟", "Delete task?")) },
+            text = { Text(task.title) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingDelete = null
+                        onDatabaseChange(db.copy(tasks = db.tasks.filterNot { it.id == task.id }))
+                    }
+                ) {
+                    Text(neoLabel("حذف", "Delete"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) { Text(neoLabel("إلغاء", "Cancel")) }
+            },
+        )
     }
 
     if (showEditor) {
@@ -314,14 +307,11 @@ fun V11TasksScreen(
                 editingTask = null
             },
             onSave = { task ->
-                val exists =
-                    db.tasks.any { it.id == task.id }
+                val exists = db.tasks.any { it.id == task.id }
 
                 val updated =
                     if (exists) {
-                        db.tasks.map {
-                            if (it.id == task.id) task else it
-                        }
+                        db.tasks.map { if (it.id == task.id) task else it }
                     } else {
                         db.tasks + task
                     }
@@ -334,118 +324,82 @@ fun V11TasksScreen(
 
                 Unit // Reminder effects follow a confirmed database commit in V11Home.
 
-                onDatabaseChange(
-                    db.copy(tasks = updated)
-                )
+                onDatabaseChange(db.copy(tasks = updated))
 
                 showEditor = false
                 editingTask = null
-            }
+            },
         )
     }
 }
 
 @Composable
-private fun TaskSummaryV11(
-    tasks: List<TaskV11>,
-    today: String
-) {
-    val dueToday =
-        tasks.count {
-            it.date == today &&
-                it.status != TaskStatusV11.COMPLETED
-        }
+private fun TaskSummaryV11(tasks: List<TaskV11>, today: String) {
+    val dueToday = tasks.count { it.date == today && it.status != TaskStatusV11.COMPLETED }
 
-    val overdue =
-        tasks.count {
-            it.date < today &&
-                it.status != TaskStatusV11.COMPLETED
-        }
+    val overdue = tasks.count { it.date < today && it.status != TaskStatusV11.COMPLETED }
 
-    val completed =
-        tasks.count {
-            it.status == TaskStatusV11.COMPLETED
-        }
+    val completed = tasks.count { it.status == TaskStatusV11.COMPLETED }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TaskStatCardV11(
             modifier = Modifier.weight(1f),
             value = dueToday,
-            label = neoLiteral("اليوم", "Today")
+            label = neoLiteral("اليوم", "Today"),
         )
 
         TaskStatCardV11(
             modifier = Modifier.weight(1f),
             value = overdue,
-            label = neoLiteral("متأخرة", "Overdue")
+            label = neoLiteral("متأخرة", "Overdue"),
         )
 
         TaskStatCardV11(
             modifier = Modifier.weight(1f),
             value = completed,
-            label = neoLiteral("مكتملة", "Completed")
+            label = neoLiteral("مكتملة", "Completed"),
         )
     }
 }
 
 @Composable
-private fun TaskStatCardV11(
-    modifier: Modifier,
-    value: Int,
-    label: String
-) {
-    Card(
-        modifier = modifier
-    ) {
+private fun TaskStatCardV11(modifier: Modifier, value: Int, label: String) {
+    Card(modifier = modifier) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            horizontalAlignment =
-                Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 value.toString(),
-                style =
-                    MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
             )
 
             Text(
                 label,
-                style =
-                    MaterialTheme.typography.labelMedium,
-                color =
-                    MaterialTheme.colorScheme
-                        .onSurfaceVariant
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
 @Composable
-private fun TaskFiltersV11(
-    selected: TaskFilterV11,
-    onSelected: (TaskFilterV11) -> Unit
-) {
+private fun TaskFiltersV11(selected: TaskFilterV11, onSelected: (TaskFilterV11) -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        modifier =
+            Modifier.fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         TaskFilterV11.entries.forEach { filter ->
             FilterChip(
                 selected = selected == filter,
-                onClick = {
-                    onSelected(filter)
-                },
+                onClick = { onSelected(filter) },
                 label = {
                     Text(
                         when (filter) {
@@ -456,7 +410,7 @@ private fun TaskFiltersV11(
                             TaskFilterV11.ALL -> neoLiteral("الكل", "All")
                         }
                     )
-                }
+                },
             )
         }
     }
@@ -467,74 +421,64 @@ private fun TaskCardV11(
     task: TaskV11,
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (LocalV11NeoEnabled.current) {
-                Checkbox(checked = task.status == TaskStatusV11.COMPLETED, onCheckedChange = { onToggleComplete() },
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp))
+                Checkbox(
+                    checked = task.status == TaskStatusV11.COMPLETED,
+                    onCheckedChange = { onToggleComplete() },
+                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                )
             } else {
-            Icon(
-                imageVector =
-                    if (
-                        task.status ==
-                        TaskStatusV11.COMPLETED
-                    )
-                        Icons.Default.CheckCircle
-                    else
-                        Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = neoLiteral("تغيير حالة المهمة", "Toggle task completion"),
-                modifier = Modifier
-                    .size(if (LocalV11NeoEnabled.current) 48.dp else 28.dp)
-                    .clickable {
-                        onToggleComplete()
-                    },
-                tint =
-                    if (
-                        task.status ==
-                        TaskStatusV11.COMPLETED
-                    )
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme
-                            .onSurfaceVariant
-            )
-
+                Icon(
+                    imageVector =
+                        if (task.status == TaskStatusV11.COMPLETED) Icons.Default.CheckCircle
+                        else Icons.Outlined.RadioButtonUnchecked,
+                    contentDescription = neoLiteral("تغيير حالة المهمة", "Toggle task completion"),
+                    modifier =
+                        Modifier.size(if (LocalV11NeoEnabled.current) 48.dp else 28.dp).clickable {
+                            onToggleComplete()
+                        },
+                    tint =
+                        if (task.status == TaskStatusV11.COMPLETED)
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Spacer(Modifier.width(10.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 if (LocalV11NeoEnabled.current) {
-                    Text(neoPriorityLabel(task.priority), style = MaterialTheme.typography.labelSmall,
-                        color = if (task.priority in listOf(TaskPriorityV11.HIGH, TaskPriorityV11.URGENT)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                    Text(
+                        neoPriorityLabel(task.priority),
+                        style = MaterialTheme.typography.labelSmall,
+                        color =
+                            if (
+                                task.priority in
+                                    listOf(TaskPriorityV11.HIGH, TaskPriorityV11.URGENT)
+                            )
+                                MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.primary,
+                    )
                 }
                 Text(
                     text = task.title,
                     fontWeight = FontWeight.Bold,
-                    style =
-                        MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
 
                 if (task.details.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
                     Text(
                         task.details,
-                        style =
-                            MaterialTheme.typography.bodySmall,
-                        color =
-                            MaterialTheme.colorScheme
-                                .onSurfaceVariant,
-                        maxLines = 2
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
                     )
                 }
 
@@ -552,192 +496,173 @@ private fun TaskCardV11(
                         append(" • ")
                         append(
                             when (task.priority) {
-                                TaskPriorityV11.LOW ->
-                                    neoLiteral("منخفضة", "Low")
-                                TaskPriorityV11.NORMAL ->
-                                    neoLiteral("عادية", "Normal")
-                                TaskPriorityV11.HIGH ->
-                                    neoLiteral("عالية", "High")
-                                TaskPriorityV11.URGENT ->
-                                    neoLiteral("عاجلة", "Urgent")
+                                TaskPriorityV11.LOW -> neoLiteral("منخفضة", "Low")
+                                TaskPriorityV11.NORMAL -> neoLiteral("عادية", "Normal")
+                                TaskPriorityV11.HIGH -> neoLiteral("عالية", "High")
+                                TaskPriorityV11.URGENT -> neoLiteral("عاجلة", "Urgent")
                             }
                         )
 
-                        if (
-                            task.repeat !=
-                            TaskRepeatV11.NONE
-                        ) {
+                        if (task.repeat != TaskRepeatV11.NONE) {
                             append(neoLiteral(" • متكررة", " • recurring"))
                         }
                     },
-                    style =
-                        MaterialTheme.typography.labelSmall,
-                    color =
-                        MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 
-            IconButton(
-                onClick = onEdit
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = neoLiteral("تعديل", "Edit")
-                )
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = neoLiteral("تعديل", "Edit"))
             }
 
-            IconButton(
-                onClick = onDelete
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = neoLiteral("حذف", "Delete")
-                )
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = neoLiteral("حذف", "Delete"))
             }
         }
     }
 }
 
 @Composable
-private fun TaskEditorDialogV11(
+fun FullTaskEditorDialogV11(
     existing: TaskV11?,
     db: V11Database,
     workplaces: List<Workplace>,
     onDismiss: () -> Unit,
-    onSave: (TaskV11) -> Unit
+    onSave: (TaskV11) -> Unit,
 ) {
-    var title by remember(existing?.id) {
-        mutableStateOf(existing?.title ?: "")
-    }
+    val editorContext = LocalContext.current
+    var title by remember(existing?.id) { mutableStateOf(existing?.title ?: "") }
 
-    var details by remember(existing?.id) {
-        mutableStateOf(existing?.details ?: "")
-    }
+    var details by remember(existing?.id) { mutableStateOf(existing?.details ?: "") }
 
-    var date by remember(existing?.id) {
-        mutableStateOf(
-            existing?.date ?: LocalDate.now().toString()
-        )
-    }
+    var date by
+        remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }
 
-    var time by remember(existing?.id) {
-        mutableStateOf(existing?.time ?: "")
-    }
+    var time by remember(existing?.id) { mutableStateOf(existing?.time ?: "") }
 
-    var priority by remember(existing?.id) {
-        mutableStateOf(
-            existing?.priority ?: TaskPriorityV11.NORMAL
-        )
-    }
+    var priority by
+        remember(existing?.id) { mutableStateOf(existing?.priority ?: TaskPriorityV11.NORMAL) }
 
-    var repeat by remember(existing?.id) {
-        mutableStateOf(
-            existing?.repeat ?: TaskRepeatV11.NONE
-        )
-    }
+    var repeat by remember(existing?.id) { mutableStateOf(existing?.repeat ?: TaskRepeatV11.NONE) }
 
-    var workplaceId by remember(existing?.id) {
-        mutableStateOf(existing?.workplaceId)
-    }
+    var workplaceId by remember(existing?.id) { mutableStateOf(existing?.workplaceId) }
 
-    var calendarId by remember(existing?.id) {
-        mutableStateOf(existing?.calendarId)
-    }
+    var calendarId by remember(existing?.id) { mutableStateOf(existing?.calendarId) }
 
-    var linkedShiftId by remember(existing?.id) {
-        mutableStateOf(existing?.linkedShiftId)
-    }
+    var linkedShiftId by remember(existing?.id) { mutableStateOf(existing?.linkedShiftId) }
 
-    var reminderEnabled by remember(existing?.id) {
-        mutableStateOf(
-            existing?.reminderAt != null
-        )
-    }
+    var reminderEnabled by remember(existing?.id) { mutableStateOf(existing?.reminderAt != null) }
 
-    var reminderTime by remember(existing?.id) {
-        mutableStateOf(
-            existing?.reminderAt
-                ?.let { millis ->
+    var reminderTime by
+        remember(existing?.id) {
+            mutableStateOf(
+                existing?.reminderAt?.let { millis ->
                     runCatching {
-                        java.time.Instant
-                            .ofEpochMilli(millis)
-                            .atZone(
-                                ZoneId.systemDefault()
-                            )
-                            .toLocalTime()
-                            .withSecond(0)
-                            .withNano(0)
-                            .toString()
-                    }.getOrNull()
-                }
-                ?: existing?.time
-                ?: ""
+                            java.time.Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalTime()
+                                .withSecond(0)
+                                .withNano(0)
+                                .toString()
+                        }
+                        .getOrNull()
+                } ?: existing?.time ?: ""
+            )
+        }
+
+    var workplaceMenu by remember { mutableStateOf(false) }
+
+    var calendarMenu by remember { mutableStateOf(false) }
+
+    var shiftMenu by remember { mutableStateOf(false) }
+
+    val initialValues =
+        remember(existing?.id) {
+            listOf(
+                title,
+                details,
+                date,
+                time,
+                priority,
+                repeat,
+                workplaceId,
+                calendarId,
+                linkedShiftId,
+                reminderEnabled,
+                reminderTime,
+            )
+        }
+    var discardChanges by remember { mutableStateOf(false) }
+    fun leaveEditor() {
+        if (
+            listOf(
+                title,
+                details,
+                date,
+                time,
+                priority,
+                repeat,
+                workplaceId,
+                calendarId,
+                linkedShiftId,
+                reminderEnabled,
+                reminderTime,
+            ) != initialValues
         )
+            discardChanges = true
+        else onDismiss()
     }
-
-    var workplaceMenu by remember {
-        mutableStateOf(false)
-    }
-
-    var calendarMenu by remember {
-        mutableStateOf(false)
-    }
-
-    var shiftMenu by remember {
-        mutableStateOf(false)
-    }
-
+    if (discardChanges)
+        AlertDialog(
+            onDismissRequest = { discardChanges = false },
+            title = { Text(neoLabel("تجاهل التعديلات؟", "Discard changes?")) },
+            confirmButton = {
+                TextButton(onClick = onDismiss) { Text(neoLabel("تجاهل", "Discard")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { discardChanges = false }) {
+                    Text(neoLabel("متابعة", "Keep editing"))
+                }
+            },
+        )
     val dayShifts =
         remember(db.days, date) {
             db.days
                 .filter { it.date == date }
                 .flatMap { day ->
-                    day.segments.map { segment ->
-                        Triple(
-                            segment.id,
-                            day.calendarId,
-                            segment
-                        )
-                    }
+                    day.segments.map { segment -> Triple(segment.id, day.calendarId, segment) }
                 }
         }
 
     LaunchedEffect(date) {
-        if (
-            linkedShiftId != null &&
-            dayShifts.none {
-                it.first == linkedShiftId
-            }
-        ) {
+        if (linkedShiftId != null && dayShifts.none { it.first == linkedShiftId }) {
             linkedShiftId = null
         }
     }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { leaveEditor() },
         title = {
             Text(
-                if (existing == null)
-                    neoLiteral("مهمة جديدة", "New task")
-                else
-                    neoLiteral("تعديل المهمة", "Edit task")
+                if (existing == null) neoLiteral("مهمة جديدة", "New task")
+                else neoLiteral("تعديل المهمة", "Edit task")
             )
         },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 500.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement =
-                    Arrangement.spacedBy(10.dp)
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .heightIn(max = 500.dp)
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(neoLiteral("عنوان المهمة", "Task title")) },
-                    singleLine = true
+                    singleLine = true,
                 )
 
                 OutlinedTextField(
@@ -746,7 +671,7 @@ private fun TaskEditorDialogV11(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(neoLiteral("ملاحظات", "Notes")) },
                     minLines = 2,
-                    maxLines = 4
+                    maxLines = 4,
                 )
 
                 OutlinedTextField(
@@ -754,173 +679,140 @@ private fun TaskEditorDialogV11(
                     onValueChange = { date = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(neoLiteral("التاريخ YYYY-MM-DD", "Date YYYY-MM-DD")) },
-                    singleLine = true
+                    singleLine = true,
                 )
 
+                TextButton(
+                    onClick = {
+                        val selected =
+                            runCatching { java.time.LocalTime.parse(time) }
+                                .getOrDefault(java.time.LocalTime.of(9, 0))
+                        android.app
+                            .TimePickerDialog(
+                                editorContext,
+                                { _, h, m -> time = java.time.LocalTime.of(h, m).toString() },
+                                selected.hour,
+                                selected.minute,
+                                true,
+                            )
+                            .show()
+                    }
+                ) {
+                    Text(neoLiteral("اختيار الوقت", "Choose time"))
+                }
                 OutlinedTextField(
                     value = time,
                     onValueChange = { time = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(neoLiteral("الوقت HH:MM - اختياري", "Time HH:MM - optional")) },
-                    singleLine = true
+                    singleLine = true,
                 )
 
-                Box(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            workplaceMenu = true
-                        }
+                        onClick = { workplaceMenu = true },
                     ) {
                         Text(
-                            workplaces
-                                .firstOrNull {
-                                    it.id == workplaceId
-                                }
-                                ?.name
+                            workplaces.firstOrNull { it.id == workplaceId }?.name
                                 ?: neoLiteral("مكان العمل: بدون ربط", "Workplace: none")
                         )
                     }
 
                     DropdownMenu(
                         expanded = workplaceMenu,
-                        onDismissRequest = {
-                            workplaceMenu = false
-                        }
+                        onDismissRequest = { workplaceMenu = false },
                     ) {
                         DropdownMenuItem(
-                            text = {
-                                Text(neoLiteral("بدون ربط", "Not linked"))
-                            },
+                            text = { Text(neoLiteral("بدون ربط", "Not linked")) },
                             onClick = {
                                 workplaceId = null
                                 workplaceMenu = false
-                            }
+                            },
                         )
 
                         workplaces.forEach { workplace ->
                             DropdownMenuItem(
-                                text = {
-                                    Text(workplace.name)
-                                },
+                                text = { Text(workplace.name) },
                                 onClick = {
-                                    workplaceId =
-                                        workplace.id
+                                    workplaceId = workplace.id
                                     workplaceMenu = false
-                                }
+                                },
                             )
                         }
                     }
                 }
 
-                Box(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            calendarMenu = true
-                        }
+                        onClick = { calendarMenu = true },
                     ) {
                         Text(
-                            db.calendars
-                                .firstOrNull {
-                                    it.id == calendarId
-                                }
-                                ?.name
+                            db.calendars.firstOrNull { it.id == calendarId }?.name
                                 ?: neoLiteral("التقويم: بدون ربط", "Calendar: none")
                         )
                     }
 
                     DropdownMenu(
                         expanded = calendarMenu,
-                        onDismissRequest = {
-                            calendarMenu = false
-                        }
+                        onDismissRequest = { calendarMenu = false },
                     ) {
                         DropdownMenuItem(
-                            text = {
-                                Text(neoLiteral("بدون ربط", "Not linked"))
-                            },
+                            text = { Text(neoLiteral("بدون ربط", "Not linked")) },
                             onClick = {
                                 calendarId = null
                                 calendarMenu = false
-                            }
+                            },
                         )
 
                         db.calendars.forEach { calendar ->
                             DropdownMenuItem(
-                                text = {
-                                    Text(calendar.name)
-                                },
+                                text = { Text(calendar.name) },
                                 onClick = {
-                                    calendarId =
-                                        calendar.id
+                                    calendarId = calendar.id
                                     calendarMenu = false
-                                }
+                                },
                             )
                         }
                     }
                 }
 
-                Box(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = dayShifts.isNotEmpty(),
-                        onClick = {
-                            shiftMenu = true
-                        }
+                        onClick = { shiftMenu = true },
                     ) {
-                        val selected =
-                            dayShifts.firstOrNull {
-                                it.first == linkedShiftId
-                            }
+                        val selected = dayShifts.firstOrNull { it.first == linkedShiftId }
 
                         Text(
                             if (selected == null)
                                 if (dayShifts.isEmpty())
-                                    neoLiteral("لا توجد شفتات في هذا اليوم", "No shifts on this day")
-                                else
-                                    neoLiteral("الشفت: بدون ربط", "Shift: none")
+                                    neoLiteral(
+                                        "لا توجد شفتات في هذا اليوم",
+                                        "No shifts on this day",
+                                    )
+                                else neoLiteral("الشفت: بدون ربط", "Shift: none")
                             else {
-                                val segment =
-                                    selected.third
+                                val segment = selected.third
 
                                 val workplaceName =
-                                    workplaces
-                                        .firstOrNull {
-                                            it.id ==
-                                                segment.workplaceId
-                                        }
-                                        ?.name
+                                    workplaces.firstOrNull { it.id == segment.workplaceId }?.name
 
                                 buildString {
                                     append(
-                                        when (
-                                            segment.kind
-                                        ) {
-                                            ShiftKind.FULL_DAY ->
-                                                neoLiteral("يوم كامل", "Full day")
-                                            ShiftKind.LONG ->
-                                                neoLiteral("طويل", "Long")
-                                            ShiftKind.NIGHT ->
-                                                neoLiteral("ليلي", "Night")
-                                            ShiftKind.MORNING ->
-                                                neoLiteral("صباحي", "Morning")
-                                            ShiftKind.EVENING ->
-                                                neoLiteral("مسائي", "Evening")
-                                            ShiftKind.OFF ->
-                                                neoLiteral("إجازة", "Off")
+                                        when (segment.kind) {
+                                            ShiftKind.FULL_DAY -> neoLiteral("يوم كامل", "Full day")
+                                            ShiftKind.LONG -> neoLiteral("طويل", "Long")
+                                            ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
+                                            ShiftKind.MORNING -> neoLiteral("صباحي", "Morning")
+                                            ShiftKind.EVENING -> neoLiteral("مسائي", "Evening")
+                                            ShiftKind.OFF -> neoLiteral("إجازة", "Off")
                                         }
                                     )
 
-                                    if (
-                                        workplaceName != null
-                                    ) {
+                                    if (workplaceName != null) {
                                         append(" • ")
                                         append(workplaceName)
                                     }
@@ -929,20 +821,13 @@ private fun TaskEditorDialogV11(
                         )
                     }
 
-                    DropdownMenu(
-                        expanded = shiftMenu,
-                        onDismissRequest = {
-                            shiftMenu = false
-                        }
-                    ) {
+                    DropdownMenu(expanded = shiftMenu, onDismissRequest = { shiftMenu = false }) {
                         DropdownMenuItem(
-                            text = {
-                                Text(neoLiteral("بدون ربط", "Not linked"))
-                            },
+                            text = { Text(neoLiteral("بدون ربط", "Not linked")) },
                             onClick = {
                                 linkedShiftId = null
                                 shiftMenu = false
-                            }
+                            },
                         )
 
                         dayShifts.forEach { item ->
@@ -953,29 +838,21 @@ private fun TaskEditorDialogV11(
                                     Text(
                                         buildString {
                                             append(
-                                                when (
-                                                    segment.kind
-                                                ) {
+                                                when (segment.kind) {
                                                     ShiftKind.FULL_DAY ->
                                                         neoLiteral("يوم كامل", "Full day")
-                                                    ShiftKind.LONG ->
-                                                        neoLiteral("طويل", "Long")
-                                                    ShiftKind.NIGHT ->
-                                                        neoLiteral("ليلي", "Night")
+                                                    ShiftKind.LONG -> neoLiteral("طويل", "Long")
+                                                    ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
                                                     ShiftKind.MORNING ->
                                                         neoLiteral("صباحي", "Morning")
                                                     ShiftKind.EVENING ->
                                                         neoLiteral("مسائي", "Evening")
-                                                    ShiftKind.OFF ->
-                                                        neoLiteral("إجازة", "Off")
+                                                    ShiftKind.OFF -> neoLiteral("إجازة", "Off")
                                                 }
                                             )
 
                                             workplaces
-                                                .firstOrNull {
-                                                    it.id ==
-                                                        segment.workplaceId
-                                                }
+                                                .firstOrNull { it.id == segment.workplaceId }
                                                 ?.name
                                                 ?.let {
                                                     append(" • ")
@@ -985,21 +862,15 @@ private fun TaskEditorDialogV11(
                                     )
                                 },
                                 onClick = {
-                                    linkedShiftId =
-                                        item.first
-                                    calendarId =
-                                        item.second
+                                    linkedShiftId = item.first
+                                    calendarId = item.second
 
-                                    if (
-                                        segment.workplaceId !=
-                                        null
-                                    ) {
-                                        workplaceId =
-                                            segment.workplaceId
+                                    if (segment.workplaceId != null) {
+                                        workplaceId = segment.workplaceId
                                     }
 
                                     shiftMenu = false
-                                }
+                                },
                             )
                         }
                     }
@@ -1007,129 +878,87 @@ private fun TaskEditorDialogV11(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment =
-                        Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Switch(
                         checked = reminderEnabled,
                         onCheckedChange = {
                             reminderEnabled = it
 
-                            if (
-                                it &&
-                                reminderTime.isBlank()
-                            ) {
+                            if (it && reminderTime.isBlank()) {
                                 reminderTime =
-                                    time.takeIf {
-                                        value ->
-                                        value.isNotBlank()
-                                    } ?: "09:00"
+                                    time.takeIf { value -> value.isNotBlank() } ?: "09:00"
                             }
-                        }
+                        },
                     )
 
                     Spacer(Modifier.width(10.dp))
 
-                    Text(
-                        neoLiteral("تذكير بالمهمة", "Task reminder"),
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text(neoLiteral("تذكير بالمهمة", "Task reminder"), fontWeight = FontWeight.Bold)
                 }
 
                 if (reminderEnabled) {
                     OutlinedTextField(
                         value = reminderTime,
-                        onValueChange = {
-                            reminderTime = it
-                        },
-                        modifier =
-                            Modifier.fillMaxWidth(),
-                        label = {
-                            Text(
-                                neoLiteral("وقت التذكير HH:MM", "Reminder time HH:MM")
-                            )
-                        },
+                        onValueChange = { reminderTime = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(neoLiteral("وقت التذكير HH:MM", "Reminder time HH:MM")) },
                         supportingText = {
                             Text(
-                                neoLiteral("سيتم التنبيه في تاريخ المهمة", "Reminder will trigger on task date")
+                                neoLiteral(
+                                    "سيتم التنبيه في تاريخ المهمة",
+                                    "Reminder will trigger on task date",
+                                )
                             )
                         },
-                        singleLine = true
+                        singleLine = true,
                     )
                 }
 
-                Text(
-                    neoLiteral("الأولوية", "Priority"),
-                    fontWeight = FontWeight.Bold
-                )
+                Text(neoLiteral("الأولوية", "Priority"), fontWeight = FontWeight.Bold)
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(
-                            rememberScrollState()
-                        ),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(5.dp)
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     TaskPriorityV11.entries.forEach {
                         FilterChip(
                             selected = priority == it,
-                            onClick = {
-                                priority = it
-                            },
+                            onClick = { priority = it },
                             label = {
                                 Text(
                                     when (it) {
-                                        TaskPriorityV11.LOW ->
-                                            neoLiteral("منخفضة", "Low")
-                                        TaskPriorityV11.NORMAL ->
-                                            neoLiteral("عادية", "Normal")
-                                        TaskPriorityV11.HIGH ->
-                                            neoLiteral("عالية", "High")
-                                        TaskPriorityV11.URGENT ->
-                                            neoLiteral("عاجلة", "Urgent")
+                                        TaskPriorityV11.LOW -> neoLiteral("منخفضة", "Low")
+                                        TaskPriorityV11.NORMAL -> neoLiteral("عادية", "Normal")
+                                        TaskPriorityV11.HIGH -> neoLiteral("عالية", "High")
+                                        TaskPriorityV11.URGENT -> neoLiteral("عاجلة", "Urgent")
                                     }
                                 )
-                            }
+                            },
                         )
                     }
                 }
 
-                Text(
-                    neoLiteral("التكرار", "Repeat"),
-                    fontWeight = FontWeight.Bold
-                )
+                Text(neoLiteral("التكرار", "Repeat"), fontWeight = FontWeight.Bold)
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(
-                            rememberScrollState()
-                        ),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(5.dp)
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     TaskRepeatV11.entries.forEach {
                         FilterChip(
                             selected = repeat == it,
-                            onClick = {
-                                repeat = it
-                            },
+                            onClick = { repeat = it },
                             label = {
                                 Text(
                                     when (it) {
-                                        TaskRepeatV11.NONE ->
-                                            neoLiteral("بدون", "None")
-                                        TaskRepeatV11.DAILY ->
-                                            neoLiteral("يومي", "Daily")
-                                        TaskRepeatV11.WEEKLY ->
-                                            neoLiteral("أسبوعي", "Weekly")
-                                        TaskRepeatV11.MONTHLY ->
-                                            neoLiteral("شهري", "Monthly")
+                                        TaskRepeatV11.NONE -> neoLiteral("بدون", "None")
+                                        TaskRepeatV11.DAILY -> neoLiteral("يومي", "Daily")
+                                        TaskRepeatV11.WEEKLY -> neoLiteral("أسبوعي", "Weekly")
+                                        TaskRepeatV11.MONTHLY -> neoLiteral("شهري", "Monthly")
                                     }
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -1139,122 +968,76 @@ private fun TaskEditorDialogV11(
             TextButton(
                 enabled =
                     title.isNotBlank() &&
-                    runCatching {
-                        LocalDate.parse(date)
-                    }.isSuccess &&
-                    (
-                        !reminderEnabled ||
-                        runCatching {
-                            val parts =
-                                reminderTime
-                                    .trim()
-                                    .split(":")
+                        runCatching { LocalDate.parse(date) }.isSuccess &&
+                        (!reminderEnabled ||
+                            runCatching {
+                                    val parts = reminderTime.trim().split(":")
 
-                            require(parts.size == 2)
+                                    require(parts.size == 2)
 
-                            val hour =
-                                parts[0].toInt()
-                            val minute =
-                                parts[1].toInt()
+                                    val hour = parts[0].toInt()
+                                    val minute = parts[1].toInt()
 
-                            require(
-                                hour in 0..23 &&
-                                minute in 0..59
-                            )
-                        }.isSuccess
-                    ),
+                                    require(hour in 0..23 && minute in 0..59)
+                                }
+                                .isSuccess),
                 onClick = {
-                    val now =
-                        System.currentTimeMillis()
+                    val now = System.currentTimeMillis()
 
                     val calculatedReminderAt =
                         if (reminderEnabled) {
                             runCatching {
-                                val reminderDate =
-                                    LocalDate.parse(date)
+                                    val reminderDate = LocalDate.parse(date)
 
-                                val parts =
-                                    reminderTime
-                                        .trim()
-                                        .split(":")
+                                    val parts = reminderTime.trim().split(":")
 
-                                require(
-                                    parts.size == 2
-                                )
+                                    require(parts.size == 2)
 
-                                val hour =
-                                    parts[0].toInt()
+                                    val hour = parts[0].toInt()
 
-                                val minute =
-                                    parts[1].toInt()
+                                    val minute = parts[1].toInt()
 
-                                require(
-                                    hour in 0..23 &&
-                                    minute in 0..59
-                                )
+                                    require(hour in 0..23 && minute in 0..59)
 
-                                LocalDateTime.of(
-                                    reminderDate,
-                                    java.time.LocalTime.of(
-                                        hour,
-                                        minute
-                                    )
-                                )
-                                    .atZone(
-                                        ZoneId.systemDefault()
-                                    )
-                                    .toInstant()
-                                    .toEpochMilli()
-                            }.getOrNull()
+                                    LocalDateTime.of(
+                                            reminderDate,
+                                            java.time.LocalTime.of(hour, minute),
+                                        )
+                                        .atZone(ZoneId.systemDefault())
+                                        .toInstant()
+                                        .toEpochMilli()
+                                }
+                                .getOrNull()
                         } else {
                             null
                         }
 
                     onSave(
                         TaskV11(
-                            id =
-                                existing?.id
-                                    ?: UUID.randomUUID()
-                                        .toString(),
+                            id = existing?.id ?: UUID.randomUUID().toString(),
                             title = title.trim(),
                             details = details.trim(),
                             date = date,
-                            time =
-                                time.trim()
-                                    .takeIf {
-                                        it.isNotBlank()
-                                    },
+                            time = time.trim().takeIf { it.isNotBlank() },
                             priority = priority,
-                            status =
-                                existing?.status
-                                    ?: TaskStatusV11.TODO,
+                            status = existing?.status ?: TaskStatusV11.TODO,
                             repeat = repeat,
-                            reminderAt =
-                                calculatedReminderAt,
-                            workplaceId =
-                                workplaceId,
-                            calendarId =
-                                calendarId,
-                            linkedShiftId =
-                                linkedShiftId,
-                            createdAt =
-                                existing?.createdAt ?: now,
+                            reminderAt = calculatedReminderAt,
+                            workplaceId = workplaceId,
+                            calendarId = calendarId,
+                            linkedShiftId = linkedShiftId,
+                            createdAt = existing?.createdAt ?: now,
                             updatedAt = now,
-                            completedAt =
-                                existing?.completedAt
+                            completedAt = existing?.completedAt,
                         )
                     )
-                }
+                },
             ) {
                 Text(neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
-                Text(neoLiteral("إلغاء", "Cancel"))
-            }
-        }
+            TextButton(onClick = { leaveEditor() }) { Text(neoLiteral("إلغاء", "Cancel")) }
+        },
     )
 }

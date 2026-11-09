@@ -193,7 +193,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
             val addTask = PendingIntent.getActivity(
                 context,
                 id * 100 + 3,
-                taskActivityIntent("add"),
+                Intent(context, com.todoshift.app.QuickTaskActivity::class.java).setData(Uri.parse("todoshift://quick-add/$id")),
                 PendingIntent.FLAG_UPDATE_CURRENT or
                     PendingIntent.FLAG_IMMUTABLE
             )

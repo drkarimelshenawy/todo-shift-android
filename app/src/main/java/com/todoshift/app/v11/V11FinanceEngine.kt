@@ -2,17 +2,9 @@ package com.todoshift.app.v11
 
 import java.time.YearMonth
 
-data class ShiftKindSummaryV11(
-    val kind: ShiftKind,
-    val count: Int,
-    val amount: Double
-)
+data class ShiftKindSummaryV11(val kind: ShiftKind, val count: Int, val amount: Double)
 
-data class WorkplaceSummaryV11(
-    val workplaceId: String?,
-    val count: Int,
-    val amount: Double
-)
+data class WorkplaceSummaryV11(val workplaceId: String?, val count: Int, val amount: Double)
 
 data class MonthFinanceV11(
     val month: String,
@@ -23,7 +15,7 @@ data class MonthFinanceV11(
     val status: SettlementStatusV11,
     val shiftCount: Int,
     val byShiftKind: List<ShiftKindSummaryV11>,
-    val byWorkplace: List<WorkplaceSummaryV11>
+    val byWorkplace: List<WorkplaceSummaryV11>,
 )
 
 object V11FinanceEngine {
@@ -31,100 +23,116 @@ object V11FinanceEngine {
     fun month(
         db: V11Database,
         month: YearMonth,
-        calendarIds: Set<String>? = null
+        calendarIds: Set<String>? = null,
     ): MonthFinanceV11 {
 
         val monthText = month.toString()
 
-        val days = db.days.filter { day ->
-            day.date.startsWith(monthText) &&
-                (
-                    calendarIds == null ||
-                    day.calendarId in calendarIds
-                )
-        }
-
-        val segments = days.flatMap { day ->
-            day.segments.map { day to it }
-        }.filter {
-            it.second.kind != ShiftKind.OFF
-        }
-
-        val expected = segments.sumOf { (day, segment) ->
-            V11RateEngine.segmentAmount(
-                segment = segment,
-                date = day.date,
-                rates = db.rates
-            )
-        }
-
-        val received = db.payments
-            .filter { it.accrualMonth == monthText }
-            .sumOf { it.amount }
-
-        val settlements = db.settlements
-            .filter { it.accrualMonth == monthText }
-            .filter {
-                it.action == SettlementActionV11.WRITE_OFF ||
-                    it.action == SettlementActionV11.CANCEL_ENTITLEMENT ||
-                    it.action == SettlementActionV11.ADJUSTMENT
+        val days =
+            db.days.filter { day ->
+                day.date.startsWith(monthText) &&
+                    (calendarIds == null || day.calendarId in calendarIds)
             }
-            .sumOf { it.amount }
+
+        val segments =
+            days
+                .flatMap { day -> day.segments.map { day to it } }
+                .filter { it.second.kind != ShiftKind.OFF }
+
+        val expected =
+            LocalizedNumbers.amount(
+                segments.sumOf { (day, segment) ->
+                    LocalizedNumbers.cents(
+                        V11RateEngine.segmentAmount(
+                            segment = segment,
+                            date = day.date,
+                            rates = db.rates,
+                        )
+                    )
+                }
+            )
+
+        val received =
+            LocalizedNumbers.amount(
+                db.payments.sumOf { payment ->
+                    if (payment.allocations.isEmpty()) {
+                        if (payment.accrualMonth == monthText)
+                            LocalizedNumbers.cents(payment.amount)
+                        else 0L
+                    } else
+                        payment.allocations
+                            .filter { allocation ->
+                                allocation.accrualMonth == monthText &&
+                                    (calendarIds == null ||
+                                        db.incomeSources
+                                            .firstOrNull { it.id == allocation.sourceId }
+                                            ?.calendarId in calendarIds)
+                            }
+                            .sumOf { LocalizedNumbers.cents(it.amount) }
+                }
+            )
+
+        val settlements =
+            LocalizedNumbers.amount(
+                db.settlements
+                    .filter { it.accrualMonth == monthText }
+                    .filter {
+                        it.action == SettlementActionV11.WRITE_OFF ||
+                            it.action == SettlementActionV11.CANCEL_ENTITLEMENT ||
+                            it.action == SettlementActionV11.ADJUSTMENT
+                    }
+                    .sumOf { LocalizedNumbers.cents(it.amount) }
+            )
 
         val difference =
-            expected - received - settlements
+            LocalizedNumbers.amount(
+                LocalizedNumbers.cents(expected) -
+                    LocalizedNumbers.cents(received) -
+                    LocalizedNumbers.cents(settlements)
+            )
 
-        val status = when {
-            expected <= 0.0 ->
-                SettlementStatusV11.PAID
+        val status =
+            when {
+                expected <= 0.0 -> SettlementStatusV11.PAID
 
-            received <= 0.0 && settlements <= 0.0 ->
-                SettlementStatusV11.DUE
+                received <= 0.0 && settlements <= 0.0 -> SettlementStatusV11.DUE
 
-            difference > 0.009 ->
-                SettlementStatusV11.PARTIALLY_PAID
+                difference > 0.009 -> SettlementStatusV11.PARTIALLY_PAID
 
-            else ->
-                SettlementStatusV11.PAID
-        }
-
-        val byKind = ShiftKind.entries.mapNotNull { kind ->
-            val rows = segments.filter {
-                it.second.kind == kind
+                else -> SettlementStatusV11.PAID
             }
 
-            if (rows.isEmpty()) {
-                null
-            } else {
-                ShiftKindSummaryV11(
-                    kind = kind,
-                    count = rows.size,
-                    amount = rows.sumOf { (day, segment) ->
-                        V11RateEngine.segmentAmount(
-                            segment,
-                            day.date,
-                            db.rates
-                        )
-                    }
-                )
-            }
-        }
+        val byKind =
+            ShiftKind.entries.mapNotNull { kind ->
+                val rows = segments.filter { it.second.kind == kind }
 
-        val byWorkplace = segments
-            .groupBy { it.second.workplaceId }
-            .map { (workplaceId, rows) ->
-                WorkplaceSummaryV11(
-                    workplaceId = workplaceId,
-                    count = rows.size,
-                    amount = rows.sumOf { (day, segment) ->
-                        V11RateEngine.segmentAmount(
-                            segment,
-                            day.date,
-                            db.rates
-                        )
-                    }
-                )
+                if (rows.isEmpty()) {
+                    null
+                } else {
+                    ShiftKindSummaryV11(
+                        kind = kind,
+                        count = rows.size,
+                        amount =
+                            rows.sumOf { (day, segment) ->
+                                V11RateEngine.segmentAmount(segment, day.date, db.rates)
+                            },
+                    )
+                }
             }
+
+        val byWorkplace =
+            segments
+                .groupBy { it.second.workplaceId }
+                .map { (workplaceId, rows) ->
+                    WorkplaceSummaryV11(
+                        workplaceId = workplaceId,
+                        count = rows.size,
+                        amount =
+                            rows.sumOf { (day, segment) ->
+                                V11RateEngine.segmentAmount(segment, day.date, db.rates)
+                            },
+                    )
+                }
 
         return MonthFinanceV11(
             month = monthText,
@@ -135,7 +143,7 @@ object V11FinanceEngine {
             status = status,
             shiftCount = segments.size,
             byShiftKind = byKind,
-            byWorkplace = byWorkplace
+            byWorkplace = byWorkplace,
         )
     }
 }

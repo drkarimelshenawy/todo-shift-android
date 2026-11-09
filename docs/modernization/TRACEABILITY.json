@@ -1,0 +1,2347 @@
+{
+  "baseline": "dc882aec8fd2ccfeaf87d9533fdd7f11ca6b15c1",
+  "scope_closed": true,
+  "completion_claim": false,
+  "requirements": [
+    {
+      "id": "01.01",
+      "requirement": "Workplace full-cell colors",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise workplace full-cell colors with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt"
+      ],
+      "related_checks": [
+        "NeoCalendarPresentationTest",
+        "CalendarUiRegressionTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "01.02",
+      "requirement": "Single/OFF/multiple shift visibility",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise single/off/multiple shift visibility with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt"
+      ],
+      "related_checks": [
+        "NeoCalendarPresentationTest",
+        "CalendarUiRegressionTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "01.03",
+      "requirement": "Readable dates and task indicators",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise readable dates and task indicators with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt"
+      ],
+      "related_checks": [
+        "NeoCalendarPresentationTest",
+        "CalendarUiRegressionTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "02.01",
+      "requirement": "Brand navy/gold/teal/purple",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise brand navy/gold/teal/purple with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4Shell.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ThemeTokens.kt"
+      ],
+      "related_checks": [
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "02.02",
+      "requirement": "Compact branded header",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise compact branded header with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4Shell.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ThemeTokens.kt"
+      ],
+      "related_checks": [
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "02.03",
+      "requirement": "Clutter-free accessible cell layout",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise clutter-free accessible cell layout with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4Shell.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ThemeTokens.kt"
+      ],
+      "related_checks": [
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "03.01",
+      "requirement": "Month/week/day views",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise month/week/day views with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt"
+      ],
+      "related_checks": [
+        "CalendarUiRegressionTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "03.02",
+      "requirement": "Calendar selector",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise calendar selector with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt"
+      ],
+      "related_checks": [
+        "CalendarUiRegressionTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "03.03",
+      "requirement": "Month navigation and date clamping",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise month navigation and date clamping with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt"
+      ],
+      "related_checks": [
+        "CalendarUiRegressionTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "04.01",
+      "requirement": "Today versus selection contrast",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise today versus selection contrast with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "CalendarUiRegressionTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "04.02",
+      "requirement": "Outside-month styling",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise outside-month styling with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "CalendarUiRegressionTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "04.03",
+      "requirement": "Cell size choices",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise cell size choices with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "CalendarUiRegressionTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "05.01",
+      "requirement": "Independent visibility eye",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent visibility eye with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "CalendarUiRegressionTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "05.02",
+      "requirement": "Primary creation destination",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise primary creation destination with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "CalendarUiRegressionTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "05.03",
+      "requirement": "Persist both independently",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise persist both independently with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "CalendarUiRegressionTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "05.04",
+      "requirement": "Hidden-calendar records preserved",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise hidden-calendar records preserved with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "CalendarUiRegressionTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.01",
+      "requirement": "Persistent compact workplace/eraser/Done row",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise persistent compact workplace/eraser/done row with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.02",
+      "requirement": "Temporary shift-type row",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise temporary shift-type row with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.03",
+      "requirement": "Paint on tap and exit on Done",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise paint on tap and exit on done with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.04",
+      "requirement": "Full cell bands 100/50/50/25/25 percent",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise full cell bands 100/50/50/25/25 percent with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.05",
+      "requirement": "Distinct OFF without duration",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise distinct off without duration with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.06",
+      "requirement": "Multiple nonoverlapping shifts",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise multiple nonoverlapping shifts with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.07",
+      "requirement": "Actual conflict preview",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise actual conflict preview with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.08",
+      "requirement": "Explicit cancel/replace",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise explicit cancel/replace with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.09",
+      "requirement": "Safe partial-segment handling only",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise safe partial-segment handling only with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "New painter replaces whole conflicting segments only after preview. It deliberately does not infer partial-shift prices; Classic legacy resolver remains available."
+    },
+    {
+      "id": "06.10",
+      "requirement": "Undo painting",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise undo painting with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.11",
+      "requirement": "Remember selected workplace/type",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise remember selected workplace/type with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "06.12",
+      "requirement": "Real clock time independent from bands",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise real clock time independent from bands with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoPaintOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.01",
+      "requirement": "All settings/submenus audit",
+      "status": "partial_verification",
+      "acceptance": "Exercise all settings/submenus audit with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "07.02",
+      "requirement": "Working persisted toggles",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise working persisted toggles with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.03",
+      "requirement": "Slide/flip/fade/zoom/stack/vertical transitions",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise slide/flip/fade/zoom/stack/vertical transitions with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.04",
+      "requirement": "Slow/normal/fast",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise slow/normal/fast with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.05",
+      "requirement": "Reduce Motion",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise reduce motion with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.06",
+      "requirement": "Animated preview",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise animated preview with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.07",
+      "requirement": "Independent language",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent language with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.08",
+      "requirement": "Independent UI direction",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent ui direction with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.09",
+      "requirement": "Independent bottom-nav direction",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent bottom-nav direction with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.10",
+      "requirement": "Independent calendar-grid direction",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent calendar-grid direction with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.11",
+      "requirement": "Independent weekday direction",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent weekday direction with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.12",
+      "requirement": "Saturday/Sunday/Monday start",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise saturday/sunday/monday start with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.13",
+      "requirement": "Language changes preserve direction",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise language changes preserve direction with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "07.14",
+      "requirement": "Gesture/keyboard/locale tests",
+      "status": "partial_verification",
+      "acceptance": "Exercise gesture/keyboard/locale tests with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoAppearance.kt",
+        "app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "08.01",
+      "requirement": "Compact list/search/filter",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise compact list/search/filter with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.02",
+      "requirement": "Quick task title/date/save",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise quick task title/date/save with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.03",
+      "requirement": "Expandable notes/time/priority/recurrence/reminder",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise expandable notes/time/priority/recurrence/reminder with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.04",
+      "requirement": "Workplace/calendar/shift links",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise workplace/calendar/shift links with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.05",
+      "requirement": "Native date/time selection",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise native date/time selection with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.06",
+      "requirement": "Keyboard-safe save",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise keyboard-safe save with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.07",
+      "requirement": "External dialog-themed widget quick-add Activity",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise external dialog-themed widget quick-add activity with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.08",
+      "requirement": "Save/close/widget refresh",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise save/close/widget refresh with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "08.09",
+      "requirement": "Android/Honor acceptance",
+      "status": "partial_verification",
+      "acceptance": "Exercise android/honor acceptance with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+        "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "09.01",
+      "requirement": "Compact schedules summary/calendars",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise compact schedules summary/calendars with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "09.02",
+      "requirement": "Month navigation and filters",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise month navigation and filters with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "09.03",
+      "requirement": "Workplace/type statistics",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise workplace/type statistics with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "09.04",
+      "requirement": "Shift count versus distinct worked days",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise shift count versus distinct worked days with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "09.05",
+      "requirement": "OFF/multiple shifts counting",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise off/multiple shifts counting with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "09.06",
+      "requirement": "Real-time ranges and overnight labels",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise real-time ranges and overnight labels with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.01",
+      "requirement": "Monthly due/received/outstanding/obligations",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise monthly due/received/outstanding/obligations with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.02",
+      "requirement": "Privacy eye",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise privacy eye with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.03",
+      "requirement": "Compact payment dropdown form",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise compact payment dropdown form with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.04",
+      "requirement": "Conditional obligation forms",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise conditional obligation forms with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Savings/subscription forms store compatible OTHER obligations with subtype note markers. No new financial model or schema migration."
+    },
+    {
+      "id": "10.05",
+      "requirement": "Remaining balances and month allocation",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise remaining balances and month allocation with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.06",
+      "requirement": "No double counting",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise no double counting with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Excluded feature not introduced; inspect changed-files report."
+    },
+    {
+      "id": "10.07",
+      "requirement": "Per-shift rates",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise per-shift rates with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.08",
+      "requirement": "ASCII/Arabic/Persian/mixed digit amounts",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise ascii/arabic/persian/mixed digit amounts with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.09",
+      "requirement": "Localized grouping and decimals",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise localized grouping and decimals with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.10",
+      "requirement": "Numeric keyboard and inline errors",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise numeric keyboard and inline errors with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.11",
+      "requirement": "Keyboard-safe submit",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise keyboard-safe submit with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.12",
+      "requirement": "Duplicate-submit prevention",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise duplicate-submit prevention with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "10.13",
+      "requirement": "Exact monetary rounding",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise exact monetary rounding with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/LocalizedNumbers.kt",
+        "app/src/main/java/com/todoshift/app/v11/V11FinanceEngine.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernPersistenceTest",
+        "ModernUiIntegrationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "11.01",
+      "requirement": "App-wide regression review",
+      "status": "partial_verification",
+      "acceptance": "Exercise app-wide regression review with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "AttachmentBackupTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "11.02",
+      "requirement": "Data/date/overlap/finance checks",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise data/date/overlap/finance checks with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "AttachmentBackupTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "11.03",
+      "requirement": "Notifications/reboot/permissions",
+      "status": "partial_verification",
+      "acceptance": "Exercise notifications/reboot/permissions with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "AttachmentBackupTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "11.04",
+      "requirement": "Migration/backup checks",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise migration/backup checks with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "AttachmentBackupTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "11.05",
+      "requirement": "RTL/accessibility/dark/performance checks",
+      "status": "partial_verification",
+      "acceptance": "Exercise rtl/accessibility/dark/performance checks with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "AttachmentBackupTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "11.06",
+      "requirement": "Physical device/Honor results separate",
+      "status": "partial_verification",
+      "acceptance": "Exercise physical device/honor results separate with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt"
+      ],
+      "related_checks": [
+        "SafePersistenceTest",
+        "AttachmentBackupTest",
+        "BackupRecoveryTest"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "12.01",
+      "requirement": "Undo shift/task/finance",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise undo shift/task/finance with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "ModernOperationsTest checks financial unlock boundary; root keeps up to 20 successful undo snapshots and blocks generic month-close reversal. Process-death undo is not persisted."
+    },
+    {
+      "id": "12.02",
+      "requirement": "Copy days/weeks/months with conflict preview",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise copy days/weeks/months with conflict preview with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.03",
+      "requirement": "Shift templates",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise shift templates with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.04",
+      "requirement": "Pay rates and exceptional overrides",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise pay rates and exceptional overrides with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.05",
+      "requirement": "Unified configurable notifications",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise unified configurable notifications with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.06",
+      "requirement": "Customizable widgets/quick add",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise customizable widgets/quick add with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.07",
+      "requirement": "Validated backup before major changes",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise validated backup before major changes with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.08",
+      "requirement": "Global search tasks/shifts/workplaces/payments",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise global search tasks/shifts/workplaces/payments with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.09",
+      "requirement": "Data health and approved safe repairs",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise data health and approved safe repairs with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "12.10",
+      "requirement": "No new Today dashboard",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise no new today dashboard with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoNotificationPolicy.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt",
+        "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest"
+      ],
+      "verification": "Excluded feature not introduced; inspect changed-files report."
+    },
+    {
+      "id": "13.01",
+      "requirement": "Reusable task-list templates",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise reusable task-list templates with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "13.02",
+      "requirement": "Optional workplace/shift association",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise optional workplace/shift association with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "13.03",
+      "requirement": "Idempotent one-tap creation",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise idempotent one-tap creation with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "13.04",
+      "requirement": "Template edits not retroactive",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise template edits not retroactive with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "13.05",
+      "requirement": "Saved appearance profiles with directions/animations",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise saved appearance profiles with directions/animations with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "13.06",
+      "requirement": "Preview and switch preserve language",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise preview and switch preserve language with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "13.07",
+      "requirement": "Manual/automatic performance mode",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise manual/automatic performance mode with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "13.08",
+      "requirement": "Essential reminders unaffected",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise essential reminders unaffected with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "ModernToolScreensTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.01",
+      "requirement": "Independent multiple date notes",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent multiple date notes with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.02",
+      "requirement": "Visible truncated note text on colored cells",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise visible truncated note text on colored cells with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.03",
+      "requirement": "Notes survive shift removal",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise notes survive shift removal with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.04",
+      "requirement": "Day detail editing",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise day detail editing with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.05",
+      "requirement": "Star/pin/warning markers",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise star/pin/warning markers with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.06",
+      "requirement": "Pinned-note priority",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise pinned-note priority with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.07",
+      "requirement": "Independent border/dot color",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise independent border/dot color with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.08",
+      "requirement": "Notes/icons/shift names/task indicator toggles",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise notes/icons/shift names/task indicator toggles with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.09",
+      "requirement": "Global note search and day navigation",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise global note search and day navigation with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "14.10",
+      "requirement": "No bulk note copying",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise no bulk note copying with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoCalendarPresentation.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "ModernUiIntegrationTest",
+        "NeoCalendarPresentationTest"
+      ],
+      "verification": "Excluded feature not introduced; inspect changed-files report."
+    },
+    {
+      "id": "15.01",
+      "requirement": "Circle/glow/pulse/background/underline/dots/label",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise circle/glow/pulse/background/underline/dots/label with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.02",
+      "requirement": "Color/intensity/speed",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise color/intensity/speed with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.03",
+      "requirement": "Reduce Motion/performance respected",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise reduce motion/performance respected with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.04",
+      "requirement": "Today distinct from selection",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise today distinct from selection with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.05",
+      "requirement": "Shift fill preserved",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise shift fill preserved with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.06",
+      "requirement": "Jump to today",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise jump to today with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.07",
+      "requirement": "Normal-mode long-press preview",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise normal-mode long-press preview with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.08",
+      "requirement": "Compact/comfortable/large cells",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise compact/comfortable/large cells with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.09",
+      "requirement": "Hide outside dates",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise hide outside dates with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.10",
+      "requirement": "Optional tomorrow marker",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise optional tomorrow marker with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "15.11",
+      "requirement": "No weekend/density/occasion extras",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise no weekend/density/occasion extras with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt"
+      ],
+      "related_checks": [
+        "ModernPersistenceTest",
+        "NeoPresentationChecks"
+      ],
+      "verification": "Excluded feature not introduced; inspect changed-files report."
+    },
+    {
+      "id": "16.01",
+      "requirement": "Bulk contiguous/noncontiguous painting with conflict review",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise bulk contiguous/noncontiguous painting with conflict review with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.02",
+      "requirement": "Confirmed next-shift suggestion",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise confirmed next-shift suggestion with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.03",
+      "requirement": "Two-month comparison shifts/days/earnings",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise two-month comparison shifts/days/earnings with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.04",
+      "requirement": "Favorite workplace/type shortcuts",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise favorite workplace/type shortcuts with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.05",
+      "requirement": "Workplace statement date filters/export",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise workplace statement date filters/export with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.06",
+      "requirement": "Multi-month received payment allocation",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise multi-month received payment allocation with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.07",
+      "requirement": "Effective-dated rates preserve history",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise effective-dated rates preserve history with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "NeoRatePolicyTest checks history, future dates, duplicate dates and repeated legacy reconciliation."
+    },
+    {
+      "id": "16.08",
+      "requirement": "Review before month close/auditable correction",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise review before month close/auditable correction with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.09",
+      "requirement": "Safe task/note attachments",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise safe task/note attachments with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.10",
+      "requirement": "Attachments backup/restore",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise attachments backup/restore with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "AttachmentBackupTest round-trips one PDF and metadata in isolated Robolectric storage. Real provider/device matrix pending."
+    },
+    {
+      "id": "16.11",
+      "requirement": "Launcher task/calendar/accounts shortcuts",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise launcher task/calendar/accounts shortcuts with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.12",
+      "requirement": "Temporary nonpersistent focus",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise temporary nonpersistent focus with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.13",
+      "requirement": "Unsaved guard/drafts",
+      "status": "partial_verification",
+      "acceptance": "Exercise unsaved guard/drafts with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "See QA_REPORT.md and REMAINING.md. Exhaustive settings audit, system/device behavior, and all editor draft combinations are not fully verified."
+    },
+    {
+      "id": "16.14",
+      "requirement": "Optional on-device usage statistics",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise optional on-device usage statistics with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Source reviewed; related automated checks cover parts of this group, not every interaction. Complete device acceptance is pending."
+    },
+    {
+      "id": "16.15",
+      "requirement": "No drag-move/day timeline/projected earnings",
+      "status": "implemented_acceptance_pending",
+      "acceptance": "Exercise no drag-move/day timeline/projected earnings with persisted state, cancellation, Arabic/English, and regression checks where applicable.",
+      "evidence": [
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+        "app/src/main/java/com/todoshift/app/v11/ModernOperations.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoRatePolicy.kt",
+        "app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt",
+        "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+        "app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt"
+      ],
+      "related_checks": [
+        "ModernOperationsTest",
+        "NeoRatePolicyTest",
+        "ModernToolScreensTest",
+        "ModernSafetyTest",
+        "AttachmentBackupTest"
+      ],
+      "verification": "Excluded feature not introduced; inspect changed-files report."
+    }
+  ],
+  "version": "4.1.1 (30)",
+  "status_definitions": {
+    "implemented_acceptance_pending": "Code path implemented/retained, with related regression coverage; full per-item acceptance not proven.",
+    "partial_verification": "Significant verification or breadth gap remains; not accepted as complete."
+  }
+}

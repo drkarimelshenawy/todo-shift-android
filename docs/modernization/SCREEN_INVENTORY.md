@@ -1,0 +1,61 @@
+# Application source inventory
+
+Inventory supports the audit; inclusion here does not assert every runtime path passed acceptance. UI, persistence, backup, reminder, security and widget verification limits are in QA_REPORT.md.
+
+- `app/src/main/java/com/todoshift/app/MainActivity.kt`: onCreate, hexColor, ToDoShiftApp, updateData, AppHeader, MonthSelector, CalendarScreen, WeekHeader, MonthGrid, DayCell, ShiftPart, WorkplaceLegend, DayEditorDialog, requiredSegments, normalizeSelection, ShiftTypeOption, SchedulesDashboard, DashboardCard, FinanceScreen, FinanceRow, PaymentDialog, V10DaySummaryCard, V10FinanceSettlementCard, V10FinanceLine, V10ReportsPanel, V10SearchPanel, V10BackupSettingsPanel, V10ReleaseStatusPanel, MoreScreen, V10SmartToolsPanel, V10TemplatesSection, V10TemplateDescription, V10CreateTemplateDialog, V10ToolButton, V10SmartToolDialog, selection, execute, V10DateField, V10ShiftTypeSelector, V10WorkplaceSelector, WorkplaceEditorDialog, RateField, InfoBox, BottomNavigation, shiftDescription, place, rateText, money, arabicMonth, V09CalendarScreen, V09PainterBanner, V09MonthGrid, V09DayCell, V09ShiftBackground, colorFor, V09ShiftChooserSheet, V09WorkplacePicker, V09DayCenterDialog, v09ShiftName, v09ArabicDay
+- `app/src/main/java/com/todoshift/app/QuickTaskActivity.kt`: finishAfterSave, onCreate
+- `app/src/main/java/com/todoshift/app/backup/BackupContracts.kt`: export, preview, validate, restore, sha256, safeAsset
+- `app/src/main/java/com/todoshift/app/backup/Neo4BootState.kt`: 
+- `app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt`: prefs, bytes, json, export, preview, validate, parse, validateDatabase, restore, recoverFromBackup, restoreChecked, updateWorkplaces, recoverIfNeeded, capture, typed, validateUiPreferences, validatePreferences, writePreferences, writeAtomic, readBounded
+- `app/src/main/java/com/todoshift/app/backup/Neo4SafetyCopy.kt`: createNeoSafetyCopy
+- `app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt`: createChannel, schedule, cancel, rescheduleAll, show, requestCode, onReceive
+- `app/src/main/java/com/todoshift/app/system/OnboardingStore.kt`: isCompleted, complete, reset
+- `app/src/main/java/com/todoshift/app/system/ShiftNotificationEngine.kt`: ensureChannel
+- `app/src/main/java/com/todoshift/app/system/TodaySnapshotEngine.kt`: build
+- `app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt`: Neo4AccountBackupPage, write, flush, close
+- `app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt`: neo4GradientColors, Neo4Atmosphere, align, Neo4ShiftFill
+- `app/src/main/java/com/todoshift/app/v11/ui/Neo4LegalHub.kt`: Neo4LegalHub
+- `app/src/main/java/com/todoshift/app/v11/ui/Neo4Shell.kt`: Neo4CompactHeader
+- `app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt`: Neo4ThemePreview, Neo4BackgroundControls, Neo4VisibilityControls, Neo4PaintStudio, set, valid, Neo4ProfilesStudio, Neo4Slider, neo4Label
+- `app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt`: Neo4WidgetStudio, save
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt`: NeoAppearanceStudio, leave, NeoSwitch, NeoSlider, neoEnumLabel
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt`: NeoCalendarArea, move, NeoCalendarCell, neoHexColor
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoDashboard.kt`: neoNow, NeoDashboard, NeoShiftSummary, neoShiftLabel, neoCardLabel, neoActionLabel
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt`: NeoDayNoteDialog, leave
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt`: neoLabel, neoAccent, neoContrastAccent, neoColorScheme, neoTypography, style, neoSpacing, neoCardShape, Card, NeoEmptyState, NeoEnvironment
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt`: NeoPaymentForm, NeoObligationForm, neoObligationType
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoIcons.kt`: Icon
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoLegacyStrings.kt`: neoLiteral, neoShiftText, neoObligationState
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt`: NeoModernHub, attempt, NeoDateInput, NeoMoneyInput, neoToolLabel
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt`: NeoDirectionPreferences, NeoCalendarPreferences, NeoMotionPreview
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoMotion.kt`: neoDirection, neoTransition
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt`: NeoPainterBar, apply
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt`: TaskEditorDialogV11, leave
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt`: NeoFocusControls, NeoNotificationControls, save
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt`: NeoShiftTimeline, NeoFinanceOverview, amount, NeoTaskSearch, neoPriorityLabel
+- `app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt`: 
+- `app/src/main/java/com/todoshift/app/v11/ui/SafeStorageRecovery.kt`: SafeStorageRecovery
+- `app/src/main/java/com/todoshift/app/v11/ui/V11AccountsSecurityUi.kt`: V11AccountsUnlockScreen, biometric, onAuthenticationSucceeded, onAuthenticationError, V11BiometricVerificationEffect, onAuthenticationFailed, V11FinancialVerificationDialog
+- `app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt`: V11BackupRestoreDialog, writeBackup, restoreBackup
+- `app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt`: v11Color, monthName, V11CalendarScreen, continueQueue, V11CompactHeader, V11MonthSelector, V11AnimatedCalendarArea, V11CalendarGrid, V11DayCell, V11SelectedDayPanel, V11PaintPalette, V11PaletteWorkplaceRow, V11PaletteShiftRow, V11PaletteAddRow, V11PaintStatusBar, V11CalendarManagerSheet
+- `app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt`: V11DayDetailsScreen, ensureNotificationPermission, parseTime, V11EmptyCard, V11AddItemButton, V11AddDayItemDialog, itemTypeLabel, timeText
+- `app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt`: V11FinanceScreen, V11WorkplaceDueDetailsDialog, V11PaymentDetailsDialog, V11EditPaymentDialog, V11EditObligationDialog, shiftKindLabelV11, AccountCard, AccountLine, money, V11PaymentDialog, V11IncomeSourcesDialog, V11EditIncomeSourceDialog, V11PaymentMethodsDialog, V11ObligationDialog, obligationLabel, V11ObligationPaymentDialog
+- `app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt`: V11Home, saveDb, saveUi, V11HeroBottomBar, V11BottomDestination, V11CalendarHeroDestination, V11GlobalHeader, V11PremiumBottomBar
+- `app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt`: V11MoreScreen, SettingsPageContainer, SettingsSubPage, securitySummary, SettingsInfo, SettingsAction, SettingsSwitch, highlightLabel
+- `app/src/main/java/com/todoshift/app/v11/ui/V11NeoComponents.kt`: V11NeoSectionHero
+- `app/src/main/java/com/todoshift/app/v11/ui/V11PatternUi.kt`: V11PatternInput, center, nodeAt, middleNode, addNode
+- `app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt`: schedulesColor, V11SchedulesScreen, V11EditCalendarDialog, CalendarColorChoice, SummaryCard
+- `app/src/main/java/com/todoshift/app/v11/ui/V11SecuritySettingsUi.kt`: V11SecuritySettingsDialog, requestModeChange, PinSetupDialogV3, PatternSetupDialogV3, VerifyPinDialogV3, VerifyPatternDialogV3, SecurityModeCardV3, SecurePinField, SecuritySectionTitle, SecurityModeCard, SecuritySwitchCard
+- `app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt`: V11TasksScreen, ensureNotificationPermission, TaskSummaryV11, TaskStatCardV11, TaskFiltersV11, TaskCardV11, FullTaskEditorDialogV11, leaveEditor
+- `app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt`: V11AppThemeProvider, v11ColorScheme, v11PremiumColorScheme
+- `app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt`: workplaceColor, V11WorkplacesScreen, V11WorkplaceEditor, RateField
+- `app/src/main/java/com/todoshift/app/widget/CalendarWidgetFactory.kt`: onCreate, onDataSetChanged, reload, buildTimeBands, shortLabel, getCount, getViewAt, bandIds, resetCell, applyTimeBands, getLoadingView, getViewTypeCount, getItemId, hasStableIds, onDestroy
+- `app/src/main/java/com/todoshift/app/widget/CalendarWidgetService.kt`: onGetViewFactory
+- `app/src/main/java/com/todoshift/app/widget/CalendarWidgetState.kt`: month, saveMonth, delete
+- `app/src/main/java/com/todoshift/app/widget/Neo4SummaryWidgets.kt`: schedule, refreshAll, render, onUpdate, onAppWidgetOptionsChanged
+- `app/src/main/java/com/todoshift/app/widget/Neo4WidgetPainter.kt`: render, color, blend
+- `app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt`: explicit, load, save, skin, modern, english, apply, amountsHidden, update
+- `app/src/main/java/com/todoshift/app/widget/TasksWidgetFactory.kt`: onCreate, onDataSetChanged, reload, getCount, getViewAt, getLoadingView, getViewTypeCount, getItemId, hasStableIds, onDestroy
+- `app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt`: refreshAll, applyTasksTheme, updateWidget, taskActivityIntent, onUpdate, onReceive, completeTaskOnIo
+- `app/src/main/java/com/todoshift/app/widget/TasksWidgetService.kt`: onGetViewFactory
+- `app/src/main/java/com/todoshift/app/widget/ToDoShiftWidget.kt`: refreshAll, updateWidget, applyWidgetTheme, arabicMonth, onUpdate, onReceive, onDeleted

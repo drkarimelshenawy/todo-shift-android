@@ -43,7 +43,7 @@ fun main() {
     check(NeoPalette.entries.size == 22)
     check(NeoAppearance(reduceMotion = true, motion = 2).motionMillis == 0)
     val geometry = mapOf(ShiftKind.FULL_DAY to (0f to 1f), ShiftKind.LONG to (0f to 0.5f), ShiftKind.NIGHT to (0.5f to 1f),
-        ShiftKind.MORNING to (0f to 1f / 3f), ShiftKind.EVENING to (1f / 3f to 2f / 3f))
+        ShiftKind.MORNING to (0f to 0.25f), ShiftKind.EVENING to (0.25f to 0.5f))
     geometry.forEach { (kind, expected) ->
         val coverage = neo4Coverage(kind) ?: error("Missing geometry")
         check(coverage.top == expected.first && coverage.bottom == expected.second)
@@ -53,7 +53,7 @@ fun main() {
     check(overlap.flatMap { it.owners }.toSet() == setOf(0, 1, 2))
     check(overlap.any { it.owners == listOf(0, 1) })
     check(ShiftKind.EVENING.defaultTimeRangeV11()!!.durationMinutes == 240)
-    check(neo4Coverage(ShiftKind.EVENING)!!.bottom - neo4Coverage(ShiftKind.EVENING)!!.top == 1f / 3f)
+    check(neo4Coverage(ShiftKind.EVENING)!!.bottom - neo4Coverage(ShiftKind.EVENING)!!.top == 0.25f)
     check(neo4PaintPresets.size == 16)
     check(!NeoAppearance().showFinanceSummary && !NeoAppearance().showTaskSummary && !NeoAppearance().showDailySummary)
     check(NeoAppearance().withPreset(NeoLayoutPreset.MINIMAL).dashboardExpanded == false)

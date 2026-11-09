@@ -1,4 +1,5 @@
 <resources>
+    <string name="shortcut_new_task">مهمة جديدة</string>
     <string name="widget_previous_glyph" translatable="false">‹</string>
     <string name="widget_next_glyph" translatable="false">›</string>
     <string name="widget_complete_glyph" translatable="false">○</string>

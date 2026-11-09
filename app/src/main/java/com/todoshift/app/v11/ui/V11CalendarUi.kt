@@ -87,6 +87,8 @@ fun V11CalendarScreen(
     var selectedWorkplace by remember { mutableStateOf<Workplace?>(null) }
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by remember { mutableStateOf(false) }
+    var modernPaintRequest by remember { mutableIntStateOf(0) }
+    var bulkPaint by remember { mutableStateOf(false) }
     var paintDates by remember { mutableStateOf(setOf<LocalDate>()) }
     var openDay by remember { mutableStateOf<LocalDate?>(null) }
     var showCalendarManager by remember { mutableStateOf(false) }
@@ -138,7 +140,7 @@ fun V11CalendarScreen(
             else
                 FabPosition.End,
         floatingActionButton = {
-            if (uiSettings.experience == V11Experience.CLASSIC || paintMode || paletteOpen) {
+            if (uiSettings.experience == V11Experience.CLASSIC) {
             Column(
                 horizontalAlignment =
                     if (uiSettings.fabSide == FabSide.LEFT)
@@ -372,12 +374,15 @@ fun V11CalendarScreen(
                 NeoCalendarArea(month = month, db = db, workplaces = workplaces, visibleCalendarIds = visibleCalendarIds,
                     selectedDate = selectedDate, paintMode = paintMode, paintDates = paintDates,
                     onSelectedDate = { date ->
-                        if (paintMode) paintDates = if (date in paintDates) paintDates - date else paintDates + date
-                        else selectedDate = date
+                        selectedDate = date
+                        if (paintMode) {
+                            if (bulkPaint) paintDates = if (date in paintDates) paintDates - date else paintDates + date
+                            else modernPaintRequest++
+                        }
                     },
                     onMonthChange = onMonthChange,
                     onToday = { selectedDate = LocalDate.now(); onMonthChange(YearMonth.from(selectedDate)) },
-                    onOpenDay = { openDay = selectedDate }, modifier = Modifier.weight(1f))
+                    onOpenDay = { openDay = selectedDate }, modifier = Modifier.weight(1f), onDatabaseChange = onDatabaseChange)
             } else V11AnimatedCalendarArea(
                 month = month,
                 db = db,
@@ -411,7 +416,11 @@ fun V11CalendarScreen(
                 modifier = Modifier.weight(1f)
             )
 
-            if (paintMode) {
+            if (uiSettings.experience == V11Experience.PREMIUM && (paintMode || paletteOpen)) {
+                LaunchedEffect(Unit) { paintMode = true; paletteOpen = false }
+                NeoPainterBar(db,workplaces,activeCalendar?.id,paintDates,selectedDate,modernPaintRequest,bulkPaint,{bulkPaint=it},
+                    {paintDates=emptySet()},onDatabaseChange,{paintMode=false;paletteOpen=false;paintDates=emptySet();modernPaintRequest=0})
+            } else if (paintMode) {
                 V11PaintStatusBar(
                     workplace = selectedWorkplace,
                     kind = selectedPaintKind,

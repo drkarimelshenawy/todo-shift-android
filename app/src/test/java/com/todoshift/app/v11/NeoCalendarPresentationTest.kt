@@ -32,7 +32,7 @@ class NeoCalendarPresentationTest {
         val db = V11Database(tasks = listOf(TaskV11("global", "Global", date = date), TaskV11("a", "A", date = date, calendarId = "a"), TaskV11("hidden", "Hidden", date = date, calendarId = "b"), TaskV11("done", "Done", date = date, status = TaskStatusV11.COMPLETED)),
             dayItems = listOf(DayItemV11("global", date, type = DayItemTypeV11.NOTE, title = "Global"), DayItemV11("hidden", date, "b", DayItemTypeV11.NOTE, "Hidden")))
         val day = neoVisibleDays(db, setOf("a")).getValue(date)
-        assertEquals(2, day.tasks); assertEquals(1, day.events)
+        assertEquals(2, day.tasks); assertEquals(0, day.events); assertEquals(1, day.notes.size)
     }
     @Test fun everyNonOffShiftProducesPaint() {
         ShiftKind.entries.filter { it != ShiftKind.OFF }.forEach { assertTrue(neo4PaintBands(listOf(it)).isNotEmpty()) }

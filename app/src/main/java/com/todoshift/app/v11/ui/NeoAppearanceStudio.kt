@@ -117,16 +117,20 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
                                 { neoEnumLabel(it) }, { draft = draft.copy(iconStyle = it) })
                         }
                         NeoStudioSection.MOTION -> {
+                            NeoChoice(neoLabel("الانتقال", "Transition"), NeoTransition.entries, draft.transition, { neoEnumLabel(it) }, { draft = draft.copy(transition = it, optionalTransitions = true) })
+                            NeoChoice(neoLabel("السرعة", "Speed"), NeoSpeed.entries, draft.transitionSpeed, { neoEnumLabel(it) }, { draft = draft.copy(transitionSpeed = it) })
+                            NeoChoice(neoLabel("الأداء", "Performance"), NeoPerformance.entries, draft.performance, { neoEnumLabel(it) }, { draft = draft.copy(performance = it) })
+                            NeoSwitch(neoLabel("تفعيل الانتقالات", "Enable transitions"), draft.optionalTransitions) { draft = draft.copy(optionalTransitions = it) }
+                            NeoMotionPreview(draft)
                             NeoChoice(neoLabel("مستوى الحركة", "Motion level"), listOf(0, 1, 2), draft.motion,
                                 { when(it) { 0 -> neoLabel("بدون", "Off"); 1 -> neoLabel("خفيفة", "Subtle"); else -> neoLabel("سلسة", "Expressive") } },
                                 { draft = draft.copy(motion = it) })
                             NeoSwitch(neoLabel("تقليل الحركة", "Reduce motion"), draft.reduceMotion) { draft = draft.copy(reduceMotion = it) }
                         }
                         NeoStudioSection.CALENDAR -> {
+                            NeoCalendarPreferences(draft) { draft = it }
                             NeoChoice(neoLabel("طريقة العرض الافتراضية", "Default view"), NeoCalendarView.entries, draft.calendarView,
                                 { neoEnumLabel(it) }, { draft = draft.copy(calendarView = it) })
-                            NeoChoice(neoLabel("كثافة التقويم", "Calendar density"), NeoDensity.entries, draft.calendarDensity,
-                                { neoEnumLabel(it) }, { draft = draft.copy(calendarDensity = it) })
                             Text(neoLabel("الشيفتات الليلية و24 ساعة تظهر في تاريخ البداية فقط.", "Overnight and 24-hour shifts appear only on their start date."), style = MaterialTheme.typography.bodySmall)
                         }
                         NeoStudioSection.DASHBOARD -> {
@@ -157,8 +161,7 @@ fun NeoAppearanceStudio(onBack: () -> Unit, onClassic: () -> Unit, initialSectio
                             }
                         }
                         NeoStudioSection.PREFERENCES -> {
-                            NeoChoice(neoLabel("اللغة", "Language"), NeoLanguage.entries, draft.language,
-                                { neoEnumLabel(it) }, { draft = draft.copy(language = it) })
+                            Text(neoLabel("اللغة والاتجاه من الإعدادات ← اللغة والاتجاه", "Language and direction: Settings → Language and direction"),style=MaterialTheme.typography.bodySmall)
                             NeoSwitch(neoLabel("ملاحظات الشيفتات في الخط الزمني", "Shift notes in timeline"), draft.showShiftNotes) { draft = draft.copy(showShiftNotes = it) }
                             NeoChoice(neoLabel("فلتر الشيفتات الافتراضي", "Default shift filter"), NeoTimelineFilter.entries, draft.timelineFilter,
                                 { neoEnumLabel(it) }, { draft = draft.copy(timelineFilter = it) })
@@ -214,6 +217,29 @@ private fun NeoSlider(title: String, value: Float, range: ClosedFloatingPointRan
 
 @Composable
 fun neoEnumLabel(value: Any): String = when (value) {
+    NeoTransition.FADE -> neoLabel("تلاشي", "Fade")
+    NeoTransition.SLIDE -> neoLabel("انزلاق", "Slide")
+    NeoTransition.FLIP -> neoLabel("قلب", "Flip")
+    NeoTransition.ZOOM -> neoLabel("تكبير", "Zoom")
+    NeoTransition.STACK -> neoLabel("تكديس", "Stack")
+    NeoTransition.VERTICAL -> neoLabel("انزلاق رأسي", "Vertical slide")
+    NeoSpeed.SLOW -> neoLabel("بطيء", "Slow")
+    NeoSpeed.NORMAL -> neoLabel("عادي", "Normal")
+    NeoSpeed.FAST -> neoLabel("سريع", "Fast")
+    NeoPerformance.AUTO -> neoLabel("تلقائي", "Automatic")
+    NeoPerformance.NORMAL -> neoLabel("عادي", "Normal")
+    NeoPerformance.LIGHTWEIGHT -> neoLabel("خفيف", "Lightweight")
+    NeoTodayStyle.NONE -> neoLabel("بدون", "None")
+    NeoTodayStyle.CIRCLE -> neoLabel("دائرة", "Circle")
+    NeoTodayStyle.GLOW -> neoLabel("حد مضيء", "Glow outline")
+    NeoTodayStyle.PULSE -> neoLabel("نبض", "Pulse")
+    NeoTodayStyle.BACKGROUND -> neoLabel("خلفية", "Background")
+    NeoTodayStyle.UNDERLINE -> neoLabel("خط سفلي", "Underline")
+    NeoTodayStyle.DOTS -> neoLabel("نقاط", "Dots")
+    NeoTodayStyle.LABEL -> neoLabel("كلمة اليوم", "Today label")
+    NeoCellSize.COMPACT -> neoLabel("صغير", "Compact")
+    NeoCellSize.COMFORTABLE -> neoLabel("مريح", "Comfortable")
+    NeoCellSize.LARGE -> neoLabel("كبير", "Large")
     NeoBrightness.SYSTEM, NeoLanguage.SYSTEM -> neoLabel("حسب النظام", "Follow system")
     NeoBrightness.DARK -> neoLabel("داكن", "Dark")
     NeoBrightness.LIGHT -> neoLabel("فاتح", "Light")

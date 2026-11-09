@@ -1,0 +1,41 @@
+{
+  "versionName": "4.1.1",
+  "versionCode": 30,
+  "applicationId": "com.todoshift.app",
+  "branch": "feat/neo-luxury-4.1-ultimate",
+  "baseline": "dc882aec8fd2ccfeaf87d9533fdd7f11ca6b15c1",
+  "full_scope_acceptance": false,
+  "gradle": "BUILD SUCCESSFUL",
+  "junit": {
+    "tests": 111,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Warning": 45
+  },
+  "apk": "ToDoShift-4.1.1-30-ULTIMATE-LOCAL-TEST.apk",
+  "apk_sha256": "5844487bc9867834c5f17267aecedccb4f6dbd1bff1022079aaa4f59e62cdb6b",
+  "signer_sha256": "a257d6f5be339f6f317d58d641539ce605d61d9a8d822e76d4d58f974e98ba02",
+  "production_signer_expected": "aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9",
+  "upgrade_compatibility": "Only if installed certificate matches local test signer; production certificate differs",
+  "zipalign_16KiB": "PASS",
+  "static_checks": {
+    "status": "PASS",
+    "protected_files": 11,
+    "checks": [
+      "P0 parser and unaffected business-rule byte identity; finance allocation change requires regression tests",
+      "application/signing/launcher identity",
+      "version increment",
+      "Kotlin lexical scan",
+      "XML parse",
+      "brand archives unchanged"
+    ],
+    "failures": [],
+    "limitations": "Static checks do not replace Gradle, UI, device or durability testing."
+  },
+  "standalone_kotlin_checks": "PASS: overnight, 24h, visibility, immutability, overlap, finance, palettes and reduced motion",
+  "device_testing": "NOT PERFORMED: no emulator binary, KVM or USB bus",
+  "artifact_export": "No verified direct phone download facility; workspace artifacts only"
+}

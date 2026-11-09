@@ -34,6 +34,7 @@ fun neoNow(): LocalDateTime {
 
 @Composable
 fun NeoDashboard(db: V11Database, workplaces: List<Workplace>, onQuickAction: (NeoQuickAction) -> Unit, financeAuthorized: Boolean = false, moneyVisible: Boolean = false) {
+    if (LocalNeoFocus.current) return
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
     val now = neoNow()
@@ -133,7 +134,7 @@ fun NeoShiftSummary(item: NeoShiftOccurrence, workplaces: List<Workplace>) {
     val locale = if (en) Locale.ENGLISH else Locale.forLanguageTag("ar")
     Text(listOfNotNull(neoShiftLabel(item.segment.kind), workplaces.firstOrNull { it.id == item.segment.workplaceId }?.name).joinToString(" • "),
         style = MaterialTheme.typography.titleMedium)
-    val time = item.start.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)) + " – " + item.end.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT))
+    val time = item.start.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)) + " – " + item.end.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)) + if(item.end.toLocalDate()>item.start.toLocalDate()) neoLabel(" (+١ يوم)", " (+1 day)") else ""
     val duration = item.segment.timeRange()?.durationMinutes ?: 0
     Text(item.start.format(DateTimeFormatter.ofPattern("EEE d MMM", locale)) + " • " + time +
         neoLabel(" • ${duration / 60}س ${duration % 60}د", " • ${duration / 60}h ${duration % 60}m"), style = MaterialTheme.typography.bodySmall)

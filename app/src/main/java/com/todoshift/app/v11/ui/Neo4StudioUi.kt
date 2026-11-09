@@ -26,7 +26,7 @@ fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
         NeoLanguage.ARABIC -> false
     }
     CompositionLocalProvider(LocalNeoAppearance provides draft, LocalNeoEnglish provides english,
-        androidx.compose.ui.platform.LocalLayoutDirection provides if (english) androidx.compose.ui.unit.LayoutDirection.Ltr else androidx.compose.ui.unit.LayoutDirection.Rtl,
+        androidx.compose.ui.platform.LocalLayoutDirection provides neoDirection(draft.uiDirection, androidx.compose.ui.platform.LocalLayoutDirection.current),
         androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, density.fontScale / rootFontScale * draft.fontScale)) {
         V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
             Surface(shape = MaterialTheme.shapes.large, color = androidx.compose.ui.graphics.Color.Transparent) {
@@ -89,13 +89,11 @@ fun Neo4VisibilityControls(p: NeoAppearance, update: (NeoAppearance) -> Unit) {
     NeoSwitch(neoLabel("الملخص المالي", "Finance summary"), p.showFinanceSummary) { update(p.copy(showFinanceSummary = it)) }
     NeoSwitch(neoLabel("البطاقات الثانوية", "Secondary cards"), p.showSecondaryCards) { update(p.copy(showSecondaryCards = it)) }
     NeoSwitch(neoLabel("المعلومات الاختيارية", "Optional information"), p.showOptionalInfo) { update(p.withDashboardCard(NeoDashboardCard.NEXT_EVENT, it)) }
-    NeoSwitch(neoLabel("المؤشرات الثانوية", "Secondary indicators"), p.showSecondaryIndicators) { update(p.copy(showSecondaryIndicators = it)) }
     NeoSwitch(neoLabel("النصوص الوصفية", "Descriptive text"), p.showDescriptions) { update(p.copy(showDescriptions = it)) }
     NeoSwitch(neoLabel("دليل ألوان التقاويم", "Calendar legend"), p.showCalendarLegend) { update(p.copy(showCalendarLegend = it)) }
     NeoSwitch(neoLabel("اسم التطبيق في الهيدر", "App name in header"), p.showBrand) { update(p.copy(showBrand = it)) }
     NeoSwitch(neoLabel("المؤثرات البصرية", "Visual effects"), p.showEffects) { update(p.copy(showEffects = it)) }
-    NeoSwitch(neoLabel("الانتقالات الاختيارية", "Optional transitions"), p.optionalTransitions) { update(p.copy(optionalTransitions = it)) }
-    NeoSwitch(neoLabel("تلوين الشيفتات", "Shift paint"), p.showShiftPaint) { update(p.copy(showShiftPaint = it)) }
+    NeoSwitch(neoLabel("ألوان شيفتات مخصصة بدل ألوان أماكن العمل", "Custom shift paint instead of workplace colors"), p.showShiftPaint) { update(p.copy(showShiftPaint = it)) }
 }
 
 @Composable
@@ -145,7 +143,7 @@ fun Neo4ProfilesStudio(draft: NeoAppearance, update: (NeoAppearance) -> Unit) {
     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     profiles.forEach { profile ->
         Row(Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = { update(profile.appearance) }, modifier = Modifier.weight(1f)) { Text(profile.name) }
+            OutlinedButton(onClick = { update(profile.appearance.copy(language = draft.language)) }, modifier = Modifier.weight(1f)) { Text(profile.name) }
             TextButton(onClick = { runCatching { store.delete(profile.id) }.onSuccess { profiles = store.list() }.onFailure { error = it.message } }) { Text(neoLabel("حذف", "Delete")) }
         }
     }

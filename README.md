@@ -1,8 +1,8 @@
 # ToDo Shift — Neo Luxury 4.1 Ultimate Fixed
 
-Android application, version **4.1.0 (29)**, package **com.todoshift.app**.
+Android application, test candidate **4.1.1 (30)**, package **com.todoshift.app**.
 
-Start with [implementation](IMPLEMENTATION_REPORT_4.1_ULTIMATE.md), [QA](QA_REPORT_4.1.md), [installation/signing](INSTALL_4.1.md), and [remaining issues](REMAINING_ISSUES_4.1.md). Earlier 4.0/P0 reports remain as historical records; their environment/build status is not the current delivery status.
+Current delivery: [implementation](docs/modernization/IMPLEMENTATION_REPORT.md), [130-item scope matrix](docs/modernization/TRACEABILITY.md), [QA](docs/modernization/QA_REPORT.md), [installation/signing](docs/modernization/INSTALL.md), and [remaining acceptance](docs/modernization/REMAINING.md). Full closed-scope acceptance is not claimed. Physical-device verification remains open. Root-level 4.0/P0/4.1.0 reports are historical and do not describe the current candidate. New implementation is local only; no publication was performed.
 
 The existing Classic/Neo experience preference is preserved. Select **Neo Luxury 4.1** in Settings → Appearance to use the upgraded Neo interface if Classic is currently selected. Today now lives in Tasks; calendar “Today” still navigates to today's date.
 

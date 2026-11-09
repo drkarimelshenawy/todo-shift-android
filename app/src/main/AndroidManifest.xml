@@ -11,10 +11,13 @@
         android:roundIcon="@mipmap/ic_launcher_round">
 
 
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.attachments" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/neo_attachment_paths" /></provider>
+        <activity android:name=".QuickTaskActivity" android:exported="true" android:excludeFromRecents="true" android:theme="@style/Theme.ToDoShift.QuickTask" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.ToDoShift.Splash">
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/neo_shortcuts" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -14,11 +14,11 @@ fun neo4AccentArgb(palette: NeoPalette): Long = when (palette) {
     NeoPalette.SUNSET_CORAL -> 0xFFDF9A8A
     NeoPalette.FOREST_SAGE -> 0xFF8EB09A
     NeoPalette.GRAPHITE_BLUE -> 0xFF819BB5
-    NeoPalette.NEO_CYAN -> 0xFF43DDE7
-    NeoPalette.ROYAL_VIOLET -> 0xFFBA9AFF
+    NeoPalette.NEO_CYAN -> 0xFF00A4B8
+    NeoPalette.ROYAL_VIOLET -> 0xFF6C3A9B
     NeoPalette.MIDNIGHT_BLUE -> 0xFF83ACFF
     NeoPalette.EMERALD_LUXURY -> 0xFF70DBAC
-    NeoPalette.CHAMPAGNE_GOLD -> 0xFFE5C381
+    NeoPalette.CHAMPAGNE_GOLD -> 0xFFD8AD55
     NeoPalette.TITANIUM_SILVER -> 0xFFC4CFDF
     NeoPalette.ROSE_QUARTZ -> 0xFFF3A4C3
     NeoPalette.ARCTIC_WHITE -> 0xFF91D3F5

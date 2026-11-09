@@ -6,8 +6,8 @@ fun neo4Coverage(kind: ShiftKind): Neo4Coverage? = when (kind) {
     ShiftKind.FULL_DAY -> Neo4Coverage(0f, 1f)
     ShiftKind.LONG -> Neo4Coverage(0f, 0.5f)
     ShiftKind.NIGHT -> Neo4Coverage(0.5f, 1f)
-    ShiftKind.MORNING -> Neo4Coverage(0f, 1f / 3f)
-    ShiftKind.EVENING -> Neo4Coverage(1f / 3f, 2f / 3f)
+    ShiftKind.MORNING -> Neo4Coverage(0f, 0.25f)
+    ShiftKind.EVENING -> Neo4Coverage(0.25f, 0.5f)
     ShiftKind.OFF -> null
 }
 data class Neo4PaintBand(val top: Float, val bottom: Float, val owners: List<Int>)

@@ -83,6 +83,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import com.todoshift.app.v11.toMoneyOrNull
 import com.todoshift.app.data.DayEngine
 import com.todoshift.app.data.PainterSelection
 import com.todoshift.app.data.ShiftPainterEngine
@@ -124,7 +125,7 @@ class MainActivity : FragmentActivity() {
                 V11Home(
                     initialDate = widgetOpenDate,
                     initialTab =
-                        if (widgetTaskAction != null) 4 else intent?.getIntExtra("neo4_open_tab", 0) ?: 0,
+                        if (widgetTaskAction != null) 4 else if(intent?.action == "com.todoshift.app.OPEN_FINANCE") 2 else intent?.getIntExtra("neo4_open_tab", 0) ?: 0,
                     initialTaskAction = widgetTaskAction,
                     initialTaskId = widgetTaskId
                 )
@@ -837,11 +838,11 @@ private fun DayEditorDialog(
 
                     OutlinedTextField(
                         value = customAmount,
+                        isError = customAmount.isNotBlank() && customAmount.toMoneyOrNull() == null,
+                        supportingText = { if (customAmount.isNotBlank() && customAmount.toMoneyOrNull() == null) Text("أدخل مبلغًا صالحًا / Enter a valid amount") },
                         onValueChange = {
                             customAmount =
-                                it.filter { ch ->
-                                    ch.isDigit() || ch == '.'
-                                }
+                                it.take(100)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         label = {
@@ -871,18 +872,18 @@ private fun DayEditorDialog(
                                     selected.take(count),
                             note = note.trim(),
                             customAmount =
-                                customAmount.toDoubleOrNull()
+                                customAmount.toMoneyOrNull()
                         )
                     )
                 },
                 enabled =
-                    type == ShiftType.OFF ||
+                    (customAmount.isBlank() || customAmount.toMoneyOrNull() != null) && (type == ShiftType.OFF ||
                         (
                             workplaces.isNotEmpty() &&
                                 selected.take(
                                     requiredSegments(type)
                                 ).all { it != null }
-                            )
+                            ))
             ) {
                 Text("حفظ")
             }
@@ -1530,11 +1531,11 @@ private fun PaymentDialog(
             Column {
                 OutlinedTextField(
                     value = amount,
+                    isError = amount.isNotBlank() && amount.toMoneyOrNull() == null,
+                    supportingText = { if (amount.isNotBlank() && amount.toMoneyOrNull() == null) Text("أدخل مبلغًا صالحًا / Enter a valid amount") },
                     onValueChange = {
                         amount =
-                            it.filter { ch ->
-                                ch.isDigit() || ch == '.'
-                            }
+                            it.take(100)
                     },
                     label = {
                         Text("المبلغ")
@@ -1562,12 +1563,12 @@ private fun PaymentDialog(
             Button(
                 onClick = {
                     onSave(
-                        amount.toDouble(),
+                        amount.toMoneyOrNull()!!,
                         note.trim()
                     )
                 },
                 enabled =
-                    amount.toDoubleOrNull()
+                    amount.toMoneyOrNull()
                         ?.let { it > 0.0 } == true
             ) {
                 Text("حفظ")
@@ -4072,19 +4073,19 @@ private fun WorkplaceEditorDialog(
                             name = name.trim(),
                             colorHex = color,
                             fullDayRate =
-                                fullDay.toDoubleOrNull() ?: 0.0,
+                                fullDay.toMoneyOrNull() ?: 0.0,
                             longRate =
-                                longRate.toDoubleOrNull() ?: 0.0,
+                                longRate.toMoneyOrNull() ?: 0.0,
                             nightRate =
-                                night.toDoubleOrNull() ?: 0.0,
+                                night.toMoneyOrNull() ?: 0.0,
                             morningRate =
-                                morning.toDoubleOrNull() ?: 0.0,
+                                morning.toMoneyOrNull() ?: 0.0,
                             eveningRate =
-                                evening.toDoubleOrNull() ?: 0.0
+                                evening.toMoneyOrNull() ?: 0.0
                         )
                     )
                 },
-                enabled = name.trim().isNotEmpty()
+                enabled = name.trim().isNotEmpty() && listOf(fullDay, longRate, night, morning, evening).all { it.toMoneyOrNull() != null }
             ) {
                 Text("حفظ")
             }
@@ -4105,11 +4106,11 @@ private fun RateField(
 ) {
     OutlinedTextField(
         value = value,
+        isError = value.toMoneyOrNull() == null,
+        supportingText = { if (value.toMoneyOrNull() == null) Text("أدخل مبلغًا صالحًا / Enter a valid amount") },
         onValueChange = {
             onChange(
-                it.filter { ch ->
-                    ch.isDigit() || ch == '.'
-                }
+                it.take(100)
             )
         },
         modifier = Modifier

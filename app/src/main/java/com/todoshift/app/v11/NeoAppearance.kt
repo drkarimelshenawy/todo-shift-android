@@ -1,6 +1,12 @@
 package com.todoshift.app.v11
 
 /** UI-only preferences. No finance, task, calendar or backup schema is changed. */
+enum class NeoDirection { AUTO, RTL, LTR }
+enum class NeoTransition { FADE, SLIDE, FLIP, ZOOM, STACK, VERTICAL }
+enum class NeoSpeed { SLOW, NORMAL, FAST }
+enum class NeoPerformance { AUTO, NORMAL, LIGHTWEIGHT }
+enum class NeoTodayStyle { NONE, CIRCLE, GLOW, PULSE, BACKGROUND, UNDERLINE, DOTS, LABEL }
+enum class NeoCellSize { COMPACT, COMFORTABLE, LARGE }
 enum class NeoBrightness { SYSTEM, DARK, LIGHT, AMOLED }
 enum class NeoPalette { MINT_AURA, OCEAN_DEPTH, LAVENDER_GLOW, PEACH_BLOOM, EMERALD_NIGHT, ARCTIC_BLUE, GOLDEN_HOUR, ROSE_MIST, MIDNIGHT_TEAL, SUNSET_CORAL, FOREST_SAGE, GRAPHITE_BLUE, NEO_CYAN, ROYAL_VIOLET, MIDNIGHT_BLUE, EMERALD_LUXURY, CHAMPAGNE_GOLD, TITANIUM_SILVER, ROSE_QUARTZ, ARCTIC_WHITE, SUNSET_COPPER, MONOCHROME }
 enum class NeoCardStyle { LAYERED, OUTLINED, FLAT }
@@ -69,9 +75,29 @@ data class NeoAppearance(
     val cardOpacity: Float = 0.92f,
     val glassStrength: Float = 0.2f,
     val optionalTransitions: Boolean = false,
-    val shiftPaints: Map<ShiftKind, NeoShiftPaint> = emptyMap()
+    val shiftPaints: Map<ShiftKind, NeoShiftPaint> = emptyMap(),
+    val uiDirection: NeoDirection = NeoDirection.AUTO,
+    val navigationDirection: NeoDirection = NeoDirection.AUTO,
+    val gridDirection: NeoDirection = NeoDirection.AUTO,
+    val weekdayDirection: NeoDirection = NeoDirection.AUTO,
+    val firstWeekday: Int = 6,
+    val transition: NeoTransition = NeoTransition.FADE,
+    val transitionSpeed: NeoSpeed = NeoSpeed.NORMAL,
+    val performance: NeoPerformance = NeoPerformance.AUTO,
+    val showNotes: Boolean = true,
+    val showNoteIcons: Boolean = true,
+    val showShiftNames: Boolean = false,
+    val showTaskIndicators: Boolean = true,
+    val todayStyle: NeoTodayStyle = NeoTodayStyle.CIRCLE,
+    val todayColor: String = "#D8AD55",
+    val todayIntensity: Float = 0.6f,
+    val todaySpeed: NeoSpeed = NeoSpeed.NORMAL,
+    val cellSize: NeoCellSize = NeoCellSize.COMFORTABLE,
+    val showOutsideDates: Boolean = true,
+    val showTomorrow: Boolean = false
 ) {
-    val motionMillis: Int get() = if (reduceMotion || !optionalTransitions || motion == 0) 0 else if (motion == 1) 150 else 260
+    val motionMillis: Int get() = if (reduceMotion || performance == NeoPerformance.LIGHTWEIGHT || !optionalTransitions || motion == 0) 0
+        else (when (transitionSpeed) { NeoSpeed.SLOW -> 440; NeoSpeed.NORMAL -> 260; NeoSpeed.FAST -> 140 }) * (if(motion==1)3 else 4) / 4
 }
 
 fun NeoAppearance.withPreset(preset: NeoLayoutPreset): NeoAppearance = copy(

@@ -31,12 +31,14 @@ private enum class V11SettingsPage {
     SYNC,
     ABOUT,
     WIDGETS,
-    LEGAL
+    LEGAL,
+    LANGUAGE
 }
 
 @Composable
 fun V11MoreScreen(
     db: V11Database,
+    workplaces: List<com.todoshift.app.data.Workplace> = emptyList(),
     uiSettings: V11UiSettings,
     moneyVisible: Boolean,
     securitySettings: V11SecuritySettings,
@@ -50,6 +52,16 @@ fun V11MoreScreen(
     onAccountsUnlocked: () -> Unit = {},
     onNeoRestored: (com.todoshift.app.backup.Neo4RestoredState) -> Unit = {}
 ) {
+    val navigateDate = LocalNeoNavigateDate.current
+    var toolsOpen by remember { mutableStateOf(false) }
+    if (toolsOpen) {
+        BackHandler { toolsOpen = false }
+        NeoModernHub(db, workplaces, financeAuthorized, moneyVisible, onDatabaseRestored, { date ->
+            toolsOpen = false
+            navigateDate(date)
+        }, { toolsOpen = false })
+        return
+    }
     var page by remember { mutableStateOf(V11SettingsPage.HOME) }
     var securityOpen by remember { mutableStateOf(false) }
     var studioSection by remember { mutableStateOf(NeoStudioSection.THEMES) }
@@ -84,6 +96,13 @@ fun V11MoreScreen(
 
     when (page) {
         V11SettingsPage.WIDGETS, V11SettingsPage.LEGAL -> Unit
+        V11SettingsPage.LANGUAGE -> {
+            SettingsSubPage(title=neoLiteral("اللغة والاتجاه", "Language and direction"),onBack={page=V11SettingsPage.HOME}) {
+                val p=LocalNeoAppearance.current;val update=LocalNeoOnChange.current
+                NeoChoice(neoLabel("اللغة", "Language"),NeoLanguage.entries,p.language,{neoEnumLabel(it)},{update(p.copy(language=it))})
+                NeoDirectionPreferences(p,update)
+            }
+        }
         V11SettingsPage.HOME -> {
             SettingsPageContainer(title = neoLiteral("الإعدادات", "Settings")) {
                 if (uiSettings.experience == V11Experience.PREMIUM) {
@@ -95,6 +114,8 @@ fun V11MoreScreen(
                         context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
                     }
                 }
+                SettingsAction(neoLiteral("اللغة والاتجاه", "Language and direction"),neoLiteral("لغة مستقلة عن اتجاه الواجهة والتقويم", "Language independent from UI and calendar directions")){page=V11SettingsPage.LANGUAGE}
+                SettingsAction(neoLiteral("الأدوات الذكية والبحث", "Smart tools and search"), neoLiteral("نسخ وقوائم وأسعار وكشوف ومرفقات", "Copy, templates, rates, statements and attachments")) { toolsOpen = true }
                 Text(neoLiteral("التنظيم والعمل", "Organization and work"), style = MaterialTheme.typography.titleSmall)
                 SettingsAction(
                     neoLiteral("التقويم والعمل", "Calendar and work"),

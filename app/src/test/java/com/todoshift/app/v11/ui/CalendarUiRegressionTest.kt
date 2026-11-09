@@ -26,7 +26,7 @@ class CalendarUiRegressionTest {
         val db = V11Database(calendars = listOf(AppCalendarV11("a", "Work", "#123456")),
             days = listOf(DayEntryV11("day", date.toString(), "a", listOf(ShiftSegmentV11("shift", kind)))))
         compose.setContent {
-            NeoEnvironment(NeoAppearance(language = language, fontScale = fontScale, showShiftPaint = paint, showSecondaryIndicators = false, reduceMotion = true), true, {}) {
+            NeoEnvironment(NeoAppearance(language = language, uiDirection = if(language == NeoLanguage.ARABIC) NeoDirection.RTL else NeoDirection.LTR, fontScale = fontScale, showShiftPaint = paint, showSecondaryIndicators = false, reduceMotion = true), true, {}) {
                 V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
                     CompositionLocalProvider(LocalV11NeoEnabled provides true) {
                         Box(Modifier.width(360.dp).height(600.dp)) {

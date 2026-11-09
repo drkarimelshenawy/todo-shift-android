@@ -24,7 +24,7 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
     private val app = context.applicationContext
     private val storage = V11Storage(app)
     private val legacy = AppStorage(app)
-    private val uiPreferences = listOf("todo_shift_v11_ui", "todo_shift_v11_ui_state", "todo_shift_neo3_appearance", "todo_shift_neo4_profiles", "todo_shift_neo4_widgets", "todo_shift_cloud_readiness")
+    private val uiPreferences = listOf("todo_shift_v11_ui", "todo_shift_v11_ui_state", "todo_shift_neo3_appearance", "todo_shift_neo4_profiles", "todo_shift_neo4_widgets", "todo_shift_cloud_readiness", NeoSmartStore.NAME)
     private val journal = AtomicFile(File(app.filesDir, "neo4-restore-journal.json"))
     private fun prefs(name: String) = app.getSharedPreferences(name, Context.MODE_PRIVATE)
     private fun bytes(text: String) = text.toByteArray(Charsets.UTF_8)
@@ -42,6 +42,12 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         appearances.map { it.customImageFile }.filter { it.matches(Regex("neo4-theme-[a-zA-Z0-9-]+[.]jpg")) }.distinct().forEach { name ->
             val file = File(app.filesDir, name)
             if (file.isFile) sections["themes/$name"] = file.inputStream().use { readBounded(it, 4 * 1024 * 1024) }
+        }
+        val validOwners = database.tasks.map { it.id }.toSet() + database.dayItems.map { it.id }
+        NeoAttachmentStore(app).list().filter { it.owner in validOwners }.forEach { attachment ->
+            val file = File(app.filesDir, "attachments/${attachment.name}")
+            require(file.isFile) { "Missing referenced attachment: ${attachment.name}" }
+            sections["attachments/${attachment.name}"] = file.inputStream().use { readBounded(it, NeoAttachmentStore.MAX_FILE) }
         }
         require(sections.values.sumOf { it.size.toLong() } <= Neo4BackupFormat.MAX_BYTES) { "Backup exceeds 32 MiB" }
         val manifest = JSONObject().put("formatVersion", Neo4BackupFormat.FORMAT).put("applicationId", "com.todoshift.app")
@@ -80,10 +86,10 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
             while (true) {
                 val entry = zip.nextEntry ?: break
                 val name = entry.name
-                require(!entry.isDirectory && all.size < 40 && !all.containsKey(name)) { "Duplicate or invalid archive entry" }
+                require(!entry.isDirectory && all.size < 70 && !all.containsKey(name)) { "Duplicate or invalid archive entry" }
                 require(name == "manifest.json" || name == "data/v11.json" || name == "data/legacy.json" ||
-                    uiPreferences.any { name == "prefs/$it.json" } || Neo4BackupFormat.safeAsset(name)) { "Unsupported archive path" }
-                val data = readBounded(zip, if (name == "manifest.json") 128 * 1024 else if (Neo4BackupFormat.safeAsset(name)) 4 * 1024 * 1024 else Neo4BackupFormat.MAX_SECTION)
+                    uiPreferences.any { name == "prefs/$it.json" } || (Neo4BackupFormat.safeAsset(name) || NeoAttachmentStore.safePath(name))) { "Unsupported archive path" }
+                val data = readBounded(zip, if (name == "manifest.json") 128 * 1024 else if (Neo4BackupFormat.safeAsset(name) || NeoAttachmentStore.safePath(name)) 4 * 1024 * 1024 else Neo4BackupFormat.MAX_SECTION)
                 total += data.size; require(total <= Neo4BackupFormat.MAX_BYTES) { "Expanded backup exceeds 32 MiB" }
                 all[name] = data; zip.closeEntry()
             }
@@ -99,7 +105,7 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
             val data = all[name] ?: error("Missing data section: $name")
             require(item.getLong("bytes") == data.size.toLong() && item.getString("sha256") == Neo4BackupFormat.sha256(data)) { "Checksum mismatch: $name" }
         }
-        require(all.keys == expected && "data/v11.json" in all && "data/legacy.json" in all && uiPreferences.all { "prefs/$it.json" in all }) { "Incomplete data manifest" }
+        require(all.keys == expected && "data/v11.json" in all && "data/legacy.json" in all && uiPreferences.filterNot { it == NeoSmartStore.NAME }.all { "prefs/$it.json" in all }) { "Incomplete data manifest" }
         require(manifest.getJSONObject("compatibility").getInt("minReaderFormat") <= Neo4BackupFormat.FORMAT)
         Instant.parse(manifest.getString("createdAt"))
         all.filterKeys { Neo4BackupFormat.safeAsset(it) }.forEach { (_, data) ->
@@ -119,7 +125,19 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
             legacyData.shifts.mapNotNull { it.customAmount } + legacyData.templates.mapNotNull { it.customAmount } +
             legacyData.workplaces.flatMap { listOf(it.fullDayRate, it.longRate, it.nightRate, it.morningRate, it.eveningRate) }
         require(legacyAmounts.all { it.isFinite() }) { "Non-finite legacy financial value" }
-        uiPreferences.forEach { validateUiPreferences(it, json(all.getValue("prefs/$it.json"))) }
+        uiPreferences.forEach { name -> all["prefs/$name.json"]?.let { validateUiPreferences(name, json(it)) } }
+        all["prefs/${NeoSmartStore.NAME}.json"]?.let { section ->
+            val saved = json(section).optJSONObject("data")
+            if(saved != null) {
+                require(saved.getString("type") == "string")
+                val smart = JSONObject(saved.getString("value")); NeoSmartStore.validate(smart)
+                smart.optJSONArray("attachments")?.let { attachments -> for(index in 0 until attachments.length()) {
+                    val attachment=attachments.getJSONObject(index);val name=attachment.getString("name")
+                    require(NeoAttachmentStore.safeName(name))
+                    if(attachment.getString("owner") in (database.tasks.map{it.id}+database.dayItems.map{it.id})) require("attachments/$name" in all) { "Missing attachment section" }
+                } }
+            }
+        }
         val appearancePrefs = json(all.getValue("prefs/todo_shift_neo3_appearance.json"))
         appearancePrefs.optJSONObject("neo4Appearance")?.optString("value")?.let { Neo4AppearanceCodec.decode(JSONObject(it)) }
         return Parsed(all, database, Neo4RestorePreview(manifest.getString("createdAt"), manifest.getString("appVersion"), database.calendars.size, database.days.size, database.tasks.size, database.payments.size, all.keys.count { Neo4BackupFormat.safeAsset(it) }, false))
@@ -174,8 +192,9 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         parsed.sections["data/legacy.json"]?.let { targets["todo_shift_data"] = capture(prefs("todo_shift_data")).put("database", typed(String(it, Charsets.UTF_8))) }
         uiPreferences.forEach { name -> parsed.sections["prefs/$name.json"]?.let { targets[name] = json(it) } }
         // Stage image files before changing data. Existing files with different content are rejected.
-        parsed.sections.filterKeys { Neo4BackupFormat.safeAsset(it) }.forEach { (path, data) ->
-            val file = File(app.filesDir, path.substringAfter('/'))
+        parsed.sections.filterKeys { Neo4BackupFormat.safeAsset(it) || NeoAttachmentStore.safePath(it) }.forEach { (path, data) ->
+            val file = if (NeoAttachmentStore.safePath(path)) File(app.filesDir, path) else File(app.filesDir, path.substringAfter('/'))
+            check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs())
             if (file.exists()) require(Neo4BackupFormat.sha256(file.readBytes()) == Neo4BackupFormat.sha256(data)) { "Image filename collision" }
             else writeAtomic(AtomicFile(file), data)
         }
@@ -213,7 +232,7 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         recoverIfNeeded()
         check(legacy.load() == expectedLegacy && storage.load() == expected) { "Data changed; reopen before editing workplaces" }
         val updatedLegacy = expectedLegacy.copy(workplaces = workplaces)
-        val updated = V11WorkplaceSync.repairAndSync(expected, workplaces)
+        val updated = NeoRatePolicy.reconcile(expected, workplaces)
         val previous = JSONObject().put("todo_shift_data", capture(prefs("todo_shift_data")))
             .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
         val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
@@ -259,6 +278,7 @@ class Neo4LocalBackup(context: Context) : BackupExport, BackupImport, BackupVali
         validatePreferences(o)
         val expected = when (name) {
             "todo_shift_v11_ui" -> mapOf("showWorkplaceNames" to "boolean").withDefault { "string" }
+            NeoSmartStore.NAME -> mapOf("data" to "string")
             "todo_shift_v11_ui_state" -> mapOf("active_calendar_id" to "string")
             "todo_shift_neo3_appearance" -> mapOf(
                 "intensity" to "float", "fontScale" to "float", "cornerRadius" to "int", "motion" to "int",

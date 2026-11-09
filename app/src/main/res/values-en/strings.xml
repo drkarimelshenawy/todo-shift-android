@@ -1,4 +1,5 @@
 <resources>
+    <string name="shortcut_new_task">New task</string>
     <string name="app_name">ToDo Shift</string>
     <string name="notification_channel_name">Shift reminders</string>
     <string name="notification_channel_description">Upcoming shift and task alerts</string>

@@ -1,5 +1,7 @@
 package com.todoshift.app.v11.ui
 
+import com.todoshift.app.v11.ShiftKind
+import com.todoshift.app.v11.toMoneyOrNull
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -52,7 +54,9 @@ private fun workplaceColor(hex: String): Color {
 fun V11WorkplacesScreen(
     workplaces: List<Workplace>,
     onBack: () -> Unit,
-    onSaveWorkplaces: (List<Workplace>) -> Unit
+    onSaveWorkplaces: (List<Workplace>) -> Unit,
+    datedRateKeys: Set<String> = emptySet(),
+    protectedWorkplaceIds: Set<String> = emptySet()
 ) {
     var editing by remember {
         mutableStateOf<Workplace?>(null)
@@ -258,6 +262,7 @@ fun V11WorkplacesScreen(
     editing?.let { workplace ->
         V11WorkplaceEditor(
             initial = workplace,
+            lockedKinds = ShiftKind.entries.filter{"${workplace.id}|${it.name}" in datedRateKeys}.toSet(),
             onDismiss = {
                 editing = null
             },
@@ -288,6 +293,7 @@ fun V11WorkplacesScreen(
             },
             confirmButton = {
                 TextButton(
+                    enabled = workplace.id !in protectedWorkplaceIds,
                     onClick = {
                         onSaveWorkplaces(
                             workplaces.filterNot {
@@ -316,6 +322,7 @@ fun V11WorkplacesScreen(
 @Composable
 private fun V11WorkplaceEditor(
     initial: Workplace?,
+    lockedKinds: Set<ShiftKind> = emptySet(),
     onDismiss: () -> Unit,
     onSave: (Workplace) -> Unit
 ) {
@@ -461,7 +468,9 @@ private fun V11WorkplaceEditor(
                     Modifier.height(8.dp)
                 )
 
+                if(lockedKinds.isNotEmpty()) Text(neoLiteral("الأسعار المؤرخة تُعدّل من الأدوات ← أسعار مؤرخة", "Manage dated rates in Tools → Dated rates"),style=MaterialTheme.typography.bodySmall)
                 RateField(
+                    enabled = ShiftKind.FULL_DAY !in lockedKinds,
                     label = neoLiteral("24 ساعة", "24 hours"),
                     value = fullDay,
                     onValueChange = {
@@ -471,6 +480,7 @@ private fun V11WorkplaceEditor(
 
                 RateField(
                     label = "Long",
+                    enabled = ShiftKind.LONG !in lockedKinds,
                     value = longRate,
                     onValueChange = {
                         longRate = it
@@ -479,6 +489,7 @@ private fun V11WorkplaceEditor(
 
                 RateField(
                     label = "Night",
+                    enabled = ShiftKind.NIGHT !in lockedKinds,
                     value = night,
                     onValueChange = {
                         night = it
@@ -487,6 +498,7 @@ private fun V11WorkplaceEditor(
 
                 RateField(
                     label = "Morning",
+                    enabled = ShiftKind.MORNING !in lockedKinds,
                     value = morning,
                     onValueChange = {
                         morning = it
@@ -495,6 +507,7 @@ private fun V11WorkplaceEditor(
 
                 RateField(
                     label = "Evening",
+                    enabled = ShiftKind.EVENING !in lockedKinds,
                     value = evening,
                     onValueChange = {
                         evening = it
@@ -504,7 +517,7 @@ private fun V11WorkplaceEditor(
         },
         confirmButton = {
             Button(
-                enabled = name.trim().isNotEmpty(),
+                enabled = name.trim().isNotEmpty() && listOf(fullDay, longRate, night, morning, evening).all { it.toMoneyOrNull() != null },
                 onClick = {
                     onSave(
                         Workplace(
@@ -513,15 +526,15 @@ private fun V11WorkplaceEditor(
                             name = name.trim(),
                             colorHex = colorHex,
                             fullDayRate =
-                                fullDay.toDoubleOrNull() ?: 0.0,
+                                fullDay.toMoneyOrNull() ?: 0.0,
                             longRate =
-                                longRate.toDoubleOrNull() ?: 0.0,
+                                longRate.toMoneyOrNull() ?: 0.0,
                             nightRate =
-                                night.toDoubleOrNull() ?: 0.0,
+                                night.toMoneyOrNull() ?: 0.0,
                             morningRate =
-                                morning.toDoubleOrNull() ?: 0.0,
+                                morning.toMoneyOrNull() ?: 0.0,
                             eveningRate =
-                                evening.toDoubleOrNull() ?: 0.0
+                                evening.toMoneyOrNull() ?: 0.0
                         )
                     )
                 }
@@ -542,21 +555,17 @@ private fun V11WorkplaceEditor(
 @Composable
 private fun RateField(
     label: String,
+    enabled: Boolean = true,
     value: String,
     onValueChange: (String) -> Unit
 ) {
     OutlinedTextField(
+        enabled = enabled,
+        isError = value.isNotBlank() && value.toMoneyOrNull() == null,
+        supportingText = { if(value.isNotBlank() && value.toMoneyOrNull() == null) Text(neoLiteral("مبلغ غير صالح", "Invalid amount")) },
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
         value = value,
-        onValueChange = { newValue ->
-            if (
-                newValue.isEmpty() ||
-                newValue.matches(
-                    Regex("""\d*\.?\d*""")
-                )
-            ) {
-                onValueChange(newValue)
-            }
-        },
+        onValueChange = onValueChange,
         label = {
             Text(label)
         },

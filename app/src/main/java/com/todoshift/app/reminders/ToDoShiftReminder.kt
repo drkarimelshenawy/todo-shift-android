@@ -63,8 +63,8 @@ object ToDoShiftReminder {
         context: Context,
         item: DayItemV11
     ) {
-        val whenMs =
-            item.reminderAt ?: return
+        if (!com.todoshift.app.v11.NeoNotificationPolicy.enabled(context, if(item.id.startsWith("shift-")) "shifts" else "events")) return
+        val whenMs = com.todoshift.app.v11.NeoNotificationPolicy.deliveryTime(context, item.reminderAt ?: return)
 
         if (item.completed) {
             cancel(context, item.id)
@@ -141,8 +141,8 @@ object ToDoShiftReminder {
         context: Context,
         task: TaskV11
     ) {
-        val whenMs =
-            task.reminderAt ?: return
+        if (!com.todoshift.app.v11.NeoNotificationPolicy.enabled(context, "tasks")) return
+        val whenMs = com.todoshift.app.v11.NeoNotificationPolicy.deliveryTime(context, task.reminderAt ?: return)
 
         if (
             task.status ==
@@ -260,6 +260,13 @@ object ToDoShiftReminder {
         db: V11Database
     ) {
         createChannel(context)
+        if (com.todoshift.app.v11.NeoSmartStore(context).snapshot().optBoolean("notify_shifts", false)) {
+            com.todoshift.app.v11.neoShiftOccurrences(db).forEach { shift ->
+                val whenMs=shift.start.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()-30*60*1000
+                if(whenMs>System.currentTimeMillis()) schedule(context,DayItemV11("shift-${shift.segment.id}",shift.entry.date,
+                    type=com.todoshift.app.v11.DayItemTypeV11.REMINDER,title="ToDo Shift • ${shift.segment.kind}",reminderAt=whenMs))
+            }
+        }
 
         db.dayItems
             .filter {

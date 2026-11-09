@@ -1,0 +1,11 @@
+# Obtaining and installing the test candidate
+
+Artifacts are generated under `/workspace/output/todo-shift-4.1.1/`. The delivery archive contains the test APK, tracked source ZIP, reports, logs and checksums. Exact file names and hashes are recorded in that directory. No artifacts or signing material are committed to Git.
+
+This session exposes no verified download/export tool or phone-accessible artifact service. A local workspace path is not a public download URL. If the Codex client exposes a verified file export control, export the delivery ZIP or APK through it. Otherwise an authorized artifact-hosting/CI step is still required; this task did not publish files or invent links. A later authorized source push would make source available through GitHub, but would not publish this APK automatically. Do not use public port forwarding for private source by assumption.
+
+Package: com.todoshift.app; versionName 4.1.1; versionCode 30; minSdk 26, targetSdk 35. Debug/test build only. Signing configuration and launcher component identity are unchanged.
+
+The APK here is signed with a local test certificate (SHA-256 a257d6f5be339f6f317d58d641539ce605d61d9a8d822e76d4d58f974e98ba02). Its private key is not included. Production signing credentials were unavailable. The repository CI expects a different production certificate. A matching applicationId and higher versionCode alone do not make an upgrade safe: the installed certificate must also match.
+
+Before upgrading, create and inspect a backup using the installed application's own backup workflow. Verify the APK SHA-256 against SHA256SUMS and compare the installed app signing certificate with this build. If it differs, stop and obtain a build signed by the installed app's certificate. **Do not uninstall, clear app storage or bypass signature checks.** This test APK cannot update a differently signed production installation. For a matching certificate, open the APK on Android and choose the system Update option; with an authorized connected test device the equivalent is `adb install -r <apk>`. No installation was performed in this session. Keep the backup until tasks, shifts, amounts, settings and attachments have been checked after the upgrade.

@@ -7,7 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Dashboard
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.*
@@ -42,7 +42,7 @@ fun Neo4CompactHeader(title: String, calendar: Boolean, showMoney: Boolean, mone
                 IconButton(onClick = onAdd) { Icon(Icons.Rounded.Add, neoLabel("إضافة", "Add")) }
                 IconButton(onClick = onManage) { Icon(Icons.Rounded.MoreVert, neoLabel("إدارة التقاويم", "Manage calendars")) }
             }
-            if (overview) IconButton(onClick = onOverview) { Icon(Icons.Rounded.Dashboard, neoLabel("اليوم والمهام", "Today and Tasks")) }
+            if (overview) IconButton(onClick = onOverview) { Icon(Icons.Rounded.Search, neoLabel("البحث والأدوات", "Search and tools")) }
             if (showMoney) IconButton(onClick = onMoney) { Icon(if (moneyVisible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff, neoLabel("إظهار أو إخفاء المبالغ", "Show or hide amounts")) }
         }
     }

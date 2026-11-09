@@ -14,7 +14,7 @@ internal object NeoLegacyLocale {
 internal fun neoLiteral(ar: String, en: String): String = if (NeoLegacyLocale.english) en else ar
 
 internal fun neoShiftText(kind: ShiftKind): String {
-    if (!NeoLegacyLocale.premium) return V11Labels.shift(kind)
+    if (!NeoLegacyLocale.premium && !NeoLegacyLocale.english) return V11Labels.shift(kind)
     return when (kind) {
         ShiftKind.FULL_DAY -> "24h"
         ShiftKind.LONG -> "Long"

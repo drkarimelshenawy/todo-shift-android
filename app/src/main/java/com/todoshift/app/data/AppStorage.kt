@@ -1,41 +1,48 @@
 package com.todoshift.app.data
 
 import android.content.Context
+import android.content.SharedPreferences
+import com.todoshift.app.storage.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
-class AppStorage(context: Context) {
-
-    private val prefs =
-        context.getSharedPreferences("todo_shift_data", Context.MODE_PRIVATE)
+class AppStorage internal constructor(private val prefs: SharedPreferences) {
+    constructor(context: Context) : this(context.getSharedPreferences("todo_shift_data", Context.MODE_PRIVATE))
 
     companion object {
         private const val KEY_DATABASE = "database"
         private const val SCHEMA_VERSION = 9
     }
 
-    fun load(): AppData {
-        val raw = prefs.getString(KEY_DATABASE, null)
-            ?: return defaultData().also { fresh ->
-                // RC8: persist generated workplace IDs immediately.
-                // Otherwise every load before the first explicit save can
-                // generate different UUIDs and disconnect V11 segments from
-                // their workplace colours/rates after restart.
-                save(fresh)
-            }
+    fun read(): StorageRead<AppData> = try {
+        if (!prefs.contains(KEY_DATABASE)) StorageRead.Missing
+        else StorageRead.Loaded(fromJson(JSONObject(requireNotNull(prefs.getString(KEY_DATABASE, null)))))
+    } catch (failure: Exception) {
+        StorageRead.Failed(failure)
+    }
 
-        return try {
-            fromJson(JSONObject(raw))
-        } catch (_: Exception) {
-            defaultData()
+    fun load(): AppData = read().requireLoaded()
+
+    /** Runtime must first verify that neither V11 data nor its migration marker exists. */
+    internal fun initializeFirstInstall(): AppData {
+        check(prefs.all.isEmpty()) { "Legacy preferences exist without a database" }
+        val fresh = defaultData()
+        check(prefs.edit().putString(KEY_DATABASE, toJson(fresh).toString()).commit()) {
+            "Unable to persist initial workplace IDs"
         }
+        return fresh
     }
 
     fun save(data: AppData) {
-        prefs.edit()
-            .putString(KEY_DATABASE, toJson(data).toString())
-            .apply()
+        read().requireLoaded()
+        writeValidated(data)
+    }
+
+    private fun writeValidated(data: AppData) {
+        val raw = toJson(data).toString()
+        fromJson(JSONObject(raw))
+        check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { "Unable to persist legacy database" }
     }
 
     fun exportJson(data: AppData): String =
@@ -45,7 +52,8 @@ class AppStorage(context: Context) {
 
     fun importJson(raw: String): AppData {
         val data = fromJson(JSONObject(raw))
-        save(data)
+        // Explicit, validated user import may repair a failed store; ordinary saves may not.
+        writeValidated(data)
         return data
     }
 
@@ -187,7 +195,25 @@ class AppStorage(context: Context) {
         }
     }
 
+    private fun validateShift(shift: JSONObject) {
+        ShiftType.valueOf(shift.nonBlankString("type"))
+        val ids = shift.get("workplaceIds") as? JSONArray ?: error("Invalid workplaceIds")
+        for (i in 0 until ids.length()) require(ids.isNull(i) || ids.get(i) is String) { "Invalid workplace ID" }
+    }
+
     private fun fromJson(root: JSONObject): AppData {
+        val version = if (root.has("schemaVersion")) root.schemaVersion(setOf(9)) else null
+        root.objectArray("workplaces").forEach { it.nonBlankString("id") }
+        root.objectArray("payments").forEach { it.nonBlankString("id") }
+        root.objectArray("dayDetails", version == 9).forEach { details ->
+            details.objectArray("tasks").forEach { it.nonBlankString("id") }
+        }
+        root.objectArray("templates", version == 9).forEach { it.nonBlankString("id"); validateShift(it) }
+        root.objectArray("shifts").forEach { shift ->
+            java.time.LocalDate.parse(shift.nonBlankString("date"))
+            validateShift(shift)
+        }
+
 
         val workplaces = mutableListOf<Workplace>()
         val workplaceArray = root.optJSONArray("workplaces") ?: JSONArray()
@@ -399,12 +425,7 @@ class AppStorage(context: Context) {
         }
 
         return AppData(
-            workplaces =
-                if (workplaces.isEmpty()) {
-                    defaultData().workplaces
-                } else {
-                    workplaces
-                },
+            workplaces = workplaces,
             shifts = shifts,
             payments = payments,
             dayDetails = dayDetails,

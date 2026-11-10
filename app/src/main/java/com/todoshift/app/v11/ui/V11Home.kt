@@ -45,6 +45,8 @@ fun V11Home(
     initialTab: Int = 0,
     initialTaskAction: String? = null,
     initialTaskId: String? = null,
+    entry: NeoEntry? = null,
+    onEntryConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -265,21 +267,23 @@ fun V11Home(
 
     val neoStore = remember { NeoAppearanceStore(context.applicationContext) }
     var neoAppearance by remember { mutableStateOf(loaded.appearance) }
+    val navigation = rememberSaveable(saver = NeoNavigator.saver) { NeoNavigator(initialTab) }
+    val leaveGate = remember { NeoLeaveGate() }
+    val routeState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+    fun go(action: () -> Unit) {
+        if (!writeBusy && writeFailure == null) leaveGate.request(action)
+    }
     var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction) }
     var pendingTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
-    var modernToolsOpen by rememberSaveable { mutableStateOf(false) }
-    var featureRoute by rememberSaveable { mutableStateOf("SEARCH") }
-    var featureOwner by rememberSaveable { mutableStateOf<String?>(null) }
     var temporaryFocus by remember { mutableStateOf(false) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
     var calendarActionId by remember { mutableIntStateOf(0) }
     var calendarManagerRequest by remember { mutableIntStateOf(0) }
 
     val contentAlpha = remember { androidx.compose.animation.core.Animatable(1f) }
-    var tab by remember(initialTab) { mutableIntStateOf(initialTab) }
 
     LaunchedEffect(
-        tab,
+        navigation.tab,
         uiSettings.experience,
         neoAppearance.motion,
         neoAppearance.reduceMotion,
@@ -308,12 +312,46 @@ fun V11Home(
             )
         } else contentAlpha.snapTo(1f)
     }
-    var showWorkplaces by remember { mutableStateOf(false) }
 
-    var launchDate by remember { mutableStateOf(initialDate ?: LocalDate.now()) }
+    var launchDate by
+        rememberSaveable(
+            stateSaver =
+                androidx.compose.runtime.saveable.Saver<LocalDate, String>(
+                    save = { it.toString() },
+                    restore = { LocalDate.parse(it) },
+                )
+        ) {
+            mutableStateOf(initialDate ?: LocalDate.now())
+        }
 
-    var month by remember(launchDate) { mutableStateOf(YearMonth.from(launchDate)) }
+    var month by
+        rememberSaveable(
+            stateSaver =
+                androidx.compose.runtime.saveable.Saver<YearMonth, String>(
+                    save = { it.toString() },
+                    restore = { YearMonth.parse(it) },
+                )
+        ) {
+            mutableStateOf(YearMonth.from(launchDate))
+        }
 
+    LaunchedEffect(entry?.token, writeBusy, writeFailure) {
+        val request = entry ?: return@LaunchedEffect
+        if (writeBusy || writeFailure != null) return@LaunchedEffect
+        // Consume delivery once when offered to the guard. Keep editing cancels the route;
+        // a later save must not unexpectedly replay a rejected warm link.
+        onEntryConsumed()
+        go {
+            navigation.selectTab(request.tab)
+            request.date?.let {
+                launchDate = it
+                month = YearMonth.from(it)
+            }
+            pendingTaskAction = request.taskAction
+            pendingTaskId = request.taskId
+            calendarAction = null
+        }
+    }
     var moneyVisible by remember { mutableStateOf(!securitySettings.hideAmounts) }
 
     LaunchedEffect(moneyVisible, securitySettings.protectAccounts, securitySettings.hideAmounts) {
@@ -431,36 +469,27 @@ fun V11Home(
         com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext)
     }
 
-    BackHandler(enabled = showWorkplaces) { showWorkplaces = false }
-
-    // RC9: Calendar is the root/home destination.
-    // Back from any main section returns to Calendar first.
-    BackHandler(enabled = !showWorkplaces && tab != 0) {
-        pendingTaskAction = null
-        pendingTaskId = null
-        calendarAction = null
-        tab = 0
-    }
+    BackHandler(enabled = navigation.canBack) { go { navigation.back() } }
 
     val sectionTitle =
         if (uiSettings.experience == V11Experience.PREMIUM) {
             when {
-                showWorkplaces -> stringResource(R.string.premium_title_workplaces)
-                tab == 0 -> stringResource(R.string.premium_nav_calendar)
-                tab == 1 -> stringResource(R.string.premium_nav_schedules)
-                tab == 2 -> stringResource(R.string.premium_nav_finance)
-                tab == 3 -> stringResource(R.string.premium_nav_settings)
-                tab == 4 -> stringResource(R.string.premium_nav_tasks)
+                navigation.workplacesOpen -> stringResource(R.string.premium_title_workplaces)
+                navigation.tab == 0 -> stringResource(R.string.premium_nav_calendar)
+                navigation.tab == 1 -> stringResource(R.string.premium_nav_schedules)
+                navigation.tab == 2 -> stringResource(R.string.premium_nav_finance)
+                navigation.tab == 3 -> stringResource(R.string.premium_nav_settings)
+                navigation.tab == 4 -> stringResource(R.string.premium_nav_tasks)
                 else -> stringResource(R.string.premium_nav_calendar)
             }
         } else {
             when {
-                showWorkplaces -> "أماكن العمل"
-                tab == 0 -> "التقويم"
-                tab == 1 -> "جداولي"
-                tab == 2 -> "الحسابات"
-                tab == 3 -> "الإعدادات"
-                tab == 4 -> "المهام"
+                navigation.workplacesOpen -> "أماكن العمل"
+                navigation.tab == 0 -> "التقويم"
+                navigation.tab == 1 -> "جداولي"
+                navigation.tab == 2 -> "الحسابات"
+                navigation.tab == 3 -> "الإعدادات"
+                navigation.tab == 4 -> "المهام"
                 else -> "التقويم"
             }
         }
@@ -484,6 +513,17 @@ fun V11Home(
             premiumBrightness = uiSettings.premiumBrightness,
         ) {
             androidx.compose.runtime.CompositionLocalProvider(
+                LocalNeoLeaveGate provides leaveGate,
+                LocalNeoAppearanceCommit provides
+                    { value, done ->
+                        try {
+                            neoStore.save(value)
+                            neoAppearance = value
+                            done()
+                        } catch (failure: Exception) {
+                            writeFailure = failure.message ?: "Appearance save failed"
+                        }
+                    },
                 LocalNeoNoteCommitted provides
                     { next ->
                         undoHistory.add(db)
@@ -505,26 +545,24 @@ fun V11Home(
                 LocalV11NeoEnabled provides (uiSettings.experience == V11Experience.PREMIUM),
                 LocalNeoFeatures provides
                     NeoFeatureNavigator { id, owner ->
-                        when (id) {
-                            "TASK_DETAIL" -> {
-                                modernToolsOpen = false
-                                tab = 4
-                                pendingTaskAction = "open"
-                                pendingTaskId = owner
-                            }
-                            "WORKPLACES" -> {
-                                modernToolsOpen = false
-                                showWorkplaces = true
-                            }
-                            "CALENDAR_MANAGER" -> {
-                                modernToolsOpen = false
-                                tab = 0
-                                calendarManagerRequest++
-                            }
-                            else -> {
-                                featureRoute = id
-                                featureOwner = owner
-                                modernToolsOpen = true
+                        go {
+                            when (id) {
+                                "TASK_DETAIL" -> {
+                                    navigation.back()
+                                    navigation.selectTab(4)
+                                    pendingTaskAction = "open"
+                                    pendingTaskId = owner
+                                }
+                                "WORKPLACES" -> {
+                                    navigation.openWorkplaces()
+                                }
+                                "CALENDAR_MANAGER" -> {
+                                    navigation.openCalendarManager()
+                                    calendarManagerRequest++
+                                }
+                                else -> {
+                                    navigation.openFeature(id, owner)
+                                }
                             }
                         }
                     },
@@ -555,7 +593,7 @@ fun V11Home(
                     { date ->
                         launchDate = date
                         month = YearMonth.from(date)
-                        tab = 0
+                        navigation.selectTab(0)
                         calendarAction = null
                     },
             ) {
@@ -575,7 +613,7 @@ fun V11Home(
                     topBar = {
                         Column {
                             V11GlobalHeader(
-                                calendarActions = tab == 0 && !showWorkplaces,
+                                calendarActions = navigation.tab == 0 && navigation.isRoot,
                                 onToday = {
                                     calendarAction = NeoQuickAction.TODAY
                                     calendarActionId++
@@ -585,31 +623,35 @@ fun V11Home(
                                     calendarActionId++
                                 },
                                 onManage = { calendarManagerRequest++ },
-                                onOverview = {
-                                    featureRoute = "SEARCH"
-                                    featureOwner = null
-                                    modernToolsOpen = true
-                                },
+                                onOverview = { go { navigation.openFeature("SEARCH") } },
                                 featureDestination =
-                                    when (tab) {
-                                        0 -> "Calendar"
-                                        1 -> "Schedules"
-                                        4 -> "Tasks"
-                                        2 -> "Finances"
-                                        else -> "Settings"
-                                    },
+                                    if (!navigation.isRoot) ""
+                                    else
+                                        when (navigation.tab) {
+                                            0 -> "Calendar"
+                                            1 -> "Schedules"
+                                            4 -> "Tasks"
+                                            2 -> "Finances"
+                                            else -> "Settings"
+                                        },
                                 title =
                                     if (uiSettings.experience == V11Experience.PREMIUM)
                                         when {
-                                            showWorkplaces -> neoLabel("أماكن العمل", "Workplaces")
-                                            tab == 0 -> neoLabel("التقويم", "Calendar")
-                                            tab == 1 -> neoLabel("جداولي", "Schedules")
-                                            tab == 2 -> neoLabel("الحسابات", "Finance")
-                                            tab == 3 -> neoLabel("الإعدادات", "Settings")
+                                            navigation.featureOpen ->
+                                                NeoFeatureCatalog.get(navigation.feature)?.let {
+                                                    neoLabel(it.ar, it.en)
+                                                } ?: neoLabel("أدوات", "Tools")
+                                            navigation.workplacesOpen ->
+                                                neoLabel("أماكن العمل", "Workplaces")
+                                            navigation.tab == 0 -> neoLabel("التقويم", "Calendar")
+                                            navigation.tab == 1 -> neoLabel("جداولي", "Schedules")
+                                            navigation.tab == 2 -> neoLabel("الحسابات", "Finance")
+                                            navigation.tab == 3 -> neoLabel("الإعدادات", "Settings")
                                             else -> neoLabel("المهام", "Tasks")
                                         }
                                     else sectionTitle,
-                                showMoneyAction = tab == 2 && !showWorkplaces && accountsUnlocked,
+                                showMoneyAction =
+                                    navigation.tab == 2 && navigation.isRoot && accountsUnlocked,
                                 moneyVisible = moneyVisible,
                                 onToggleMoney = { moneyVisible = !moneyVisible },
                             )
@@ -618,24 +660,26 @@ fun V11Home(
                     bottomBar = {
                         if (uiSettings.experience == V11Experience.PREMIUM) {
                             V11PremiumBottomBar(
-                                selectedTab = tab,
+                                selectedTab = navigation.tab,
                                 onSelectTab = { destination ->
-                                    showWorkplaces = false
-                                    pendingTaskAction = null
-                                    pendingTaskId = null
-                                    calendarAction = null
-                                    tab = destination
+                                    go {
+                                        pendingTaskAction = null
+                                        pendingTaskId = null
+                                        calendarAction = null
+                                        navigation.selectTab(destination)
+                                    }
                                 },
                             )
                         } else {
                             V11HeroBottomBar(
-                                selectedTab = tab,
+                                selectedTab = navigation.tab,
                                 onSelectTab = { destination ->
-                                    showWorkplaces = false
-                                    pendingTaskAction = null
-                                    pendingTaskId = null
-                                    calendarAction = null
-                                    tab = destination
+                                    go {
+                                        pendingTaskAction = null
+                                        pendingTaskId = null
+                                        calendarAction = null
+                                        navigation.selectTab(destination)
+                                    }
                                 },
                             )
                         }
@@ -661,228 +705,233 @@ fun V11Home(
                     ) {
                         if (uiSettings.experience == V11Experience.PREMIUM)
                             Neo4Atmosphere(Modifier.matchParentSize())
-                        if (modernToolsOpen) {
-                            BackHandler { modernToolsOpen = false }
-                            key(featureRoute, featureOwner) {
-                                if (
-                                    featureRoute in
-                                        NeoFeatureCatalog.entries
-                                            .filter { it.group.isNotEmpty() }
-                                            .map { it.id } &&
-                                        featureRoute !in
-                                            listOf(
-                                                "NOTIFICATIONS",
-                                                "HEALTH",
-                                                "FOCUS",
-                                                "USAGE",
-                                                "STORAGE",
-                                            )
-                                ) {
-                                    NeoRescueSettings(
-                                        db,
-                                        uiSettings,
-                                        securitySettings,
-                                        securityStore,
-                                        accountsUnlocked,
-                                        { accountsUnlocked = true },
-                                        {
-                                            securitySettings = it
-                                            moneyVisible = !it.hideAmounts
-                                            accountsUnlocked =
-                                                !it.protectAccounts ||
-                                                    (it.mode == V11LockMode.NONE &&
-                                                        !it.biometricEnabled)
-                                        },
-                                        { saveUi(it) },
-                                        { state ->
-                                            db = state.database
-                                            oldData = state.legacy
-                                            uiSettings = state.ui
-                                            neoAppearance = state.appearance
-                                            activeCalendarId = state.activeCalendarId
-                                        },
-                                        initialPage = featureRoute,
-                                        onBack = { modernToolsOpen = false },
-                                    )
-                                } else
-                                    NeoModernHub(
-                                        db,
-                                        oldData.workplaces,
-                                        accountsUnlocked,
-                                        moneyVisible,
-                                        { saveDb(it) },
-                                        { date ->
-                                            modernToolsOpen = false
-                                            launchDate = date
-                                            month = YearMonth.from(date)
-                                            tab = 0
-                                            calendarAction = null
-                                        },
-                                        { modernToolsOpen = false },
-                                        initialSection = featureRoute,
-                                        focused = true,
-                                        initialOwner = featureOwner,
-                                    )
-                            }
-                        } else if (showWorkplaces) {
-                            V11WorkplacesScreen(
-                                workplaces = NeoRatePolicy.display(db, oldData.workplaces),
-                                datedRateKeys = NeoRatePolicy.ownedKeys(db),
-                                protectedWorkplaceIds =
-                                    (db.days.flatMap { it.segments }.mapNotNull { it.workplaceId } +
-                                            db.tasks.mapNotNull { it.workplaceId })
-                                        .toSet(),
-                                onBack = { showWorkplaces = false },
-                                onSaveWorkplaces = { saveWorkplaces(it) },
-                            )
-                        } else {
-                            when (tab) {
-                                0 ->
-                                    Column(modifier = Modifier.fillMaxSize()) {
-                                        Box(modifier = Modifier.weight(1f)) {
-                                            V11CalendarScreen(
-                                                managerRequest = calendarManagerRequest,
-                                                onManagerHandled = { calendarManagerRequest = 0 },
-                                                onOpenWorkplaces = { showWorkplaces = true },
-                                                financeAuthorized = accountsUnlocked,
-                                                financeAmountsVisible = moneyVisible,
-                                                quickAction = calendarAction,
-                                                quickActionId = calendarActionId,
-                                                month = month,
-                                                initialDate = launchDate,
-                                                db = db,
-                                                workplaces = oldData.workplaces,
-                                                uiSettings = uiSettings,
-                                                activeCalendarId = activeCalendarId,
-                                                onActiveCalendarChange = { id ->
-                                                    try {
-                                                        activeCalendarStore.save(id)
-                                                        activeCalendarId = id
-                                                    } catch (failure: Exception) {
-                                                        writeFailure =
-                                                            failure.message
-                                                                ?: "Unable to save primary calendar"
-                                                    }
-                                                },
-                                                onMonthChange = { month = it },
-                                                onDatabaseChange = { saveDb(it) },
-                                                onUiSettingsChange = { saveUi(it) },
-                                            )
-                                        }
-                                    }
-
-                                1 ->
-                                    V11SchedulesScreen(
-                                        financeAuthorized = accountsUnlocked,
-                                        financeAmountsVisible = moneyVisible,
-                                        onMonthChange = { month = it },
-                                        month = month,
-                                        db = db,
-                                        workplaces = oldData.workplaces,
-                                        onDatabaseChange = { saveDb(it) },
-                                    )
-
-                                2 ->
+                        routeState.SaveableStateProvider(navigation.stateKey) {
+                            if (navigation.featureOpen) {
+                                BackHandler { navigation.back() }
+                                key(navigation.feature, navigation.owner) {
                                     if (
-                                        securitySettings.protectAccounts &&
-                                            (securitySettings.mode != V11LockMode.NONE ||
-                                                securitySettings.biometricEnabled) &&
-                                            !accountsUnlocked
+                                        navigation.feature in
+                                            NeoFeatureCatalog.entries
+                                                .filter { it.group.isNotEmpty() }
+                                                .map { it.id } &&
+                                            navigation.feature !in
+                                                listOf(
+                                                    "NOTIFICATIONS",
+                                                    "HEALTH",
+                                                    "FOCUS",
+                                                    "USAGE",
+                                                    "STORAGE",
+                                                )
                                     ) {
-                                        V11AccountsUnlockScreen(
-                                            settings = securitySettings,
-                                            securityStore = securityStore,
-                                            onUnlocked = { accountsUnlocked = true },
+                                        NeoRescueSettings(
+                                            db,
+                                            uiSettings,
+                                            securitySettings,
+                                            securityStore,
+                                            accountsUnlocked,
+                                            { accountsUnlocked = true },
+                                            {
+                                                securitySettings = it
+                                                moneyVisible = !it.hideAmounts
+                                                accountsUnlocked =
+                                                    !it.protectAccounts ||
+                                                        (it.mode == V11LockMode.NONE &&
+                                                            !it.biometricEnabled)
+                                            },
+                                            { saveUi(it) },
+                                            { state -> adoptRestore(state) },
+                                            initialPage = navigation.feature,
+                                            onBack = { navigation.back() },
                                         )
-                                    } else {
-                                        V11FinanceScreen(
+                                    } else
+                                        NeoModernHub(
+                                            db,
+                                            oldData.workplaces,
+                                            accountsUnlocked,
+                                            moneyVisible,
+                                            { saveDb(it) },
+                                            { date ->
+                                                navigation.back()
+                                                launchDate = date
+                                                month = YearMonth.from(date)
+                                                navigation.selectTab(0)
+                                                calendarAction = null
+                                            },
+                                            { navigation.back() },
+                                            initialSection = navigation.feature,
+                                            focused = true,
+                                            initialOwner = navigation.owner,
+                                        )
+                                }
+                            } else if (navigation.workplacesOpen) {
+                                V11WorkplacesScreen(
+                                    workplaces = NeoRatePolicy.display(db, oldData.workplaces),
+                                    datedRateKeys = NeoRatePolicy.ownedKeys(db),
+                                    protectedWorkplaceIds =
+                                        (db.days
+                                                .flatMap { it.segments }
+                                                .mapNotNull { it.workplaceId } +
+                                                db.tasks.mapNotNull { it.workplaceId })
+                                            .toSet(),
+                                    onBack = { navigation.back() },
+                                    onSaveWorkplaces = { saveWorkplaces(it) },
+                                )
+                            } else {
+                                when (navigation.tab) {
+                                    0 ->
+                                        Column(modifier = Modifier.fillMaxSize()) {
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                V11CalendarScreen(
+                                                    managerRequest = calendarManagerRequest,
+                                                    onManagerHandled = {
+                                                        calendarManagerRequest = 0
+                                                    },
+                                                    onOpenWorkplaces = {
+                                                        navigation.openWorkplaces()
+                                                    },
+                                                    financeAuthorized = accountsUnlocked,
+                                                    financeAmountsVisible = moneyVisible,
+                                                    quickAction = calendarAction,
+                                                    quickActionId = calendarActionId,
+                                                    month = month,
+                                                    initialDate = launchDate,
+                                                    db = db,
+                                                    workplaces = oldData.workplaces,
+                                                    uiSettings = uiSettings,
+                                                    activeCalendarId = activeCalendarId,
+                                                    onActiveCalendarChange = { id ->
+                                                        try {
+                                                            activeCalendarStore.save(id)
+                                                            activeCalendarId = id
+                                                        } catch (failure: Exception) {
+                                                            writeFailure =
+                                                                failure.message
+                                                                    ?: "Unable to save primary calendar"
+                                                        }
+                                                    },
+                                                    onMonthChange = { month = it },
+                                                    onDatabaseChange = { saveDb(it) },
+                                                    onUiSettingsChange = { saveUi(it) },
+                                                )
+                                            }
+                                        }
+
+                                    1 ->
+                                        V11SchedulesScreen(
+                                            financeAuthorized = accountsUnlocked,
+                                            financeAmountsVisible = moneyVisible,
+                                            onMonthChange = { month = it },
                                             month = month,
                                             db = db,
                                             workplaces = oldData.workplaces,
-                                            moneyVisible = moneyVisible,
-                                            onPrevious = { month = month.minusMonths(1) },
-                                            onNext = { month = month.plusMonths(1) },
-                                            onToggleMoney = { moneyVisible = !moneyVisible },
-                                            securitySettings = securitySettings,
-                                            securityStore = securityStore,
                                             onDatabaseChange = { saveDb(it) },
                                         )
-                                    }
 
-                                3 ->
-                                    V11MoreScreen(
-                                        workplaces = oldData.workplaces,
-                                        financeAuthorized = accountsUnlocked,
-                                        onAccountsUnlocked = { accountsUnlocked = true },
-                                        onNeoRestored = { state -> adoptRestore(state) },
-                                        db = db,
-                                        uiSettings = uiSettings,
-                                        moneyVisible = moneyVisible,
-                                        securitySettings = securitySettings,
-                                        securityStore = securityStore,
-                                        onSecuritySettingsChange = {
-                                            securitySettings = it
+                                    2 ->
+                                        if (
+                                            securitySettings.protectAccounts &&
+                                                (securitySettings.mode != V11LockMode.NONE ||
+                                                    securitySettings.biometricEnabled) &&
+                                                !accountsUnlocked
+                                        ) {
+                                            V11AccountsUnlockScreen(
+                                                settings = securitySettings,
+                                                securityStore = securityStore,
+                                                onUnlocked = { accountsUnlocked = true },
+                                            )
+                                        } else {
+                                            V11FinanceScreen(
+                                                month = month,
+                                                db = db,
+                                                workplaces = oldData.workplaces,
+                                                moneyVisible = moneyVisible,
+                                                onPrevious = { month = month.minusMonths(1) },
+                                                onNext = { month = month.plusMonths(1) },
+                                                onToggleMoney = { moneyVisible = !moneyVisible },
+                                                securitySettings = securitySettings,
+                                                securityStore = securityStore,
+                                                onDatabaseChange = { saveDb(it) },
+                                            )
+                                        }
 
-                                            moneyVisible = !it.hideAmounts
+                                    3 ->
+                                        V11MoreScreen(
+                                            workplaces = oldData.workplaces,
+                                            financeAuthorized = accountsUnlocked,
+                                            onAccountsUnlocked = { accountsUnlocked = true },
+                                            onNeoRestored = { state -> adoptRestore(state) },
+                                            db = db,
+                                            uiSettings = uiSettings,
+                                            moneyVisible = moneyVisible,
+                                            securitySettings = securitySettings,
+                                            securityStore = securityStore,
+                                            onSecuritySettingsChange = {
+                                                securitySettings = it
 
-                                            accountsUnlocked =
-                                                !it.protectAccounts ||
-                                                    (it.mode == V11LockMode.NONE &&
-                                                        !it.biometricEnabled)
-                                        },
-                                        onDatabaseRestored = { saveDb(it) },
-                                        onUiSettingsChange = { saveUi(it) },
-                                        onToggleMoney = { moneyVisible = !moneyVisible },
-                                        onOpenWorkplaces = { showWorkplaces = true },
-                                    )
+                                                moneyVisible = !it.hideAmounts
 
-                                4 ->
-                                    V11TasksScreen(
-                                        financeAuthorized = accountsUnlocked,
-                                        moneyVisible = moneyVisible,
-                                        onQuickAction = { action ->
-                                            tab = 0
-                                            calendarAction = action
-                                            calendarActionId++
-                                        },
-                                        db = db,
-                                        workplaces = oldData.workplaces,
-                                        initialAction = pendingTaskAction,
-                                        initialTaskId = pendingTaskId,
-                                        onInitialActionHandled = {
-                                            pendingTaskAction = null
-                                            pendingTaskId = null
-                                        },
-                                        onDatabaseChange = { saveDb(it) },
-                                    )
+                                                accountsUnlocked =
+                                                    !it.protectAccounts ||
+                                                        (it.mode == V11LockMode.NONE &&
+                                                            !it.biometricEnabled)
+                                            },
+                                            onDatabaseRestored = { saveDb(it) },
+                                            onUiSettingsChange = { saveUi(it) },
+                                            onToggleMoney = { moneyVisible = !moneyVisible },
+                                            onOpenWorkplaces = { navigation.openWorkplaces() },
+                                        )
 
-                                else ->
-                                    V11CalendarScreen(
-                                        managerRequest = calendarManagerRequest,
-                                        onManagerHandled = { calendarManagerRequest = 0 },
-                                        onOpenWorkplaces = { showWorkplaces = true },
-                                        financeAuthorized = accountsUnlocked,
-                                        financeAmountsVisible = moneyVisible,
-                                        month = month,
-                                        initialDate = launchDate,
-                                        db = db,
-                                        workplaces = oldData.workplaces,
-                                        uiSettings = uiSettings,
-                                        activeCalendarId = activeCalendarId,
-                                        onActiveCalendarChange = { id ->
-                                            try {
-                                                activeCalendarStore.save(id)
-                                                activeCalendarId = id
-                                            } catch (failure: Exception) {
-                                                writeFailure =
-                                                    failure.message
-                                                        ?: "Unable to save primary calendar"
-                                            }
-                                        },
-                                        onMonthChange = { month = it },
-                                        onDatabaseChange = { saveDb(it) },
-                                        onUiSettingsChange = { saveUi(it) },
-                                    )
+                                    4 ->
+                                        V11TasksScreen(
+                                            financeAuthorized = accountsUnlocked,
+                                            moneyVisible = moneyVisible,
+                                            onQuickAction = { action ->
+                                                navigation.selectTab(0)
+                                                calendarAction = action
+                                                calendarActionId++
+                                            },
+                                            db = db,
+                                            workplaces = oldData.workplaces,
+                                            initialAction = pendingTaskAction,
+                                            initialTaskId = pendingTaskId,
+                                            onInitialActionHandled = {
+                                                pendingTaskAction = null
+                                                pendingTaskId = null
+                                            },
+                                            onDatabaseChange = { saveDb(it) },
+                                        )
+
+                                    else ->
+                                        V11CalendarScreen(
+                                            managerRequest = calendarManagerRequest,
+                                            onManagerHandled = { calendarManagerRequest = 0 },
+                                            onManagerDismiss = {
+                                                if (navigation.hasParent) navigation.back()
+                                            },
+                                            onOpenWorkplaces = { navigation.openWorkplaces() },
+                                            financeAuthorized = accountsUnlocked,
+                                            financeAmountsVisible = moneyVisible,
+                                            month = month,
+                                            initialDate = launchDate,
+                                            db = db,
+                                            workplaces = oldData.workplaces,
+                                            uiSettings = uiSettings,
+                                            activeCalendarId = activeCalendarId,
+                                            onActiveCalendarChange = { id ->
+                                                try {
+                                                    activeCalendarStore.save(id)
+                                                    activeCalendarId = id
+                                                } catch (failure: Exception) {
+                                                    writeFailure =
+                                                        failure.message
+                                                            ?: "Unable to save primary calendar"
+                                                }
+                                            },
+                                            onMonthChange = { month = it },
+                                            onDatabaseChange = { saveDb(it) },
+                                            onUiSettingsChange = { saveUi(it) },
+                                        )
+                                }
                             }
                         }
                     }

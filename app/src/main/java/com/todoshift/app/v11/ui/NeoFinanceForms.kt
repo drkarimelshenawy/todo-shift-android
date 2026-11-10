@@ -343,26 +343,5 @@ fun neoObligationType(s: String): String =
 
 /** Keeps edits in place unless the user explicitly discards them. */
 @Composable
-private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): () -> Unit {
-    val pending = LocalNeoEditorWriteState.current.pending
-    val initial = remember { values.toList() }
-    var confirm by remember { mutableStateOf(false) }
-    if (confirm)
-        AlertDialog(
-            onDismissRequest = { confirm = false },
-            title = { Text(neoLabel("تجاهل التعديلات؟", "Discard changes?")) },
-            confirmButton = {
-                TextButton(onClick = onDismiss) { Text(neoLabel("تجاهل", "Discard")) }
-            },
-            dismissButton = {
-                TextButton(onClick = neoWriteAction { confirm = false }) {
-                    Text(neoLabel("متابعة", "Keep editing"))
-                }
-            },
-        )
-    return {
-        if (!pending) {
-            if (values != initial) confirm = true else onDismiss()
-        }
-    }
-}
+private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): () -> Unit =
+    rememberNeoEditorExit(values, onDismiss)

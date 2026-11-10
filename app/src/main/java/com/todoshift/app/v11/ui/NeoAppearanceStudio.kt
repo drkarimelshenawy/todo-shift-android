@@ -52,17 +52,67 @@ fun NeoAppearanceStudio(
     var accent by rememberSaveable(saved.accentHex) { mutableStateOf(saved.accentHex) }
     var discard by remember { mutableStateOf(false) }
     val valid = accent.isEmpty() || accent.matches(Regex("#[0-9a-fA-F]{6}"))
-    fun leave() {
-        if (draft != saved) discard = true else onBack()
+    var pendingLeave by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val commitAppearance = LocalNeoAppearanceCommit.current
+    val dirty = draft != saved || accent != saved.accentHex
+    fun requestLeave(next: () -> Unit) {
+        if (dirty) {
+            pendingLeave = next
+            discard = true
+        } else next()
+    }
+    fun leave() = requestLeave(onBack)
+    neoRegisterLeaveGuard { requestLeave(it) }
+    fun apply(next: () -> Unit = {}) {
+        if (!valid) return
+        if (commitAppearance != null) commitAppearance(draft, next)
+        else {
+            update(draft)
+            next()
+        }
     }
     BackHandler { leave() }
     if (discard)
         AlertDialog(
-            onDismissRequest = { discard = false },
+            onDismissRequest = {
+                discard = false
+                pendingLeave = null
+            },
             title = { Text(neoLabel("تجاهل المعاينة؟", "Discard preview changes?")) },
-            confirmButton = { TextButton(onClick = onBack) { Text(neoLabel("تجاهل", "Discard")) } },
+            confirmButton = {
+                Column {
+                    TextButton(
+                        onClick = {
+                            draft = saved
+                            accent = saved.accentHex
+                            discard = false
+                            (pendingLeave ?: onBack).invoke()
+                            pendingLeave = null
+                        }
+                    ) {
+                        Text(neoLabel("تجاهل", "Discard"))
+                    }
+                    TextButton(
+                        enabled = valid,
+                        onClick = {
+                            apply {
+                                discard = false
+                                (pendingLeave ?: onBack).invoke()
+                                pendingLeave = null
+                            }
+                        },
+                    ) {
+                        Text(neoLabel("تطبيق ومغادرة", "Apply and leave"))
+                    }
+                }
+            },
             dismissButton = {
-                TextButton(onClick = { discard = false }) {
+                TextButton(
+                    onClick = {
+                        discard = false
+                        pendingLeave = null
+                    }
+                ) {
                     Text(neoLabel("متابعة", "Keep editing"))
                 }
             },
@@ -329,7 +379,7 @@ fun NeoAppearanceStudio(
                 }
                 Button(
                     enabled = valid && draft != saved,
-                    onClick = { update(draft) },
+                    onClick = { apply() },
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(neoLabel("تطبيق", "Apply"))

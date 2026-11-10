@@ -89,48 +89,27 @@ import com.todoshift.app.data.PainterSelection
 import com.todoshift.app.data.ShiftPainterEngine
 
 class MainActivity : FragmentActivity() {
+    private var incoming by mutableStateOf<com.todoshift.app.v11.ui.NeoEntry?>(null)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        ToDoShiftReminder.createChannel(
-            applicationContext
-        )
-
-        val widgetOpenDate =
-            intent
-                ?.getStringExtra(
-                    "todo_shift_open_date"
-                )
-                ?.let { raw ->
-                    runCatching {
-                        LocalDate.parse(raw)
-                    }.getOrNull()
-                }
-
-        val widgetTaskAction =
-            intent?.getStringExtra("todo_shift_task_action")
-
-        val widgetTaskId =
-            intent?.getStringExtra("todo_shift_task_open_id")
-
+        ToDoShiftReminder.createChannel(applicationContext)
+        if (savedInstanceState?.getBoolean("neo_entry_consumed") != true) {
+            incoming = com.todoshift.app.v11.ui.NeoEntry.parse(intent, System.nanoTime())
+        }
         setContent {
-            MaterialTheme(
-                colorScheme = lightColorScheme(
-                    primary = Color(0xFF213555),
-                    secondary = Color(0xFF4F709C),
-                    background = Color(0xFFF7F8FA),
-                    surface = Color.White
-                )
-            ) {
-                V11Home(
-                    initialDate = widgetOpenDate,
-                    initialTab =
-                        if (widgetTaskAction != null) 4 else if(intent?.action == "com.todoshift.app.OPEN_FINANCE") 2 else intent?.getIntExtra("neo4_open_tab", 0) ?: 0,
-                    initialTaskAction = widgetTaskAction,
-                    initialTaskId = widgetTaskId
-                )
+            MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF213555), secondary = Color(0xFF4F709C), background = Color(0xFFF7F8FA), surface = Color.White)) {
+                V11Home(entry = incoming, onEntryConsumed = { incoming = null })
             }
         }
+    }
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        incoming = com.todoshift.app.v11.ui.NeoEntry.parse(intent, System.nanoTime())
+    }
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("neo_entry_consumed", incoming == null)
+        super.onSaveInstanceState(outState)
     }
 }
 

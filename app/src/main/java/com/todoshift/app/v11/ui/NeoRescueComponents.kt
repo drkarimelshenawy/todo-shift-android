@@ -300,24 +300,50 @@ fun rememberNeoEditorExit(values: List<Any?>, onDismiss: () -> Unit): () -> Unit
     val pending = LocalNeoEditorWriteState.current.pending
     val initial = rememberSaveable { values.toList() }
     var confirm by remember { mutableStateOf(false) }
+    var destination by remember { mutableStateOf<(() -> Unit)?>(null) }
+    fun request(next: () -> Unit) {
+        if (pending) return
+        if (values != initial) {
+            destination = next
+            confirm = true
+        } else next()
+    }
+    neoRegisterLeaveGuard { next ->
+        request {
+            onDismiss()
+            next()
+        }
+    }
     if (confirm)
         AlertDialog(
-            onDismissRequest = { confirm = false },
+            onDismissRequest = {
+                confirm = false
+                destination = null
+            },
             title = { Text(neoLabel("تجاهل التعديلات؟", "Discard changes?")) },
             confirmButton = {
-                TextButton(onClick = onDismiss) { Text(neoLabel("تجاهل", "Discard")) }
+                TextButton(
+                    onClick = {
+                        confirm = false
+                        destination?.invoke()
+                        destination = null
+                    }
+                ) {
+                    Text(neoLabel("تجاهل", "Discard"))
+                }
             },
             dismissButton = {
-                TextButton(onClick = { confirm = false }) {
+                TextButton(
+                    onClick = {
+                        confirm = false
+                        destination = null
+                    }
+                ) {
                     Text(neoLabel("متابعة", "Keep editing"))
                 }
             },
         )
-    return {
-        if (!pending) {
-            if (values != initial) confirm = true else onDismiss()
-        }
-    }
+    return { request(onDismiss) }
 }
 
 @Composable

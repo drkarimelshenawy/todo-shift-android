@@ -50,23 +50,7 @@ fun TaskEditorDialogV11(
         )
         return
     }
-    fun leave() {
-        if (write.pending) return
-        if (title.isNotBlank()) discard = true else onDismiss()
-    }
-    if (discard)
-        AlertDialog(
-            onDismissRequest = { discard = false },
-            title = { Text(neoLabel("تجاهل المسودة؟", "Discard draft?")) },
-            confirmButton = {
-                TextButton(onClick = onDismiss) { Text(neoLabel("تجاهل", "Discard")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { discard = false }) {
-                    Text(neoLabel("متابعة", "Keep editing"))
-                }
-            },
-        )
+    val leave = rememberNeoEditorExit(listOf(title, date), onDismiss)
     AlertDialog(
         onDismissRequest = { leave() },
         title = { Text(neoLabel("مهمة جديدة", "New task")) },

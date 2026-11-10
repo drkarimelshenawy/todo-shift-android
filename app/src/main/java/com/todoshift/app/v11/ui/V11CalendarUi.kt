@@ -86,6 +86,7 @@ fun V11CalendarScreen(
     onOpenWorkplaces: () -> Unit = {},
     managerRequest: Int = 0,
     onManagerHandled: () -> Unit = {},
+    onManagerDismiss: () -> Unit = {},
 ) {
     val commit = rememberNeoCommit(onDatabaseChange)
     var selectedDate by remember(initialDate) { mutableStateOf(initialDate) }
@@ -106,7 +107,7 @@ fun V11CalendarScreen(
         ) {
             mutableStateOf<LocalDate?>(null)
         }
-    var showCalendarManager by remember { mutableStateOf(false) }
+    var showCalendarManager by rememberSaveable { mutableStateOf(false) }
     var quickAddOpen by remember { mutableStateOf(false) }
     LaunchedEffect(managerRequest) {
         if (managerRequest > 0) {
@@ -667,7 +668,10 @@ fun V11CalendarScreen(
             db = db,
             activeCalendarId = activeCalendarId,
             onActiveCalendarChange = onActiveCalendarChange,
-            onDismiss = { showCalendarManager = false },
+            onDismiss = {
+                showCalendarManager = false
+                onManagerDismiss()
+            },
             onDatabaseChange = onDatabaseChange,
         )
     }

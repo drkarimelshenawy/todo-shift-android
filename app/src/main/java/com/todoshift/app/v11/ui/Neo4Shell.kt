@@ -43,13 +43,13 @@ fun Neo4CompactHeader(
             val constrained =
                 configuration.screenWidthDp < 340 &&
                     androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
-            if (p.showBrand && !constrained) {
+            if (p.showBrand) {
                 androidx.compose.foundation.Image(
                     androidx.compose.ui.res.painterResource(
-                        com.todoshift.app.R.drawable.neo41_brand_emblem
+                        com.todoshift.app.R.drawable.todo_shift_icon_source
                     ),
                     null,
-                    Modifier.size(28.dp),
+                    Modifier.size(if (constrained) 20.dp else 28.dp),
                 )
                 Spacer(Modifier.width(8.dp))
             }

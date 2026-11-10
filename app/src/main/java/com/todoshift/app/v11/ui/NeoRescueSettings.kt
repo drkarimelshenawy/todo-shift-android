@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import com.todoshift.app.v11.*
 
@@ -33,8 +34,8 @@ fun NeoRescueSettings(
     initialPage: String = "HOME",
     onBack: () -> Unit = {},
 ) {
-    var page by remember(initialPage) { mutableStateOf(initialPage) }
-    var query by remember { mutableStateOf("") }
+    var page by rememberSaveable(initialPage) { mutableStateOf(initialPage) }
+    var query by rememberSaveable { mutableStateOf("") }
     val nav = LocalNeoFeatures.current
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current

@@ -15,6 +15,7 @@
         <activity android:name=".QuickTaskActivity" android:exported="true" android:excludeFromRecents="true" android:theme="@style/Theme.ToDoShift.QuickTask" />
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTop"
             android:exported="true"
             android:theme="@style/Theme.ToDoShift.Splash">
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/neo_shortcuts" />

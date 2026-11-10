@@ -84,6 +84,25 @@ fun V11TasksScreen(
     var pendingDelete by remember { mutableStateOf<TaskV11?>(null) }
     var showEditor by rememberSaveable { mutableStateOf(false) }
 
+    var missingRequestedTask by rememberSaveable { mutableStateOf(false) }
+    if (missingRequestedTask)
+        AlertDialog(
+            onDismissRequest = { missingRequestedTask = false },
+            title = { Text(neoLiteral("المهمة غير متاحة", "Task unavailable")) },
+            text = {
+                Text(
+                    neoLiteral(
+                        "قد تكون حُذفت. لم تتغير بياناتك.",
+                        "It may have been deleted. Your data was not changed.",
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { missingRequestedTask = false }) {
+                    Text(neoLiteral("إغلاق", "Close"))
+                }
+            },
+        )
     LaunchedEffect(initialAction, initialTaskId) {
         when (initialAction) {
             "add" -> {
@@ -95,16 +114,16 @@ fun V11TasksScreen(
                 if (requestedTask != null) {
                     editingTaskId = requestedTask?.id
                     showEditor = true
-                }
+                } else missingRequestedTask = true
             }
         }
         if (initialAction != null) onInitialActionHandled()
     }
 
     val neo = LocalV11NeoEnabled.current
-    var searchQuery by remember { mutableStateOf("") }
-    var priorityFilter by remember { mutableStateOf<TaskPriorityV11?>(null) }
-    var categoryFilter by remember { mutableStateOf<String?>(null) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var priorityFilter by rememberSaveable { mutableStateOf<TaskPriorityV11?>(null) }
+    var categoryFilter by rememberSaveable { mutableStateOf<String?>(null) }
     val today = neoNow().toLocalDate().toString()
     val visibleIds =
         remember(db.calendars) { db.calendars.filter { it.visible }.map { it.id }.toSet() }
@@ -649,8 +668,8 @@ fun FullTaskEditorDialogV11(
 
     var shiftMenu by rememberSaveable { mutableStateOf(false) }
 
-    val initialValues =
-        remember(existing?.id) {
+    val leaveEditor =
+        rememberNeoEditorExit(
             listOf(
                 title,
                 details,
@@ -663,42 +682,10 @@ fun FullTaskEditorDialogV11(
                 linkedShiftId,
                 reminderEnabled,
                 reminderTime,
-            )
-        }
-    var discardChanges by rememberSaveable { mutableStateOf(false) }
-    fun leaveEditor() {
-        if (write.pending) return
-        if (
-            listOf(
-                title,
-                details,
-                date,
-                time,
-                priority,
-                repeat,
-                workplaceId,
-                calendarId,
-                linkedShiftId,
-                reminderEnabled,
-                reminderTime,
-            ) != initialValues
+            ),
+            onDismiss,
         )
-            discardChanges = true
-        else onDismiss()
-    }
-    if (discardChanges)
-        AlertDialog(
-            onDismissRequest = { discardChanges = false },
-            title = { Text(neoLabel("تجاهل التعديلات؟", "Discard changes?")) },
-            confirmButton = {
-                TextButton(onClick = onDismiss) { Text(neoLabel("تجاهل", "Discard")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { discardChanges = false }) {
-                    Text(neoLabel("متابعة", "Keep editing"))
-                }
-            },
-        )
+
     val dayShifts =
         remember(db.days, date) {
             db.days

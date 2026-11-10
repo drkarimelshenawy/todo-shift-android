@@ -59,7 +59,7 @@ internal fun neoCellMetrics(): NeoCellMetrics {
     return remember(measure, dateStyle, captionStyle, density) {
         val date = measure.measure("28", dateStyle, maxLines = 1).size.height
         val caption =
-            listOf("Morning", "×99", "☑99", "◷99", "📌").maxOf {
+            listOf("Morning", "صباحية", "×99", "☑99", "◷99", "📌").maxOf {
                 measure.measure(it, captionStyle, maxLines = 1).size.height
             }
         with(density) { NeoCellMetrics(date.toDp() + 4.dp, caption.toDp()) }

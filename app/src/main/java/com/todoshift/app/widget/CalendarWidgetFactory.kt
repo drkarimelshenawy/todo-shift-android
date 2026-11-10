@@ -10,59 +10,37 @@ import com.todoshift.app.R
 import com.todoshift.app.data.AppStorage
 import com.todoshift.app.v11.ShiftKind
 import com.todoshift.app.v11.ShiftSegmentV11
+import com.todoshift.app.v11.V11AppTheme
 import com.todoshift.app.v11.V11Database
 import com.todoshift.app.v11.V11Runtime
-import com.todoshift.app.v11.V11AppTheme
-import com.todoshift.app.v11.V11WidgetTheme
 import com.todoshift.app.v11.V11UiSettingsStore
+import com.todoshift.app.v11.V11WidgetTheme
 import java.time.LocalDate
 
-class CalendarWidgetFactory(
-    private val context: Context,
-    intent: Intent
-) : RemoteViewsService.RemoteViewsFactory {
+class CalendarWidgetFactory(private val context: Context, intent: Intent) :
+    RemoteViewsService.RemoteViewsFactory {
 
     private val appWidgetId =
-        intent.getIntExtra(
-            android.appwidget.AppWidgetManager
-                .EXTRA_APPWIDGET_ID,
-            -1
-        )
+        intent.getIntExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
 
+    private var readFailed = false
     private var neo4Modern = false
     private var neo4Options = Neo4WidgetOptions()
     private var neo4Skin = Neo4WidgetSkin(Color.WHITE, Color.BLACK, Color.GRAY, Color.BLUE)
     private var neo4Appearance = com.todoshift.app.v11.NeoAppearance()
     private var neo4Entries = emptyMap<String, List<com.todoshift.app.v11.ShiftSegmentV11>>()
 
-    private var month =
-        CalendarWidgetState.month(
-            context,
-            appWidgetId
-        )
+    private var month = CalendarWidgetState.month(context, appWidgetId)
 
-    private var db =
-        V11Database()
+    private var db = V11Database()
 
-    private val cells =
-        mutableListOf<WidgetDay>()
+    private val cells = mutableListOf<WidgetDay>()
 
-    private var workplaceColors:
-        Map<String, Int> = emptyMap()
+    private var workplaceColors: Map<String, Int> = emptyMap()
 
-    private var widgetPrimaryText =
-        Color.rgb(
-            23,
-            32,
-            51
-        )
+    private var widgetPrimaryText = Color.rgb(23, 32, 51)
 
-    private var widgetSecondaryText =
-        Color.rgb(
-            71,
-            85,
-            105
-        )
+    private var widgetSecondaryText = Color.rgb(71, 85, 105)
 
     /*
      * 12 fixed visual bands.
@@ -84,79 +62,45 @@ class CalendarWidgetFactory(
 
     private fun reload() {
 
-        month =
-            CalendarWidgetState.month(
-                context,
-                appWidgetId
-            )
+        month = CalendarWidgetState.month(context, appWidgetId)
 
-        db =
-            runCatching {
-                V11Runtime(context)
-                    .start()
-            }.getOrElse {
-                V11Database()
-            }
+        db = runCatching { V11Runtime(context).start() }.getOrElse { V11Database() }
 
         val neo4Settings = Neo4WidgetSettings(context)
         neo4Modern = neo4Settings.modern(Neo4WidgetKind.CALENDAR)
         neo4Options = neo4Settings.load(Neo4WidgetKind.CALENDAR)
-        neo4Skin = neo4Settings.skin(Neo4WidgetKind.CALENDAR)
-        neo4Appearance = com.todoshift.app.v11.NeoAppearanceStore(context).load()
+        neo4Skin =
+            runCatching { neo4Settings.skin(Neo4WidgetKind.CALENDAR) }
+                .getOrElse {
+                    readFailed = true
+                    Neo4WidgetSkin(Color.WHITE, Color.BLACK, Color.GRAY, Color.BLUE)
+                }
+        neo4Appearance =
+            runCatching { com.todoshift.app.v11.NeoAppearanceStore(context).load() }
+                .getOrElse {
+                    readFailed = true
+                    com.todoshift.app.v11.NeoAppearance()
+                }
         val neo4Ids = db.calendars.filter { it.visible }.map { it.id }.toSet()
-        neo4Entries = db.days.filter { it.calendarId in neo4Ids }.groupBy { it.date }.mapValues { (_, entries) -> entries.flatMap { it.segments } }
+        neo4Entries = NeoWidgetContentModel.indexedSegments(db)
 
-        val uiSettings =
-            V11UiSettingsStore(
-                context.applicationContext
-            ).load()
+        val uiSettings = V11UiSettingsStore(context.applicationContext).load()
 
         val resolvedWidgetTheme =
-            when (
-                uiSettings.widgetTheme
-            ) {
+            when (uiSettings.widgetTheme) {
                 V11WidgetTheme.FOLLOW_APP ->
-                    if (
-                        uiSettings.appTheme ==
-                        V11AppTheme.MIDNIGHT
-                    )
-                        V11WidgetTheme.DARK
-                    else
-                        V11WidgetTheme.LIGHT
+                    if (uiSettings.appTheme == V11AppTheme.MIDNIGHT) V11WidgetTheme.DARK
+                    else V11WidgetTheme.LIGHT
 
-                else ->
-                    uiSettings.widgetTheme
+                else -> uiSettings.widgetTheme
             }
 
-        if (
-            resolvedWidgetTheme ==
-            V11WidgetTheme.DARK
-        ) {
-            widgetPrimaryText =
-                Color.rgb(
-                    230,
-                    237,
-                    243
-                )
-            widgetSecondaryText =
-                Color.rgb(
-                    170,
-                    183,
-                    196
-                )
+        if (resolvedWidgetTheme == V11WidgetTheme.DARK) {
+            widgetPrimaryText = Color.rgb(230, 237, 243)
+            widgetSecondaryText = Color.rgb(170, 183, 196)
         } else {
-            widgetPrimaryText =
-                Color.rgb(
-                    23,
-                    32,
-                    51
-                )
-            widgetSecondaryText =
-                Color.rgb(
-                    71,
-                    85,
-                    105
-                )
+            widgetPrimaryText = Color.rgb(23, 32, 51)
+            widgetSecondaryText = Color.rgb(71, 85, 105)
         }
 
         /*
@@ -166,128 +110,57 @@ class CalendarWidgetFactory(
          */
         workplaceColors =
             runCatching {
-                AppStorage(context)
-                    .load()
-                    .workplaces
-                    .associate { workplace ->
-
+                    AppStorage(context).load().workplaces.associate { workplace ->
                         val color =
-                            runCatching {
-                                Color.parseColor(
-                                    workplace.colorHex
-                                )
-                            }.getOrDefault(
-                                Color.rgb(
-                                    100,
-                                    116,
-                                    139
-                                )
-                            )
+                            runCatching { Color.parseColor(workplace.colorHex) }
+                                .getOrDefault(Color.rgb(100, 116, 139))
 
                         workplace.id to color
                     }
-            }.getOrDefault(
-                emptyMap()
-            )
+                }
+                .getOrDefault(emptyMap())
 
         cells.clear()
 
-        val first =
-            month.atDay(1)
+        val first = month.atDay(1)
 
         // Saturday = first column.
-        val offset =
-            (first.dayOfWeek.value + 1) % 7
+        val offset = (first.dayOfWeek.value + 1) % 7
 
-        repeat(offset) {
-            cells +=
-                WidgetDay(
-                    date = null,
-                    label = "",
-                    bands =
-                        List(12) {
-                            null
-                        }
-                )
-        }
+        repeat(offset) { cells += WidgetDay(date = null, label = "", bands = List(12) { null }) }
 
-        for (
-            day in
-            1..month.lengthOfMonth()
-        ) {
+        for (day in 1..month.lengthOfMonth()) {
 
-            val date =
-                month.atDay(day)
+            val date = month.atDay(day)
 
             val entries =
                 db.days.filter { entry ->
-
-                    entry.date ==
-                        date.toString() &&
-
+                    entry.date == date.toString() &&
                         db.calendars
-                            .firstOrNull {
-                                calendar ->
-                                calendar.id ==
-                                    entry.calendarId
-                            }
+                            .firstOrNull { calendar -> calendar.id == entry.calendarId }
                             ?.visible != false
                 }
 
-            val segments =
-                entries
-                    .flatMap {
-                        it.segments
-                    }
+            val segments = entries.flatMap { it.segments }
 
-            val working =
-                segments.filter {
-                    it.kind !=
-                        ShiftKind.OFF
-                }
+            val working = segments.filter { it.kind != ShiftKind.OFF }
 
             val label =
                 when {
+                    segments.isEmpty() -> ""
 
-                    segments.isEmpty() ->
-                        ""
+                    working.isEmpty() -> "Off"
 
-                    working.isEmpty() ->
-                        "Off"
+                    working.size == 1 -> shortLabel(working.first().kind)
 
-                    working.size == 1 ->
-                        shortLabel(
-                            working.first()
-                                .kind
-                        )
-
-                    else ->
-                        "${working.size} ش"
+                    else -> "${working.size} ش"
                 }
 
-            cells +=
-                WidgetDay(
-                    date = date,
-                    label = label,
-                    bands =
-                        buildTimeBands(
-                            working
-                        )
-                )
+            cells += WidgetDay(date = date, label = label, bands = buildTimeBands(working))
         }
 
-        while (
-            cells.size < 42
-        ) {
-            cells +=
-                WidgetDay(
-                    date = null,
-                    label = "",
-                    bands =
-                        List(12) {
-                            null
-                        }
-                )
+        while (cells.size < 42) {
+            cells += WidgetDay(date = null, label = "", bands = List(12) { null })
         }
     }
 
@@ -303,61 +176,32 @@ class CalendarWidgetFactory(
      * the rendered result instead of using arbitrary
      * equal stripes.
      */
-    private fun buildTimeBands(
-        segments:
-            List<ShiftSegmentV11>
-    ): List<Int?> {
+    private fun buildTimeBands(segments: List<ShiftSegmentV11>): List<Int?> {
 
-        return List(12) {
-            bandIndex ->
+        return List(12) { bandIndex ->
+            val bandStart = bandIndex * bandSizeMinutes
 
-            val bandStart =
-                bandIndex *
-                    bandSizeMinutes
-
-            val bandEnd =
-                bandStart +
-                    bandSizeMinutes
+            val bandEnd = bandStart + bandSizeMinutes
 
             segments
-                .mapNotNull {
-                    segment ->
+                .mapNotNull { segment ->
+                    val range = segment.timeRange() ?: return@mapNotNull null
 
-                    val range =
-                        segment.timeRange()
-                            ?: return@mapNotNull null
+                    val color = workplaceColors[segment.workplaceId] ?: return@mapNotNull null
 
-                    val color =
-                        workplaceColors[
-                            segment.workplaceId
-                        ]
-                            ?: return@mapNotNull null
+                    val overlapStart = maxOf(bandStart, range.startMinute)
 
-                    val overlapStart =
-                        maxOf(
-                            bandStart,
-                            range.startMinute
-                        )
+                    val overlapEnd = minOf(bandEnd, range.endMinute)
 
-                    val overlapEnd =
-                        minOf(
-                            bandEnd,
-                            range.endMinute
-                        )
-
-                    val overlap =
-                        overlapEnd -
-                            overlapStart
+                    val overlap = overlapEnd - overlapStart
 
                     if (overlap <= 0) {
                         null
                     } else {
                         BandCandidate(
                             color = color,
-                            overlapMinutes =
-                                overlap,
-                            segmentStart =
-                                range.startMinute
+                            overlapMinutes = overlap,
+                            segmentStart = range.startMinute,
                         )
                     }
                 }
@@ -367,165 +211,136 @@ class CalendarWidgetFactory(
                  * tie-breaker.
                  */
                 .sortedWith(
-                    compareByDescending<
-                        BandCandidate
-                    > {
-                        it.overlapMinutes
-                    }.thenBy {
-                        it.segmentStart
-                    }
+                    compareByDescending<BandCandidate> { it.overlapMinutes }
+                        .thenBy { it.segmentStart }
                 )
                 .firstOrNull()
                 ?.color
         }
     }
 
-    private fun shortLabel(
-        kind: ShiftKind
-    ): String =
-        if (neo4Modern) when(kind) {
-            ShiftKind.FULL_DAY -> "24h"
-            ShiftKind.LONG -> "Long"
-            ShiftKind.NIGHT -> "Night"
-            ShiftKind.MORNING -> "Morning"
-            ShiftKind.EVENING -> "Evening"
-            ShiftKind.OFF -> "Off"
-        } else when (kind) {
+    private fun shortLabel(kind: ShiftKind): String =
+        if (neo4Modern)
+            when (kind) {
+                ShiftKind.FULL_DAY -> "24h"
+                ShiftKind.LONG -> "Long"
+                ShiftKind.NIGHT -> "Night"
+                ShiftKind.MORNING -> "Morning"
+                ShiftKind.EVENING -> "Evening"
+                ShiftKind.OFF -> "Off"
+            }
+        else
+            when (kind) {
+                ShiftKind.FULL_DAY -> "24س"
 
-            ShiftKind.FULL_DAY ->
-                "24س"
+                ShiftKind.LONG -> "Long"
 
-            ShiftKind.LONG ->
-                "Long"
+                ShiftKind.NIGHT -> "Night"
 
-            ShiftKind.NIGHT ->
-                "Night"
+                ShiftKind.MORNING -> "ص"
 
-            ShiftKind.MORNING ->
-                "ص"
+                ShiftKind.EVENING -> "م"
 
-            ShiftKind.EVENING ->
-                "م"
+                ShiftKind.OFF -> "Off"
+            }
 
-            ShiftKind.OFF ->
-                "Off"
-        }
+    override fun getCount(): Int = cells.size
 
-    override fun getCount():
-        Int =
-        cells.size
-
-    override fun getViewAt(
-        position: Int
-    ): RemoteViews {
+    override fun getViewAt(position: Int): RemoteViews {
 
         val cell =
-            cells.getOrNull(
-                position
-            ) ?: WidgetDay(
-                date = null,
-                label = "",
-                bands =
-                    List(12) {
-                        null
-                    }
-            )
+            cells.getOrNull(position)
+                ?: WidgetDay(date = null, label = "", bands = List(12) { null })
 
-        val views =
-            RemoteViews(
-                context.packageName,
-                R.layout
-                    .widget_calendar_day
-            )
+        val views = RemoteViews(context.packageName, R.layout.widget_calendar_day)
 
-        resetCell(
-            views
-        )
+        resetCell(views)
 
         views.setViewVisibility(R.id.day_paint, android.view.View.GONE)
-        val date =
-            cell.date
-                ?: return views
+        if (readFailed) {
+            if (position == 0) {
+                views.setTextViewText(R.id.day_number, "!")
+                views.setContentDescription(
+                    R.id.day_root,
+                    "Unable to read data; open ToDo Shift to recover safely",
+                )
+            }
+            return views
+        }
 
-        views.setTextViewText(
-            R.id.day_number,
-            date.dayOfMonth
-                .toString()
-        )
+        val date = cell.date ?: return views
 
-        views.setTextViewText(
-            R.id.day_shift,
-            cell.label
-        )
+        views.setTextViewText(R.id.day_number, date.dayOfMonth.toString())
 
-        if (
-            date ==
-            LocalDate.now()
-        ) {
+        views.setTextViewText(R.id.day_shift, cell.label)
+
+        if (date == LocalDate.now()) {
 
             views.setInt(
                 R.id.day_number,
                 "setBackgroundResource",
-                R.drawable
-                    .widget_today_background
+                R.drawable.widget_today_background,
             )
 
-            views.setTextColor(
-                R.id.day_number,
-                Color.rgb(
-                    13,
-                    35,
-                    68
-                )
-            )
+            views.setTextColor(R.id.day_number, Color.rgb(13, 35, 68))
         }
 
-        applyTimeBands(
-            views,
-            cell.bands
-        )
+        applyTimeBands(views, cell.bands)
 
-        if (neo4Modern) {
-            val options = neo4Options
+        val latestOptions = Neo4WidgetSettings(context).load(Neo4WidgetKind.CALENDAR)
+        if (latestOptions.hideContent) {
+            views.setViewVisibility(R.id.day_timeline, android.view.View.GONE)
+            views.setViewVisibility(R.id.day_shift, android.view.View.GONE)
+            views.setViewVisibility(R.id.day_paint, android.view.View.GONE)
+            views.setTextViewText(R.id.day_shift, "")
+        } else if (neo4Modern) {
+            val options = latestOptions
             val skin = neo4Skin
             views.setTextColor(R.id.day_number, skin.text)
             views.setInt(R.id.day_number, "setBackgroundColor", skin.background)
             views.setViewVisibility(R.id.day_timeline, android.view.View.GONE)
-            views.setViewVisibility(R.id.day_shift, if (options.showDetails && !options.hideContent) android.view.View.VISIBLE else android.view.View.GONE)
+            views.setViewVisibility(
+                R.id.day_shift,
+                if (options.showDetails && !options.hideContent) android.view.View.VISIBLE
+                else android.view.View.GONE,
+            )
             views.setTextColor(R.id.day_shift, skin.secondary)
             if (!options.hideContent) {
                 val segments = neo4Entries[date.toString()].orEmpty()
-                views.setImageViewBitmap(R.id.day_paint, Neo4WidgetPainter.render(segments, workplaceColors, neo4Appearance))
+                val en =
+                    when (neo4Appearance.language) {
+                        com.todoshift.app.v11.NeoLanguage.ENGLISH -> true
+                        com.todoshift.app.v11.NeoLanguage.ARABIC -> false
+                        else -> context.resources.configuration.locales[0].language != "ar"
+                    }
+                views.setTextViewText(
+                    R.id.day_shift,
+                    segments
+                        .map { NeoWidgetContentModel.shiftLabel(it.kind, en) }
+                        .distinct()
+                        .joinToString(" / "),
+                )
+                views.setImageViewBitmap(
+                    R.id.day_paint,
+                    Neo4WidgetPainter.render(segments, workplaceColors, neo4Appearance),
+                )
                 views.setViewVisibility(R.id.day_paint, android.view.View.VISIBLE)
             }
         }
 
         val fill =
             Intent().apply {
+                putExtra(ToDoShiftWidget.EXTRA_OPEN_DATE, date.toString())
 
-                putExtra(
-                    ToDoShiftWidget
-                        .EXTRA_OPEN_DATE,
-                    date.toString()
-                )
-
-                data =
-                    android.net.Uri
-                        .parse(
-                            "todoshift://date/$date"
-                        )
+                data = android.net.Uri.parse("todoshift://date/$date")
             }
 
-        views.setOnClickFillInIntent(
-            R.id.day_root,
-            fill
-        )
+        views.setOnClickFillInIntent(R.id.day_root, fill)
 
         return views
     }
 
-    private fun bandIds():
-        List<Int> =
+    private fun bandIds(): List<Int> =
         listOf(
             R.id.time_band_01,
             R.id.time_band_02,
@@ -538,147 +353,72 @@ class CalendarWidgetFactory(
             R.id.time_band_09,
             R.id.time_band_10,
             R.id.time_band_11,
-            R.id.time_band_12
+            R.id.time_band_12,
         )
 
-    private fun resetCell(
-        views: RemoteViews
-    ) {
+    private fun resetCell(views: RemoteViews) {
 
-        views.setTextViewText(
-            R.id.day_number,
-            ""
-        )
+        views.setTextViewText(R.id.day_number, "")
 
-        views.setTextViewText(
-            R.id.day_shift,
-            ""
-        )
+        views.setTextViewText(R.id.day_shift, "")
 
-        views.setInt(
-            R.id.day_number,
-            "setBackgroundResource",
-            android.R.color
-                .transparent
-        )
+        views.setInt(R.id.day_number, "setBackgroundResource", android.R.color.transparent)
 
-        views.setTextColor(
-            R.id.day_number,
-            widgetPrimaryText
-        )
+        views.setTextColor(R.id.day_number, widgetPrimaryText)
 
-        views.setTextColor(
-            R.id.day_shift,
-            widgetSecondaryText
-        )
+        views.setTextColor(R.id.day_shift, widgetSecondaryText)
 
-        bandIds()
-            .forEach {
-                id ->
+        bandIds().forEach { id ->
 
-                /*
-                 * INVISIBLE keeps every time band's
-                 * geometry. GONE would collapse time.
-                 */
-                views.setViewVisibility(
-                    id,
-                    View.INVISIBLE
-                )
+            /*
+             * INVISIBLE keeps every time band's
+             * geometry. GONE would collapse time.
+             */
+            views.setViewVisibility(id, View.INVISIBLE)
 
-                views.setInt(
-                    id,
-                    "setBackgroundColor",
-                    Color.TRANSPARENT
-                )
-            }
+            views.setInt(id, "setBackgroundColor", Color.TRANSPARENT)
+        }
     }
 
-    private fun applyTimeBands(
-        views: RemoteViews,
-        bands: List<Int?>
-    ) {
+    private fun applyTimeBands(views: RemoteViews, bands: List<Int?>) {
 
-        val ids =
-            bandIds()
+        val ids = bandIds()
 
-        ids.forEachIndexed {
-            index,
-            id ->
+        ids.forEachIndexed { index, id ->
+            val color = bands.getOrNull(index)
 
-            val color =
-                bands
-                    .getOrNull(
-                        index
-                    )
+            if (color == null) {
+                views.setViewVisibility(id, View.INVISIBLE)
 
-            if (
-                color == null
-            ) {
-                views.setViewVisibility(
-                    id,
-                    View.INVISIBLE
-                )
-
-                views.setInt(
-                    id,
-                    "setBackgroundColor",
-                    Color.TRANSPARENT
-                )
+                views.setInt(id, "setBackgroundColor", Color.TRANSPARENT)
             } else {
-                views.setViewVisibility(
-                    id,
-                    View.VISIBLE
-                )
+                views.setViewVisibility(id, View.VISIBLE)
 
-                views.setInt(
-                    id,
-                    "setBackgroundColor",
-                    color
-                )
+                views.setInt(id, "setBackgroundColor", color)
             }
         }
     }
 
-    override fun getLoadingView():
-        RemoteViews? =
-        null
+    override fun getLoadingView(): RemoteViews? = null
 
-    override fun getViewTypeCount():
-        Int =
-        1
+    override fun getViewTypeCount(): Int = 1
 
-    override fun getItemId(
-        position: Int
-    ): Long {
+    override fun getItemId(position: Int): Long {
 
-        val date =
-            cells
-                .getOrNull(
-                    position
-                )
-                ?.date
+        val date = cells.getOrNull(position)?.date
 
-        return date
-            ?.toEpochDay()
-            ?: position.toLong()
+        return date?.toEpochDay() ?: position.toLong()
     }
 
-    override fun hasStableIds():
-        Boolean =
-        true
+    override fun hasStableIds(): Boolean = true
 
-    override fun onDestroy() =
-        Unit
+    override fun onDestroy() = Unit
 
-    data class WidgetDay(
-        val date: LocalDate?,
-        val label: String,
-        val bands: List<Int?>
-    )
+    data class WidgetDay(val date: LocalDate?, val label: String, val bands: List<Int?>)
 
     private data class BandCandidate(
         val color: Int,
         val overlapMinutes: Int,
-        val segmentStart: Int
+        val segmentStart: Int,
     )
 }

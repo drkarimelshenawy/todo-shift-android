@@ -507,6 +507,30 @@ fun V11Home(
     }
     SideEffect { reloadSlot.action = { reloadEditorData() } }
 
+    fun saveAppearance(value: NeoAppearance, done: () -> Unit = {}) {
+        if (writeBusy || writeFailure != null) return
+        writeBusy = true
+        writeScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        NeoCommittedEffects(context).prepareWidgets()
+                        neoStore.save(value)
+                    }
+                }
+                neoAppearance = value
+                done()
+                withContext(Dispatchers.IO) {
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                }
+            } catch (failure: Exception) {
+                writeFailure = failure.message ?: "Appearance save failed; preview retained"
+            } finally {
+                writeBusy = false
+            }
+        }
+    }
+
     fun saveUi(value: V11UiSettings) {
         try {
             uiStore.save(value)
@@ -546,15 +570,7 @@ fun V11Home(
     NeoEnvironment(
         appearance = neoAppearance,
         enabled = uiSettings.experience == V11Experience.PREMIUM,
-        onChange = { value ->
-            try {
-                neoStore.save(value)
-                neoAppearance = value
-                com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext)
-            } catch (failure: Exception) {
-                writeFailure = failure.message ?: "Appearance save failed"
-            }
-        },
+        onChange = { value -> saveAppearance(value) },
     ) {
         V11AppThemeProvider(
             theme = uiSettings.appTheme,
@@ -563,16 +579,7 @@ fun V11Home(
         ) {
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalNeoLeaveGate provides leaveGate,
-                LocalNeoAppearanceCommit provides
-                    { value, done ->
-                        try {
-                            neoStore.save(value)
-                            neoAppearance = value
-                            done()
-                        } catch (failure: Exception) {
-                            writeFailure = failure.message ?: "Appearance save failed"
-                        }
-                    },
+                LocalNeoAppearanceCommit provides { value, done -> saveAppearance(value, done) },
                 LocalNeoNoteCommitted provides
                     { next ->
                         undoHistory.add(db)
@@ -1230,7 +1237,7 @@ private fun V11GlobalHeader(
 }
 
 @Composable
-private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
+internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
     val p = LocalNeoAppearance.current
     CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides

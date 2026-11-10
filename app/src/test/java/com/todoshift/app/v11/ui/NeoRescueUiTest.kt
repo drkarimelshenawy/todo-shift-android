@@ -66,7 +66,7 @@ class NeoRescueUiTest {
             }
         }
         compose.onNodeWithText("Theme and identity").performClick()
-        compose.onNodeWithText("Follow system").performClick()
+        compose.onNodeWithText("Follow system").performScrollTo().performClick()
         compose.onNodeWithText("Dark").performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.runOnIdle { assertNull(applied) }

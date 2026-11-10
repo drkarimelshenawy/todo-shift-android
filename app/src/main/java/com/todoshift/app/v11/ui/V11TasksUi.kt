@@ -514,7 +514,7 @@ internal fun TaskCardV11(
                     imageVector =
                         if (task.status == TaskStatusV11.COMPLETED) Icons.Default.CheckCircle
                         else Icons.Outlined.RadioButtonUnchecked,
-                    contentDescription = neoLiteral("تغيير حالة المهمة", "Toggle task completion"),
+                    contentDescription = neoLabel("تغيير حالة المهمة", "Toggle task completion"),
                     modifier =
                         Modifier.size(if (LocalV11NeoEnabled.current) 48.dp else 28.dp).clickable {
                             onToggleComplete()
@@ -574,15 +574,15 @@ internal fun TaskCardV11(
                         append(" • ")
                         append(
                             when (task.priority) {
-                                TaskPriorityV11.LOW -> neoLiteral("منخفضة", "Low")
-                                TaskPriorityV11.NORMAL -> neoLiteral("عادية", "Normal")
-                                TaskPriorityV11.HIGH -> neoLiteral("عالية", "High")
-                                TaskPriorityV11.URGENT -> neoLiteral("عاجلة", "Urgent")
+                                TaskPriorityV11.LOW -> neoLabel("منخفضة", "Low")
+                                TaskPriorityV11.NORMAL -> neoLabel("عادية", "Normal")
+                                TaskPriorityV11.HIGH -> neoLabel("عالية", "High")
+                                TaskPriorityV11.URGENT -> neoLabel("عاجلة", "Urgent")
                             }
                         )
 
                         if (task.repeat != TaskRepeatV11.NONE) {
-                            append(neoLiteral(" • متكررة", " • recurring"))
+                            append(neoLabel(" • متكررة", " • recurring"))
                         }
                     },
                     style = MaterialTheme.typography.labelSmall,
@@ -620,11 +620,11 @@ internal fun TaskCardV11(
                 }
             } else {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = neoLiteral("تعديل", "Edit"))
+                    Icon(Icons.Default.Edit, contentDescription = neoLabel("تعديل", "Edit"))
                 }
 
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = neoLiteral("حذف", "Delete"))
+                    Icon(Icons.Default.Delete, contentDescription = neoLabel("حذف", "Delete"))
                 }
             }
         }

@@ -22,14 +22,19 @@ fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val english =
         when (draft.language) {
-            NeoLanguage.SYSTEM ->
-                androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language != "ar"
             NeoLanguage.ENGLISH -> true
             NeoLanguage.ARABIC -> false
+            else ->
+                androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language != "ar"
         }
+    var component by
+        androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("CALENDAR") }
     CompositionLocalProvider(
         LocalNeoAppearance provides draft,
         LocalNeoEnglish provides english,
+        LocalNeoOnChange provides {},
+        LocalNeoFeatures provides NeoFeatureNavigator { _, _ -> },
+        LocalV11NeoEnabled provides true,
         androidx.compose.ui.platform.LocalLayoutDirection provides
             neoDirection(
                 draft.uiDirection,
@@ -42,91 +47,159 @@ fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
             ),
     ) {
         V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = androidx.compose.ui.graphics.Color.Transparent,
-            ) {
+            Surface(shape = MaterialTheme.shapes.medium) {
                 Box {
                     Neo4Atmosphere(Modifier.matchParentSize(), draft)
                     Column(
-                        Modifier.fillMaxWidth().padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        Modifier.fillMaxWidth().padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Text(
-                            neoLabel("معاينة حية", "Live preview"),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement =
-                                Arrangement.spacedBy(
-                                    when (draft.density) {
-                                        NeoDensity.COMPACT -> 3.dp
-                                        NeoDensity.BALANCED -> 5.dp
-                                        NeoDensity.COMFORTABLE -> 8.dp
+                        Column(Modifier.fillMaxWidth()) {
+                            Text(
+                                neoLabel("معاينة حية", "Live preview"),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            NeoChoice(
+                                neoLabel("المكوّن", "Component"),
+                                listOf("CALENDAR", "HEADER", "NAVIGATION", "TASK"),
+                                component,
+                                {
+                                    when (it) {
+                                        "CALENDAR" -> neoLabel("التقويم", "Calendar")
+                                        "HEADER" -> neoLabel("الرأس", "Header")
+                                        "NAVIGATION" -> neoLabel("التنقل", "Navigation")
+                                        else -> neoLabel("مهمة", "Task")
                                     }
-                                ),
-                        ) {
-                            listOf(
-                                    ShiftKind.FULL_DAY,
-                                    ShiftKind.LONG,
-                                    ShiftKind.NIGHT,
-                                    ShiftKind.OFF,
+                                },
+                                { component = it },
+                            )
+                        }
+                        when (component) {
+                            "HEADER" ->
+                                Neo4CompactHeader(
+                                    neoLabel("التقويم", "Calendar"),
+                                    true,
+                                    false,
+                                    false,
+                                    {},
+                                    {},
+                                    {},
+                                    {},
+                                    false,
+                                    {},
                                 )
-                                .forEachIndexed { index, kind ->
-                                    Surface(
-                                        modifier = Modifier.weight(1f).height(64.dp),
-                                        shape = MaterialTheme.shapes.small,
-                                        border =
-                                            if (index == 1)
-                                                androidx.compose.foundation.BorderStroke(
-                                                    2.dp,
-                                                    MaterialTheme.colorScheme.primary,
-                                                )
-                                            else null,
+                            "NAVIGATION" -> V11PremiumBottomBar(0, {})
+                            "TASK" ->
+                                TaskCardV11(
+                                    TaskV11(
+                                        "preview-task",
+                                        neoLabel("مراجعة الجدول", "Review schedule"),
+                                        date = java.time.LocalDate.now().toString(),
+                                    ),
+                                    {},
+                                    {},
+                                    {},
+                                )
+                            else -> {
+                                val day = java.time.LocalDate.now()
+                                val places =
+                                    listOf(
+                                        com.todoshift.app.data.Workplace(
+                                            "preview-a",
+                                            neoLabel("العيادة", "Clinic"),
+                                            "#00A4B8",
+                                        ),
+                                        com.todoshift.app.data.Workplace(
+                                            "preview-b",
+                                            neoLabel("المستشفى", "Hospital"),
+                                            "#6C3A9B",
+                                        ),
+                                    )
+                                val metrics = neoCellMetrics()
+                                val height =
+                                    maxOf(
+                                        metrics.dateHeight + metrics.captionHeight * 3 + 12.dp,
+                                        72.dp,
+                                    )
+                                CompositionLocalProvider(
+                                    androidx.compose.ui.platform.LocalLayoutDirection provides
+                                        neoDirection(
+                                            draft.gridDirection,
+                                            androidx.compose.ui.platform.LocalLayoutDirection
+                                                .current,
+                                        )
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth().height(height),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     ) {
-                                        Box {
-                                            Neo4ShiftFill(
+                                        repeat(3) { index ->
+                                            val segments =
+                                                when (index) {
+                                                    0 ->
+                                                        listOf(
+                                                            ShiftSegmentV11(
+                                                                "p24",
+                                                                ShiftKind.FULL_DAY,
+                                                                "preview-a",
+                                                            )
+                                                        )
+                                                    1 ->
+                                                        listOf(
+                                                            ShiftSegmentV11(
+                                                                "pm",
+                                                                ShiftKind.MORNING,
+                                                                "preview-a",
+                                                            ),
+                                                            ShiftSegmentV11(
+                                                                "pe",
+                                                                ShiftKind.EVENING,
+                                                                "preview-b",
+                                                            ),
+                                                        )
+                                                    else ->
+                                                        listOf(
+                                                            ShiftSegmentV11("poff", ShiftKind.OFF)
+                                                        )
+                                                }
+                                            val date = day.plusDays(index.toLong())
+                                            NeoCalendarCell(
+                                                date,
                                                 listOf(
-                                                    ShiftSegmentV11(
-                                                        "preview-$index",
-                                                        kind,
+                                                    DayEntryV11(
+                                                        "p$index",
+                                                        date.toString(),
                                                         "preview",
+                                                        segments,
                                                     )
                                                 ),
-                                                listOf(
-                                                    com.todoshift.app.data.Workplace(
-                                                        "preview",
-                                                        "Work",
-                                                        "#00A4B8",
+                                                if (index == 0) 1 else 0,
+                                                0,
+                                                if (index == 0)
+                                                    listOf(
+                                                        DayItemV11(
+                                                            "preview-note",
+                                                            date.toString(),
+                                                            type = DayItemTypeV11.NOTE,
+                                                            title =
+                                                                neoLabel("📌 مراجعة", "📌 Review"),
+                                                        )
                                                     )
-                                                ),
-                                                Modifier.fillMaxSize(),
-                                                draft,
-                                            )
-                                            Text(
-                                                "${index+12}",
-                                                Modifier.align(
-                                                        androidx.compose.ui.Alignment.TopStart
-                                                    )
-                                                    .background(MaterialTheme.colorScheme.surface)
-                                                    .padding(horizontal = 3.dp),
-                                                style = MaterialTheme.typography.labelMedium,
-                                            )
-                                            Text(
-                                                if (kind == ShiftKind.OFF) neoLabel("راحة", "Off")
-                                                else neoShiftLabel(kind),
-                                                Modifier.align(
-                                                        androidx.compose.ui.Alignment.BottomStart
-                                                    )
-                                                    .background(MaterialTheme.colorScheme.surface)
-                                                    .padding(horizontal = 3.dp),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                maxLines = 1,
+                                                else emptyList(),
+                                                places,
+                                                org.json.JSONObject(),
+                                                index == 1,
+                                                false,
+                                                false,
+                                                Modifier.weight(1f).fillMaxHeight(),
+                                                {},
+                                                metrics,
+                                                {},
                                             )
                                         }
                                     }
                                 }
+                            }
                         }
                     }
                 }

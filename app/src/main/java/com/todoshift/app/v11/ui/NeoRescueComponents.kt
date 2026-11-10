@@ -34,7 +34,7 @@ data class NeoFeature(
 object NeoFeatureCatalog {
     val entries =
         listOf(
-            NeoFeature("FINANCE_DISPLAY", "عرض الحسابات", "Finance display", "Finances", "FINANCE"),
+            NeoFeature("FINANCE_DISPLAY", "عرض الحسابات", "Finance display", "Finances", "PRIVACY"),
             NeoFeature("COPY", "نسخ الورديات", "Copy shifts", "Calendar"),
             NeoFeature(
                 "PAINT_SHORTCUTS",

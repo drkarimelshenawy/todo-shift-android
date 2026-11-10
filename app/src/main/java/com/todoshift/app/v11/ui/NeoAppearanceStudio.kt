@@ -231,6 +231,13 @@ fun NeoAppearanceStudio(
                                 }
                                 NeoStudioSection.TYPE -> {
                                     NeoChoice(
+                                        neoLabel("نمط التخطيط", "Layout preset"),
+                                        NeoLayoutPreset.entries,
+                                        draft.layoutPreset,
+                                        { neo4Label(it) },
+                                        { draft = draft.withPreset(it) },
+                                    )
+                                    NeoChoice(
                                         neoLabel("الخط", "Typeface"),
                                         NeoTypeface.entries,
                                         draft.typeface,

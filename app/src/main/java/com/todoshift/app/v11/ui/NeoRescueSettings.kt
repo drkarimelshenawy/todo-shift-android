@@ -43,6 +43,10 @@ fun NeoRescueSettings(
         if (initialPage == "HOME" && page != "HOME") page = "HOME" else onBack()
     }
     BackHandler(page != "HOME") { back() }
+    if (page in neoLanguageRoutes) {
+        NeoLanguageSettings(page) { back() }
+        return
+    }
     when (page) {
         "APPEARANCE" -> {
             NeoAppearanceStudio(
@@ -99,9 +103,11 @@ fun NeoRescueSettings(
                     }
                 }
             else
-                NeoFeatureCatalog.search(query).forEach { feature ->
-                    NeoSettingsRow(neoLabel(feature.ar, feature.en)) { nav.open(feature.id) }
-                }
+                NeoFeatureCatalog.search(query)
+                    .filter { it.group.isNotEmpty() }
+                    .forEach { feature ->
+                        NeoSettingsRow(neoLabel(feature.ar, feature.en)) { nav.open(feature.id) }
+                    }
         } else {
             val groupId = page.removeSuffix("_GROUP")
             val group = neoSettingsGroups.firstOrNull { it.first == groupId }
@@ -119,55 +125,6 @@ fun NeoRescueSettings(
                     }
             } else
                 when (page) {
-                    "LANGUAGE" ->
-                        NeoChoice(
-                            neoLabel("لغة التطبيق", "App language"),
-                            NeoLanguage.entries,
-                            p.language,
-                            { neoEnumLabel(it) },
-                            { update(p.copy(language = it)) },
-                        )
-                    "UI_DIRECTION",
-                    "NAV_DIRECTION",
-                    "GRID_DIRECTION",
-                    "WEEKDAY_DIRECTION" -> {
-                        val value =
-                            when (page) {
-                                "UI_DIRECTION" -> p.uiDirection
-                                "NAV_DIRECTION" -> p.navigationDirection
-                                "GRID_DIRECTION" -> p.gridDirection
-                                else -> p.weekdayDirection
-                            }
-                        NeoChoice(
-                            feature?.let { neoLabel(it.ar, it.en) }.orEmpty(),
-                            NeoDirection.entries,
-                            value,
-                            { neoEnumLabel(it) },
-                        ) { direction ->
-                            update(
-                                when (page) {
-                                    "UI_DIRECTION" -> p.copy(uiDirection = direction)
-                                    "NAV_DIRECTION" -> p.copy(navigationDirection = direction)
-                                    "GRID_DIRECTION" -> p.copy(gridDirection = direction)
-                                    else -> p.copy(weekdayDirection = direction)
-                                }
-                            )
-                        }
-                    }
-                    "FIRST_WEEKDAY" ->
-                        NeoChoice(
-                            neoLabel("أول يوم", "First weekday"),
-                            listOf(6, 7, 1),
-                            p.firstWeekday,
-                            {
-                                when (it) {
-                                    6 -> neoLabel("السبت", "Saturday")
-                                    7 -> neoLabel("الأحد", "Sunday")
-                                    else -> neoLabel("الاثنين", "Monday")
-                                }
-                            },
-                            { update(p.copy(firstWeekday = it)) },
-                        )
                     "CALENDAR_DISPLAY" -> {
                         NeoChoice(
                             neoLabel("العرض الافتراضي", "Default view"),

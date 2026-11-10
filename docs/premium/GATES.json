@@ -1,0 +1,62 @@
+[
+  {
+    "phase": "P01",
+    "entry_sha": "e178b134658afad04d645b044f24d236594cbe33",
+    "source_checkpoint_sha": "2604aa8a7d5a6b68c039d03ebff0cb07fe21a3cd",
+    "exit_sha": null,
+    "gate": "HOLD",
+    "tests": "See QA.md; no device acceptance",
+    "risks": "Open D07/D17/D18/D24 and incomplete fault matrix",
+    "evidence": "P01_HANDOFF.md"
+  },
+  {
+    "phase": "P02",
+    "entry_sha": null,
+    "source_checkpoint_sha": null,
+    "exit_sha": null,
+    "gate": "NOT RUN",
+    "tests": "NOT RUN",
+    "risks": "Prior phase gate not passed; implementation must not start",
+    "evidence": null
+  },
+  {
+    "phase": "P03",
+    "entry_sha": null,
+    "source_checkpoint_sha": null,
+    "exit_sha": null,
+    "gate": "NOT RUN",
+    "tests": "NOT RUN",
+    "risks": "Prior phase gate not passed; implementation must not start",
+    "evidence": null
+  },
+  {
+    "phase": "P04",
+    "entry_sha": null,
+    "source_checkpoint_sha": null,
+    "exit_sha": null,
+    "gate": "NOT RUN",
+    "tests": "NOT RUN",
+    "risks": "Prior phase gate not passed; implementation must not start",
+    "evidence": null
+  },
+  {
+    "phase": "P05",
+    "entry_sha": null,
+    "source_checkpoint_sha": null,
+    "exit_sha": null,
+    "gate": "NOT RUN",
+    "tests": "NOT RUN",
+    "risks": "Prior phase gate not passed; implementation must not start",
+    "evidence": null
+  },
+  {
+    "phase": "P06",
+    "entry_sha": null,
+    "source_checkpoint_sha": null,
+    "exit_sha": null,
+    "gate": "NOT RUN",
+    "tests": "NOT RUN",
+    "risks": "Prior phase gate not passed; implementation must not start",
+    "evidence": null
+  }
+]

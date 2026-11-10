@@ -21,7 +21,11 @@ def main():
     parser.add_argument('--expected-certificate', required=True, help='Public SHA-256 fingerprint')
     parser.add_argument('--expected-sha', required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--signing-mode', choices=('isolated', 'persistent'), default='isolated')
     args = parser.parse_args()
+    persistent_certificate = 'aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9'
+    if args.signing_mode == 'persistent' and args.expected_certificate.lower() != persistent_certificate:
+        raise SystemExit('STOP: persistent signing requires the verified historical CI certificate')
     expected = json.loads((ROOT / 'tools/PREMIUM_CANDIDATE.json').read_text())
     sha = run('git', '-C', ROOT, 'rev-parse', 'HEAD').strip()
     branch = run('git', '-C', ROOT, 'branch', '--show-current').strip()
@@ -46,7 +50,10 @@ def main():
                   certificateSHA256=certs[0].lower(), apkSHA256=hashlib.sha256(args.apk.read_bytes()).hexdigest(),
                   apkBytes=args.apk.stat().st_size, signatureVerification='PASS', zipalign='PASS',
                   installedCertificate='NOT VERIFIED', releaseGate='HOLD',
-                  classification=expected['classification'])
+                  signingMode=args.signing_mode,
+                  classification=(
+                      'PERSISTENT-SIGNED UPDATE CANDIDATE — release HOLD; installed compatibility unverified'
+                      if args.signing_mode == 'persistent' else expected['classification']))
     for name, content in [('APK-BADGING.txt', badging), ('APK-SIGNATURE.txt', signature), ('ZIPALIGN.txt', alignment)]:
         (args.output / name).write_text(content)
     (args.output / 'BUILD-IDENTITY.json').write_text(json.dumps(result, indent=2) + '\n')

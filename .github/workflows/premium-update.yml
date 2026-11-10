@@ -1,0 +1,105 @@
+name: Premium signed update candidate (no release)
+
+on:
+  push:
+    branches: [ "work/todo-shift-premium-rescue" ]
+    paths: [ ".github/workflows/premium-update.yml" ]
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed rescue commit SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: premium-signed-update
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/work/todo-shift-premium-rescue'
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_CERT_SHA: aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify exact source and baseline
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha || github.sha }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/work/todo-shift-premium-rescue
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git merge-base --is-ancestor e178b134658afad04d645b044f24d236594cbe33 HEAD
+          test -z "$(git status --porcelain)"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: 'false'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore existing signing key and verify public certificate
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/premium-update.jks"
+          keytool -exportcert -keystore "$RUNNER_TEMP/premium-update.jks" -alias todoshift -storepass:env TODOSHIFT_SIGNING_PASSWORD > "$RUNNER_TEMP/premium-update-public.der"
+          ACTUAL_CERT_SHA=$(sha256sum "$RUNNER_TEMP/premium-update-public.der" | cut -d' ' -f1)
+          test "$ACTUAL_CERT_SHA" = "$EXPECTED_CERT_SHA"
+          echo "Historical CI signing certificate verified"
+      - name: Test, lint and build with the existing key
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/premium-update.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          python3 tools/verify_neo41_source.py
+          gradle --no-daemon -I tools/premium_qa.init.gradle testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - name: Verify APK and stage update candidate
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha || github.sha }}
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk --build-tools "$ANDROID_HOME/build-tools/35.0.0" --expected-sha "$EXPECTED_SHA" --expected-certificate "$EXPECTED_CERT_SHA" --signing-mode persistent --output delivery/identity
+          APK_NAME=$(python3 -c 'import json; c=json.load(open("tools/PREMIUM_CANDIDATE.json")); assert c["applicationId"] == "com.todoshift.app" and c["versionCode"] > 31; print("ToDoShift-"+c["versionName"]+"-vc"+str(c["versionCode"])+"-UPDATE-CANDIDATE.apk")')
+          cp app/build/outputs/apk/debug/app-debug.apk "delivery/$APK_NAME"
+          cp docs/premium/UPDATE_CANDIDATE.md delivery/READ-ME-FIRST.md
+          git rev-parse HEAD > delivery/SOURCE-COMMIT.txt
+          mkdir -p delivery/qa
+          cp -R app/build/test-results/testDebugUnitTest delivery/qa/junit
+          cp app/build/reports/lint-results-debug.* delivery/qa/
+          (cd delivery && find . -type f -exec sha256sum {} + > ../UPDATE-SHA256SUMS)
+          mv UPDATE-SHA256SUMS delivery/
+      - name: Upload candidate only after all verification succeeds
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToDoShift-Premium-UPDATE-CANDIDATE-${{ github.sha }}
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve test evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Premium-update-failed-QA-${{ github.sha }}
+          path: |
+            app/build/test-results/testDebugUnitTest/*.xml
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/premium-update.jks" "$RUNNER_TEMP/premium-update-public.der"

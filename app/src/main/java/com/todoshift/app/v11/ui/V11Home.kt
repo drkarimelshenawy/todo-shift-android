@@ -2,6 +2,8 @@ package com.todoshift.app.v11.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
@@ -39,6 +41,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private class NeoReloadSlot {
+    var action: (() -> Unit)? = null
+}
+
 @Composable
 fun V11Home(
     initialDate: LocalDate? = null,
@@ -62,6 +68,8 @@ fun V11Home(
 
     val writeScope = rememberCoroutineScope()
     var writeBusy by remember { mutableStateOf(false) }
+    var reloadBusy by remember { mutableStateOf(false) }
+    val reloadSlot = remember { NeoReloadSlot() }
     var writeFailure by remember { mutableStateOf<String?>(null) }
     var recoveryOpen by remember { mutableStateOf(false) }
     var bootAttempt by remember { mutableIntStateOf(0) }
@@ -110,10 +118,18 @@ fun V11Home(
                 ),
         ) {
             Surface(shape = MaterialTheme.shapes.large) {
-                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    Modifier.heightIn(max = 440.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     if (writeFailure == null) {
                         CircularProgressIndicator()
-                        Text("جارٍ الحفظ… / Saving…")
+                        Text(
+                            if (reloadBusy) "جارٍ التحقق من التخزين / Checking storage"
+                            else "جارٍ الحفظ… / Saving…"
+                        )
                     } else {
                         Text(
                             "حالة الحفظ / Save status",
@@ -126,6 +142,13 @@ fun V11Home(
                                 "لم يتأكد الحفظ؛ المسودة باقية للمراجعة والمحاولة. / Save not confirmed; your draft remains for review and retry."
                         )
                         Text(writeFailure!!, style = MaterialTheme.typography.bodySmall)
+                        if (boot != null)
+                            TextButton(
+                                onClick = { reloadSlot.action?.invoke() },
+                                enabled = !writeBusy,
+                            ) {
+                                Text("إعادة التحميل مع حفظ المسودة / Reload and keep draft")
+                            }
                         TextButton(onClick = { writeFailure = null }) {
                             Text("العودة للمحرر / Return to editor")
                         }
@@ -457,6 +480,32 @@ fun V11Home(
         accountsUnlocked =
             securitySettings.mode == V11LockMode.NONE && !securitySettings.biometricEnabled
     }
+
+    fun reloadEditorData() {
+        if (writeBusy) return
+        writeBusy = true
+        reloadBusy = true
+        writeFailure = null
+        writeScope.launch {
+            try {
+                val confirmed =
+                    withContext(Dispatchers.IO) {
+                        synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                            runtime.start() to oldStorage.load()
+                        }
+                    }
+                if (confirmed.first != db || confirmed.second != oldData) undoHistory.clear()
+                db = confirmed.first
+                oldData = confirmed.second
+            } catch (failure: Exception) {
+                writeFailure = failure.message ?: "Reload failed; draft retained"
+            } finally {
+                writeBusy = false
+                reloadBusy = false
+            }
+        }
+    }
+    SideEffect { reloadSlot.action = { reloadEditorData() } }
 
     fun saveUi(value: V11UiSettings) {
         try {

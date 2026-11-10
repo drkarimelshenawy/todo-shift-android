@@ -272,7 +272,15 @@ fun NeoContextActions(destination: String) {
         DropdownMenu(open, { open = false }) {
             if (destination != "Settings")
                 DropdownMenuItem(
-                    text = { Text(neoLabel("تراجع عن آخر تعديل", "Undo last change")) },
+                    text = {
+                        Column {
+                            Text(neoLabel("تراجع عن آخر تعديل", "Undo last change"))
+                            Text(
+                                neoLabel("لهذه الجلسة فقط", "This session only"),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    },
                     enabled = undo.enabled,
                     onClick = {
                         open = false

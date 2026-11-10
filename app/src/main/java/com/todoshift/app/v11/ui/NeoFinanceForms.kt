@@ -36,6 +36,7 @@ fun NeoPaymentForm(
     var submitted by remember { mutableStateOf(false) }
     val write = LocalNeoEditorWriteState.current
     LaunchedEffect(write.error) { if (write.error != null) submitted = false }
+    val amountInput = MoneyInput.parse(amount)
     val keyboard = LocalSoftwareKeyboardController.current
     val leave = neoDiscardGuard(listOf(amount, date, source, method, note), onDismiss)
     AlertDialog(
@@ -90,14 +91,14 @@ fun NeoPaymentForm(
                 enabled =
                     !submitted &&
                         !write.pending &&
-                        (amount.toMoneyOrNull() ?: 0.0) > 0 &&
+                        amountInput.positive &&
                         runCatching { LocalDate.parse(date) }.isSuccess,
                 onClick =
                     neoWriteAction {
                         if (submitted) return@neoWriteAction
                         submitted = true
                         keyboard?.hide()
-                        val value = amount.toMoneyOrNull()!!
+                        val value = amountInput.amount!!
                         val base = existing ?: PaymentV11(recordId, value, date, month.toString())
                         val allocations =
                             if (existing == null)
@@ -168,11 +169,13 @@ fun NeoObligationForm(
     var submitted by remember { mutableStateOf(false) }
     val write = LocalNeoEditorWriteState.current
     LaunchedEffect(write.error) { if (write.error != null) submitted = false }
+    val totalInput = MoneyInput.parse(total)
+    val installmentInput = MoneyInput.parse(installment)
     val recurring = type in listOf("SUBSCRIPTION", "RECURRING_BILL")
     val valid =
         name.isNotBlank() &&
-            (installment.toMoneyOrNull() ?: 0.0) > 0 &&
-            (recurring || (total.toMoneyOrNull() ?: 0.0) > 0) &&
+            installmentInput.positive &&
+            (recurring || totalInput.positive) &&
             (count.isBlank() || (count.toLocalizedIntOrNull() ?: 0) > 0)
     val leave =
         neoDiscardGuard(
@@ -271,9 +274,8 @@ fun NeoObligationForm(
                                                     name = name,
                                                     type = base,
                                                     totalAmount =
-                                                        if (recurring) null
-                                                        else total.toMoneyOrNull(),
-                                                    installmentAmount = installment.toMoneyOrNull(),
+                                                        if (recurring) null else totalInput.amount,
+                                                    installmentAmount = installmentInput.amount,
                                                     startDate = date,
                                                     dueDay = dueDay,
                                                     installmentCount =
@@ -305,8 +307,8 @@ fun NeoObligationForm(
                                     db,
                                     name,
                                     base,
-                                    if (recurring) null else total.toMoneyOrNull(),
-                                    installment.toMoneyOrNull(),
+                                    if (recurring) null else totalInput.amount,
+                                    installmentInput.amount,
                                     date,
                                     dueDay,
                                     if (type in listOf("INSTALLMENT", "LOAN", "ASSOCIATION"))

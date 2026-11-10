@@ -53,6 +53,7 @@ fun NeoModernHub(
     var name by rememberSaveable { mutableStateOf("") }
     var titles by rememberSaveable { mutableStateOf("") }
     var amount by rememberSaveable { mutableStateOf("") }
+    val parsedAmount = MoneyInput.parse(amount)
     var editingTemplate by rememberSaveable { mutableStateOf<String?>(null) }
     var templateKind by rememberSaveable { mutableStateOf<ShiftKind?>(null) }
     var templateCalendar by rememberSaveable { mutableStateOf<String?>(null) }
@@ -67,6 +68,15 @@ fun NeoModernHub(
     var busy by remember { mutableStateOf(false) }
     var detachedReview by remember { mutableStateOf<Set<String>?>(null) }
     var storageRevision by remember { mutableIntStateOf(0) }
+    val latestFinancial by rememberUpdatedState(financeAuthorized && moneyVisible)
+    val rootFinance = LocalNeoFinanceAccess.current
+    fun canUseFinance() = latestFinancial && (rootFinance?.invoke() ?: true)
+    LaunchedEffect(financeAuthorized, moneyVisible) {
+        if (!canUseFinance()) {
+            csv = ""
+            if (section in listOf("RATES", "PAYMENTS", "MONTH_REVIEW")) confirmation = null
+        }
+    }
     val exporter =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri
             ->
@@ -74,9 +84,11 @@ fun NeoModernHub(
                 scope.launch {
                     try {
                         withContext(Dispatchers.IO) {
-                            context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use {
-                                it.write("\uFEFF" + csv)
-                            } ?: error("Cannot write statement")
+                            NeoFinancialExport.write(
+                                ::canUseFinance,
+                                { context.contentResolver.openOutputStream(uri) },
+                                csv,
+                            )
                         }
                         error = neoLiteral("تم التصدير", "Exported")
                     } catch (e: Exception) {
@@ -159,7 +171,7 @@ fun NeoModernHub(
             },
         )
     }
-    val financial = financeAuthorized && moneyVisible
+    val financial = canUseFinance()
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -542,7 +554,7 @@ fun NeoModernHub(
                     }
                     NeoMoneyInput(amount, { amount = it })
                     Button(
-                        enabled = amount.toMoneyOrNull() != null && workplace != null,
+                        enabled = parsedAmount.amount != null && workplace != null,
                         onClick = {
                             attempt {
                                 val date = LocalDate.parse(destination)
@@ -559,7 +571,7 @@ fun NeoModernHub(
                                         workplace!!,
                                         type,
                                         date,
-                                        amount.toMoneyOrNull()!!,
+                                        parsedAmount.amount!!,
                                     )
                                 confirmationBase = db
                                 confirmation =
@@ -940,60 +952,66 @@ fun NeoModernHub(
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
-    confirmation?.let { (description, candidate) ->
-        AlertDialog(
-            onDismissRequest = {
-                if (!busy) {
-                    confirmationBase = db
-                    confirmation = null
-                }
-            },
-            title = { Text(neoLabel("تأكيد التعديل", "Confirm change")) },
-            text = { Text(description) },
-            confirmButton = {
-                Button(
-                    enabled = !busy,
-                    onClick = {
-                        if (busy) return@Button
-                        val expected = confirmationBase
-                        busy = true
-                        scope.launch {
-                            try {
-                                check(db == expected) { "Data changed; review again" }
-                                withContext(Dispatchers.IO) {
-                                    com.todoshift.app.backup.createNeoSafetyCopy(
-                                        context.applicationContext,
-                                        expected,
-                                    )
+    confirmation
+        ?.takeIf { section !in listOf("RATES", "PAYMENTS", "MONTH_REVIEW") || canUseFinance() }
+        ?.let { (description, candidate) ->
+            AlertDialog(
+                onDismissRequest = {
+                    if (!busy) {
+                        confirmationBase = db
+                        confirmation = null
+                    }
+                },
+                title = { Text(neoLabel("تأكيد التعديل", "Confirm change")) },
+                text = { Text(description) },
+                confirmButton = {
+                    Button(
+                        enabled = !busy,
+                        onClick = {
+                            if (busy) return@Button
+                            val expected = confirmationBase
+                            busy = true
+                            scope.launch {
+                                try {
+                                    if (section in listOf("RATES", "PAYMENTS", "MONTH_REVIEW"))
+                                        check(canUseFinance()) { "Financial verification required" }
+                                    check(db == expected) { "Data changed; review again" }
+                                    withContext(Dispatchers.IO) {
+                                        com.todoshift.app.backup.createNeoSafetyCopy(
+                                            context.applicationContext,
+                                            expected,
+                                        )
+                                    }
+                                    if (section in listOf("RATES", "PAYMENTS", "MONTH_REVIEW"))
+                                        check(canUseFinance()) { "Financial verification required" }
+                                    commit(candidate) { confirmation = null }
+                                } catch (e: Exception) {
+                                    error = e.message
+                                    confirmation = null
+                                } finally {
+                                    busy = false
                                 }
-                                commit(candidate) { confirmation = null }
-                            } catch (e: Exception) {
-                                error = e.message
-                                confirmation = null
-                            } finally {
-                                busy = false
                             }
-                        }
-                    },
-                ) {
-                    Text(neoLabel("تأكيد", "Confirm"))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    enabled = !busy,
-                    onClick = {
-                        if (!busy) {
-                            confirmationBase = db
-                            confirmation = null
-                        }
-                    },
-                ) {
-                    Text(neoLabel("إلغاء", "Cancel"))
-                }
-            },
-        )
-    }
+                        },
+                    ) {
+                        Text(neoLabel("تأكيد", "Confirm"))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        enabled = !busy,
+                        onClick = {
+                            if (!busy) {
+                                confirmationBase = db
+                                confirmation = null
+                            }
+                        },
+                    ) {
+                        Text(neoLabel("إلغاء", "Cancel"))
+                    }
+                },
+            )
+        }
 }
 
 @Composable
@@ -1020,14 +1038,14 @@ fun NeoDateInput(label: String, value: String, onChange: (String) -> Unit) {
 
 @Composable
 fun NeoMoneyInput(value: String, onChange: (String) -> Unit) {
+    val parsed = MoneyInput.parse(value)
     OutlinedTextField(
         value,
         onChange,
         label = { Text(neoLabel("المبلغ", "Amount")) },
-        isError = value.isNotBlank() && value.toMoneyOrNull() == null,
+        isError = !parsed.optionalValid,
         supportingText = {
-            if (value.isNotBlank() && value.toMoneyOrNull() == null)
-                Text(neoLabel("مبلغ غير صالح", "Invalid amount"))
+            if (!parsed.optionalValid) Text(neoLabel("مبلغ غير صالح", "Invalid amount"))
         },
         keyboardOptions =
             androidx.compose.foundation.text.KeyboardOptions(

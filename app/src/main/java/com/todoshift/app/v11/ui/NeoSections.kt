@@ -1,8 +1,13 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -24,15 +29,15 @@ fun NeoShiftTimeline(
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
     val now = neoNow()
-    var workplace by remember { mutableStateOf<String?>(null) }
-    var filtersExpanded by remember { mutableStateOf(false) }
-    var from by remember(month) { mutableStateOf(month.atDay(1).toString()) }
-    var to by remember(month) { mutableStateOf(month.atEndOfMonth().toString()) }
+    var workplace by rememberSaveable { mutableStateOf<String?>(null) }
+    var filtersExpanded by rememberSaveable { mutableStateOf(false) }
+    var from by rememberSaveable(month) { mutableStateOf(month.atDay(1).toString()) }
+    var to by rememberSaveable(month) { mutableStateOf(month.atEndOfMonth().toString()) }
     var limit by remember(month, p.timelineFilter, workplace, from, to) { mutableIntStateOf(20) }
     val visibleIds =
         remember(db.calendars) { db.calendars.filter { it.visible }.map { it.id }.toSet() }
     val all = remember(db.days, visibleIds) { neoShiftOccurrences(db, visibleIds) }
-    var kindFilter by remember { mutableStateOf<ShiftKind?>(null) }
+    var kindFilter by rememberSaveable { mutableStateOf<ShiftKind?>(null) }
     val validDates =
         runCatching { LocalDate.parse(from) <= LocalDate.parse(to) }.getOrDefault(false)
     val filtered =
@@ -42,29 +47,34 @@ fun NeoShiftTimeline(
                     (workplace == null || item.segment.workplaceId == workplace) &&
                     item.entry.date >= from &&
                     item.entry.date <= to &&
-                    when (p.timelineFilter) {
-                        NeoTimelineFilter.ALL -> true
-                        NeoTimelineFilter.CURRENT -> now >= item.start && now < item.end
-                        NeoTimelineFilter.UPCOMING -> item.start > now
-                        NeoTimelineFilter.PAST -> item.end <= now
-                    }
+                    neoScheduleMatchesPeriod(item, p.timelineFilter, now)
             }
         }
+    val offRows =
+        if (validDates && workplace == null && (kindFilter == null || kindFilter == ShiftKind.OFF))
+            neoScheduleOffEntries(db, visibleIds, from, to, p.timelineFilter, now.toLocalDate())
+        else emptyList()
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { onMonthChange(month.minusMonths(1)) }) {
-                Text(neoLabel("السابق", "Previous"))
+            IconButton(onClick = { onMonthChange(month.minusMonths(1)) }) {
+                Icon(
+                    Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
+                    neoLabel("الشهر السابق", "Previous month"),
+                )
             }
             Text(
                 neoMonthTitle(month, LocalNeoEnglish.current),
                 Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
             )
-            TextButton(onClick = { onMonthChange(month.plusMonths(1)) }) {
-                Text(neoLabel("التالي", "Next"))
+            IconButton(onClick = { onMonthChange(month.plusMonths(1)) }) {
+                Icon(
+                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    neoLabel("الشهر التالي", "Next month"),
+                )
             }
-            TextButton(onClick = { filtersExpanded = !filtersExpanded }) {
-                Text(neoLabel("فلاتر", "Filters"))
+            IconButton(onClick = { filtersExpanded = !filtersExpanded }) {
+                Icon(Icons.Rounded.FilterList, neoLabel("فلاتر", "Filters"))
             }
         }
         NeoChoice(
@@ -99,19 +109,6 @@ fun NeoShiftTimeline(
                 { it?.let { kind -> neoShiftLabel(kind) } ?: neoLabel("الكل", "All") },
                 { kindFilter = it },
             )
-            workplaces.forEach { place ->
-                val count =
-                    monthRows.sumOf { d ->
-                        d.segments.count { it.workplaceId == place.id && it.kind != ShiftKind.OFF }
-                    }
-                if (count > 0)
-                    Text("${place.name} • $count", style = MaterialTheme.typography.labelSmall)
-            }
-            ShiftKind.entries.forEach { kind ->
-                val count = monthRows.sumOf { d -> d.segments.count { it.kind == kind } }
-                if (count > 0)
-                    Text("${kind.name} • $count", style = MaterialTheme.typography.labelSmall)
-            }
             NeoChoice(
                 neoLabel("مكان العمل", "Workplace"),
                 listOf<String?>(null) + workplaces.map { it.id },
@@ -155,7 +152,7 @@ fun NeoShiftTimeline(
                 neoLabel("أدخل نطاق تاريخ صحيح", "Enter a valid date range"),
                 color = MaterialTheme.colorScheme.error,
             )
-        else if (filtered.isEmpty())
+        else if (filtered.isEmpty() && offRows.isEmpty())
             NeoEmptyState(
                 neoLabel("لا توجد شيفتات مطابقة", "No matching shifts"),
                 neoLabel(
@@ -163,7 +160,29 @@ fun NeoShiftTimeline(
                     "Change filters or add a shift from the calendar",
                 ),
             )
-        else
+        if (validDates && offRows.isNotEmpty()) {
+            Text(
+                neoLabel("أيام الراحة", "Off entries"),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            offRows.take(limit).forEach { (day, _) ->
+                OutlinedCard(
+                    onClick = { onOpenDay(LocalDate.parse(day.date), day.calendarId) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    ListItem(
+                        headlineContent = { Text(day.date + " • " + neoLabel("راحة", "Off")) },
+                        supportingContent = {
+                            Text(
+                                (db.calendars.firstOrNull { it.id == day.calendarId }?.name
+                                    ?: day.calendarId) + " • " + neoLabel("بلا مدة", "No duration")
+                            )
+                        },
+                    )
+                }
+            }
+        }
+        if (validDates)
             filtered.take(limit).forEach { item ->
                 Card(
                     onClick = { onOpenDay(item.start.toLocalDate(), item.entry.calendarId) },
@@ -174,12 +193,15 @@ fun NeoShiftTimeline(
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         val status =
-                            when {
-                                now >= item.start && now < item.end ->
-                                    neoLabel("جارٍ الآن", "In progress")
-                                item.start > now -> neoLabel("قادم", "Upcoming")
-                                else -> neoLabel("انتهى", "Finished")
-                            }
+                            if (item.segment.startMinute == null || item.segment.endMinute == null)
+                                neoLabel("أوقات الساعة غير مسجلة", "Clock times not recorded")
+                            else
+                                when {
+                                    now >= item.start && now < item.end ->
+                                        neoLabel("جارٍ الآن", "In progress")
+                                    item.start > now -> neoLabel("قادم", "Upcoming")
+                                    else -> neoLabel("انتهى", "Finished")
+                                }
                         Text(
                             status,
                             style = MaterialTheme.typography.labelLarge,
@@ -221,7 +243,7 @@ fun NeoShiftTimeline(
                         Text(day.date + " • " + neoLabel("راحة", "Off"))
                     }
                 }
-        if (validDates && filtered.size > limit)
+        if (validDates && (filtered.size > limit || offRows.size > limit))
             TextButton(onClick = { limit += 20 }) { Text(neoLabel("عرض المزيد", "Show more")) }
         HorizontalDivider(Modifier.padding(vertical = 12.dp))
     }

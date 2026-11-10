@@ -81,8 +81,12 @@ class PremiumActivitySaveTest {
         assertTrue(ui.has("Unsaved Root draft"))
         assertEquals(listOf(external), runtime.start().tasks)
         ui.click("Save")
-        awaitError()
+        ui.click("إعادة التحميل مع حفظ المسودة / Reload and keep draft")
+        ui.until { !ui.has("حالة الحفظ / Save status") }
         assertTrue(ui.has("Unsaved Root draft"))
-        assertEquals(listOf(external), runtime.start().tasks)
+        ui.click("Save")
+        ui.until { runtime.start().tasks.size == 2 }
+        assertEquals(external, runtime.start().tasks.first { it.id == external.id })
+        assertEquals(1, runtime.start().tasks.count { it.title == "Unsaved Root draft" })
     }
 }

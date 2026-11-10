@@ -10,6 +10,7 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.data.Workplace
@@ -26,7 +27,7 @@ fun NeoRescueSchedules(
     onChange: (V11Database) -> Unit,
     onDay: (LocalDate, String) -> Unit,
 ) {
-    var selected by remember { mutableIntStateOf(0) }
+    var selected by rememberSaveable { mutableIntStateOf(0) }
     val nav = LocalNeoFeatures.current
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),

@@ -76,7 +76,7 @@ fun V11TasksScreen(
         }
     }
 
-    var filter by remember { mutableStateOf(TaskFilterV11.TODAY) }
+    var filter by rememberSaveable { mutableStateOf(TaskFilterV11.TODAY) }
 
     var editingTaskId by rememberSaveable { mutableStateOf<String?>(null) }
     val editingTask = db.tasks.firstOrNull { it.id == editingTaskId }
@@ -226,16 +226,40 @@ fun V11TasksScreen(
             if (filteredTasks.isEmpty()) {
                 item(key = "empty-tasks") {
                     Box(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp).padding(24.dp),
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .heightIn(min = if (neo) 96.dp else 160.dp)
+                                .padding(if (neo) 12.dp else 24.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         if (neo) {
                             NeoEmptyState(
-                                neoLabel("لا توجد مهام مطابقة", "No matching tasks"),
-                                neoLabel(
-                                    "غيّر الفلاتر أو استخدم زر + لإضافة مهمة",
-                                    "Change filters or use + to add a task",
-                                ),
+                                if (
+                                    searchQuery.isNotBlank() ||
+                                        priorityFilter != null ||
+                                        categoryFilter != null
+                                )
+                                    neoLabel("لا توجد مهام مطابقة", "No matching tasks")
+                                else
+                                    when (filter) {
+                                        TaskFilterV11.TODAY ->
+                                            neoLabel("لا توجد مهام لليوم", "No tasks for today")
+                                        TaskFilterV11.UPCOMING ->
+                                            neoLabel("لا توجد مهام قادمة", "No upcoming tasks")
+                                        TaskFilterV11.OVERDUE ->
+                                            neoLabel("لا توجد مهام متأخرة", "No overdue tasks")
+                                        TaskFilterV11.COMPLETED ->
+                                            neoLabel("لا توجد مهام مكتملة", "No completed tasks")
+                                        TaskFilterV11.ALL ->
+                                            neoLabel("لا توجد مهام بعد", "No tasks yet")
+                                    },
+                                if (
+                                    searchQuery.isNotBlank() ||
+                                        priorityFilter != null ||
+                                        categoryFilter != null
+                                )
+                                    neoLabel("غيّر البحث أو الفلاتر", "Change search or filters")
+                                else neoLabel("استخدم + لإضافة مهمة", "Use + to add a task"),
                             )
                         } else {
                             Text(
@@ -465,7 +489,7 @@ private fun TaskFiltersV11(selected: TaskFilterV11, onSelected: (TaskFilterV11) 
 }
 
 @Composable
-private fun TaskCardV11(
+internal fun TaskCardV11(
     task: TaskV11,
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,

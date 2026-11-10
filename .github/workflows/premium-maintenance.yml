@@ -1,0 +1,53 @@
+name: Archive old branches and verify Premium baseline
+
+on:
+  push:
+    branches: [ 'premium/stable-candidate' ]
+    paths: [ '.github/workflows/premium-maintenance.yml' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: todo-shift-repository-maintenance
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    if: github.ref == 'refs/heads/premium/stable-candidate'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve exact branch tips before any deletion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/cleanup_archived_branches.py archive --expected-sha "$GITHUB_SHA"
+  verify-baseline:
+    needs: archive
+    uses: ./.github/workflows/premium-qa.yml
+    with:
+      expected_sha: ${{ github.sha }}
+      native_diagnostics: false
+  verify-signed-build:
+    needs: archive
+    uses: ./.github/workflows/android.yml
+    secrets: inherit
+  cleanup:
+    needs: [archive, verify-baseline, verify-signed-build]
+    if: github.ref == 'refs/heads/premium/stable-candidate'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Delete only archived SHA-pinned branches after QA succeeds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/cleanup_archived_branches.py delete --expected-sha "$GITHUB_SHA"

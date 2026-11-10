@@ -1,6 +1,14 @@
-name: Premium isolated QA (no release)
+name: Premium baseline QA (no release)
 
 on:
+  workflow_call:
+    inputs:
+      expected_sha:
+        required: true
+        type: string
+      native_diagnostics:
+        default: false
+        type: boolean
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -17,7 +25,7 @@ permissions:
 
 jobs:
   verify:
-    if: github.ref == 'refs/heads/work/todo-shift-premium-rescue'
+    if: github.ref == 'refs/heads/premium/stable-candidate'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +35,7 @@ jobs:
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
-          test "$GITHUB_REF" = refs/heads/work/todo-shift-premium-rescue
+          test "$GITHUB_REF" = refs/heads/premium/stable-candidate
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git merge-base --is-ancestor e178b134658afad04d645b044f24d236594cbe33 HEAD
       - uses: actions/setup-java@v4

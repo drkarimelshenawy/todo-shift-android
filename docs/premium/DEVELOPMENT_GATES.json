@@ -22,12 +22,24 @@
     },
     {
       "phase": "P02",
-      "development_gate": "IN PROGRESS",
-      "entry_sha": "859f41266366a675051fbfa82beae4ae2a1811f1"
+      "development_gate": "PASS",
+      "entry_sha": "859f41266366a675051fbfa82beae4ae2a1811f1",
+      "source_sha": "bfab8d97f63be559dc1b9f40a1151abdfa31b6da",
+      "evidence": [
+        "/workspace/output/premium-recovery/P02/RESULT.json",
+        "NeoNavigationTest",
+        "PremiumNavigationActivityTest",
+        "P02-source.json"
+      ],
+      "risks": [
+        "Android/Honor launcher/IME/back physical acceptance remains separate",
+        "Original release gates are unchanged"
+      ]
     },
     {
       "phase": "P03",
-      "development_gate": "NOT RUN"
+      "development_gate": "IN PROGRESS",
+      "entry_sha": "bfab8d97f63be559dc1b9f40a1151abdfa31b6da"
     },
     {
       "phase": "P04",

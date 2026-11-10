@@ -1,5 +1,8 @@
 name: Verify and build ToDo Shift 4.1
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ "main", "v0.5-development", "v0.9-development", "Premium-V-byWork" ]
@@ -56,9 +59,37 @@ jobs:
             exit 1
           fi
           echo "CERTIFICATE FINGERPRINT MATCH"
+          AAPT="$(dirname "$APKSIGNER")/aapt"
+          "$AAPT" dump badging "$APK" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "package: name='com.todoshift.app' versionCode='30' versionName='4.1.1'" "$RUNNER_TEMP/apk-badging.txt"
+          mkdir -p delivery
+          cp "$APK" delivery/ToDoShift-4.1.1-vc30-CI-TEST.apk
+          cp "$RUNNER_TEMP/apk-badging.txt" delivery/APK-BADGING.txt
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > delivery/APK-SIGNATURE.txt
+          git rev-parse HEAD > delivery/SOURCE-COMMIT.txt
+          printf '%s\n' "Package: com.todoshift.app" "Version: 4.1.1 (30)" "Certificate SHA-256: $CERT_SHA" "Installed-app certificate: NOT VERIFIED" "Upgrade safety: requires matching installed certificate; do not uninstall or clear data" > delivery/BUILD-IDENTITY.txt
+          (cd delivery && sha256sum *.apk *.txt > SHA256SUMS)
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-4.1.0-vc29-Test
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: ToDoShift-4.1.1-vc30-CI-Test
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test and lint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToDoShift-4.1.1-vc30-QA
+          path: |
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

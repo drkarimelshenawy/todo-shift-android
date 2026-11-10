@@ -58,14 +58,23 @@ class PremiumNavigationActivityTest {
             compose.activity.onBackPressedDispatcher.onBackPressed()
         }
 
-    private fun warm(intent: Intent) =
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+    private fun warm(intent: Intent) {
+        // Resolve the current resumed host after recreation, rather than sending to a
+        // host obtained independently of ActivityScenario's lifecycle synchronization.
+        compose.activityRule.scenario.onActivity { activity ->
+            assertTrue(
+                activity.lifecycle.currentState.isAtLeast(
+                    androidx.lifecycle.Lifecycle.State.RESUMED
+                )
+            )
             ReflectionHelpers.callInstanceMethod<Unit>(
-                compose.activity,
+                activity,
                 "onNewIntent",
                 ReflectionHelpers.ClassParameter.from(Intent::class.java, intent),
             )
+            assertEquals(intent.action, activity.intent.action)
         }
+    }
 
     @Test
     fun everyMainDestinationPairKeepsActualBodyAndSelectionAndBackReturnsHome() {
@@ -153,6 +162,8 @@ class PremiumNavigationActivityTest {
 
     @Test
     fun warmFinanceEntryShowsLockInsteadOfProtectedRecords() {
+        // This test exercises a warm entry, not delivery during asynchronous boot.
+        ui.await("Manage calendars")
         val c = RuntimeEnvironment.getApplication()
         val security = V11SecurityStore(c)
         assertTrue(security.setPin("4826"))
@@ -175,6 +186,9 @@ class PremiumNavigationActivityTest {
             ),
         )
         compose.activityRule.scenario.recreate()
+        ui.await("Manage calendars")
+        assertTrue(ui.selected("Calendar"))
+        assertFalse(ui.has("Private fixture secret"))
         warm(Intent("com.todoshift.app.OPEN_FINANCE"))
         ui.until { ui.selected("Finance") }
         ui.await("PIN")

@@ -2,7 +2,9 @@
 
 ## Working reference
 
-`premium/stable-candidate` is the current Premium reference under device testing, not a production-stability certification. Its application and tests remain byte-identical to commit `2bc80943c90215cecea0db9c037f59ee9915f3cb`. Maintenance commits change workflows, build metadata and documentation only. The exact original commit is preserved by tag `premium-stable-candidate`.
+`premium/stable-candidate` is the current Premium reference under device testing, not a production-stability certification. Its production application remains byte-identical to commit `2bc80943c90215cecea0db9c037f59ee9915f3cb`. Maintenance commits change workflows, build metadata, documentation and the lifecycle synchronization of one test helper. The exact original application AND tests are preserved by tag `premium-stable-candidate`.
+
+The warm-finance test originally sent its intent immediately after Activity recreation and intermittently timed out before checking PIN. It now waits for a ready Calendar host and uses ActivityScenario's resumed Activity. The Finance/PIN/private-content assertions remain; no test is disabled. This does not change the APK's application code or establish delivery-during-boot coverage.
 
 Do not transplant app changes from `premium-rescue-archived` into this branch without a separate reviewed task. Reported phone crashes, missing shift colors and branding remain unresolved device findings; successful CI is not a claim that those issues disappeared.
 
@@ -38,3 +40,4 @@ Tags are lightweight source archives, not GitHub releases or endorsements of tho
 The obsolete rescue branch workflows remain available in its archive tag. No old branch names are needed by the active workflow configuration. References in historical reports are retained as historical evidence.
 
 GitHub Actions artifacts expire according to retention settings; tags preserve source, not APK files or signing keys. Phone acceptance and upgrade/restore verification remain separate from repository cleanup and CI.
+- The source-parity guard compares all of `app/` except test-source directories. Test synchronization edits do not ship in the application; production resources, manifest, build definition and Kotlin sources remain protected by the comparison.

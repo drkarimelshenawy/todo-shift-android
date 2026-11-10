@@ -1,4 +1,5 @@
 name: Archive old branches and verify Premium baseline
+# Maintenance revision: preserve production code; synchronize the warm-entry test fixture.
 
 on:
   push:

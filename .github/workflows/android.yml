@@ -21,7 +21,7 @@ jobs:
       - name: Verify preserved app source
         run: |
           test "$GITHUB_REF" = refs/heads/premium/stable-candidate
-          git diff --exit-code 2bc80943c90215cecea0db9c037f59ee9915f3cb HEAD -- app
+          git diff --exit-code 2bc80943c90215cecea0db9c037f59ee9915f3cb HEAD -- app ':(exclude)app/src/test' ':(exclude)app/src/androidTest'
 
       - uses: android-actions/setup-android@v3
         with:

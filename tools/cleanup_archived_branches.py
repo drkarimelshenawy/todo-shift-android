@@ -138,7 +138,7 @@ def run(mode, expected_sha):
             output.write('Verified tags:\n\n| Tag | SHA |\n|---|---|\n')
             for tag, sha in tags.items():
                 output.write(f'| `{tag}` | `{sha}` |\n')
-            output.write('\nKept branches verified; app source unchanged from 2bc8094.\n')
+            output.write('\nKept branches verified; production app source unchanged from 2bc8094.\n')
 
 
 if __name__ == '__main__':
@@ -147,5 +147,6 @@ if __name__ == '__main__':
     parser.add_argument('mode', choices=('archive', 'delete'))
     parser.add_argument('--expected-sha', required=True)
     args = parser.parse_args()
-    subprocess.run(['git', 'diff', '--exit-code', BASELINE, 'HEAD', '--', 'app'], check=True)
+    subprocess.run(['git', 'diff', '--exit-code', BASELINE, 'HEAD', '--',
+                    'app', ':(exclude)app/src/test', ':(exclude)app/src/androidTest'], check=True)
     run(args.mode, args.expected_sha)

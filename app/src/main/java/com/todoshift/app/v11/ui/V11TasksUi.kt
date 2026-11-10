@@ -1051,7 +1051,7 @@ fun FullTaskEditorDialogV11(
             }
         },
         confirmButton = {
-            TextButton(
+            leaveEditor.SaveButton(
                 enabled =
                     !write.pending &&
                         title.isNotBlank() &&

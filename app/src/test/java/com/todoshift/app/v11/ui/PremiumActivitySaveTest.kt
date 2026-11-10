@@ -89,4 +89,56 @@ class PremiumActivitySaveTest {
         assertEquals(external, runtime.start().tasks.first { it.id == external.id })
         assertEquals(1, runtime.start().tasks.count { it.title == "Unsaved Root draft" })
     }
+
+    @Test
+    fun externalWriteRefreshesOnResumeWithoutDroppingOpenDraft() {
+        addDraft("Retained resume draft")
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+        val runtime = V11Runtime(RuntimeEnvironment.getApplication())
+        val before = runtime.start()
+        runtime.saveIfCurrent(
+            before,
+            before.copy(
+                tasks =
+                    before.tasks +
+                        TaskV11(
+                            "external-resume",
+                            "External",
+                            date = java.time.LocalDate.now().toString(),
+                        )
+            ),
+        )
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        ui.await("Retained resume draft")
+        ui.await("External") // Wait for the asynchronous resume read to reach the actual list.
+        ui.click("Save")
+        ui.until { runtime.start().tasks.size == 2 }
+        assertTrue(runtime.start().tasks.any { it.id == "external-resume" })
+    }
+
+    @Test
+    fun noteDraftAndGuardSurviveActualActivityRecreation() {
+        ui.longClickDay(java.time.LocalDate.now().toString())
+        ui.click("New note")
+        ui.input("Calendar note text", "Retained calendar draft")
+        compose.activityRule.scenario.recreate()
+        ui.await("Retained calendar draft")
+        ui.click("Cancel")
+        ui.await("Discard changes?")
+        ui.click("Keep editing")
+        ui.await("Retained calendar draft")
+        ui.click("Cancel")
+        ui.await("Discard changes?")
+        ui.click("Save and leave")
+        val runtime = V11Runtime(RuntimeEnvironment.getApplication())
+        ui.until { runtime.start().dayItems.any { it.title == "Retained calendar draft" } }
+        val savedId = runtime.start().dayItems.single().id
+        ui.click("Retained calendar draft")
+        ui.input("Calendar note text", "Edited restored note")
+        compose.activityRule.scenario.recreate()
+        ui.await("Edited restored note")
+        ui.click("Save")
+        ui.until { runtime.start().dayItems.singleOrNull()?.title == "Edited restored note" }
+        assertEquals(savedId, runtime.start().dayItems.single().id)
+    }
 }

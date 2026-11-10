@@ -506,6 +506,26 @@ fun V11Home(
         }
     }
     SideEffect { reloadSlot.action = { reloadEditorData() } }
+    var resumeRefreshPending by remember { mutableStateOf(false) }
+    LaunchedEffect(resumeRefreshPending, writeBusy, writeFailure) {
+        if (resumeRefreshPending && !writeBusy && writeFailure == null) {
+            resumeRefreshPending = false
+            reloadEditorData()
+        }
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                    if (!writeBusy && writeFailure == null) {
+                        resumeRefreshPending = false
+                        reloadEditorData()
+                    } else resumeRefreshPending = true
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     fun saveAppearance(value: NeoAppearance, done: () -> Unit = {}) {
         if (writeBusy || writeFailure != null) return

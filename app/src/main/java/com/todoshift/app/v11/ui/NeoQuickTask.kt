@@ -92,7 +92,7 @@ fun TaskEditorDialogV11(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 enabled = title.isNotBlank() && validDate != null && !submitted && !write.pending,
                 onClick = {
                     submitted = true

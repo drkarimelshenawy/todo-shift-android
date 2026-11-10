@@ -166,8 +166,9 @@ fun NeoCalendarArea(
     val noteStore = remember { NeoSmartStore(context.applicationContext) }
     var noteRevision by remember { mutableIntStateOf(0) }
     val noteMetadata = remember(db.dayItems, noteRevision) { noteStore.snapshot() }
-    var noteDate by remember { mutableStateOf<LocalDate?>(null) }
-    var editingNote by remember { mutableStateOf<DayItemV11?>(null) }
+    var noteDate by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingNoteId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingNote = db.dayItems.firstOrNull { it.id == editingNoteId }
     val flip = remember { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(month, view, p.transition, p.motionMillis) {
         if (p.transition == NeoTransition.FLIP && p.motionMillis > 0 && !focus) {
@@ -466,18 +467,20 @@ fun NeoCalendarArea(
     }
     noteDate?.let { date ->
         NeoDayNoteDialog(
-            date,
+            LocalDate.parse(date),
             editingNote,
             expectedDatabase = db,
             calendarId = creationCalendarId,
             onDismiss = {
+                noteDate?.let { sheetDate = it }
                 noteDate = null
-                editingNote = null
+                editingNoteId = null
             },
         ) { note ->
             noteRevision++
+            noteDate?.let { sheetDate = it }
             noteDate = null
-            editingNote = null
+            editingNoteId = null
         }
     }
     sheetDate?.let { key ->
@@ -526,8 +529,9 @@ fun NeoCalendarArea(
                         Row(Modifier.fillMaxWidth()) {
                             TextButton(
                                 onClick = {
-                                    editingNote = note
-                                    noteDate = date
+                                    sheetDate = null
+                                    editingNoteId = note.id
+                                    noteDate = date.toString()
                                 }
                             ) {
                                 Text(note.title)
@@ -547,8 +551,9 @@ fun NeoCalendarArea(
                     }
                     OutlinedButton(
                         onClick = {
-                            editingNote = null
-                            noteDate = date
+                            sheetDate = null
+                            editingNoteId = null
+                            noteDate = date.toString()
                         }
                     ) {
                         Text(neoLabel("ملاحظة جديدة", "New note"))

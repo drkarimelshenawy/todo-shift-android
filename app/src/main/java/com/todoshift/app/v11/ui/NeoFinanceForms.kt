@@ -87,7 +87,7 @@ fun NeoPaymentForm(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 enabled =
                     !submitted &&
                         !write.pending &&
@@ -160,7 +160,9 @@ fun NeoObligationForm(
     var date by rememberSaveable {
         mutableStateOf(existing?.startDate ?: LocalDate.now().toString())
     }
-    var dueDay by remember { mutableIntStateOf(existing?.dueDay ?: LocalDate.now().dayOfMonth) }
+    var dueDay by rememberSaveable {
+        mutableIntStateOf(existing?.dueDay ?: LocalDate.now().dayOfMonth)
+    }
     var note by rememberSaveable {
         mutableStateOf(
             existing?.note?.removePrefix("[SAVINGS] ")?.removePrefix("[SUBSCRIPTION] ").orEmpty()
@@ -255,7 +257,7 @@ fun NeoObligationForm(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 enabled = valid && !submitted && !write.pending,
                 onClick =
                     neoWriteAction {
@@ -345,5 +347,5 @@ fun neoObligationType(s: String): String =
 
 /** Keeps edits in place unless the user explicitly discards them. */
 @Composable
-private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): () -> Unit =
+private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): NeoEditorExit =
     rememberNeoEditorExit(values, onDismiss)

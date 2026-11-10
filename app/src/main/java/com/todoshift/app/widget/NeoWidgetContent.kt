@@ -52,6 +52,21 @@ object NeoWidgetContentModel {
     fun segments(db: V11Database, date: LocalDate): List<ShiftSegmentV11> =
         indexedSegments(db)[date.toString()].orEmpty()
 
+    fun todayShift(db: V11Database, now: LocalDateTime): NeoShiftOccurrence? =
+        neoShiftOccurrences(db, db.calendars.filter { it.visible }.map { it.id }.toSet()).let { all
+            ->
+            all.firstOrNull {
+                it.segment.startMinute != null &&
+                    it.segment.endMinute != null &&
+                    now >= it.start &&
+                    now < it.end
+            }
+                ?: all.firstOrNull {
+                    it.entry.date == now.toLocalDate().toString() &&
+                        (it.segment.startMinute == null || it.start > now)
+                }
+        }
+
     fun project(
         kind: Neo4WidgetKind,
         db: V11Database?,
@@ -114,19 +129,7 @@ object NeoWidgetContentModel {
                 }
             }
             Neo4WidgetKind.TODAY -> {
-                val visible = db.calendars.filter { it.visible }.map { it.id }.toSet()
-                val all = neoShiftOccurrences(db, visible)
-                val shift =
-                    all.firstOrNull {
-                        it.segment.startMinute != null &&
-                            it.segment.endMinute != null &&
-                            now >= it.start &&
-                            now < it.end
-                    }
-                        ?: all.firstOrNull {
-                            it.entry.date == now.toLocalDate().toString() &&
-                                (it.segment.startMinute == null || it.start > now)
-                        }
+                val shift = todayShift(db, now)
                 val name =
                     shift?.segment?.kind?.let {
                         when (it) {

@@ -45,8 +45,6 @@ fun NeoDayNoteDialog(
             )
         }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
-    val originalText =
-        existing?.title?.removePrefix("📌 ")?.removePrefix("★ ")?.removePrefix("⚠ ").orEmpty()
     var text by
         rememberSaveable(existing?.id) {
             mutableStateOf(
@@ -70,34 +68,9 @@ fun NeoDayNoteDialog(
                 }
             )
         }
-    val initialMarker = rememberSaveable(id) { marker }
-    val initialBorder = rememberSaveable(id) { border }
-    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
-    fun leave() {
-        if (pending) return
-        if (
-            text != originalText ||
-                details != existing?.details.orEmpty() ||
-                color != styleStore.noteColor(id) ||
-                marker != initialMarker ||
-                border != initialBorder
-        )
-            confirmDiscard = true
-        else onDismiss()
-    }
-    if (confirmDiscard)
-        AlertDialog(
-            onDismissRequest = { confirmDiscard = false },
-            title = { Text(neoLabel("تجاهل التعديلات؟", "Discard changes?")) },
-            confirmButton = {
-                TextButton(onClick = onDismiss) { Text(neoLabel("تجاهل", "Discard")) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDiscard = false }) {
-                    Text(neoLabel("متابعة", "Keep editing"))
-                }
-            },
-        )
+    val gate = LocalNeoLeaveGate.current
+    val leave =
+        rememberNeoEditorExit(listOf(text, details, color, marker, border), onDismiss, pending)
     AlertDialog(
         onDismissRequest = { if (!pending) leave() },
         title = { Text(neoLabel("ملاحظة مستقلة", "Independent note") + " • $date") },
@@ -136,13 +109,13 @@ fun NeoDayNoteDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 enabled = !pending && text.isNotBlank() && color.matches(Regex("#[0-9a-fA-F]{6}")),
                 onClick = {
                     if (!noteUnchanged || !styleUnchanged) {
                         error =
                             "Note was saved or changed elsewhere. Draft retained; review the stored note before reopening."
-                        return@Button
+                        return@SaveButton
                     }
                     val note =
                         (existing
@@ -157,6 +130,7 @@ fun NeoDayNoteDialog(
                                 title = (if (marker.isBlank()) "" else "$marker ") + text.trim(),
                                 details = details,
                             )
+                    val savedExit = gate?.takeSavedExit()
                     pending = true
                     error = null
                     scope.launch {
@@ -169,6 +143,7 @@ fun NeoDayNoteDialog(
                                 }
                             committed(next)
                             onSave(note)
+                            savedExit?.invoke()
                         } catch (failure: Exception) {
                             error = failure.message ?: "Note save failed; draft retained"
                         } finally {

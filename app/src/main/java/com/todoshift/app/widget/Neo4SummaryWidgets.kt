@@ -73,9 +73,15 @@ object Neo4WidgetRefresh {
         views.setTextViewText(R.id.neo4_widget_value, content.value)
         views.setTextViewText(R.id.neo4_widget_detail, content.detail)
         val intent =
-            Intent(context, MainActivity::class.java)
-                .putExtra("neo4_open_tab", if (kind == Neo4WidgetKind.FINANCE) 2 else 4)
-                .setData(android.net.Uri.parse("todoshift://neo4/${kind.name}/$id"))
+            summaryWidgetEntry(
+                context,
+                kind,
+                id,
+                if (kind == Neo4WidgetKind.TODAY)
+                    db?.let { NeoWidgetContentModel.todayShift(it, now)?.entry?.date }
+                        ?: now.toLocalDate().toString()
+                else now.toLocalDate().toString(),
+            )
         val open =
             PendingIntent.getActivity(
                 context,
@@ -123,3 +129,15 @@ class Neo4TodayWidget : Neo4SummaryWidgetProvider() {
 class Neo4FinanceWidget : Neo4SummaryWidgetProvider() {
     override val kind = Neo4WidgetKind.FINANCE
 }
+
+internal fun summaryWidgetEntry(
+    context: Context,
+    kind: Neo4WidgetKind,
+    id: Int,
+    date: String,
+): Intent =
+    Intent(context, MainActivity::class.java)
+        .putExtra("neo4_open_tab", if (kind == Neo4WidgetKind.FINANCE) 2 else 0)
+        .apply { if (kind == Neo4WidgetKind.TODAY) putExtra("todo_shift_open_date", date) }
+        .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        .setData(android.net.Uri.parse("todoshift://neo4/${kind.name}/$id"))

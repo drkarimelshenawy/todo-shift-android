@@ -122,6 +122,14 @@ class NeoNavigator(initialTab: Int = 0) {
 }
 
 class NeoLeaveGate {
+    private var savedExit: (() -> Unit)? = null
+
+    fun awaitSavedExit(action: () -> Unit) {
+        savedExit = action
+    }
+
+    fun takeSavedExit(): (() -> Unit)? = savedExit.also { savedExit = null }
+
     private val interceptors = linkedMapOf<Any, ((() -> Unit) -> Unit)>()
 
     fun register(token: Any, action: ((() -> Unit) -> Unit)) {

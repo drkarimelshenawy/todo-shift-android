@@ -417,7 +417,7 @@ private fun V11WorkplaceEditor(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 enabled =
                     name.trim().isNotEmpty() &&
                         listOf(fullDay, longRate, night, morning, evening).all {

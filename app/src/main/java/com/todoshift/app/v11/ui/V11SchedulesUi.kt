@@ -416,7 +416,7 @@ private fun V11EditCalendarDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 onClick = {
                     if (name.isNotBlank()) {
                         onSave(calendar.copy(name = name.trim(), colorHex = colorHex))

@@ -133,7 +133,7 @@ fun NeoCalendarManagerDialog(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Button(
+                    leave.SaveButton(
                         enabled = name.isNotBlank() && color.matches(Regex("#[0-9a-fA-F]{6}")),
                         onClick = {
                             try {

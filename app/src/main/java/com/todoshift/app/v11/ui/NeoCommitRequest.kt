@@ -9,12 +9,21 @@ val LocalNeoCommitRequest =
 
 @Composable
 fun rememberNeoCommit(fallback: (V11Database) -> Unit): (V11Database, () -> Unit) -> Unit {
+    val gate = LocalNeoLeaveGate.current
     val request = LocalNeoCommitRequest.current
     return { next, afterCommit ->
+        val savedExit = gate?.takeSavedExit()
         if (request == null) {
             fallback(next)
             afterCommit()
-        } else request(next) { committed -> if (committed) afterCommit() }
+            savedExit?.invoke()
+        } else
+            request(next) { committed ->
+                if (committed) {
+                    afterCommit()
+                    savedExit?.invoke()
+                }
+            }
     }
 }
 
@@ -54,12 +63,21 @@ val LocalNeoWorkplaceCommitRequest =
 fun rememberNeoWorkplaceCommit(
     fallback: (List<com.todoshift.app.data.Workplace>) -> Unit
 ): (List<com.todoshift.app.data.Workplace>, () -> Unit) -> Unit {
+    val gate = LocalNeoLeaveGate.current
     val request = LocalNeoWorkplaceCommitRequest.current
     return { next, afterCommit ->
+        val savedExit = gate?.takeSavedExit()
         if (request == null) {
             fallback(next)
             afterCommit()
-        } else request(next) { committed -> if (committed) afterCommit() }
+            savedExit?.invoke()
+        } else
+            request(next) { committed ->
+                if (committed) {
+                    afterCommit()
+                    savedExit?.invoke()
+                }
+            }
     }
 }
 

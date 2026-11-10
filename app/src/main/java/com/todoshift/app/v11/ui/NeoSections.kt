@@ -140,6 +140,8 @@ fun NeoShiftTimeline(
             TextButton(
                 onClick = {
                     workplace = null
+                    kindFilter = null
+                    update(p.copy(timelineFilter = NeoTimelineFilter.ALL))
                     from = month.atDay(1).toString()
                     to = month.atEndOfMonth().toString()
                 }

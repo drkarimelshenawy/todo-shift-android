@@ -901,7 +901,7 @@ internal fun V11EditPaymentDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 onClick =
                     neoWriteAction {
                         val newAmount = amountInput.amount ?: return@neoWriteAction
@@ -1050,7 +1050,7 @@ private fun V11EditObligationDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 onClick =
                     neoWriteAction {
                         onSave(
@@ -1247,7 +1247,7 @@ internal fun V11PaymentDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 enabled = amountInput.positive && dateValid,
                 onClick =
                     neoWriteAction {
@@ -1432,7 +1432,7 @@ private fun V11IncomeSourcesDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Button(
+                leave.SaveButton(
                     onClick =
                         neoWriteAction {
                             if (newName.isNotBlank() && fixedAmountInput.optionalValid) {
@@ -1521,7 +1521,7 @@ internal fun V11EditIncomeSourceDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 onClick =
                     neoWriteAction {
                         onSave(
@@ -1633,7 +1633,7 @@ private fun V11PaymentMethodsDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Button(
+                leave.SaveButton(
                     onClick =
                         neoWriteAction {
                             if (newName.isNotBlank()) {
@@ -1674,7 +1674,7 @@ private fun V11PaymentMethodsDialog(
                 )
             },
             confirmButton = {
-                Button(
+                leaveMethod.SaveButton(
                     onClick =
                         neoWriteAction {
                             if (name.isNotBlank()) {
@@ -1792,7 +1792,7 @@ private fun V11ObligationDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 onClick =
                     neoWriteAction {
                         onSave(
@@ -1916,7 +1916,7 @@ private fun V11ObligationPaymentDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 onClick =
                     neoWriteAction {
                         val parsed = amountInput.amount ?: return@neoWriteAction

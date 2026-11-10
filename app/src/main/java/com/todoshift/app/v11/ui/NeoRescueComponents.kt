@@ -308,8 +308,14 @@ fun NeoContextActions(destination: String) {
 
 /** Shared guard for inherited editors; the current editor remains mounted while confirming. */
 @Composable
-fun rememberNeoEditorExit(values: List<Any?>, onDismiss: () -> Unit): () -> Unit {
-    val pending = LocalNeoEditorWriteState.current.pending
+fun rememberNeoEditorExit(
+    values: List<Any?>,
+    onDismiss: () -> Unit,
+    busy: Boolean = false,
+): NeoEditorExit {
+    val gate = LocalNeoLeaveGate.current
+    val controller = remember { NeoEditorExit() }
+    val pending = LocalNeoEditorWriteState.current.pending || busy
     val initial = rememberSaveable { values.toList() }
     var confirm by remember { mutableStateOf(false) }
     var destination by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -329,33 +335,74 @@ fun rememberNeoEditorExit(values: List<Any?>, onDismiss: () -> Unit): () -> Unit
     if (confirm)
         AlertDialog(
             onDismissRequest = {
-                confirm = false
-                destination = null
+                if (!pending) {
+                    confirm = false
+                    destination = null
+                }
             },
             title = { Text(neoLabel("تجاهل التعديلات؟", "Discard changes?")) },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirm = false
-                        destination?.invoke()
-                        destination = null
+                Column {
+                    TextButton(
+                        enabled = !pending && controller.save != null,
+                        onClick = {
+                            val next = destination ?: return@TextButton
+                            gate?.awaitSavedExit(next)
+                            try {
+                                controller.save?.invoke()
+                            } finally {
+                                // Drop a request rejected by validation or an exception before
+                                // submission.
+                                gate?.takeSavedExit()
+                            }
+                        },
+                    ) {
+                        Text(neoLabel("حفظ ومغادرة", "Save and leave"))
                     }
-                ) {
-                    Text(neoLabel("تجاهل", "Discard"))
+                    TextButton(
+                        enabled = !pending,
+                        onClick = {
+                            confirm = false
+                            destination?.invoke()
+                            destination = null
+                        },
+                    ) {
+                        Text(neoLabel("تجاهل", "Discard"))
+                    }
                 }
             },
             dismissButton = {
                 TextButton(
+                    enabled = !pending,
                     onClick = {
                         confirm = false
                         destination = null
-                    }
+                    },
                 ) {
                     Text(neoLabel("متابعة", "Keep editing"))
                 }
             },
         )
-    return { request(onDismiss) }
+    controller.dismiss = { request(onDismiss) }
+    return controller
+}
+
+class NeoEditorExit : () -> Unit {
+    internal var save: (() -> Unit)? by mutableStateOf(null)
+    internal var dismiss: () -> Unit = {}
+
+    override fun invoke() = dismiss()
+
+    @Composable
+    fun SaveButton(
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier,
+        enabled: Boolean = true,
+        content: @Composable RowScope.() -> Unit,
+    ) {
+        SideEffect { save = if (enabled) onClick else null }
+        Button(onClick = onClick, enabled = enabled, modifier = modifier, content = content)
+    }
 }
 
 @Composable

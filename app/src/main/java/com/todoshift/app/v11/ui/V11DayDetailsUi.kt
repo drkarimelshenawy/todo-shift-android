@@ -460,7 +460,7 @@ fun V11DayDetailsScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(
+                    leaveTime.SaveButton(
                         onClick = {
                             val start = parseTime(startText, false)
                             val end = parseTime(endText, true)
@@ -700,7 +700,7 @@ private fun V11AddDayItemDialog(
             }
         },
         confirmButton = {
-            Button(
+            leave.SaveButton(
                 onClick =
                     neoWriteAction {
                         val reminderAt =

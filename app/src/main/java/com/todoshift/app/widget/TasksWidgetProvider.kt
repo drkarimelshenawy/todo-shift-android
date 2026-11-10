@@ -108,14 +108,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
             views.setEmptyView(R.id.tasks_widget_list, R.id.tasks_widget_empty)
 
             fun taskActivityIntent(actionName: String, taskId: String? = null): Intent =
-                Intent(context, MainActivity::class.java).apply {
-                    putExtra("todo_shift_task_action", actionName)
-                    taskId?.let { putExtra("todo_shift_task_open_id", it) }
-                    flags =
-                        Intent.FLAG_ACTIVITY_NEW_TASK or
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                            Intent.FLAG_ACTIVITY_SINGLE_TOP
-                }
+                tasksWidgetEntry(context, actionName, taskId)
 
             val openApp =
                 PendingIntent.getActivity(
@@ -256,11 +249,20 @@ class TasksWidgetProvider : AppWidgetProvider() {
                 )
 
             com.todoshift.app.backup.Neo4LocalBackup(context).commitDatabase(db, updated)
-            runCatching {
-                com.todoshift.app.v11.NeoCommittedEffects(context).reconcileCurrent()
-            }
+            runCatching { com.todoshift.app.v11.NeoCommittedEffects(context).reconcileCurrent() }
             ToDoShiftReminder.cancel(context, taskId)
             refreshAll(context)
         }
     }
 }
+
+internal fun tasksWidgetEntry(context: Context, action: String, taskId: String? = null): Intent =
+    Intent(context, MainActivity::class.java).apply {
+        putExtra("todo_shift_task_action", action)
+        putExtra("neo4_open_tab", 4)
+        taskId?.let { putExtra("todo_shift_task_open_id", it) }
+        flags =
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
+    }

@@ -82,4 +82,52 @@ class NeoWidgetIntegrationTest {
         )
         assertEquals(other, runtime.start().tasks.first { it.id == other.id })
     }
+
+    @Test
+    fun titleWidgetProducerAndEntryParserAgreeOnTasks() {
+        val c = RuntimeEnvironment.getApplication()
+        val entry =
+            com.todoshift.app.v11.ui.NeoEntry.routed(
+                com.todoshift.app.widget.tasksWidgetEntry(c, "list"),
+                1,
+            )!!
+        assertEquals(4, entry.tab)
+    }
+
+    @Test
+    fun todayWidgetOpensCalendarAtActualOvernightShiftStartDate() {
+        val c = RuntimeEnvironment.getApplication()
+        val now = java.time.LocalDateTime.of(2026, 11, 11, 2, 0)
+        val db =
+            V11Database(
+                calendars = listOf(AppCalendarV11("a", "A", "#00A4B8")),
+                days =
+                    listOf(
+                        DayEntryV11(
+                            "overnight",
+                            "2026-11-10",
+                            "a",
+                            listOf(
+                                ShiftSegmentV11(
+                                    "night",
+                                    ShiftKind.NIGHT,
+                                    startMinute = 1260,
+                                    endMinute = 1980,
+                                )
+                            ),
+                        )
+                    ),
+            )
+        val shift = com.todoshift.app.widget.NeoWidgetContentModel.todayShift(db, now)!!
+        val intent =
+            com.todoshift.app.widget.summaryWidgetEntry(
+                c,
+                com.todoshift.app.widget.Neo4WidgetKind.TODAY,
+                12,
+                shift.entry.date,
+            )
+        val entry = com.todoshift.app.v11.ui.NeoEntry.routed(intent, 1)!!
+        assertEquals(0, entry.tab)
+        assertEquals(java.time.LocalDate.of(2026, 11, 10), entry.date)
+    }
 }

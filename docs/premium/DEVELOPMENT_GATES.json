@@ -1,0 +1,45 @@
+{
+  "authority": "User execution recovery order: independent Development Gate; original GATES.json and release acceptance are not promoted",
+  "resume_sha": "14df5095d895b345c39f8a06b0aac027e093ac10",
+  "release_gate": "HOLD",
+  "device_gate": "BLOCKED — ENVIRONMENT",
+  "phases": [
+    {
+      "phase": "P01",
+      "development_gate": "PASS",
+      "entry_sha": "14df5095d895b345c39f8a06b0aac027e093ac10",
+      "source_sha": "859f41266366a675051fbfa82beae4ae2a1811f1",
+      "evidence": [
+        "/workspace/output/premium-recovery/P01/RESULT.json",
+        "PremiumActivitySaveTest: actual Root I/O/retry and concurrent external CAS",
+        "P01-source.json",
+        "P01-kotlin.log"
+      ],
+      "risks": [
+        "Robolectric Activity/Compose simulation, not physical power-loss/device acceptance",
+        "Every possible editor/OS interleaving is not claimed covered"
+      ]
+    },
+    {
+      "phase": "P02",
+      "development_gate": "IN PROGRESS",
+      "entry_sha": "859f41266366a675051fbfa82beae4ae2a1811f1"
+    },
+    {
+      "phase": "P03",
+      "development_gate": "NOT RUN"
+    },
+    {
+      "phase": "P04",
+      "development_gate": "NOT RUN"
+    },
+    {
+      "phase": "P05",
+      "development_gate": "NOT RUN"
+    },
+    {
+      "phase": "P06",
+      "development_gate": "NOT RUN"
+    }
+  ]
+}

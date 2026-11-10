@@ -55,12 +55,27 @@
     },
     {
       "phase": "P04",
-      "development_gate": "IN PROGRESS",
-      "entry_sha": "8eb3c7a839141708c03544f5d062ed70b85222ac"
+      "development_gate": "PASS",
+      "entry_sha": "8eb3c7a839141708c03544f5d062ed70b85222ac",
+      "source_sha": "7d05c61c254d7c45c4e39ce78a3dbf1b1eff4da8",
+      "evidence": [
+        "/workspace/output/premium-recovery/P04/RESULT.json",
+        "FinancialExportSafetyTest",
+        "PremiumWorkflowUiTest",
+        "NeoSchedulePresentationTest",
+        "PremiumActivitySaveTest refresh/retry",
+        "ModernOperationsTest/NeoRatePolicyTest unchanged financial regression"
+      ],
+      "risks": [
+        "Real SAF/IME/launcher acceptance remains independent",
+        "Undo remains session-limited and is cleared on external-data refresh",
+        "No changes to historical financial formulas or records"
+      ]
     },
     {
       "phase": "P05",
-      "development_gate": "NOT RUN"
+      "development_gate": "IN PROGRESS",
+      "entry_sha": "7d05c61c254d7c45c4e39ce78a3dbf1b1eff4da8"
     },
     {
       "phase": "P06",

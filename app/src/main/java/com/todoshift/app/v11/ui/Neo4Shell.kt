@@ -2,7 +2,6 @@ package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Visibility
@@ -63,9 +62,6 @@ fun Neo4CompactHeader(
                 )
             }
             if (calendar) {
-                IconButton(onClick = onAdd) {
-                    Icon(Icons.Rounded.Brush, neoLabel("رسم الورديات", "Paint shifts"))
-                }
                 IconButton(onClick = onManage) {
                     Icon(
                         Icons.Rounded.CalendarMonth,

@@ -32,9 +32,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.todoshift.app.data.Workplace
 import com.todoshift.app.v11.*
 import java.time.LocalDate
@@ -43,6 +46,27 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Immutable
+internal data class NeoCellMetrics(val dateHeight: Dp, val captionHeight: Dp)
+
+@Composable
+internal fun neoCellMetrics(): NeoCellMetrics {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val measure = rememberTextMeasurer()
+    val dateStyle =
+        MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp, fontWeight = FontWeight.Bold)
+    val captionStyle = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp)
+    return remember(measure, dateStyle, captionStyle, density) {
+        val date = measure.measure("28", dateStyle, maxLines = 1).size.height
+        val caption =
+            listOf("Morning", "×99", "☑99", "◷99", "📌").maxOf {
+                measure.measure(it, captionStyle, maxLines = 1).size.height
+            }
+        with(density) { NeoCellMetrics(date.toDp() + 4.dp, caption.toDp()) }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NeoCalendarArea(
     month: YearMonth,
@@ -63,6 +87,7 @@ fun NeoCalendarArea(
     val focus = LocalNeoFocus.current || LocalNeoRuntimeReduced.current
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
+    val cellMetrics = neoCellMetrics()
     val locale = if (LocalNeoEnglish.current) Locale.ENGLISH else Locale.forLanguageTag("ar")
     val presentation =
         remember(db.days, db.tasks, db.dayItems, visibleCalendarIds) {
@@ -89,6 +114,42 @@ fun NeoCalendarArea(
                 }
                 .groupBy { it.date }
         }
+    val commit = rememberNeoCommit(onDatabaseChange)
+    val reject = LocalNeoRejectWrite.current
+    var deletingNote by remember { mutableStateOf<DayItemV11?>(null) }
+    deletingNote?.let { note ->
+        AlertDialog(
+            onDismissRequest = { deletingNote = null },
+            title = { Text(neoLabel("حذف الملاحظة؟", "Delete note?")) },
+            text = {
+                Text(
+                    "${note.date} • ${note.title}\n" +
+                        neoLabel(
+                            "تبقى الورديات والملاحظات الأخرى وملفات المرفقات دون تغيير.",
+                            "Shifts, other notes and attachment files are kept.",
+                        )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !LocalNeoEditorWriteState.current.pending,
+                    onClick = {
+                        if (db.dayItems.firstOrNull { it.id == note.id } != note)
+                            reject("Note changed; review again before deleting")
+                        else
+                            commit(db.copy(dayItems = db.dayItems.filterNot { it.id == note.id })) {
+                                deletingNote = null
+                            }
+                    },
+                ) {
+                    Text(neoLabel("حذف", "Delete"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingNote = null }) { Text(neoLabel("إلغاء", "Cancel")) }
+            },
+        )
+    }
     var sheetDate by rememberSaveable { mutableStateOf<String?>(null) }
     val view = if (paintMode) NeoCalendarView.MONTH else p.calendarView
     fun move(step: Long) {
@@ -250,19 +311,32 @@ fun NeoCalendarArea(
                             6) / 7),
                     )
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                val headerHeight = 26.dp
-                val minimumHeight =
-                    when (p.cellSize) {
-                        NeoCellSize.COMPACT -> 48.dp
-                        NeoCellSize.COMFORTABLE -> 64.dp
-                        NeoCellSize.LARGE -> 88.dp
+                val fontScale =
+                    androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+                val headerHeight = (24 * fontScale).dp
+                val detailLines =
+                    when {
+                        p.showNotes && presentation.values.any { it.notes.isNotEmpty() } -> 2
+                        p.showShiftNames && presentation.values.any { it.segments.isNotEmpty() } ->
+                            1
+                        else -> 0
                     }
+                val contentMinimum =
+                    cellMetrics.dateHeight + cellMetrics.captionHeight * (detailLines + 1) + 12.dp
+                val minimumHeight =
+                    maxOf(
+                        contentMinimum,
+                        when (p.cellSize) {
+                            NeoCellSize.COMPACT -> 48.dp
+                            NeoCellSize.COMFORTABLE -> 64.dp
+                            NeoCellSize.LARGE -> 88.dp
+                        } * fontScale,
+                    )
                 val rowHeight =
                     ((maxHeight - headerHeight) / rows).coerceIn(
                         minimumHeight,
                         minimumHeight + 12.dp,
                     )
-                val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
                 val contentWidth =
                     if (columns == 1) maxWidth
                     else maxOf(maxWidth, (20.dp * fontScale + 8.dp) * columns + 18.dp)
@@ -286,7 +360,9 @@ fun NeoCalendarArea(
                                             .plusDays(col.toLong())
                                             .format(
                                                 DateTimeFormatter.ofPattern(
-                                                    if (columns == 1) "EEEE" else "EEEEE",
+                                                    if (columns == 1) "EEEE"
+                                                    else if (LocalNeoEnglish.current) "EEE"
+                                                    else "EEEEE",
                                                     locale,
                                                 )
                                             ),
@@ -335,6 +411,7 @@ fun NeoCalendarArea(
                                                 Modifier.weight(1f)
                                                     .fillMaxHeight()
                                                     .padding(vertical = 1.5.dp),
+                                                metrics = cellMetrics,
                                                 onLongClick = {
                                                     if (!paintMode) {
                                                         onSelectedDate(cellDate)
@@ -434,15 +511,7 @@ fun NeoCalendarArea(
                             ) {
                                 Text(neoLabel("مرفق", "Attach"))
                             }
-                            TextButton(
-                                onClick = {
-                                    onDatabaseChange(
-                                        db.copy(
-                                            dayItems = db.dayItems.filterNot { it.id == note.id }
-                                        )
-                                    )
-                                }
-                            ) {
+                            TextButton(onClick = { deletingNote = note }) {
                                 Text(neoLabel("حذف", "Delete"))
                             }
                         }
@@ -485,7 +554,7 @@ fun NeoCalendarArea(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NeoCalendarCell(
+internal fun NeoCalendarCell(
     date: LocalDate,
     entries: List<DayEntryV11>,
     tasks: Int,
@@ -498,18 +567,25 @@ private fun NeoCalendarCell(
     muted: Boolean,
     modifier: Modifier,
     onLongClick: () -> Unit,
+    metrics: NeoCellMetrics? = null,
     onClick: () -> Unit,
 ) {
     val p = LocalNeoAppearance.current
     val c = MaterialTheme.colorScheme
+    val measured = metrics ?: neoCellMetrics()
     val today = date == LocalDate.now() && p.todayStyle != NeoTodayStyle.NONE
     val segments = remember(entries) { entries.flatMap { it.segments } }
+    val names = segments.map { neoShiftLabel(it.kind) }.distinct().joinToString(" / ")
     val description =
         date.toString() +
             neoLabel(
                 "، ${segments.size} شيفت، $tasks مهمة، $events موعد",
                 ", ${segments.size} shifts, $tasks tasks, $events events",
-            )
+            ) +
+            " • " +
+            names +
+            " • " +
+            notes.joinToString { it.title }
     Surface(
         modifier
             .clip(RoundedCornerShape((p.cornerRadius / 2).dp))
@@ -546,7 +622,7 @@ private fun NeoCalendarCell(
                         .padding(2.dp)
                         .background(c.surface.copy(alpha = 0.90f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 2.dp, vertical = 1.dp),
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp),
                 fontWeight = FontWeight.Bold,
                 color =
                     (if (today) c.primary else c.onSurface).copy(alpha = if (muted) 0.6f else 1f),
@@ -558,13 +634,22 @@ private fun NeoCalendarCell(
                         Text(
                             marker,
                             modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                         )
                 }
             if ((p.showNotes && notes.isNotEmpty()) || (p.showShiftNames && segments.isNotEmpty()))
-                Column(Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 2.dp)) {
+                Column(
+                    Modifier.align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .padding(
+                            start = 2.dp,
+                            end = 2.dp,
+                            top = measured.dateHeight,
+                            bottom = measured.captionHeight + 10.dp,
+                        )
+                ) {
                     if (p.showNotes)
-                        notes.take(2).forEach { note ->
+                        notes.take(if (segments.isEmpty()) 2 else 1).forEach { note ->
                             val noteColor =
                                 neoHexColor(
                                     noteMetadata
@@ -585,7 +670,10 @@ private fun NeoCalendarCell(
                                         .removePrefix("⚠ "),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            lineHeight = 14.sp
+                                        ),
                                     color = c.onSurface,
                                     modifier =
                                         Modifier.weight(1f)
@@ -608,19 +696,10 @@ private fun NeoCalendarCell(
                         }
                     if (p.showShiftNames && segments.any { it.kind != ShiftKind.OFF })
                         Text(
-                            segments.joinToString("/") {
-                                when (it.kind) {
-                                    ShiftKind.FULL_DAY -> "24h"
-                                    ShiftKind.LONG -> "Long"
-                                    ShiftKind.NIGHT -> neoLiteral("ليل", "Night")
-                                    ShiftKind.MORNING -> neoLiteral("ص", "AM")
-                                    ShiftKind.EVENING -> neoLiteral("م", "PM")
-                                    ShiftKind.OFF -> neoLiteral("راحة", "Off")
-                                }
-                            },
+                            names,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                             color = c.onSurface,
                             modifier =
                                 Modifier.background(
@@ -635,16 +714,34 @@ private fun NeoCalendarCell(
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     if (p.showTaskIndicators && tasks > 0)
-                        Box(Modifier.size(5.dp).background(c.onSurface, CircleShape))
+                        Text(
+                            "☑${if(tasks>99) "99+" else tasks}",
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                            color = c.onSurface,
+                            modifier =
+                                Modifier.background(
+                                    c.surface.copy(alpha = .95f),
+                                    RoundedCornerShape(3.dp),
+                                ),
+                        )
                     if (p.showTaskIndicators && events > 0)
-                        Box(Modifier.size(5.dp).background(c.secondary, CircleShape))
+                        Text(
+                            "◷${if(events>99) "99+" else events}",
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                            color = c.onSurface,
+                            modifier =
+                                Modifier.background(
+                                    c.surface.copy(alpha = .95f),
+                                    RoundedCornerShape(3.dp),
+                                ),
+                        )
                     if (segments.isNotEmpty())
                         Text(
                             if (segments.all { it.kind == ShiftKind.OFF }) neoLabel("راحة", "Off")
-                            else "• ${segments.size}",
+                            else "×${segments.size}",
                             color = c.onSurface,
                             maxLines = 1,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                             modifier =
                                 Modifier.background(c.surface, RoundedCornerShape(4.dp))
                                     .padding(horizontal = 2.dp),

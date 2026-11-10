@@ -161,6 +161,20 @@ data class NeoEntry(
     val taskId: String? = null,
 ) {
     companion object {
+        fun routed(intent: Intent, token: Long): NeoEntry? =
+            if (
+                intent.action == "com.todoshift.app.OPEN_FINANCE" ||
+                    listOf(
+                            "neo4_open_tab",
+                            "todo_shift_open_date",
+                            "todo_shift_task_action",
+                            "todo_shift_task_open_id",
+                        )
+                        .any(intent::hasExtra)
+            )
+                parse(intent, token)
+            else null
+
         fun parse(intent: Intent, token: Long): NeoEntry {
             val action =
                 intent.getStringExtra("todo_shift_task_action")?.takeIf {

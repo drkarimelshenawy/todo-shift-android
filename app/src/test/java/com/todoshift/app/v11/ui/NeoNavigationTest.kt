@@ -87,4 +87,10 @@ class NeoNavigationTest {
         assertEquals(3, nav.tab)
         assertTrue(nav.isRoot)
     }
+
+    @Test
+    fun ordinaryLauncherResumeIsNotADeferredNavigationRequest() {
+        assertNull(NeoEntry.routed(Intent(Intent.ACTION_MAIN), 1))
+        assertNotNull(NeoEntry.routed(Intent().putExtra("neo4_open_tab", 0), 2))
+    }
 }

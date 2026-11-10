@@ -94,7 +94,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         ToDoShiftReminder.createChannel(applicationContext)
         if (savedInstanceState?.getBoolean("neo_entry_consumed") != true) {
-            incoming = com.todoshift.app.v11.ui.NeoEntry.parse(intent, System.nanoTime())
+            incoming = com.todoshift.app.v11.ui.NeoEntry.routed(intent, System.nanoTime())
         }
         setContent {
             MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF213555), secondary = Color(0xFF4F709C), background = Color(0xFFF7F8FA), surface = Color.White)) {
@@ -105,7 +105,7 @@ class MainActivity : FragmentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        incoming = com.todoshift.app.v11.ui.NeoEntry.parse(intent, System.nanoTime())
+        incoming = com.todoshift.app.v11.ui.NeoEntry.routed(intent, System.nanoTime())
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean("neo_entry_consumed", incoming == null)

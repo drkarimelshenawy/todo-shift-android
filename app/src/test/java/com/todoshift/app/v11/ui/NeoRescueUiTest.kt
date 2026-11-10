@@ -93,10 +93,10 @@ class NeoRescueUiTest {
                 .isNotEmpty()
         }
         compose.onNodeWithContentDescription("Paint shifts").performClick()
-        compose.onNodeWithText("Eraser").assertExists()
+        compose.onNodeWithContentDescription("Eraser").assertExists()
         compose.onNodeWithContentDescription("2026-11-10", substring = true).performClick()
         compose.waitUntil(10000) {
-            compose.onAllNodesWithText("Eraser").fetchSemanticsNodes()
+            compose.onAllNodesWithContentDescription("Eraser").fetchSemanticsNodes()
             V11Storage(context).load().days.any {
                 it.date == "2026-11-10" && it.segments.isNotEmpty()
             }
@@ -110,7 +110,7 @@ class NeoRescueUiTest {
         }
         compose.onNodeWithText("Undo last change").performClick()
         compose.waitUntil(10000) {
-            compose.onAllNodesWithText("Eraser").fetchSemanticsNodes()
+            compose.onAllNodesWithContentDescription("Eraser").fetchSemanticsNodes()
             V11Storage(context).load().days.none { it.segments.isNotEmpty() }
         }
         compose.runOnIdle {
@@ -238,9 +238,9 @@ class NeoRescueUiTest {
                 quickActionId = 1,
             )
         }
-        compose.onNodeWithText("Eraser").assertExists()
+        compose.onNodeWithContentDescription("Eraser").assertExists()
         compose.onNodeWithText("✓ Done").assertExists().performClick()
-        compose.onNodeWithText("Eraser").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Eraser").assertDoesNotExist()
     }
 
     @Test

@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -89,14 +90,33 @@ fun V11CalendarScreen(
     onManagerDismiss: () -> Unit = {},
 ) {
     val commit = rememberNeoCommit(onDatabaseChange)
-    var selectedDate by remember(initialDate) { mutableStateOf(initialDate) }
+    var selectedDate by
+        rememberSaveable(
+            initialDate,
+            stateSaver =
+                androidx.compose.runtime.saveable.Saver<LocalDate, String>(
+                    save = { it.toString() },
+                    restore = { LocalDate.parse(it) },
+                ),
+        ) {
+            mutableStateOf(initialDate)
+        }
     var paletteOpen by remember { mutableStateOf(false) }
     var selectedWorkplace by remember { mutableStateOf<Workplace?>(null) }
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
-    var paintMode by remember { mutableStateOf(false) }
+    var paintMode by rememberSaveable { mutableStateOf(false) }
     var modernPaintRequest by remember { mutableIntStateOf(0) }
-    var bulkPaint by remember { mutableStateOf(false) }
-    var paintDates by remember { mutableStateOf(setOf<LocalDate>()) }
+    var bulkPaint by rememberSaveable { mutableStateOf(false) }
+    var paintDates by
+        rememberSaveable(
+            stateSaver =
+                androidx.compose.runtime.saveable.listSaver<Set<LocalDate>, String>(
+                    save = { it.map(LocalDate::toString) },
+                    restore = { it.map(LocalDate::parse).toSet() },
+                )
+        ) {
+            mutableStateOf(setOf<LocalDate>())
+        }
     var openDay by
         rememberSaveable(
             stateSaver =
@@ -157,7 +177,20 @@ fun V11CalendarScreen(
         floatingActionButtonPosition =
             if (uiSettings.fabSide == FabSide.LEFT) FabPosition.Start else FabPosition.End,
         floatingActionButton = {
-            if (uiSettings.experience == V11Experience.CLASSIC) {
+            if (uiSettings.experience == V11Experience.PREMIUM && !paintMode) {
+                SmallFloatingActionButton(
+                    onClick = {
+                        paintDates = emptySet()
+                        bulkPaint = false
+                        paintMode = true
+                        paletteOpen = false
+                    },
+                    modifier = Modifier.size(48.dp).testTag("calendar-paint-fab"),
+                    shape = CircleShape,
+                ) {
+                    Icon(Icons.Default.Add, neoLabel("رسم الورديات", "Paint shifts"))
+                }
+            } else if (uiSettings.experience == V11Experience.CLASSIC) {
                 Column(
                     horizontalAlignment =
                         if (uiSettings.fabSide == FabSide.LEFT) Alignment.Start else Alignment.End
@@ -416,6 +449,7 @@ fun V11CalendarScreen(
                         paletteOpen = false
                         paintDates = emptySet()
                         modernPaintRequest = 0
+                        bulkPaint = false
                     },
                 )
             } else if (paintMode) {

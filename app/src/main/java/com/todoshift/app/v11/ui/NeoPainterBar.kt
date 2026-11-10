@@ -1,14 +1,18 @@
 package com.todoshift.app.v11.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Undo
+import androidx.compose.material.icons.automirrored.rounded.Backspace
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,22 +47,93 @@ fun NeoPainterBar(
     val navigator = LocalNeoFeatures.current
     val store = remember { NeoSmartStore(context.applicationContext) }
     val saved = remember { store.snapshot() }
-    var workplace by remember {
+    var workplace by rememberSaveable {
         mutableStateOf(
             saved.optString("paintWorkplace").takeIf { id -> workplaces.any { it.id == id } }
                 ?: workplaces.firstOrNull()?.id
         )
     }
-    var kind by remember {
+    var kind by rememberSaveable {
         mutableStateOf(
             runCatching { ShiftKind.valueOf(saved.optString("paintKind")) }
                 .getOrDefault(ShiftKind.FULL_DAY)
         )
     }
-    var erase by remember { mutableStateOf(false) }
-    var typesOpen by remember { mutableStateOf(false) }
+    var erase by rememberSaveable { mutableStateOf(false) }
+    var typesOpen by rememberSaveable { mutableStateOf(false) }
     var review by remember { mutableStateOf<NeoPaintReview?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val write = LocalNeoEditorWriteState.current
+    var confirmExit by remember { mutableStateOf(false) }
+    var exitDestination by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var toolsOpen by remember { mutableStateOf(false) }
+    fun requestExit(next: () -> Unit) {
+        if (committing || write.pending) return
+        if (dates.isNotEmpty()) {
+            exitDestination = next
+            confirmExit = true
+        } else {
+            typesOpen = false
+            onExit()
+            next()
+        }
+    }
+    neoRegisterLeaveGuard { requestExit(it) }
+    BackHandler {
+        when {
+            committing || write.pending -> Unit
+            review != null -> review = null
+            typesOpen -> typesOpen = false
+            else -> requestExit {}
+        }
+    }
+    LaunchedEffect(workplaces) {
+        if (workplace != null && workplaces.none { it.id == workplace }) {
+            workplace = null
+            typesOpen = false
+            error = "Workplace no longer available; select a workplace before painting"
+        }
+    }
+    if (confirmExit)
+        AlertDialog(
+            onDismissRequest = {
+                confirmExit = false
+                exitDestination = null
+            },
+            title = { Text(neoLabel("تجاهل الأيام المحددة؟", "Discard selected dates?")) },
+            text = {
+                Text(
+                    neoLabel(
+                        "لم تُحفظ هذه المجموعة بعد؛ لن تُحذف الورديات المحفوظة.",
+                        "This selection is not saved; existing shifts will not be deleted.",
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val next = exitDestination
+                        confirmExit = false
+                        exitDestination = null
+                        onClear()
+                        onExit()
+                        next?.invoke()
+                    }
+                ) {
+                    Text(neoLabel("تجاهل", "Discard"))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        confirmExit = false
+                        exitDestination = null
+                    }
+                ) {
+                    Text(neoLabel("متابعة", "Keep editing"))
+                }
+            },
+        )
     fun apply(selected: Set<LocalDate>) {
         if (selected.isEmpty() || calendar == null) return
         try {
@@ -172,40 +247,55 @@ fun NeoPainterBar(
                             )
                         }
                 }
-                FilterChip(
-                    selected = erase,
-                    onClick = {
-                        erase = !erase
+                FilledIconToggleButton(
+                    checked = erase,
+                    onCheckedChange = {
+                        erase = it
                         typesOpen = false
                     },
-                    label = { Text(neoLabel("ممحاة", "Eraser")) },
-                )
-                TextButton(onClick = onExit) { Text("✓ " + neoLabel("تم", "Done")) }
-            }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                val undo = LocalNeoUndo.current
-                IconButton(enabled = undo.enabled, onClick = undo.perform) {
-                    Icon(Icons.Rounded.Undo, neoLabel("تراجع", "Undo"))
+                ) {
+                    Icon(Icons.AutoMirrored.Rounded.Backspace, neoLabel("ممحاة", "Eraser"))
                 }
-                FilterChip(
-                    selected = bulk,
-                    onClick = {
-                        onBulk(!bulk)
-                        onClear()
-                    },
-                    label = { Text(neoLabel("أيام متعددة", "Multiple dates")) },
-                )
-                if (bulk)
-                    TextButton(enabled = dates.isNotEmpty(), onClick = { apply(dates) }) {
+                Box {
+                    IconButton(onClick = { toolsOpen = true }) {
+                        Icon(Icons.Rounded.MoreVert, neoLabel("أدوات الرسم", "Painting tools"))
+                    }
+                    DropdownMenu(expanded = toolsOpen, onDismissRequest = { toolsOpen = false }) {
+                        val undo = LocalNeoUndo.current
+                        DropdownMenuItem(
+                            text = { Text(neoLabel("تراجع", "Undo")) },
+                            enabled = undo.enabled,
+                            onClick = {
+                                toolsOpen = false
+                                undo.perform()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(neoLabel("أيام متعددة", "Multiple dates")) },
+                            onClick = {
+                                toolsOpen = false
+                                onBulk(!bulk)
+                                onClear()
+                            },
+                        )
+                    }
+                }
+                TextButton(onClick = { requestExit {} }) { Text("✓ " + neoLabel("تم", "Done")) }
+            }
+            if (bulk)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        neoLabel("المحدد: ${dates.size}", "Selected: ${dates.size}"),
+                        Modifier.weight(1f).padding(horizontal = 8.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    TextButton(
+                        enabled = dates.isNotEmpty() && !write.pending,
+                        onClick = { apply(dates) },
+                    ) {
                         Text(neoLabel("مراجعة ${dates.size}", "Review ${dates.size}"))
                     }
-                else
-                    Text(
-                        neoShiftLabel(kind),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-            }
+                }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }
@@ -214,23 +304,62 @@ fun NeoPainterBar(
             onDismissRequest = { if (!committing) review = null },
             title = { Text(neoLabel("مراجعة الرسم", "Review painting")) },
             text = {
-                Text(
-                    if (preview.conflicts.isEmpty())
-                        neoLabel(
-                            "تأكيد تعديل الأيام المحددة؟",
-                            "Confirm changes to selected dates?",
+                Column(
+                    Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    neoPaintChanges(preview).forEach { change ->
+                        val name =
+                            db.calendars.firstOrNull { it.id == change.calendarId }?.name
+                                ?: change.calendarId
+                        Text(
+                            "${change.date} • $name",
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                         )
-                    else
-                        preview.conflicts.joinToString("\n") +
-                            neoLabel(
-                                "\nسيتم استبدال الشيفتات المتعارضة فقط بعد تأكيدك",
-                                "\nConflicting shifts are replaced only after confirmation",
-                            )
-                )
+                        change.before
+                            .filter { before -> change.after.none { it.id == before.id } }
+                            .forEach { segment ->
+                                val place =
+                                    workplaces
+                                        .firstOrNull { it.id == segment.workplaceId }
+                                        ?.name
+                                        .orEmpty()
+                                Text(
+                                    neoLabel("إزالة: ", "Remove: ") +
+                                        neoShiftLabel(segment.kind) +
+                                        " • $place • " +
+                                        neoSegmentClock(segment, LocalNeoEnglish.current) +
+                                        " • ${segment.id}"
+                                )
+                            }
+                        change.after
+                            .filter { after -> change.before.none { it.id == after.id } }
+                            .forEach { segment ->
+                                val place =
+                                    workplaces
+                                        .firstOrNull { it.id == segment.workplaceId }
+                                        ?.name
+                                        .orEmpty()
+                                Text(
+                                    neoLabel("إضافة: ", "Add: ") +
+                                        neoShiftLabel(segment.kind) +
+                                        " • $place • " +
+                                        neoSegmentClock(segment, LocalNeoEnglish.current)
+                                )
+                            }
+                    }
+                    Text(
+                        neoLabel(
+                            "تُحفظ الملاحظات والمرفقات والمقاطع غير المتعارضة. تأكيد الاستبدال يزيل المقاطع المسماة كاملة فقط.",
+                            "Notes, attachments and unrelated segments are preserved. Replacement removes only the named whole segments.",
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             },
             confirmButton = {
                 Button(
-                    enabled = !committing,
+                    enabled = !committing && !write.pending,
                     onClick = {
                         if (db != preview.before) {
                             error = "Data changed; review again"
@@ -262,7 +391,7 @@ fun NeoPainterBar(
                 }
             },
             dismissButton = {
-                TextButton(enabled = !committing, onClick = { review = null }) {
+                TextButton(enabled = !committing && !write.pending, onClick = { review = null }) {
                     Text(neoLabel("إلغاء", "Cancel"))
                 }
             },

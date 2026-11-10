@@ -100,14 +100,68 @@ class ActivitySemantics(private val frame: () -> Unit) {
     }
 
     fun click(text: String) {
-        await(text)
+        until {
+            var available = false
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                available =
+                    nodes(actions = true).any {
+                        matches(it, text) &&
+                            it.config.getOrNull(SemanticsActions.OnClick)?.action != null &&
+                            !it.config.contains(SemanticsProperties.Disabled)
+                    }
+            }
+            available
+        }
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val n =
-                nodes(actions = true).lastOrNull {
+                nodes(actions = true).last {
                     matches(it, text) &&
                         it.config.getOrNull(SemanticsActions.OnClick)?.action != null
-                } ?: error("No clickable Activity node: $text")
+                }
             check(n.config[SemanticsActions.OnClick].action!!.invoke())
+        }
+        frame()
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(64))
+        frame()
+    }
+
+    fun clickDay(date: String) {
+        until {
+            var action: (() -> Boolean)? = null
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                action =
+                    nodes(actions = true)
+                        .lastOrNull {
+                            it.config
+                                .getOrNull(SemanticsProperties.ContentDescription)
+                                .orEmpty()
+                                .any { it.startsWith(date) }
+                        }
+                        ?.config
+                        ?.getOrNull(SemanticsActions.OnClick)
+                        ?.action
+                if (action != null) check(action!!.invoke())
+            }
+            action != null
+        }
+        frame()
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(64))
+        frame()
+    }
+
+    fun longClickDay(date: String) {
+        var performed = false
+        until {
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val n =
+                    nodes(actions = true).lastOrNull {
+                        it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().any {
+                            it.startsWith(date)
+                        } && it.config.getOrNull(SemanticsActions.OnLongClick)?.action != null
+                    }
+                if (n != null) performed = n.config[SemanticsActions.OnLongClick].action!!.invoke()
+            }
+            performed
         }
         frame()
         Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(64))

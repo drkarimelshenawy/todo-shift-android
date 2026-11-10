@@ -14,6 +14,10 @@ import com.todoshift.app.v11.*
 import java.time.LocalDate
 import java.util.UUID
 
+data class NeoEditorWriteState(val pending: Boolean = false, val error: String? = null)
+
+val LocalNeoEditorWriteState = staticCompositionLocalOf { NeoEditorWriteState() }
+
 @Composable
 fun TaskEditorDialogV11(
     existing: TaskV11?,
@@ -31,6 +35,8 @@ fun TaskEditorDialogV11(
     var draftId by rememberSaveable { mutableStateOf(existing?.id ?: UUID.randomUUID().toString()) }
     var discard by remember { mutableStateOf(false) }
     var submitted by remember { mutableStateOf(false) }
+    val write = LocalNeoEditorWriteState.current
+    LaunchedEffect(write.error) { if (write.error != null) submitted = false }
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
     val validDate = runCatching { LocalDate.parse(date) }.getOrNull()
@@ -45,6 +51,7 @@ fun TaskEditorDialogV11(
         return
     }
     fun leave() {
+        if (write.pending) return
         if (title.isNotBlank()) discard = true else onDismiss()
     }
     if (discard)
@@ -65,6 +72,8 @@ fun TaskEditorDialogV11(
         title = { Text(neoLabel("مهمة جديدة", "New task")) },
         text = {
             Column(Modifier.imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                write.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                if (write.pending) Text(neoLabel("جارٍ الحفظ", "Saving"))
                 OutlinedTextField(
                     title,
                     { title = it.take(300) },
@@ -100,7 +109,7 @@ fun TaskEditorDialogV11(
         },
         confirmButton = {
             Button(
-                enabled = title.isNotBlank() && validDate != null && !submitted,
+                enabled = title.isNotBlank() && validDate != null && !submitted && !write.pending,
                 onClick = {
                     submitted = true
                     keyboard?.hide()

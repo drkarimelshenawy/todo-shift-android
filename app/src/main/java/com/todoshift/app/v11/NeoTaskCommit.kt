@@ -1,0 +1,43 @@
+package com.todoshift.app.v11
+
+import com.todoshift.app.backup.Neo4DataGate
+
+/** Idempotent external-task commit; a stable draft ID also resolves an ambiguous write result. */
+internal class NeoTaskCommit(
+    private val read: () -> V11Database,
+    private val write: (V11Database, V11Database) -> Unit,
+    private val synchronizeServices: (TaskV11) -> Unit,
+) {
+    sealed interface Result {
+        data class Committed(val servicesPending: Boolean) : Result
+
+        data object Conflict : Result
+
+        data object Retry : Result
+    }
+
+    fun submit(task: TaskV11): Result =
+        synchronized(Neo4DataGate.monitor) {
+            fun same(stored: TaskV11) =
+                stored.copy(createdAt = task.createdAt, updatedAt = task.updatedAt) == task
+            try {
+                val current = read()
+                val stored = current.tasks.firstOrNull { it.id == task.id }
+                if (stored != null && !same(stored)) return@synchronized Result.Conflict
+                if (stored == null) {
+                    try {
+                        write(current, current.copy(tasks = current.tasks + task))
+                    } catch (failure: Exception) {
+                        // Never repeat an uncertain write until the committed store has been
+                        // inspected.
+                        val confirmed = read().tasks.firstOrNull { it.id == task.id }
+                        if (confirmed == null) return@synchronized Result.Retry
+                        if (!same(confirmed)) return@synchronized Result.Conflict
+                    }
+                }
+                Result.Committed(runCatching { synchronizeServices(task) }.isFailure)
+            } catch (failure: Exception) {
+                Result.Retry
+            }
+        }
+}

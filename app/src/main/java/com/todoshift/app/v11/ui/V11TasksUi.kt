@@ -155,7 +155,11 @@ fun V11TasksScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding =
-                PaddingValues(start = if (neo) neoSpacing() else 0.dp, end = if (neo) neoSpacing() else 0.dp, bottom = 96.dp),
+                PaddingValues(
+                    start = if (neo) neoSpacing() else 0.dp,
+                    end = if (neo) neoSpacing() else 0.dp,
+                    bottom = 96.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(if (neo) neoSpacing() else 8.dp),
         ) {
             item(key = "task-controls") {
@@ -589,6 +593,7 @@ fun FullTaskEditorDialogV11(
     onDismiss: () -> Unit,
     onSave: (TaskV11) -> Unit,
 ) {
+    val write = LocalNeoEditorWriteState.current
     val editorContext = LocalContext.current
     var title by rememberSaveable(existing?.id) { mutableStateOf(existing?.title ?: "") }
 
@@ -659,6 +664,7 @@ fun FullTaskEditorDialogV11(
         }
     var discardChanges by rememberSaveable { mutableStateOf(false) }
     fun leaveEditor() {
+        if (write.pending) return
         if (
             listOf(
                 title,
@@ -721,6 +727,8 @@ fun FullTaskEditorDialogV11(
                         .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                write.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                if (write.pending) Text(neoLabel("جارٍ الحفظ", "Saving"))
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -1031,7 +1039,8 @@ fun FullTaskEditorDialogV11(
         confirmButton = {
             TextButton(
                 enabled =
-                    title.isNotBlank() &&
+                    !write.pending &&
+                        title.isNotBlank() &&
                         runCatching { LocalDate.parse(date) }.isSuccess &&
                         (!reminderEnabled ||
                             runCatching {

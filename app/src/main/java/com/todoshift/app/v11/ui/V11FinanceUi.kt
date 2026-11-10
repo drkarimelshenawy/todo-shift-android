@@ -943,6 +943,8 @@ private fun V11EditObligationDialog(
 
     var type by rememberSaveable(obligation.id) { mutableStateOf(obligation.type) }
 
+    val totalInput = MoneyInput.parse(total)
+    val installmentInput = MoneyInput.parse(installment)
     val leave =
         rememberNeoEditorExit(
             listOf(name, total, installment, dueDay, count, note, type),
@@ -961,13 +963,13 @@ private fun V11EditObligationDialog(
 
                 OutlinedTextField(
                     value = total,
-                    isError = total.isNotBlank() && total.toMoneyOrNull() == null,
+                    isError = total.isNotBlank() && totalInput.amount == null,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (total.isNotBlank() && total.toMoneyOrNull() == null)
+                        if (total.isNotBlank() && totalInput.amount == null)
                             Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
                     },
                     onValueChange = { total = it },
@@ -976,13 +978,13 @@ private fun V11EditObligationDialog(
 
                 OutlinedTextField(
                     value = installment,
-                    isError = installment.isNotBlank() && installment.toMoneyOrNull() == null,
+                    isError = installment.isNotBlank() && installmentInput.amount == null,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (installment.isNotBlank() && installment.toMoneyOrNull() == null)
+                        if (installment.isNotBlank() && installmentInput.amount == null)
                             Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
                     },
                     onValueChange = { installment = it },
@@ -1022,15 +1024,16 @@ private fun V11EditObligationDialog(
                         obligation.copy(
                             name = name,
                             type = type,
-                            totalAmount = total.toMoneyOrNull(),
-                            installmentAmount = installment.toMoneyOrNull(),
+                            totalAmount = totalInput.amount,
+                            installmentAmount = installmentInput.amount,
                             dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
                             installmentCount = count.toLocalizedIntOrNull(),
                             note = note,
                         )
                     )
                 },
-                enabled = name.isNotBlank(),
+                enabled =
+                    name.isNotBlank() && totalInput.optionalValid && installmentInput.optionalValid,
             ) {
                 Text(neoLiteral("حفظ التعديل", "Save change"))
             }
@@ -1235,6 +1238,7 @@ private fun V11IncomeSourcesDialog(
     var editingId by rememberSaveable { mutableStateOf<String?>(null) }
     val editing = db.incomeSources.firstOrNull { it.id == editingId }
 
+    val fixedAmountInput = MoneyInput.parse(fixedAmount)
     val leave = rememberNeoEditorExit(listOf(newName, fixedAmount), onDismiss)
     AlertDialog(
         onDismissRequest = leave,
@@ -1344,13 +1348,13 @@ private fun V11IncomeSourcesDialog(
 
                 OutlinedTextField(
                     value = fixedAmount,
-                    isError = fixedAmount.isNotBlank() && fixedAmount.toMoneyOrNull() == null,
+                    isError = fixedAmount.isNotBlank() && fixedAmountInput.amount == null,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (fixedAmount.isNotBlank() && fixedAmount.toMoneyOrNull() == null)
+                        if (fixedAmount.isNotBlank() && fixedAmountInput.amount == null)
                             Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
                     },
                     onValueChange = { fixedAmount = it },
@@ -1368,13 +1372,13 @@ private fun V11IncomeSourcesDialog(
 
                 Button(
                     onClick = {
-                        if (newName.isNotBlank()) {
+                        if (newName.isNotBlank() && fixedAmountInput.optionalValid) {
                             onDatabaseChange(
                                 V11AccountsController.addIncomeSource(
                                     db = db,
                                     name = newName.trim(),
                                     type = IncomeSourceTypeV11.OTHER,
-                                    fixedAmount = fixedAmount.replace(",", ".").toMoneyOrNull(),
+                                    fixedAmount = fixedAmountInput.amount,
                                 )
                             )
 
@@ -1382,6 +1386,7 @@ private fun V11IncomeSourcesDialog(
                             fixedAmount = ""
                         }
                     },
+                    enabled = newName.isNotBlank() && fixedAmountInput.optionalValid,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(neoLiteral("إضافة المصدر", "Add source"))
@@ -1404,7 +1409,7 @@ private fun V11IncomeSourcesDialog(
 }
 
 @Composable
-private fun V11EditIncomeSourceDialog(
+internal fun V11EditIncomeSourceDialog(
     source: IncomeSourceV11,
     onDismiss: () -> Unit,
     onSave: (IncomeSourceV11) -> Unit,
@@ -1414,6 +1419,7 @@ private fun V11EditIncomeSourceDialog(
     var amount by
         rememberSaveable(source.id) { mutableStateOf(source.fixedMonthlyAmount?.toString() ?: "") }
 
+    val amountInput = MoneyInput.parse(amount)
     val leave = rememberNeoEditorExit(listOf(name, amount), onDismiss)
     AlertDialog(
         onDismissRequest = leave,
@@ -1429,13 +1435,13 @@ private fun V11EditIncomeSourceDialog(
 
                 OutlinedTextField(
                     value = amount,
-                    isError = amount.isNotBlank() && amount.toMoneyOrNull() == null,
+                    isError = amount.isNotBlank() && amountInput.amount == null,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (amount.isNotBlank() && amount.toMoneyOrNull() == null)
+                        if (amount.isNotBlank() && amountInput.amount == null)
                             Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
                     },
                     onValueChange = { amount = it },
@@ -1447,14 +1453,9 @@ private fun V11EditIncomeSourceDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    onSave(
-                        source.copy(
-                            name = name.trim(),
-                            fixedMonthlyAmount = amount.replace(",", ".").toMoneyOrNull(),
-                        )
-                    )
+                    onSave(source.copy(name = name.trim(), fixedMonthlyAmount = amountInput.amount))
                 },
-                enabled = name.isNotBlank(),
+                enabled = name.isNotBlank() && amountInput.optionalValid,
             ) {
                 Text(neoLiteral("حفظ", "Save"))
             }
@@ -1626,6 +1627,8 @@ private fun V11ObligationDialog(
 
     var type by rememberSaveable { mutableStateOf(ObligationTypeV11.INSTALLMENT) }
 
+    val totalInput = MoneyInput.parse(total)
+    val installmentInput = MoneyInput.parse(installment)
     val leave =
         rememberNeoEditorExit(listOf(name, total, installment, dueDay, count, type), onDismiss)
     AlertDialog(
@@ -1641,13 +1644,13 @@ private fun V11ObligationDialog(
 
                 OutlinedTextField(
                     value = total,
-                    isError = total.isNotBlank() && total.toMoneyOrNull() == null,
+                    isError = total.isNotBlank() && totalInput.amount == null,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (total.isNotBlank() && total.toMoneyOrNull() == null)
+                        if (total.isNotBlank() && totalInput.amount == null)
                             Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
                     },
                     onValueChange = { total = it },
@@ -1656,13 +1659,13 @@ private fun V11ObligationDialog(
 
                 OutlinedTextField(
                     value = installment,
-                    isError = installment.isNotBlank() && installment.toMoneyOrNull() == null,
+                    isError = installment.isNotBlank() && installmentInput.amount == null,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (installment.isNotBlank() && installment.toMoneyOrNull() == null)
+                        if (installment.isNotBlank() && installmentInput.amount == null)
                             Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
                     },
                     onValueChange = { installment = it },
@@ -1700,8 +1703,8 @@ private fun V11ObligationDialog(
                             db = db,
                             name = name,
                             type = type,
-                            totalAmount = total.toMoneyOrNull(),
-                            installmentAmount = installment.toMoneyOrNull(),
+                            totalAmount = totalInput.amount,
+                            installmentAmount = installmentInput.amount,
                             startDate = LocalDate.now().toString(),
                             dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
                             installmentCount = count.toLocalizedIntOrNull(),
@@ -1710,7 +1713,8 @@ private fun V11ObligationDialog(
                         )
                     )
                 },
-                enabled = name.isNotBlank(),
+                enabled =
+                    name.isNotBlank() && totalInput.optionalValid && installmentInput.optionalValid,
             ) {
                 Text(neoLiteral("حفظ", "Save"))
             }
@@ -1748,6 +1752,7 @@ private fun V11ObligationPaymentDialog(
         mutableStateOf(db.paymentMethods.firstOrNull { it.active }?.id)
     }
 
+    val amountInput = MoneyInput.parse(amount)
     val leave = rememberNeoEditorExit(listOf(amount, methodId), onDismiss)
     AlertDialog(
         onDismissRequest = leave,
@@ -1773,13 +1778,13 @@ private fun V11ObligationPaymentDialog(
 
                 OutlinedTextField(
                     value = amount,
-                    isError = amount.isNotBlank() && amount.toMoneyOrNull() == null,
+                    isError = amount.isNotBlank() && amountInput.amount == null,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (amount.isNotBlank() && amount.toMoneyOrNull() == null)
+                        if (amount.isNotBlank() && amountInput.amount == null)
                             Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
                     },
                     onValueChange = { amount = it },
@@ -1814,11 +1819,11 @@ private fun V11ObligationPaymentDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val parsed = amount.replace(",", ".").toMoneyOrNull() ?: 0.0
+                    val parsed = amountInput.amount ?: return@Button
 
                     onSave(parsed, methodId)
                 },
-                enabled = (amount.replace(",", ".").toMoneyOrNull() ?: 0.0) > 0.0,
+                enabled = amountInput.positive,
             ) {
                 Text(neoLiteral("حفظ السداد", "Save payment"))
             }

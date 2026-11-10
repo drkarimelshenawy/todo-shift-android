@@ -69,7 +69,7 @@ class QuickTaskActivity : FragmentActivity() {
             }
             NeoEnvironment(appearance, true, {}) {
                 V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
-                    if (failure != null)
+                    if (failure != null && state == null)
                         AlertDialog(
                             onDismissRequest = { finish() },
                             title = { Text("تعذر الحفظ / Save unavailable") },
@@ -78,35 +78,54 @@ class QuickTaskActivity : FragmentActivity() {
                                 TextButton(onClick = { finish() }) { Text("إغلاق / Close") }
                             },
                         )
-                    else if (state != null && !busy)
-                        TaskEditorDialogV11(null, state!!, workplaces, { finish() }) { task ->
-                            if (!busy) {
-                                busy = true
-                                scope.launch {
-                                    try {
-                                        withContext(Dispatchers.IO) {
-                                            val runtime = V11Runtime(applicationContext)
-                                            synchronized(
-                                                com.todoshift.app.backup.Neo4DataGate.monitor
-                                            ) {
-                                                val current = runtime.start()
-                                                check(current.tasks.none { it.id == task.id }) {
-                                                    "Task already saved"
+                    else if (state != null)
+                        CompositionLocalProvider(
+                            LocalNeoEditorWriteState provides NeoEditorWriteState(busy, failure)
+                        ) {
+                            TaskEditorDialogV11(null, state!!, workplaces, { finish() }) { task ->
+                                if (!busy) {
+                                    busy = true
+                                    failure = null
+                                    scope.launch {
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                val runtime = V11Runtime(applicationContext)
+                                                when (
+                                                    val result =
+                                                        NeoTaskCommit(
+                                                                runtime::start,
+                                                                runtime::saveIfCurrent,
+                                                                {
+                                                                    com.todoshift.app.reminders
+                                                                        .ToDoShiftReminder
+                                                                        .schedule(
+                                                                            applicationContext,
+                                                                            it,
+                                                                        )
+                                                                },
+                                                            )
+                                                            .submit(task)
+                                                ) {
+                                                    NeoTaskCommit.Result.Conflict ->
+                                                        error(
+                                                            "Task ID already exists with different content; reopen before editing"
+                                                        )
+                                                    NeoTaskCommit.Result.Retry ->
+                                                        error(
+                                                            "Save not confirmed; draft retained. Retry safely."
+                                                        )
+                                                    is NeoTaskCommit.Result.Committed ->
+                                                        check(!result.servicesPending) {
+                                                            "Task saved; reminder refresh pending. Retry to refresh without creating another task."
+                                                        }
                                                 }
-                                                runtime.saveIfCurrent(
-                                                    current,
-                                                    current.copy(tasks = current.tasks + task),
-                                                )
                                             }
-                                            runCatching {
-                                                com.todoshift.app.reminders.ToDoShiftReminder
-                                                    .schedule(applicationContext, task)
-                                            }
+
+                                            finishAfterSave(task)
+                                        } catch (e: Exception) {
+                                            failure = e.message ?: "Save failed"
+                                            busy = false
                                         }
-                                        finishAfterSave(task)
-                                    } catch (e: Exception) {
-                                        failure = e.message ?: "Save failed"
-                                        busy = false
                                     }
                                 }
                             }

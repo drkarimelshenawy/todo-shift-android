@@ -29,6 +29,10 @@ fun V11BackupRestoreDialog(
     db: V11Database,
     onDatabaseRestored: (V11Database) -> Unit,
     onDismiss: () -> Unit,
+    financeAuthorized: Boolean = false,
+    security: V11SecuritySettings? = null,
+    securityStore: V11SecurityStore? = null,
+    onUnlocked: () -> Unit = {},
 ) {
     val app = context.applicationContext
     val coordinator = remember(app) { Neo4LocalBackup(app) }
@@ -40,8 +44,42 @@ fun V11BackupRestoreDialog(
     var prepared by remember { mutableStateOf<Neo4PreparedRestore?>(null) }
     var expected by remember { mutableStateOf<V11Database?>(null) }
 
+    val latestAuthorized by rememberUpdatedState(financeAuthorized)
+    val rootAccess = LocalNeoFinanceAccess.current
+    fun canAccess() = latestAuthorized && (rootAccess?.invoke() ?: true)
+    if (!canAccess()) {
+        if (security != null && securityStore != null) {
+            V11FinancialVerificationDialog(
+                security,
+                securityStore,
+                onDismiss = { if (!busy) onDismiss() },
+                onVerified = onUnlocked,
+            )
+        } else
+            AlertDialog(
+                onDismissRequest = { if (!busy) onDismiss() },
+                title = {
+                    Text(neoLiteral("يلزم التحقق المالي", "Financial verification required"))
+                },
+                text = {
+                    Text(
+                        neoLiteral(
+                            "تحتوي النسخ على بيانات مالية؛ تحقق من هويتك أولًا.",
+                            "Backups contain financial data; verify your identity first.",
+                        )
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = onDismiss, enabled = !busy) {
+                        Text(neoLiteral("إغلاق", "Close"))
+                    }
+                },
+            )
+        return
+    }
+
     fun export(uri: Uri) {
-        if (busy) return
+        if (busy || !canAccess()) return
         busy = true
         message = null
         val legacy = legacyExport
@@ -49,6 +87,7 @@ fun V11BackupRestoreDialog(
             try {
                 withContext(Dispatchers.IO) {
                     synchronized(Neo4DataGate.monitor) {
+                        check(canAccess()) { "Financial verification required" }
                         check(V11Runtime(app).start() == db) {
                             "Data changed; reopen before exporting"
                         }
@@ -69,7 +108,7 @@ fun V11BackupRestoreDialog(
     }
 
     fun inspect(uri: Uri) {
-        if (busy) return
+        if (busy || !canAccess()) return
         busy = true
         message = null
         prepared = null
@@ -77,6 +116,7 @@ fun V11BackupRestoreDialog(
             try {
                 val preview =
                     withContext(Dispatchers.IO) {
+                        check(canAccess()) { "Financial verification required" }
                         context.contentResolver.openInputStream(uri)?.use(coordinator::preview)
                             ?: error("Unable to read backup file")
                     }
@@ -116,8 +156,8 @@ fun V11BackupRestoreDialog(
             ) {
                 Text(
                     neoLiteral(
-                        "ZIP: البيانات والإعدادات والمرفقات. JSON القديم: قاعدة البيانات فقط.",
-                        "ZIP: data, settings and attachments. Legacy JSON: database only.",
+                        "ZIP: البيانات والإعدادات والمرفقات. JSON القديم: قاعدة البيانات فقط. الملفات غير مشفرة.",
+                        "ZIP: data, settings and attachments. Legacy JSON: database only. Files are not encrypted.",
                     )
                 )
                 OutlinedButton(
@@ -193,6 +233,7 @@ fun V11BackupRestoreDialog(
                                 val restored =
                                     withContext(Dispatchers.IO) {
                                         synchronized(Neo4DataGate.monitor) {
+                                            check(canAccess()) { "Financial verification required" }
                                             val current = V11Runtime(app).start()
                                             check(current == expected) {
                                                 "Data changed since preview; review again"

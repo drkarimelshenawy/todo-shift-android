@@ -53,4 +53,33 @@ class NeoWidgetIntegrationTest {
         assertTrue(main.metaData.getInt("android.app.shortcuts") != 0)
         assertTrue(quick.exported)
     }
+
+    @Test
+    fun widgetCompletionUsesTheConfirmedStoreAndPreservesUnrelatedTasks() {
+        val c = RuntimeEnvironment.getApplication()
+        val runtime = V11Runtime(c)
+        val before = runtime.start()
+        val task = TaskV11("widget-complete-fixture", "Fixture", date = "2026-11-10")
+        val other = task.copy(id = "untouched-fixture")
+        runtime.saveIfCurrent(before, before.copy(tasks = listOf(task, other)))
+        val intent =
+            android.content
+                .Intent(c, TasksWidgetProvider::class.java)
+                .setAction(TasksWidgetProvider.ACTION_COMPLETE)
+                .putExtra(TasksWidgetProvider.EXTRA_TASK_ID, task.id)
+        c.sendBroadcast(intent)
+        val deadline = System.currentTimeMillis() + 10000
+        while (
+            System.currentTimeMillis() < deadline &&
+                runtime.start().tasks.first { it.id == task.id }.status != TaskStatusV11.COMPLETED
+        ) {
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            Thread.sleep(10)
+        }
+        assertEquals(
+            TaskStatusV11.COMPLETED,
+            runtime.start().tasks.first { it.id == task.id }.status,
+        )
+        assertEquals(other, runtime.start().tasks.first { it.id == other.id })
+    }
 }

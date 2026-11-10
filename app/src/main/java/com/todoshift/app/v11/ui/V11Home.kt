@@ -73,7 +73,7 @@ fun V11Home(
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     NeoSmartStore(context.applicationContext).snapshot()
                     val confirmed = runtime.start()
-                    runCatching { NeoCommittedEffects(context).reconcile(confirmed) }
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
                     com.todoshift.app.backup.Neo4BootState(
                         confirmed,
                         oldStorage.load(),
@@ -353,7 +353,7 @@ fun V11Home(
                 } else if (undoHistory.isNotEmpty()) undoHistory.removeAt(undoHistory.lastIndex)
                 db = value
                 withContext(Dispatchers.IO) {
-                    runCatching { NeoCommittedEffects(context).reconcile(runtime.start()) }
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
                         .onFailure {
                             writeFailure =
                                 "Data saved; reminder/widget refresh is pending and will retry on reopening."
@@ -394,7 +394,7 @@ fun V11Home(
                 oldData = savedLegacy
                 db = savedDb
                 withContext(Dispatchers.IO) {
-                    runCatching { NeoCommittedEffects(context).reconcile(runtime.start()) }
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
                         .onFailure {
                             writeFailure =
                                 "Data saved; reminder/widget refresh is pending and will retry on reopening."
@@ -490,6 +490,7 @@ fun V11Home(
                         if (undoHistory.size > 20) undoHistory.removeAt(0)
                         db = next
                     },
+                LocalNeoFinanceAccess provides { accountsUnlocked },
                 LocalNeoRestoreCommitted provides { state -> adoptRestore(state) },
                 LocalNeoWorkplaceCommitRequest provides
                     { places, completed ->

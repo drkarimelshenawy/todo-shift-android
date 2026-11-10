@@ -458,6 +458,10 @@ class Neo4LocalBackup(context: Context) :
             }
             val previous = JSONObject()
             targets.keys.forEach { name -> previous.put(name, capture(prefs(name))) }
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
             val createdAssets = JSONArray()
             parsed.sections
                 .filterKeys { Neo4BackupFormat.safeAsset(it) || NeoAttachmentStore.safePath(it) }
@@ -495,10 +499,11 @@ class Neo4LocalBackup(context: Context) :
                     )
                 writeAtomic(quarantine, journalBytes)
             }
-            NeoCommittedEffects(app).prepare(oldDatabase ?: V11Database(), parsed.database)
             writeAtomic(journal, journalBytes)
             try {
                 restoreCheckpoint("journal")
+                NeoCommittedEffects(app).prepare(oldDatabase ?: V11Database(), parsed.database)
+                restoreCheckpoint("effects")
                 // Stage image files before changing data. Existing files with different content are
                 // rejected.
                 parsed.sections
@@ -577,11 +582,15 @@ class Neo4LocalBackup(context: Context) :
                 JSONObject()
                     .put("todo_shift_data", capture(prefs("todo_shift_data")))
                     .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
             val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
             require(snapshot.size <= 48 * 1024 * 1024)
-            NeoCommittedEffects(app).prepare(expected, updated)
             writeAtomic(journal, snapshot)
             try {
+                NeoCommittedEffects(app).prepare(expected, updated)
                 legacy.save(updatedLegacy)
                 storage.save(updated)
                 journal.delete()
@@ -614,12 +623,17 @@ class Neo4LocalBackup(context: Context) :
                 legacy.load().workplaces.map { it.id }.toSet()
             }
             val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
             val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
             require(snapshot.size <= 48 * 1024 * 1024)
-            NeoCommittedEffects(app).prepare(expected, next)
             writeAtomic(journal, snapshot)
             try {
                 checkpoint("journal")
+                NeoCommittedEffects(app).prepare(expected, next)
+                checkpoint("effects")
                 storage.save(next)
                 checkpoint("database")
                 journal.delete()
@@ -661,12 +675,17 @@ class Neo4LocalBackup(context: Context) :
                 JSONObject()
                     .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
                     .put(NeoSmartStore.NAME, capture(prefs(NeoSmartStore.NAME)))
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
             val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
             require(snapshot.size <= 48 * 1024 * 1024)
-            NeoCommittedEffects(app).prepare(expected, next)
             writeAtomic(journal, snapshot)
             try {
                 checkpoint("journal")
+                NeoCommittedEffects(app).prepare(expected, next)
+                checkpoint("effects")
                 storage.save(next)
                 checkpoint("text")
                 smart.update { o ->
@@ -705,7 +724,10 @@ class Neo4LocalBackup(context: Context) :
             val previous = o.getJSONObject("previous")
             require(
                 previous.keys().asSequence().all {
-                    it in uiPreferences || it == "todo_shift_v11" || it == "todo_shift_data"
+                    it in uiPreferences ||
+                        it == "todo_shift_v11" ||
+                        it == "todo_shift_data" ||
+                        it == NeoCommittedEffects.STORE_NAME
                 }
             )
             val created = o.optJSONArray("createdAssets") ?: JSONArray()

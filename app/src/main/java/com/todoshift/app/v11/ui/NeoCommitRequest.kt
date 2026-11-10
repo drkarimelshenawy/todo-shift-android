@@ -65,3 +65,5 @@ fun rememberNeoWorkplaceCommit(
 
 val LocalNeoRestoreCommitted =
     staticCompositionLocalOf<((com.todoshift.app.backup.Neo4RestoredState) -> Unit)?> { null }
+
+val LocalNeoFinanceAccess = staticCompositionLocalOf<(() -> Boolean)?> { null }

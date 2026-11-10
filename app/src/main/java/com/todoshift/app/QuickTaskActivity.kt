@@ -58,7 +58,7 @@ class QuickTaskActivity : FragmentActivity() {
                     withContext(Dispatchers.IO) {
                             val confirmed = V11Runtime(applicationContext).start()
                             runCatching {
-                                NeoCommittedEffects(applicationContext).reconcile(confirmed)
+                                NeoCommittedEffects(applicationContext).reconcileCurrent()
                             }
                             confirmed to AppStorage(applicationContext).load().workplaces
                         }

@@ -583,6 +583,10 @@ fun V11MoreScreen(
             db = db,
             onDatabaseRestored = onDatabaseRestored,
             onDismiss = { backupOpen = false },
+            financeAuthorized = financeAuthorized,
+            security = securitySettings,
+            securityStore = securityStore,
+            onUnlocked = onAccountsUnlocked,
         )
     }
 

@@ -243,7 +243,13 @@ class BackupRecoveryTest {
         backup().export(candidate, output)
         runtime.saveIfCurrent(candidate, before)
         for (boundary in
-            listOf("journal", "assets", "prefs:todo_shift_v11", "prefs:${NeoSmartStore.NAME}")) {
+            listOf(
+                "journal",
+                "effects",
+                "assets",
+                "prefs:todo_shift_v11",
+                "prefs:${NeoSmartStore.NAME}",
+            )) {
             val coordinator = backup()
             val prepared = coordinator.preview(output.toByteArray().inputStream())
             var interrupted = false
@@ -269,7 +275,7 @@ class BackupRecoveryTest {
         val before = runtime.start()
         val next =
             before.copy(tasks = listOf(TaskV11("journal-task", "Fixture", date = "2026-11-10")))
-        for (boundary in listOf("journal", "database")) {
+        for (boundary in listOf("journal", "effects", "database")) {
             try {
                 backup().commitDatabase(before, next) {
                     if (it == boundary) throw AssertionError("Simulated interruption")

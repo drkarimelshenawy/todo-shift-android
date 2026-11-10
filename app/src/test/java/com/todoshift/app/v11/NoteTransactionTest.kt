@@ -42,7 +42,7 @@ class NoteTransactionTest {
                 type = DayItemTypeV11.NOTE,
                 title = "New fixture",
             )
-        for (boundary in listOf("journal", "text", "style")) {
+        for (boundary in listOf("journal", "effects", "text", "style")) {
             val meta = NeoSmartStore(c).snapshot().toString()
             try {
                 Neo4LocalBackup(c).saveNote(before, meta, note, "#00A4B8", true) {

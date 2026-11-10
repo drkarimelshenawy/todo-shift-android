@@ -1,14 +1,22 @@
 package com.todoshift.app.v11
 
+import android.app.job.JobInfo
+import android.app.job.JobScheduler
+import android.content.ComponentName
 import android.content.Context
 import com.todoshift.app.backup.Neo4DataGate
 import com.todoshift.app.reminders.ToDoShiftReminder
 import com.todoshift.app.widget.Neo4WidgetRefresh
 
-/** Write-ahead service intent, replayed from confirmed storage after interruption. */
+/** Service intent is journaled with the data; replay always uses the confirmed database. */
 class NeoCommittedEffects(context: Context) {
+    companion object {
+        const val RETRY_JOB_ID = 0x544453
+        const val STORE_NAME = "todo_shift_pending_effects"
+    }
+
     private val app = context.applicationContext
-    private val prefs = app.getSharedPreferences("todo_shift_pending_effects", Context.MODE_PRIVATE)
+    private val prefs = app.getSharedPreferences(STORE_NAME, Context.MODE_PRIVATE)
 
     fun prepare(previous: V11Database, next: V11Database) =
         synchronized(Neo4DataGate.monitor) {
@@ -34,9 +42,29 @@ class NeoCommittedEffects(context: Context) {
             ) {
                 "Cannot record pending refresh; data was not written"
             }
+            // Android may reject/defer jobs. Keep the durable marker and boot/app-open fallback.
+            runCatching {
+                val scheduler = app.getSystemService(JobScheduler::class.java)
+                val job =
+                    JobInfo.Builder(
+                            RETRY_JOB_ID,
+                            ComponentName(app, NeoEffectsJobService::class.java),
+                        )
+                        .setPersisted(true)
+                        .setMinimumLatency(1000)
+                        .setOverrideDeadline(60000)
+                        .setBackoffCriteria(30000, JobInfo.BACKOFF_POLICY_EXPONENTIAL)
+                        .build()
+                check(scheduler.schedule(job) == JobScheduler.RESULT_SUCCESS)
+            }
+            Unit
         }
 
-    fun reconcile(
+    /** Read and replay under one gate; a later writer cannot race a stale service snapshot. */
+    fun reconcileCurrent() =
+        synchronized(Neo4DataGate.monitor) { reconcile(V11Runtime(app).start()) }
+
+    internal fun reconcile(
         confirmed: V11Database,
         cancel: (String) -> Unit = { ToDoShiftReminder.cancel(app, it) },
         schedule: (V11Database) -> Unit = { ToDoShiftReminder.rescheduleAll(app, it) },
@@ -48,5 +76,7 @@ class NeoCommittedEffects(context: Context) {
             schedule(confirmed)
             widgets()
             check(prefs.edit().clear().commit()) { "Refresh completed; acknowledgement pending" }
+            runCatching { app.getSystemService(JobScheduler::class.java).cancel(RETRY_JOB_ID) }
+            Unit
         }
 }

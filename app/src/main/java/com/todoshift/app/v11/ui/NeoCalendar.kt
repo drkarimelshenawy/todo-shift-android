@@ -330,9 +330,21 @@ fun NeoCalendarArea(
                             }
                             ?.coerceAtLeast(1) ?: 1
                     else 1
+                val iconLines =
+                    if (
+                        fontScale > 1.3f &&
+                            p.showNoteIcons &&
+                            presentation.values.any { day ->
+                                day.notes.firstOrNull()?.title?.let { title ->
+                                    listOf("📌", "★", "⚠").any { title.startsWith(it) }
+                                } == true
+                            }
+                    )
+                        1
+                    else 0
                 val contentMinimum =
                     cellMetrics.dateHeight +
-                        cellMetrics.captionHeight * (detailLines + badgeRows) +
+                        cellMetrics.captionHeight * (detailLines + badgeRows + iconLines) +
                         12.dp
                 val minimumHeight =
                     maxOf(
@@ -644,16 +656,24 @@ internal fun NeoCalendarCell(
                 color =
                     (if (today) c.primary else c.onSurface).copy(alpha = if (muted) 0.6f else 1f),
             )
-            if (p.showNoteIcons)
-                notes.firstOrNull()?.title?.let { title ->
-                    val marker = listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
-                    if (marker != null)
-                        Text(
-                            marker,
-                            modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
-                        )
-                }
+            val marker =
+                if (p.showNoteIcons)
+                    notes.firstOrNull()?.title?.let { title ->
+                        listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
+                    }
+                else null
+            val markerLine =
+                marker != null && androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
+            if (marker != null)
+                Text(
+                    marker,
+                    modifier =
+                        if (markerLine)
+                            Modifier.align(Alignment.TopStart)
+                                .padding(start = 2.dp, top = measured.dateHeight)
+                        else Modifier.align(Alignment.TopEnd).padding(2.dp),
+                    style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                )
             if ((p.showNotes && notes.isNotEmpty()) || (p.showShiftNames && segments.isNotEmpty()))
                 Column(
                     Modifier.align(Alignment.TopStart)
@@ -661,7 +681,9 @@ internal fun NeoCalendarCell(
                         .padding(
                             start = 2.dp,
                             end = 2.dp,
-                            top = measured.dateHeight,
+                            top =
+                                measured.dateHeight +
+                                    if (markerLine) measured.captionHeight else 0.dp,
                             bottom = measured.captionHeight + 10.dp,
                         )
                 ) {

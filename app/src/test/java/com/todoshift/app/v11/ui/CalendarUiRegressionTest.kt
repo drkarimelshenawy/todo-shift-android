@@ -39,6 +39,17 @@ class CalendarUiRegressionTest {
                 tasks =
                     if (withTasks) listOf(TaskV11("task", "Fixture", date = date.toString()))
                     else emptyList(),
+                dayItems =
+                    if (withTasks)
+                        listOf(
+                            DayItemV11(
+                                "pin",
+                                date.toString(),
+                                type = DayItemTypeV11.NOTE,
+                                title = "📌 Fixture",
+                            )
+                        )
+                    else emptyList(),
                 days =
                     listOf(
                         DayEntryV11(
@@ -174,6 +185,9 @@ class CalendarUiRegressionTest {
             "Seventh column must fit: $friday",
             friday.left >= 0f && friday.right <= with(compose.density) { 320.dp.toPx() },
         )
+        // Large rows scroll vertically; inspect the complete target cell, not clipped viewport
+        // bounds.
+        compose.onNodeWithContentDescription(date.toString(), substring = true).performScrollTo()
         val task =
             compose.onNodeWithText("☑1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val shifts =
@@ -183,6 +197,27 @@ class CalendarUiRegressionTest {
                 .onNodeWithText("Morning", useUnmergedTree = true)
                 .fetchSemanticsNode()
                 .boundsInRoot
+        val dateBounds =
+            compose.onNodeWithText("9", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val pinBounds =
+            compose.onNodeWithText("📌", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val noteBounds =
+            compose
+                .onNodeWithText("Fixture", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        org.junit.Assert.assertTrue(
+            "Pin must not obscure date: $dateBounds $pinBounds",
+            pinBounds.top >= dateBounds.bottom,
+        )
+        org.junit.Assert.assertTrue(
+            "Note must not obscure pin: $pinBounds $noteBounds",
+            noteBounds.top >= pinBounds.bottom,
+        )
+        org.junit.Assert.assertTrue(
+            "Shift must not obscure note: $noteBounds $name",
+            name.top >= noteBounds.bottom,
+        )
         org.junit.Assert.assertTrue(
             "Independent counts need separate rows: $task $shifts",
             task.bottom <= shifts.top,

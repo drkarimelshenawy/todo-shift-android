@@ -116,9 +116,19 @@ fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
                                         ),
                                     )
                                 val metrics = neoCellMetrics()
+                                val largeType =
+                                    androidx.compose.ui.platform.LocalDensity.current.fontScale >
+                                        1.3f
+                                val details =
+                                    (if (draft.showNotes) 1 else 0) +
+                                        (if (draft.showShiftNames) 1 else 0)
+                                val icons = if (largeType && draft.showNoteIcons) 1 else 0
+                                val badges = if (largeType && draft.showTaskIndicators) 2 else 1
                                 val height =
                                     maxOf(
-                                        metrics.dateHeight + metrics.captionHeight * 3 + 12.dp,
+                                        metrics.dateHeight +
+                                            metrics.captionHeight * (details + icons + badges) +
+                                            12.dp,
                                         72.dp,
                                     )
                                 CompositionLocalProvider(

@@ -169,4 +169,44 @@ class PremiumSettingsUiTest {
         assertEquals(1, navigated)
         assertEquals("#123456", store.load().accentHex)
     }
+
+    @Test
+    fun productionCalendarPreviewKeepsLargeTypePinDateAndBadgesSeparate() {
+        compose.setContent {
+            NeoEnvironment(NeoAppearance(language = NeoLanguage.ENGLISH), true, {}) {
+                Neo4ThemePreview(
+                    NeoAppearance(
+                        language = NeoLanguage.ENGLISH,
+                        fontScale = 2f,
+                        showShiftNames = true,
+                        reduceMotion = true,
+                    ),
+                    1f,
+                )
+            }
+        }
+        val date =
+            compose
+                .onNodeWithText(
+                    java.time.LocalDate.now().dayOfMonth.toString(),
+                    useUnmergedTree = true,
+                )
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val pin =
+            compose.onNodeWithText("📌", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val note =
+            compose
+                .onNodeWithText("Review", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val shift =
+            compose.onNodeWithText("24h", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val task =
+            compose.onNodeWithText("☑1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("Date and pin need distinct lines: $date $pin", pin.top >= date.bottom)
+        assertTrue("Pin and note need distinct lines: $pin $note", note.top >= pin.bottom)
+        assertTrue("Note and shift need distinct lines: $note $shift", shift.top >= note.bottom)
+        assertTrue("Content and count must not overlap: $shift $task", task.top >= shift.bottom)
+    }
 }

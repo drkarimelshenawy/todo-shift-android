@@ -929,6 +929,14 @@ class Neo4LocalBackup(context: Context) :
         try {
             output.write(data)
             file.finishWrite(output)
+            // AtomicFile can log a failed rename/sync without throwing. Never start the
+            // business transaction unless its rollback bytes are actually readable.
+            check(
+                file.baseFile.isFile &&
+                    file.openRead().use { readBounded(it, data.size + 1) }.contentEquals(data)
+            ) {
+                "Transaction journal was not confirmed; draft retained"
+            }
         } catch (failure: Throwable) {
             file.failWrite(output)
             throw failure

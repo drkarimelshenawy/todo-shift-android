@@ -74,12 +74,26 @@
     },
     {
       "phase": "P05",
-      "development_gate": "IN PROGRESS",
-      "entry_sha": "7d05c61c254d7c45c4e39ce78a3dbf1b1eff4da8"
+      "development_gate": "PASS",
+      "entry_sha": "7d05c61c254d7c45c4e39ce78a3dbf1b1eff4da8",
+      "source_sha": "37723d1fb9825ff6bac9c83c8e1051e9c453d527",
+      "evidence": [
+        "/workspace/output/premium-recovery/P05/RESULT.json",
+        "PremiumSettingsUiTest",
+        "WidgetPresentationSafetyTest",
+        "WidgetPaintParityTest",
+        "CommittedEffectsTest/ReminderPublicVersionTest",
+        "P05-source.json"
+      ],
+      "risks": [
+        "Launcher refresh timing, real notifications/Doze/permissions and physical visual acceptance remain blocked",
+        "Widget TRANSPARENT wallpaper contrast needs real Launcher; protected finance never shares transient Root unlock"
+      ]
     },
     {
       "phase": "P06",
-      "development_gate": "NOT RUN"
+      "development_gate": "IN PROGRESS",
+      "entry_sha": "37723d1fb9825ff6bac9c83c8e1051e9c453d527"
     }
   ]
 }

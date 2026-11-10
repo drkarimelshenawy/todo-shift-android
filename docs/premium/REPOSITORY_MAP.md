@@ -33,8 +33,8 @@ Tags are lightweight source archives, not GitHub releases or endorsements of tho
 
 ## Build entry points
 
-- `premium-qa.yml`: manual or reusable QA on this branch, checked source SHA, ephemeral test signing, unit/integration/Robolectric tests, lint and APK build. Temporary signing is not a compatible update guarantee.
-- `android.yml`: manual or reusable baseline test build with the existing CI signing secrets and required historical certificate. APK package/version are verified against `tools/PREMIUM_CANDIDATE.json`, not hardcoded to version 31. No release is published.
+- `premium-qa.yml`: manual or reusable QA on this branch, checked source SHA, ephemeral test signing, unit/integration/Robolectric tests, lint and APK build. The ephemeral APK stays inside the runner; only evidence is uploaded.
+- `android.yml`: manual, workflow-change-triggered or reusable baseline test build with the existing CI signing secrets and required historical certificate. APK package/version are verified against `tools/PREMIUM_CANDIDATE.json`, not hardcoded to version 31. No release is published.
 - `premium-maintenance.yml`: one-time cleanup, triggered by changes to that workflow or manually. Archives all seven references, runs both build paths, then deletes only the six explicitly listed branch tips using SHA leases. It checks kept branches, open PRs and active candidate-branch workflow runs, and fails closed on unexpected changes. Source must match the preserved baseline under `app/`.
 
 The obsolete rescue branch workflows remain available in its archive tag. No old branch names are needed by the active workflow configuration. References in historical reports are retained as historical evidence.

@@ -64,13 +64,11 @@ jobs:
         run: |
           python3 tools/verify_neo41_source.py
           gradle --no-daemon -I tools/premium_qa.init.gradle testDebugUnitTest lintDebug assembleDebug --stacktrace
-      - name: Verify and stage candidate
+      - name: Verify APK and stage evidence only
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk --build-tools "$ANDROID_HOME/build-tools/35.0.0" --expected-sha "$EXPECTED_SHA" --expected-certificate "$TEST_CERT_SHA" --output delivery/identity
-          APK_NAME=$(python3 -c 'import json; c=json.load(open("tools/PREMIUM_CANDIDATE.json")); print("ToDoShift-"+c["versionName"]+"-vc"+str(c["versionCode"])+"-ISOLATED-TEST.apk")')
-          cp app/build/outputs/apk/debug/app-debug.apk "delivery/$APK_NAME"
           mkdir -p delivery/qa
           cp -R app/build/test-results/testDebugUnitTest delivery/qa/junit
           cp app/build/reports/lint-results-debug.* delivery/qa/
@@ -89,7 +87,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Premium-isolated-TEST-${{ github.sha }}
+          name: Premium-QA-EVIDENCE-ONLY-${{ github.sha }}
           path: |
             delivery/
             app/build/reports/lint-results-debug.*

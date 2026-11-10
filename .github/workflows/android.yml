@@ -6,6 +6,11 @@ permissions:
 on:
   workflow_call:
   workflow_dispatch:
+  push:
+    branches: [premium/stable-candidate]
+    paths:
+      - '.github/workflows/android.yml'
+      - '.github/workflows/premium-qa.yml'
 
 jobs:
   build:
@@ -95,7 +100,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Premium-baseline-CI-Test
+          name: Premium-PERSISTENT-SIGNED-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30

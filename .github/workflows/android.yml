@@ -1,4 +1,4 @@
-name: Verify and build ToDo Shift 4.1
+name: Verify and build ToDo Shift 4.2
 
 permissions:
   contents: read
@@ -61,19 +61,26 @@ jobs:
           echo "CERTIFICATE FINGERPRINT MATCH"
           AAPT="$(dirname "$APKSIGNER")/aapt"
           "$AAPT" dump badging "$APK" > "$RUNNER_TEMP/apk-badging.txt"
-          grep -F "package: name='com.todoshift.app' versionCode='30' versionName='4.1.1'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "package: name='com.todoshift.app' versionCode='31' versionName='4.2.0'" "$RUNNER_TEMP/apk-badging.txt"
           mkdir -p delivery
-          cp "$APK" delivery/ToDoShift-4.1.1-vc30-CI-TEST.apk
+          cp "$APK" delivery/ToDoShift-4.2.0-vc31-CI-TEST.apk
           cp "$RUNNER_TEMP/apk-badging.txt" delivery/APK-BADGING.txt
           "$APKSIGNER" verify --verbose --print-certs "$APK" > delivery/APK-SIGNATURE.txt
           git rev-parse HEAD > delivery/SOURCE-COMMIT.txt
-          printf '%s\n' "Package: com.todoshift.app" "Version: 4.1.1 (30)" "Certificate SHA-256: $CERT_SHA" "Installed-app certificate: NOT VERIFIED" "Upgrade safety: requires matching installed certificate; do not uninstall or clear data" > delivery/BUILD-IDENTITY.txt
+          printf '%s\n' "Package: com.todoshift.app" "Version: 4.2.0 (31)" "Certificate SHA-256: $CERT_SHA" "Installed-app certificate: NOT VERIFIED" "Upgrade safety: requires matching installed certificate; do not uninstall or clear data" > delivery/BUILD-IDENTITY.txt
           (cd delivery && sha256sum *.apk *.txt > SHA256SUMS)
+
+      - name: Preserve functional QA evidence
+        run: |
+          mkdir -p delivery-qa
+          cp -R app/build/test-results/testDebugUnitTest delivery-qa/junit
+          cp -R app/build/reports/tests/testDebugUnitTest delivery-qa/tests
+          cp app/build/reports/lint-results-debug.* delivery-qa/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-4.1.1-vc30-CI-Test
+          name: ToDoShift-4.2.0-vc31-CI-Test
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -82,11 +89,25 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-4.1.1-vc30-QA
+          name: ToDoShift-4.2.0-vc31-QA
           path: |
-            app/build/test-results/testDebugUnitTest/
-            app/build/reports/tests/testDebugUnitTest/
+            delivery-qa/
             app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Capture native-render diagnostics (not device acceptance)
+        continue-on-error: true
+        run: gradle -I tools/visual_capture.init.gradle testDebugUnitTest --tests '*NeoVisualProbeTest' --stacktrace > visual-probe.log 2>&1
+
+      - name: Upload visual diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToDoShift-4.2.0-vc31-Visual-Diagnostics
+          path: |
+            app/build/ux-visual-evidence/
+            visual-probe.log
           if-no-files-found: warn
           retention-days: 30
 

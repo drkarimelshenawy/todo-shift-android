@@ -1,0 +1,12 @@
+{
+  "regular_tests": 132,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "lint_errors": 0,
+  "lint_warnings": 45,
+  "native_probe_tests": 2,
+  "native_pngs": 26,
+  "device_acceptance": "unperformed",
+  "full_acceptance_claim": false
+}

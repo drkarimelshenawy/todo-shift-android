@@ -1,0 +1,19 @@
+# UX rescue change log — 4.2.0 (31)
+
+The 4.1.1 product was rejected by user review. This candidate reorganizes its existing functions; automated and simulated-render results do not constitute user acceptance.
+
+- Shared compact rows, headers, spacing and neutral surfaces. New installations use Neo Luxury; saved Classic choices remain explicit. Neutral default background replaces decorative gradients. Identities include Neo, Minimal Light, Dark and AMOLED; switching profiles preserves language, all independent directions and first weekday.
+- Main navigation presentation is Calendar, Schedules, Tasks, Finances, Settings, retaining stable destination IDs and deep links.
+- Settings uses exactly six groups. Search resolves bilingual option names to the same focused control. Language directions and first weekday are individually addressable. No horizontally scrolling Settings/Studio tab strip remains in the Neo path.
+- Appearance opens directly from its group. Five vertical expandable sections share a small realistic calendar-cell preview and checked apply/discard behavior. Calendar/Today/paint controls live in Calendar & Shifts; performance lives in Advanced.
+- Calendar brush enters painting directly. Workplace and type choices show configured colors; eraser/Done remain outside the workplace scroller. Favorite selection is remembered. Relative bands retain quarter/half/full geometry while actual clock ranges remain independent. Jump-to-today remains directly available. Date, selection, note markers/text and full-cell fills retain separate layers.
+- Focused contextual operations replace routine navigation through a generic Tool selector. Calendar owns copy/favorites/suggestions, Schedules owns templates/comparison, Tasks owns task templates/attachments, Finances owns rates/allocations/statements/close review. Global results are categorized and task/payment results route to their context.
+- Schedules separates shifts, summary and calendars, with visible-calendar-only statistics and distinct worked-day counting. Overnight ranges have explicit next-day labels. Shift time editing formats saved overnight end times as clock times rather than invalid 33:00 values.
+- Tasks retains compact quick add and expanded details. A per-task action menu integrates attachments; draft IDs and dialog visibility survive saved-state restoration. Finance separates summary, receipts and obligations and retains source/method managers and financial unlock boundaries.
+- Inherited day-item, workplace, source/method and finance editors have discard guards and primitive saved state. Note editing/attachments are available from day details; note text is prioritized over icon prefixes inside small cells.
+- Dark/AMOLED visual inspection exposed inherited black header text/icons despite valid color-token contrast. The theme now publishes its foreground content color; an explicit composition regression covers the defect.
+- Attachment storage has previewed, explicit cleanup for only unreferenced, recognized private files. Fresh-reference checks and the shared gate protect concurrent imports/restores; linked and unknown files remain untouched.
+- Workplace creation adds a compatible income-source link atomically; old source IDs/names/allocations remain unchanged. Existing missing links can be reviewed through Data health before a safety-backed repair.
+- Quiet-hour reminder rescheduling considers deferred delivery time, so a reboot after the original time does not silently drop a still-pending deferred reminder. Android controls exact-alarm permission and a focused notification page exposes that state.
+
+No database schema reset/migration, signing credential change, package change, release, merge, main/Luxury-v4 change, uninstall or app-data clearing was performed. Existing persistence files and core business engines remain protected by the source verifier. Details and open acceptance are recorded in TRACEABILITY.json and QA_REPORT.md.

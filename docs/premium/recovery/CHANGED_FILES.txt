@@ -1,0 +1,244 @@
+Tested source eeb1af78251e20c15c47f989bdaea80419104563; original baselinee178b13. Documentation added by final checkpoint is listed in Git.
+
+ .github/workflows/premium-qa.yml                   |   91 +
+ app/build.gradle.kts                               |    4 +-
+ app/src/main/AndroidManifest.xml                   |    6 +
+ .../main/java/com/todoshift/app/MainActivity.kt    |   53 +-
+ .../java/com/todoshift/app/QuickTaskActivity.kt    |   89 +-
+ .../com/todoshift/app/backup/Neo4LocalBackup.kt    |  221 ++-
+ .../todoshift/app/reminders/ToDoShiftReminder.kt   |   13 +-
+ .../main/java/com/todoshift/app/v11/MoneyInput.kt  |   21 +
+ .../com/todoshift/app/v11/NeoCommittedEffects.kt   |  106 ++
+ .../com/todoshift/app/v11/NeoEffectsJobService.kt  |   46 +
+ .../com/todoshift/app/v11/NeoFinancialExport.kt    |   18 +
+ .../com/todoshift/app/v11/NeoNewReferenceGuard.kt  |   56 +
+ .../java/com/todoshift/app/v11/NeoPaintChanges.kt  |   32 +
+ .../todoshift/app/v11/NeoSchedulePresentation.kt   |   43 +
+ .../java/com/todoshift/app/v11/NeoTaskCommit.kt    |   50 +
+ .../com/todoshift/app/v11/V11AccountsController.kt |  422 ++---
+ .../todoshift/app/v11/V11DayOrganizerController.kt |  206 +-
+ .../todoshift/app/v11/ui/Neo4AccountBackupUi.kt    |  392 +++-
+ .../java/com/todoshift/app/v11/ui/Neo4Shell.kt     |   19 +-
+ .../java/com/todoshift/app/v11/ui/Neo4StudioUi.kt  |  225 ++-
+ .../com/todoshift/app/v11/ui/Neo4WidgetStudio.kt   |  214 ++-
+ .../todoshift/app/v11/ui/NeoAppearanceStudio.kt    |   69 +-
+ .../java/com/todoshift/app/v11/ui/NeoCalendar.kt   |  282 ++-
+ .../com/todoshift/app/v11/ui/NeoCalendarManager.kt |   14 +-
+ .../com/todoshift/app/v11/ui/NeoCommitRequest.kt   |   69 +
+ .../java/com/todoshift/app/v11/ui/NeoDashboard.kt  |  337 +++-
+ .../com/todoshift/app/v11/ui/NeoDayNoteDialog.kt   |   91 +-
+ .../com/todoshift/app/v11/ui/NeoFinanceForms.kt    |  223 ++-
+ .../todoshift/app/v11/ui/NeoLanguageSettings.kt    |  106 ++
+ .../java/com/todoshift/app/v11/ui/NeoModernHub.kt  |  140 +-
+ .../java/com/todoshift/app/v11/ui/NeoNavigation.kt |  200 ++
+ .../java/com/todoshift/app/v11/ui/NeoPainterBar.kt |  234 ++-
+ .../java/com/todoshift/app/v11/ui/NeoQuickTask.kt  |   27 +-
+ .../todoshift/app/v11/ui/NeoRescueComponents.kt    |   55 +-
+ .../com/todoshift/app/v11/ui/NeoRescueSchedules.kt |    3 +-
+ .../com/todoshift/app/v11/ui/NeoRescueSettings.kt  |   66 +-
+ .../java/com/todoshift/app/v11/ui/NeoSections.kt   |  100 +-
+ .../com/todoshift/app/v11/ui/V11BackupRestoreUi.kt |  387 ++--
+ .../java/com/todoshift/app/v11/ui/V11CalendarUi.kt |  113 +-
+ .../com/todoshift/app/v11/ui/V11DayDetailsUi.kt    |   98 +-
+ .../java/com/todoshift/app/v11/ui/V11FinanceUi.kt  |  513 +++--
+ .../main/java/com/todoshift/app/v11/ui/V11Home.kt  |  891 +++++----
+ .../java/com/todoshift/app/v11/ui/V11MoreUi.kt     |    4 +
+ .../com/todoshift/app/v11/ui/V11SchedulesUi.kt     |    5 +-
+ .../java/com/todoshift/app/v11/ui/V11TasksUi.kt    |  165 +-
+ .../com/todoshift/app/v11/ui/V11WorkplacesUi.kt    |   25 +-
+ .../todoshift/app/widget/CalendarWidgetFactory.kt  |  640 ++-----
+ .../com/todoshift/app/widget/Neo4SummaryWidgets.kt |  134 +-
+ .../com/todoshift/app/widget/Neo4WidgetPainter.kt  |   83 +-
+ .../com/todoshift/app/widget/Neo4WidgetSettings.kt |  202 +-
+ .../com/todoshift/app/widget/NeoWidgetContent.kt   |  158 ++
+ .../com/todoshift/app/widget/TasksWidgetFactory.kt |  140 +-
+ .../todoshift/app/widget/TasksWidgetProvider.kt    |  378 ++--
+ .../com/todoshift/app/backup/BackupRecoveryTest.kt |  240 ++-
+ .../com/todoshift/app/v11/AttachmentBackupTest.kt  |   48 +
+ .../com/todoshift/app/v11/CommittedEffectsTest.kt  |  144 ++
+ .../todoshift/app/v11/FinancialExportSafetyTest.kt |   48 +
+ .../app/v11/FinancialRequestIdentityTest.kt        |  135 ++
+ .../java/com/todoshift/app/v11/MoneyInputTest.kt   |   28 +
+ .../com/todoshift/app/v11/NeoPaintChangesTest.kt   |   80 +
+ .../app/v11/NeoSchedulePresentationTest.kt         |   59 +
+ .../com/todoshift/app/v11/NeoTaskCommitTest.kt     |  108 ++
+ .../todoshift/app/v11/NeoWidgetIntegrationTest.kt  |   29 +
+ .../todoshift/app/v11/NewReferenceSafetyTest.kt    |  127 ++
+ .../com/todoshift/app/v11/NoteTransactionTest.kt   |   86 +
+ .../todoshift/app/v11/PremiumLargeBackupTest.kt    |  189 ++
+ .../todoshift/app/v11/ReminderPublicVersionTest.kt |   38 +
+ .../com/todoshift/app/v11/WidgetPaintParityTest.kt |   38 +
+ .../app/v11/WidgetPresentationSafetyTest.kt        |  185 ++
+ .../com/todoshift/app/v11/ui/ActivitySemantics.kt  |  185 ++
+ .../app/v11/ui/CalendarUiRegressionTest.kt         |  198 +-
+ .../app/v11/ui/ClassicBackupAuthorizationTest.kt   |   55 +
+ .../app/v11/ui/ClassicReceiptSafetyTest.kt         |   74 +
+ .../com/todoshift/app/v11/ui/NeoNavigationTest.kt  |   96 +
+ .../com/todoshift/app/v11/ui/NeoRescueUiTest.kt    |   12 +-
+ .../app/v11/ui/PremiumActivitySaveTest.kt          |   92 +
+ .../app/v11/ui/PremiumNavigationActivityTest.kt    |  183 ++
+ .../com/todoshift/app/v11/ui/PremiumP01UiTest.kt   |  143 ++
+ .../app/v11/ui/PremiumPaintingActivityTest.kt      |  130 ++
+ .../todoshift/app/v11/ui/PremiumSettingsUiTest.kt  |  212 +++
+ .../todoshift/app/v11/ui/PremiumWorkflowUiTest.kt  |   81 +
+ .../app/v11/ui/WorkplaceSaveAcceptanceTest.kt      |   73 +
+ docs/premium/ACCEPTANCE.json                       | 1993 ++++++++++++++++++++
+ docs/premium/ADDITIONAL_DEFECTS.md                 |   28 +
+ docs/premium/BLUEPRINT_MANIFEST.json               |   16 +
+ docs/premium/CHECKPOINT.json                       |   12 +
+ docs/premium/DEFECT_STATUS.json                    |  229 +++
+ docs/premium/DEVELOPMENT_GATES.json                |   99 +
+ docs/premium/DEVELOPMENT_PROGRESS.md               |   15 +
+ docs/premium/EVIDENCE_SHA256.json                  |   86 +
+ docs/premium/GATES.json                            |   85 +
+ docs/premium/INSTALL.md                            |   29 +
+ docs/premium/P01_HANDOFF.md                        |   48 +
+ docs/premium/QA.md                                 |   85 +
+ docs/premium/QA_STATUS.json                        |  202 ++
+ docs/premium/REMAINING.md                          |   24 +
+ docs/premium/STORE_OWNERS.md                       |   17 +
+ docs/premium/VISUAL_EVIDENCE.md                    |   11 +
+ docs/premium/WRITE_CALLSITES.txt                   |  358 ++++
+ docs/premium/blueprint/CODEX_EXECUTION_PLAN.md     |   20 +
+ docs/premium/blueprint/CODEX_PROMPTS/P01.md        |   20 +
+ docs/premium/blueprint/CODEX_PROMPTS/P02.md        |   19 +
+ docs/premium/blueprint/CODEX_PROMPTS/P03.md        |   19 +
+ docs/premium/blueprint/CODEX_PROMPTS/P04.md        |   19 +
+ docs/premium/blueprint/CODEX_PROMPTS/P05.md        |   19 +
+ docs/premium/blueprint/CODEX_PROMPTS/P06.md        |   19 +
+ docs/premium/blueprint/MASTER_DEFECT_REGISTER.md   |   37 +
+ docs/premium/blueprint/OPTIONAL_FUTURE_STYLES.md   |    9 +
+ .../blueprint/PREMIUM_EXECUTIVE_DECISION.md        |   29 +
+ docs/premium/blueprint/PREMIUM_PRODUCT_SPEC.md     |   78 +
+ .../blueprint/PROTECTED_REQUIREMENTS_MATRIX.md     |  155 ++
+ docs/premium/blueprint/QA_ACCEPTANCE_MATRIX.md     |   44 +
+ docs/premium/blueprint/RELEASE_SAFETY_PLAN.md      |   19 +
+ tools/PREMIUM_CANDIDATE.json                       |    8 +
+ tools/premium_evidence.py                          |  151 ++
+ tools/premium_qa.init.gradle                       |    7 +
+ tools/verify_neo41_source.py                       |    7 +-
+ tools/verify_premium_apk.py                        |   57 +
+ tools/visual-tests/NeoVisualProbeTest.kt           |   71 +-
+ tools/visual_capture.init.gradle                   |    1 +
+ 120 files changed, 12431 insertions(+), 3109 deletions(-)
+
+A	.github/workflows/premium-qa.yml
+M	app/build.gradle.kts
+M	app/src/main/AndroidManifest.xml
+M	app/src/main/java/com/todoshift/app/MainActivity.kt
+M	app/src/main/java/com/todoshift/app/QuickTaskActivity.kt
+M	app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt
+M	app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt
+A	app/src/main/java/com/todoshift/app/v11/MoneyInput.kt
+A	app/src/main/java/com/todoshift/app/v11/NeoCommittedEffects.kt
+A	app/src/main/java/com/todoshift/app/v11/NeoEffectsJobService.kt
+A	app/src/main/java/com/todoshift/app/v11/NeoFinancialExport.kt
+A	app/src/main/java/com/todoshift/app/v11/NeoNewReferenceGuard.kt
+A	app/src/main/java/com/todoshift/app/v11/NeoPaintChanges.kt
+A	app/src/main/java/com/todoshift/app/v11/NeoSchedulePresentation.kt
+A	app/src/main/java/com/todoshift/app/v11/NeoTaskCommit.kt
+M	app/src/main/java/com/todoshift/app/v11/V11AccountsController.kt
+M	app/src/main/java/com/todoshift/app/v11/V11DayOrganizerController.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/Neo4Shell.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoCalendarManager.kt
+A	app/src/main/java/com/todoshift/app/v11/ui/NeoCommitRequest.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoDashboard.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt
+A	app/src/main/java/com/todoshift/app/v11/ui/NeoLanguageSettings.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt
+A	app/src/main/java/com/todoshift/app/v11/ui/NeoNavigation.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoRescueComponents.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSchedules.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt
+M	app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt
+M	app/src/main/java/com/todoshift/app/widget/CalendarWidgetFactory.kt
+M	app/src/main/java/com/todoshift/app/widget/Neo4SummaryWidgets.kt
+M	app/src/main/java/com/todoshift/app/widget/Neo4WidgetPainter.kt
+M	app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt
+A	app/src/main/java/com/todoshift/app/widget/NeoWidgetContent.kt
+M	app/src/main/java/com/todoshift/app/widget/TasksWidgetFactory.kt
+M	app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt
+M	app/src/test/java/com/todoshift/app/backup/BackupRecoveryTest.kt
+M	app/src/test/java/com/todoshift/app/v11/AttachmentBackupTest.kt
+A	app/src/test/java/com/todoshift/app/v11/CommittedEffectsTest.kt
+A	app/src/test/java/com/todoshift/app/v11/FinancialExportSafetyTest.kt
+A	app/src/test/java/com/todoshift/app/v11/FinancialRequestIdentityTest.kt
+A	app/src/test/java/com/todoshift/app/v11/MoneyInputTest.kt
+A	app/src/test/java/com/todoshift/app/v11/NeoPaintChangesTest.kt
+A	app/src/test/java/com/todoshift/app/v11/NeoSchedulePresentationTest.kt
+A	app/src/test/java/com/todoshift/app/v11/NeoTaskCommitTest.kt
+M	app/src/test/java/com/todoshift/app/v11/NeoWidgetIntegrationTest.kt
+A	app/src/test/java/com/todoshift/app/v11/NewReferenceSafetyTest.kt
+A	app/src/test/java/com/todoshift/app/v11/NoteTransactionTest.kt
+A	app/src/test/java/com/todoshift/app/v11/PremiumLargeBackupTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ReminderPublicVersionTest.kt
+A	app/src/test/java/com/todoshift/app/v11/WidgetPaintParityTest.kt
+A	app/src/test/java/com/todoshift/app/v11/WidgetPresentationSafetyTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/ActivitySemantics.kt
+M	app/src/test/java/com/todoshift/app/v11/ui/CalendarUiRegressionTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/ClassicBackupAuthorizationTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/ClassicReceiptSafetyTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/NeoNavigationTest.kt
+M	app/src/test/java/com/todoshift/app/v11/ui/NeoRescueUiTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/PremiumActivitySaveTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/PremiumNavigationActivityTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/PremiumP01UiTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/PremiumPaintingActivityTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/PremiumSettingsUiTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/PremiumWorkflowUiTest.kt
+A	app/src/test/java/com/todoshift/app/v11/ui/WorkplaceSaveAcceptanceTest.kt
+A	docs/premium/ACCEPTANCE.json
+A	docs/premium/ADDITIONAL_DEFECTS.md
+A	docs/premium/BLUEPRINT_MANIFEST.json
+A	docs/premium/CHECKPOINT.json
+A	docs/premium/DEFECT_STATUS.json
+A	docs/premium/DEVELOPMENT_GATES.json
+A	docs/premium/DEVELOPMENT_PROGRESS.md
+A	docs/premium/EVIDENCE_SHA256.json
+A	docs/premium/GATES.json
+A	docs/premium/INSTALL.md
+A	docs/premium/P01_HANDOFF.md
+A	docs/premium/QA.md
+A	docs/premium/QA_STATUS.json
+A	docs/premium/REMAINING.md
+A	docs/premium/STORE_OWNERS.md
+A	docs/premium/VISUAL_EVIDENCE.md
+A	docs/premium/WRITE_CALLSITES.txt
+A	docs/premium/blueprint/CODEX_EXECUTION_PLAN.md
+A	docs/premium/blueprint/CODEX_PROMPTS/P01.md
+A	docs/premium/blueprint/CODEX_PROMPTS/P02.md
+A	docs/premium/blueprint/CODEX_PROMPTS/P03.md
+A	docs/premium/blueprint/CODEX_PROMPTS/P04.md
+A	docs/premium/blueprint/CODEX_PROMPTS/P05.md
+A	docs/premium/blueprint/CODEX_PROMPTS/P06.md
+A	docs/premium/blueprint/MASTER_DEFECT_REGISTER.md
+A	docs/premium/blueprint/OPTIONAL_FUTURE_STYLES.md
+A	docs/premium/blueprint/PREMIUM_EXECUTIVE_DECISION.md
+A	docs/premium/blueprint/PREMIUM_PRODUCT_SPEC.md
+A	docs/premium/blueprint/PROTECTED_REQUIREMENTS_MATRIX.md
+A	docs/premium/blueprint/QA_ACCEPTANCE_MATRIX.md
+A	docs/premium/blueprint/RELEASE_SAFETY_PLAN.md
+A	tools/PREMIUM_CANDIDATE.json
+A	tools/premium_evidence.py
+A	tools/premium_qa.init.gradle
+M	tools/verify_neo41_source.py
+A	tools/verify_premium_apk.py
+M	tools/visual-tests/NeoVisualProbeTest.kt
+M	tools/visual_capture.init.gradle

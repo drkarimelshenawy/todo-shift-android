@@ -1,0 +1,1018 @@
+{
+  "store": "NeoAppearanceStore / neo4Appearance codec + compatible legacy fields",
+  "note": "Assignment search is an inventory, not proof a control is reachable or every toggle tested. Includes read-only preview fixture assignments. layoutPreset made explicitly reachable in P05.",
+  "fields": [
+    {
+      "field": "brightness",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 147,
+          "code": "draft.brightness == NeoBrightness.AMOLED -> \"AMOLED\""
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 148,
+          "code": "draft.brightness == NeoBrightness.DARK -> \"DARK\""
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 167,
+          "code": "brightness ="
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 187,
+          "code": "{ draft = draft.copy(brightness = it) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 62,
+          "code": "p.brightness == NeoBrightness.AMOLED -> Color.Black"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "palette",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 149,
+          "code": "draft.palette == NeoPalette.ARCTIC_WHITE -> \"MINIMAL\""
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 163,
+          "code": "palette ="
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 197,
+          "code": "draft = draft.copy(palette = it, accentHex = \"\")"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 63,
+          "code": "p.palette == NeoPalette.EMERALD_LUXURY -> Color(0xFF071310)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 64,
+          "code": "p.palette == NeoPalette.SUNSET_COPPER -> Color(0xFF12100F)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 65,
+          "code": "p.palette == NeoPalette.ROYAL_VIOLET -> Color(0xFF0E0A17)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "accentHex",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 178,
+          "code": "accentHex = \"\","
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 197,
+          "code": "draft = draft.copy(palette = it, accentHex = \"\")"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 209,
+          "code": "draft = draft.copy(accentHex = accent)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "intensity",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 228,
+          "code": "draft = draft.copy(intensity = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "cardStyle",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 177,
+          "code": "cardStyle = NeoCardStyle.FLAT,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 266,
+          "code": "{ draft = draft.copy(cardStyle = it) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 187,
+          "code": "(if (p.cardStyle == NeoCardStyle.FLAT) c.surface else c.surfaceContainerLow)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 197,
+          "code": "p.cardStyle == NeoCardStyle.LAYERED"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 203,
+          "code": "if (p.cardStyle == NeoCardStyle.FLAT) null"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "cornerRadius",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 273,
+          "code": "draft = draft.copy(cornerRadius = it.toInt())"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "glass",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 175,
+          "code": "glass = false,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 292,
+          "code": "draft = draft.copy(glass = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "glow",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 176,
+          "code": "glow = false,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 295,
+          "code": "draft = draft.copy(glow = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "motion",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 348,
+          "code": "{ draft = draft.copy(motion = it) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "reduceMotion",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 354,
+          "code": "draft = draft.copy(reduceMotion = it)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+          "line": 288,
+          "code": "if (focus) p.copy(reduceMotion = true) else p,"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "density",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 259,
+          "code": "{ draft = draft.copy(density = it) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "fontScale",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 252,
+          "code": "draft = draft.copy(fontScale = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "typeface",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 245,
+          "code": "{ draft = draft.copy(typeface = it) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 119,
+          "code": "if (en && p.typeface == NeoTypeface.GEOMETRIC)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 123,
+          "code": "val display = if (en && p.typeface == NeoTypeface.EDITORIAL) FontFamily.Serif else body"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "iconStyle",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 280,
+          "code": "{ draft = draft.copy(iconStyle = it) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoIcons.kt",
+          "line": 21,
+          "code": "val outlined = LocalNeoAppearance.current.iconStyle == NeoIconStyle.OUTLINED"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+          "line": 1261,
+          "code": "val outlined = p.iconStyle == NeoIconStyle.OUTLINED"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "calendarView",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+          "line": 218,
+          "code": "{ if (!paintMode) update(p.copy(calendarView = it)) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+          "line": 226,
+          "code": "onClick = { update(p.copy(calendarView = item)) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 134,
+          "code": "{ update(p.copy(calendarView = it)) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "calendarDensity",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Legacy value retained in codec/store/backup; modern cells use Calendar & Shifts > cellSize. No independent duplicate control."
+    },
+    {
+      "field": "language",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoLanguageSettings.kt",
+          "line": 60,
+          "code": "{ update(p.copy(language = it)) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+          "line": 150,
+          "code": "{ update(p.copy(language = it)) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "dashboardExpanded",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDashboard.kt",
+          "line": 96,
+          "code": "IconButton(onClick = { update(p.copy(dashboardExpanded = !p.dashboardExpanded)) }) {"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 175,
+          "code": "update(p.copy(dashboardExpanded = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "dashboardOrder",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 196,
+          "code": "update(p.copy(dashboardOrder = list))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "hiddenCards",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Advanced > Task overview: card switches call withDashboardCard, updating hiddenCards and corresponding show flag together."
+    },
+    {
+      "field": "quickActions",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 207,
+          "code": "quickActions ="
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showShiftNotes",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 218,
+          "code": "update(p.copy(showShiftNotes = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "timelineFilter",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoSections.kt",
+          "line": 85,
+          "code": "{ update(p.copy(timelineFilter = it)) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showFinanceChart",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 156,
+          "code": "update(p.copy(showFinanceChart = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+          "line": 346,
+          "code": "update(appearance.copy(showFinanceChart = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "background",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+          "line": 52,
+          "code": "if (appearance.background == NeoBackground.IMAGE && appearance.imageTheme == NeoImageTheme.PERSONAL && appearance.customImageFile.matches(Regex(\"neo4-theme-[a-zA-Z0-9-]+[.]jpg\"))) {"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+          "line": 60,
+          "code": "if (appearance.background == NeoBackground.IMAGE) {"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 243,
+          "code": "background = NeoBackground.IMAGE,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 256,
+          "code": "{ update(p.copy(background = it)) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 258,
+          "code": "if (p.background == NeoBackground.IMAGE) {"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 174,
+          "code": "background = NeoBackground.CLASSIC,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 90,
+          "code": "background = bg,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 61,
+          "code": "background = Color(0xFFF7F8FA),"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 76,
+          "code": "background = Color(0xFF0D1117),"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 91,
+          "code": "background = Color(0xFFF0F9FF),"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 106,
+          "code": "background = Color(0xFFF4F8F4),"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 121,
+          "code": "background = Color(0xFFFAF6EF),"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 136,
+          "code": "background = Color(0xFFF5F5F5),"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 179,
+          "code": "background = Color(0xFF080B16),"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Theme.kt",
+          "line": 198,
+          "code": "background = Color(0xFFF4F7FC),"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "imageTheme",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+          "line": 52,
+          "code": "if (appearance.background == NeoBackground.IMAGE && appearance.imageTheme == NeoImageTheme.PERSONAL && appearance.customImageFile.matches(Regex(\"neo4-theme-[a-zA-Z0-9-]+[.]jpg\"))) {"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4Atmosphere.kt",
+          "line": 65,
+          "code": "if (appearance.imageTheme == NeoImageTheme.PERSONAL) {"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 242,
+          "code": "imageTheme = NeoImageTheme.PERSONAL,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 264,
+          "code": "{ update(p.copy(imageTheme = it)) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "customImageFile",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 241,
+          "code": "customImageFile = it,"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "imagePositionX",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 287,
+          "code": "update(p.copy(imagePositionX = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "imagePositionY",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 290,
+          "code": "update(p.copy(imagePositionY = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "imageDim",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 293,
+          "code": "update(p.copy(imageDim = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "layoutPreset",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Appearance > Fonts and density > Layout preset calls withPreset."
+    },
+    {
+      "field": "showGreeting",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 321,
+          "code": "update(p.copy(showGreeting = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 163,
+          "code": "update(p.copy(showGreeting = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showDailySummary",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Advanced > Task overview: SUMMARY via withDashboardCard."
+    },
+    {
+      "field": "showNextShift",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Advanced > Task overview: NEXT_SHIFT via withDashboardCard."
+    },
+    {
+      "field": "showTaskSummary",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Advanced > Task overview: TASKS via withDashboardCard."
+    },
+    {
+      "field": "showFinanceSummary",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 336,
+          "code": "update(p.copy(showFinanceSummary = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 169,
+          "code": "update(p.copy(showFinanceSummary = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showSecondaryCards",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 339,
+          "code": "update(p.copy(showSecondaryCards = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 181,
+          "code": "update(p.copy(showSecondaryCards = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showEffects",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 354,
+          "code": "update(p.copy(showEffects = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 286,
+          "code": "draft = draft.copy(showEffects = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showOptionalInfo",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Advanced > Task overview: NEXT_EVENT via withDashboardCard."
+    },
+    {
+      "field": "showSecondaryIndicators",
+      "control_candidates": [],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised",
+      "indirect_or_legacy_path": "Legacy compatibility key retained. Codec fallback populates showTaskIndicators only when explicit new key absent; new authoritative toggle Calendar & Shifts > Task indicators."
+    },
+    {
+      "field": "showDescriptions",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 345,
+          "code": "update(p.copy(showDescriptions = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 301,
+          "code": "draft = draft.copy(showDescriptions = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showShiftPaint",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 363,
+          "code": "update(p.copy(showShiftPaint = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showCalendarLegend",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 348,
+          "code": "update(p.copy(showCalendarLegend = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 141,
+          "code": "update(p.copy(showCalendarLegend = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showBrand",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 351,
+          "code": "update(p.copy(showBrand = it))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 307,
+          "code": "draft = draft.copy(showBrand = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "cardOpacity",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 297,
+          "code": "update(p.copy(cardOpacity = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "glassStrength",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 300,
+          "code": "update(p.copy(glassStrength = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "optionalTransitions",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 320,
+          "code": "optionalTransitions = true,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 335,
+          "code": "draft = draft.copy(optionalTransitions = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "shiftPaints",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 372,
+          "code": "update(p.copy(shiftPaints = p.shiftPaints + (selected to value)))"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt",
+          "line": 481,
+          "code": "TextButton(onClick = { update(p.copy(shiftPaints = p.shiftPaints - selected)) }) {"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+          "line": 644,
+          "code": "appearance = if (p.showShiftPaint) p else p.copy(shiftPaints = emptyMap()),"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "uiDirection",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoLanguageSettings.kt",
+          "line": 93,
+          "code": "\"UI_DIRECTION\" -> p.copy(uiDirection = next)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 34,
+          "code": "0 -> p.copy(uiDirection = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "navigationDirection",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoLanguageSettings.kt",
+          "line": 94,
+          "code": "\"NAV_DIRECTION\" -> p.copy(navigationDirection = next)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 35,
+          "code": "1 -> p.copy(navigationDirection = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "gridDirection",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoLanguageSettings.kt",
+          "line": 95,
+          "code": "\"GRID_DIRECTION\" -> p.copy(gridDirection = next)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 36,
+          "code": "2 -> p.copy(gridDirection = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "weekdayDirection",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoLanguageSettings.kt",
+          "line": 96,
+          "code": "else -> p.copy(weekdayDirection = next)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 37,
+          "code": "else -> p.copy(weekdayDirection = it)"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "firstWeekday",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoLanguageSettings.kt",
+          "line": 74,
+          "code": "{ update(p.copy(firstWeekday = it)) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "transition",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 319,
+          "code": "transition = it,"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+          "line": 173,
+          "code": "if (p.transition == NeoTransition.FLIP && p.motionMillis > 0 && !focus) {"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "transitionSpeed",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+          "line": 329,
+          "code": "{ draft = draft.copy(transitionSpeed = it) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "performance",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 328,
+          "code": "appearance.performance == NeoPerformance.LIGHTWEIGHT ||"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDesignSystem.kt",
+          "line": 329,
+          "code": "(appearance.performance == NeoPerformance.AUTO && activityManager.isLowRamDevice)"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+          "line": 152,
+          "code": "{ update(p.copy(performance = it)) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+          "line": 326,
+          "code": "!(neoAppearance.performance == NeoPerformance.AUTO &&"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showNotes",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 59,
+          "code": "NeoSwitch(neoLabel(\"\u0646\u0635 \u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a\", \"Note text\"), p.showNotes) { update(p.copy(showNotes = it)) }"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showNoteIcons",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 61,
+          "code": "update(p.copy(showNoteIcons = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showShiftNames",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 64,
+          "code": "update(p.copy(showShiftNames = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showTaskIndicators",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 67,
+          "code": "update(p.copy(showTaskIndicators = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "todayStyle",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 78,
+          "code": "{ update(p.copy(todayStyle = it)) },"
+        },
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoTodayDecoration.kt",
+          "line": 54,
+          "code": "if (p.todayStyle == NeoTodayStyle.GLOW) 3.dp else 2.dp,"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "todayColor",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 85,
+          "code": "if (it.matches(Regex(\"#[0-9a-fA-F]{6}\"))) update(p.copy(todayColor = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "todayIntensity",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 91,
+          "code": "Slider(p.todayIntensity, { update(p.copy(todayIntensity = it)) })"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "todaySpeed",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 97,
+          "code": "{ update(p.copy(todaySpeed = it)) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "cellSize",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 51,
+          "code": "{ update(p.copy(cellSize = it)) },"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showOutsideDates",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 54,
+          "code": "update(p.copy(showOutsideDates = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    },
+    {
+      "field": "showTomorrow",
+      "control_candidates": [
+        {
+          "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernPreferences.kt",
+          "line": 57,
+          "code": "update(p.copy(showTomorrow = it))"
+        }
+      ],
+      "status": "static candidates only; persistence/visual/device matrix not fully exercised"
+    }
+  ]
+}

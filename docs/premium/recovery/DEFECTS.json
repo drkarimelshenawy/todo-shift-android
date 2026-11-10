@@ -1,0 +1,179 @@
+{
+  "source_sha": "eeb1af78251e20c15c47f989bdaea80419104563",
+  "defects": [
+    {
+      "id": "D01",
+      "software_work": "Single exact MoneyInput parse across inherited and Neo forms; no historical recalculation.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D02",
+      "software_work": "Saved NeoNavigator owns header/body/tab; guarded atomic route transitions.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D03",
+      "software_work": "Premium floating + enters painting directly; header brush removed per Blueprint correction.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D04",
+      "software_work": "Back consumes review/type/selection/paint layers; Done clears bulk mode.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D05",
+      "software_work": "Compact workplace strip and temporary types; fixed accessible eraser/Done.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D06",
+      "software_work": "Preview shares production cell/header/navigation/task renderers and atmosphere; synthetic read-only fixture.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D07",
+      "software_work": "Operation-linked checked commit completion; pending/error keeps editor and draft.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D08",
+      "software_work": "Original bundled icon, explicit hide respected; physical incident not reproduced.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D09",
+      "software_work": "Measured date/caption bounds; independent task/event/shift counts; workplace fill retained.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D10",
+      "software_work": "Named whole-segment review and explicit note deletion confirmation; unrelated records retained.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D11",
+      "software_work": "Single language/direction page, settings-only search, six groups, layout preset reachable.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D12",
+      "software_work": "Shared widget projections/painter; inactive cloud honest status with stored preferences retained.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D13",
+      "software_work": "Raw HEX and route leave guards; apply/discard wait for checked persistence.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D14",
+      "software_work": "Compact month/filter controls, natural empty/search states, saved filters and explicit unknown clocks.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D15",
+      "software_work": "No installed certificate or devices; upgrade remains BLOCKED, isolated test only.",
+      "status": "BLOCKED — ENVIRONMENT",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D16",
+      "software_work": "QuickTask editor remains visible on failure; stable-ID checked retry retained.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D17",
+      "software_work": "Recoverable joint note-text/decoration transaction with boundary fault tests.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D18",
+      "software_work": "Durable replay of confirmed data; separate widget-only replay; acknowledge after RemoteViews request.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D19",
+      "software_work": "Private notification visibility and neutral public version; physical delivery unverified.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D20",
+      "software_work": "Cold/warm explicit entry, consume once, saved consumed flag and editor leave guard; ordinary launcher resumes.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D21",
+      "software_work": "Shared widget segment index avoids per-cell regrouping; physical comparative performance still unmeasured.",
+      "status": "PARTIAL — physical performance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D22",
+      "software_work": "Saveable task/schedule filters and navigation state; safe deleted-result handling.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D23",
+      "software_work": "Blank differs from invalid; same validated cents result enables/saves financial forms.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D24",
+      "software_work": "Restore journal/asset staging checks and recovery at preference boundaries; no real data used.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D25",
+      "software_work": "Isolated manual QA workflow and candidate-based metadata verifier prepared; CI not executed/no push.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D26",
+      "software_work": "Cached widget adapters recheck privacy before returning content; actual Launcher timing remains blocked.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D27",
+      "software_work": "Current lint counts and IDs compared with P02/P05 XML; no disabled checks or baseline suppression.",
+      "status": "IMPLEMENTED / automated subsets tested; acceptance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D28",
+      "software_work": "24 MiB attachment/large database export-preview-restore regression measured on JVM only; physical peak memory pending.",
+      "status": "PARTIAL — physical performance pending",
+      "original_device_incident_reproduced": false
+    },
+    {
+      "id": "D29",
+      "software_work": "20-snapshot session-only undo policy preserved and labelled; physical memory/process acceptance pending.",
+      "status": "PARTIAL — physical performance pending",
+      "original_device_incident_reproduced": false
+    }
+  ]
+}

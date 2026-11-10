@@ -1,0 +1,951 @@
+{
+  "method": "Static source search, includes Premium/Classic; not exhaustive dynamic/editor acceptance",
+  "files": [
+    {
+      "file": "app/src/main/java/com/todoshift/app/MainActivity.kt",
+      "sha256": "c816c42010a4da17f947a755eee4aca2cb182db3d3b4ed2348e8162b9c8c0ebb",
+      "calls": [
+        {
+          "line": 214,
+          "code": "DayEditorDialog("
+        },
+        {
+          "line": 219,
+          "code": "onDelete = {"
+        },
+        {
+          "line": 228,
+          "code": "onSave = { entry ->"
+        },
+        {
+          "line": 609,
+          "code": "private fun DayEditorDialog("
+        },
+        {
+          "line": 659,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1437,
+          "code": "PaymentDialog("
+        },
+        {
+          "line": 1442,
+          "code": "onSave = { amount, note ->"
+        },
+        {
+          "line": 1489,
+          "code": "private fun PaymentDialog("
+        },
+        {
+          "line": 1502,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 2732,
+          "code": "WorkplaceEditorDialog("
+        },
+        {
+          "line": 2737,
+          "code": "onSave = { place ->"
+        },
+        {
+          "line": 2750,
+          "code": "WorkplaceEditorDialog("
+        },
+        {
+          "line": 2755,
+          "code": "onSave = { changed ->"
+        },
+        {
+          "line": 2892,
+          "code": "V10SmartToolDialog("
+        },
+        {
+          "line": 3016,
+          "code": "V10CreateTemplateDialog("
+        },
+        {
+          "line": 3074,
+          "code": "private fun V10CreateTemplateDialog("
+        },
+        {
+          "line": 3118,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 3276,
+          "code": "private fun V10SmartToolDialog("
+        },
+        {
+          "line": 3493,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 3888,
+          "code": "private fun WorkplaceEditorDialog("
+        },
+        {
+          "line": 3933,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 4473,
+          "code": "V09DayCenterDialog("
+        },
+        {
+          "line": 5239,
+          "code": "private fun V09DayCenterDialog("
+        },
+        {
+          "line": 5274,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/QuickTaskActivity.kt",
+      "sha256": "8e22c43b372dff7c4d72e581bcdad73e17c484a5afb2f3ac0c18ec25cbe04b63",
+      "calls": [
+        {
+          "line": 76,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 105,
+          "code": ".commitDatabase("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt",
+      "sha256": "7077b889d8b2060ed4453242ee28938ddc85b738d8e40fd5b044721eb92f6906",
+      "calls": [
+        {
+          "line": 614,
+          "code": "internal fun commitDatabase("
+        },
+        {
+          "line": 924,
+          "code": "check(editor.commit()) { \"Unable to persist restored data\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/data/AppStorage.kt",
+      "sha256": "92b85e78a0c594d8dead9795853226333406f75432ccb5e0295661a90acf26db",
+      "calls": [
+        {
+          "line": 31,
+          "code": "check(prefs.edit().putString(KEY_DATABASE, toJson(fresh).toString()).commit()) {"
+        },
+        {
+          "line": 45,
+          "code": "check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { \"Unable to persist legacy database\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/data/HistoryController.kt",
+      "sha256": "dff5b76dc6038023196727491566b163180f25d0cd9d4003787b53fceb30cb91",
+      "calls": [
+        {
+          "line": 13,
+          "code": "engine.commit("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/Neo4Profiles.kt",
+      "sha256": "2e958887e34f96f888700b6b5620275fd37eddd22de9452e373596a203799404",
+      "calls": [
+        {
+          "line": 20,
+          "code": "check(prefs.edit().putString(\"profiles\", o.toString()).commit()) { \"Unable to save layout profiles\" }"
+        },
+        {
+          "line": 22,
+          "code": "fun delete(id: String) { val o = JSONObject(prefs.getString(\"profiles\", \"{}\") ?: \"{}\"); o.remove(id); check(prefs.edit().putString(\"profiles\", o.toString()).commit()) { \"Unable to save layout profiles\" } }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/NeoAppearanceStore.kt",
+      "sha256": "edd6abcd4be9eb829d2c84e54ad9ee3c3a0c60562d63a59aefbd04c236538214",
+      "calls": [
+        {
+          "line": 117,
+          "code": "check(editor.commit()) { \"Unable to save appearance\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/NeoCommittedEffects.kt",
+      "sha256": "4496b6ec9fd6d35b727881a2b73aafd0ef2bf978c245706116e25bafb4c5f82b",
+      "calls": [
+        {
+          "line": 46,
+          "code": ".commit()"
+        },
+        {
+          "line": 63,
+          "code": ".commit()"
+        },
+        {
+          "line": 102,
+          "code": "check(prefs.edit().clear().commit()) { \"Refresh completed; acknowledgement pending\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt",
+      "sha256": "a3d418f360ece81a1420beeeffe3ea46c9e6b74f26602b60f8ae8af63df97170",
+      "calls": [
+        {
+          "line": 25,
+          "code": "check(prefs.edit().putString(\"data\", next.toString()).commit()) {"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/V11ActiveCalendarStore.kt",
+      "sha256": "230eeed96b2b78e3a0846b8be2fddef9a1290028c738022167e43c28f20c907f",
+      "calls": [
+        {
+          "line": 31,
+          "code": "check(editor.commit()) { \"Unable to save primary calendar\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/V11Runtime.kt",
+      "sha256": "7d8dbf33ee4f55636c0b16cc58afc3d2512d6c8a2186c17614ef968facc695b1",
+      "calls": [
+        {
+          "line": 70,
+          "code": "fun saveIfCurrent(expected: V11Database, next: V11Database) = synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt",
+      "sha256": "9490ff12b2523d71ba87ad79c58dcdd9342b89bfdee6c3f1a6a69de4c3592988",
+      "calls": [
+        {
+          "line": 164,
+          "code": "check(editor.commit()) { \"Unable to save security settings\" }"
+        },
+        {
+          "line": 302,
+          "code": ".commit()"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/V11Storage.kt",
+      "sha256": "39edb8fc0b5059cd5af4d005b45befa71f4259cd9439aa1423667ac685d97d64",
+      "calls": [
+        {
+          "line": 35,
+          "code": "check(prefs.edit().putString(KEY_DATABASE, raw).putBoolean(KEY_MIGRATED, true).commit()) {"
+        },
+        {
+          "line": 53,
+          "code": "check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { \"Unable to persist database\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/V11UiSettingsStore.kt",
+      "sha256": "9091c76c74a4772090758807b99c7f14e6baa07e4c5762be80fbac14e27dc7b9",
+      "calls": [
+        {
+          "line": 47,
+          "code": "check(editor.commit()) { \"Unable to save UI settings\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt",
+      "sha256": "17a5ed9790c824571b607298e067c57b4ee42300c14f7899ceeafd3f04a2ca0c",
+      "calls": [
+        {
+          "line": 129,
+          "code": "Dialog("
+        },
+        {
+          "line": 281,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt",
+      "sha256": "96608c39892bce295c152433608941fe56ea4749c35a6625f5c9cd4388a8b802",
+      "calls": [
+        {
+          "line": 37,
+          "code": "neoRegisterLeaveGuard { request(it) }"
+        },
+        {
+          "line": 40,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt",
+      "sha256": "cfa86bc8d5c8b3389b47000ce73238f66d906410370f351ae59f978c59335186",
+      "calls": [
+        {
+          "line": 65,
+          "code": "neoRegisterLeaveGuard { requestLeave(it) }"
+        },
+        {
+          "line": 76,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt",
+      "sha256": "63eab6eba8b176b9a8cfc09b6a91789def9bf498f1c6b61a3e8543aa2a7b1d84",
+      "calls": [
+        {
+          "line": 120,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 468,
+          "code": "NeoDayNoteDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendarManager.kt",
+      "sha256": "85d7ab7ff719736c86cb4f5e9215e086b6485889a1bd90fe35ec9b3277b32f13",
+      "calls": [
+        {
+          "line": 19,
+          "code": "fun NeoCalendarManagerDialog("
+        },
+        {
+          "line": 34,
+          "code": "rememberNeoEditorExit("
+        },
+        {
+          "line": 41,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt",
+      "sha256": "5d438f146a81b6c075bce1c43c35cb00b8625493ee6c4558f14dfa377cbbf0c6",
+      "calls": [
+        {
+          "line": 20,
+          "code": "fun NeoDayNoteDialog("
+        },
+        {
+          "line": 89,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 101,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt",
+      "sha256": "35c68ab111fe1946b99fd57509610dd3986e0fe561ed6045f26c8cb331afaba3",
+      "calls": [
+        {
+          "line": 42,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 185,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 349,
+          "code": "rememberNeoEditorExit(values, onDismiss)"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt",
+      "sha256": "2c829fa756a2a14151be50c239896d123f62435733a72f50e65a117e19d1555e",
+      "calls": [
+        {
+          "line": 143,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 787,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 958,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1024,
+          "code": ".DatePickerDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoNavigation.kt",
+      "sha256": "536b7d785483ed222142ce8866a94dfefb4b17bd1d4e541d83bbec8458e7cbc2",
+      "calls": [
+        {
+          "line": 143,
+          "code": "fun neoRegisterLeaveGuard(guard: ((() -> Unit) -> Unit)) {"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt",
+      "sha256": "135d2c21e2053aceed538907036931933b542b76626488970458d4b1f815dd89",
+      "calls": [
+        {
+          "line": 81,
+          "code": "neoRegisterLeaveGuard { requestExit(it) }"
+        },
+        {
+          "line": 98,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 303,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt",
+      "sha256": "9ac5b0549c5103287610ef9564630b9b24d0922c75b786fe7350a7c42a748cd7",
+      "calls": [
+        {
+          "line": 53,
+          "code": "val leave = rememberNeoEditorExit(listOf(title, date), onDismiss)"
+        },
+        {
+          "line": 54,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 71,
+          "code": "DatePickerDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueComponents.kt",
+      "sha256": "405855c557b47831a871c9650d85cc4e615597e32b9527460af2c2750b26caa7",
+      "calls": [
+        {
+          "line": 311,
+          "code": "fun rememberNeoEditorExit(values: List<Any?>, onDismiss: () -> Unit): () -> Unit {"
+        },
+        {
+          "line": 323,
+          "code": "neoRegisterLeaveGuard { next ->"
+        },
+        {
+          "line": 330,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/NeoRescueSettings.kt",
+      "sha256": "58e7e6f4f5ed808cae927ff95e9e1c0d9f62a7d56744089efb0d3efd76d68646",
+      "calls": [
+        {
+          "line": 83,
+          "code": "V11SecuritySettingsDialog(securityStore, securitySettings, { back() }, onSecurityChange)"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/SafeStorageRecovery.kt",
+      "sha256": "243b9b2030752c4cf75713984414f707c6130eb4a7b2e894f804fa4ef7e3fafb",
+      "calls": [
+        {
+          "line": 41,
+          "code": "Dialog(onDismissRequest = { if (!busy) onDismiss() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = !busy, dismissOnClickOutside = false)) {"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11AccountsSecurityUi.kt",
+      "sha256": "41258a2cf90755d41439dc662fe8693d2c73f37b08a541628fa94dd430664fdd",
+      "calls": [
+        {
+          "line": 531,
+          "code": "fun V11FinancialVerificationDialog("
+        },
+        {
+          "line": 561,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt",
+      "sha256": "0acdf78a7bc8f96897aa68e029569f119197a8dc165dc743e854cec0fd9143e4",
+      "calls": [
+        {
+          "line": 27,
+          "code": "fun V11BackupRestoreDialog("
+        },
+        {
+          "line": 52,
+          "code": "V11FinancialVerificationDialog("
+        },
+        {
+          "line": 59,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 149,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 193,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt",
+      "sha256": "5ae6d37af12f1510167c4475637123efeaa233b2b1a289b7550a42b0af748240",
+      "calls": [
+        {
+          "line": 473,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 533,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1561,
+          "code": "NeoCalendarManagerDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt",
+      "sha256": "bf53a1e9a671db807083ff0df551128ac8b719fa0cd18ea5d91d006ee34c2ee6",
+      "calls": [
+        {
+          "line": 435,
+          "code": "rememberNeoEditorExit(listOf(startText, endText), { pendingEditSegmentId = null })"
+        },
+        {
+          "line": 436,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 503,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 532,
+          "code": "NeoDayNoteDialog("
+        },
+        {
+          "line": 550,
+          "code": "V11AddDayItemDialog("
+        },
+        {
+          "line": 554,
+          "code": "onSave = { title, details, reminderAt ->"
+        },
+        {
+          "line": 615,
+          "code": "private fun V11AddDayItemDialog("
+        },
+        {
+          "line": 634,
+          "code": "rememberNeoEditorExit("
+        },
+        {
+          "line": 638,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 681,
+          "code": "TimePickerDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt",
+      "sha256": "aadd3b8df18a126cad1e5147977b932539645599c8b95382ca960e0c72bd1467",
+      "calls": [
+        {
+          "line": 461,
+          "code": "V11WorkplaceDueDetailsDialog("
+        },
+        {
+          "line": 472,
+          "code": "V11PaymentDetailsDialog("
+        },
+        {
+          "line": 493,
+          "code": "V11EditPaymentDialog("
+        },
+        {
+          "line": 497,
+          "code": "onSave = { updated ->"
+        },
+        {
+          "line": 529,
+          "code": "V11EditObligationDialog("
+        },
+        {
+          "line": 533,
+          "code": "onSave = { updated ->"
+        },
+        {
+          "line": 564,
+          "code": "V11FinancialVerificationDialog("
+        },
+        {
+          "line": 576,
+          "code": "V11PaymentDialog("
+        },
+        {
+          "line": 580,
+          "code": "onSave = { commit(it) { paymentOpen = false } },"
+        },
+        {
+          "line": 585,
+          "code": "V11ObligationDialog("
+        },
+        {
+          "line": 588,
+          "code": "onSave = { commit(it) { obligationOpen = false } },"
+        },
+        {
+          "line": 593,
+          "code": "V11IncomeSourcesDialog("
+        },
+        {
+          "line": 601,
+          "code": "V11PaymentMethodsDialog("
+        },
+        {
+          "line": 614,
+          "code": "V11ObligationPaymentDialog("
+        },
+        {
+          "line": 620,
+          "code": "onSave = { amount, methodId, recordId ->"
+        },
+        {
+          "line": 640,
+          "code": "private fun V11WorkplaceDueDetailsDialog("
+        },
+        {
+          "line": 665,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 726,
+          "code": "private fun V11PaymentDetailsDialog("
+        },
+        {
+          "line": 738,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 787,
+          "code": "internal fun V11EditPaymentDialog("
+        },
+        {
+          "line": 816,
+          "code": "val leave = rememberNeoEditorExit(listOf(amount, date, note, sourceId, methodId), onDismiss)"
+        },
+        {
+          "line": 817,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 935,
+          "code": "private fun V11EditObligationDialog("
+        },
+        {
+          "line": 978,
+          "code": "rememberNeoEditorExit("
+        },
+        {
+          "line": 982,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1126,
+          "code": "internal fun V11PaymentDialog("
+        },
+        {
+          "line": 1172,
+          "code": "val leave = rememberNeoEditorExit(listOf(amount, date, note, sourceId, methodId), onDismiss)"
+        },
+        {
+          "line": 1173,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1279,
+          "code": "private fun V11IncomeSourcesDialog("
+        },
+        {
+          "line": 1294,
+          "code": "val leave = rememberNeoEditorExit(listOf(newName, fixedAmount), onDismiss)"
+        },
+        {
+          "line": 1295,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1467,
+          "code": "V11EditIncomeSourceDialog("
+        },
+        {
+          "line": 1470,
+          "code": "onSave = {"
+        },
+        {
+          "line": 1482,
+          "code": "internal fun V11EditIncomeSourceDialog("
+        },
+        {
+          "line": 1493,
+          "code": "val leave = rememberNeoEditorExit(listOf(name, amount), onDismiss)"
+        },
+        {
+          "line": 1494,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1541,
+          "code": "private fun V11PaymentMethodsDialog("
+        },
+        {
+          "line": 1553,
+          "code": "val leave = rememberNeoEditorExit(listOf(newName), onDismiss)"
+        },
+        {
+          "line": 1554,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1664,
+          "code": "val leaveMethod = rememberNeoEditorExit(listOf(name), { editingId = null })"
+        },
+        {
+          "line": 1665,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1703,
+          "code": "private fun V11ObligationDialog("
+        },
+        {
+          "line": 1729,
+          "code": "rememberNeoEditorExit(listOf(name, total, installment, dueDay, count, type), onDismiss)"
+        },
+        {
+          "line": 1730,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 1836,
+          "code": "private fun V11ObligationPaymentDialog("
+        },
+        {
+          "line": 1855,
+          "code": "val leave = rememberNeoEditorExit(listOf(amount, methodId), onDismiss)"
+        },
+        {
+          "line": 1856,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt",
+      "sha256": "4f037b7ba147d8a1da525198a4461dddcda448a8ac982a11383cab28cb60b0bd",
+      "calls": [
+        {
+          "line": 112,
+          "code": "androidx.compose.ui.window.Dialog("
+        },
+        {
+          "line": 278,
+          "code": ".commitDatabase(db, repaired)"
+        },
+        {
+          "line": 408,
+          "code": ".commitDatabase(expected, value)"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt",
+      "sha256": "2b934017223b4840bbe93e88ebed8b33e329d91cdcd496ec40926fcdbe37a03a",
+      "calls": [
+        {
+          "line": 581,
+          "code": "V11BackupRestoreDialog("
+        },
+        {
+          "line": 594,
+          "code": "V11SecuritySettingsDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt",
+      "sha256": "46eae3e867ec55fb470f2793fef117641c5e36fc021d12c1f6bc2e6bcc58cb53",
+      "calls": [
+        {
+          "line": 337,
+          "code": "V11EditCalendarDialog("
+        },
+        {
+          "line": 340,
+          "code": "onSave = { updated ->"
+        },
+        {
+          "line": 348,
+          "code": "private fun V11EditCalendarDialog("
+        },
+        {
+          "line": 369,
+          "code": "val leave = rememberNeoEditorExit(listOf(name, colorHex), onDismiss)"
+        },
+        {
+          "line": 370,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11SecuritySettingsUi.kt",
+      "sha256": "e264e78c6c59999895d5683bcb74caf6a7bae7cb707a8b315ae8e088ad9fc183",
+      "calls": [
+        {
+          "line": 39,
+          "code": "fun V11SecuritySettingsDialog("
+        },
+        {
+          "line": 123,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 621,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 763,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 890,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 951,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt",
+      "sha256": "7bbd0daa0662701eef3a0a2e24f01a8c0fe919a14cf9e38f47612790658b0f86",
+      "calls": [
+        {
+          "line": 89,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 313,
+          "code": "onDelete = { pendingDelete = task },"
+        },
+        {
+          "line": 331,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 363,
+          "code": "onSave = { task ->"
+        },
+        {
+          "line": 696,
+          "code": "rememberNeoEditorExit("
+        },
+        {
+          "line": 728,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 777,
+          "code": ".TimePickerDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt",
+      "sha256": "8df1bb2d71508ed305082505cc44089f430a748f3c4753882c2c30d348958afb",
+      "calls": [
+        {
+          "line": 213,
+          "code": "onSave = { value ->"
+        },
+        {
+          "line": 232,
+          "code": "onSave = { value ->"
+        },
+        {
+          "line": 243,
+          "code": "AlertDialog("
+        },
+        {
+          "line": 312,
+          "code": "rememberNeoEditorExit("
+        },
+        {
+          "line": 316,
+          "code": "AlertDialog("
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt",
+      "sha256": "99c9a41740e3550ea2d967f63607f43a895cacb0e4bb47124b8486942556de22",
+      "calls": [
+        {
+          "line": 81,
+          "code": "check(editor.commit()) { \"Unable to save widget settings\" }"
+        }
+      ]
+    },
+    {
+      "file": "app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt",
+      "sha256": "d2bdce0e32fe92d1d54a3d6643a5f0d62c8be2243796ed7bce9516f847808d3c",
+      "calls": [
+        {
+          "line": 258,
+          "code": "com.todoshift.app.backup.Neo4LocalBackup(context).commitDatabase(db, updated)"
+        }
+      ]
+    }
+  ]
+}

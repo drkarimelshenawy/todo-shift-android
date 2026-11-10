@@ -1,0 +1,895 @@
+{
+  "source_sha": "eeb1af78251e20c15c47f989bdaea80419104563",
+  "cases": [
+    {
+      "id": "Q01",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.MoneyInputTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.MoneyInputTest.xml",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.FinancialRequestIdentityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.FinancialRequestIdentityTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.ClassicReceiptSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.ClassicReceiptSafetyTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumP01UiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumP01UiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.ModernUiIntegrationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.ModernUiIntegrationTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q02",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumActivitySaveTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumActivitySaveTest.xml",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoTaskCommitTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoTaskCommitTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NewReferenceSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NewReferenceSafetyTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.WorkplaceSaveAcceptanceTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.WorkplaceSaveAcceptanceTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.CommittedEffectsTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.CommittedEffectsTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumP01UiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumP01UiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q03",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.NoteTransactionTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NoteTransactionTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumPaintingActivityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumPaintingActivityTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q04",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.backup.BackupRecoveryTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.backup.BackupRecoveryTest.xml",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.AttachmentBackupTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.AttachmentBackupTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.PremiumLargeBackupTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.PremiumLargeBackupTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.ClassicBackupAuthorizationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.ClassicBackupAuthorizationTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q05",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.FinancialExportSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.FinancialExportSafetyTest.xml",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ModernSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ModernSafetyTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumWorkflowUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumWorkflowUiTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.ClassicBackupAuthorizationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.ClassicBackupAuthorizationTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q06",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.NeoNavigationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.NeoNavigationTest.xml",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumNavigationActivityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumNavigationActivityTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.NeoRescueUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.NeoRescueUiTest.xml",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumSettingsUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumSettingsUiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q07",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumNavigationActivityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumNavigationActivityTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoRescueIntegrityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoRescueIntegrityTest.xml",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q08",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumNavigationActivityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumNavigationActivityTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.NeoNavigationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.NeoNavigationTest.xml",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoWidgetIntegrationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoWidgetIntegrationTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q09",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumPaintingActivityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumPaintingActivityTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.WidgetPaintParityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.WidgetPaintParityTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q10",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumPaintingActivityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumPaintingActivityTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q11",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.CalendarUiRegressionTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.CalendarUiRegressionTest.xml",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoCalendarPresentationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoCalendarPresentationTest.xml",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoPaintChangesTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoPaintChangesTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.WidgetPaintParityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.WidgetPaintParityTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q12",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumPaintingActivityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumPaintingActivityTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ModernOperationsTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ModernOperationsTest.xml",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoPaintChangesTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoPaintChangesTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q13",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.backup.BackupRecoveryTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.backup.BackupRecoveryTest.xml",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.CalendarUiRegressionTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.CalendarUiRegressionTest.xml",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NewReferenceSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NewReferenceSafetyTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q14",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.NeoTaskCommitTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoTaskCommitTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumP01UiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumP01UiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumWorkflowUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumWorkflowUiTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q15",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumP01UiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumP01UiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoWidgetIntegrationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoWidgetIntegrationTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.CommittedEffectsTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.CommittedEffectsTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q16",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.NeoSchedulePresentationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoSchedulePresentationTest.xml",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumWorkflowUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumWorkflowUiTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ModernOperationsTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ModernOperationsTest.xml",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q17",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ModernOperationsTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ModernOperationsTest.xml",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoRatePolicyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoRatePolicyTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.FinancialExportSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.FinancialExportSafetyTest.xml",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.ClassicReceiptSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.ClassicReceiptSafetyTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q18",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.AttachmentBackupTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.AttachmentBackupTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.PhotoImportTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.PhotoImportTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoRescueIntegrityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoRescueIntegrityTest.xml",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q19",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumSettingsUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumSettingsUiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoRescueIntegrityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoRescueIntegrityTest.xml",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.NeoRescueUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.NeoRescueUiTest.xml",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q20",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumSettingsUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumSettingsUiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoRescueIntegrityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoRescueIntegrityTest.xml",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.CalendarUiRegressionTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.CalendarUiRegressionTest.xml",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q21",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumSettingsUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumSettingsUiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.NeoRescueUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.NeoRescueUiTest.xml",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoRescueIntegrityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoRescueIntegrityTest.xml",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q22",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.CommittedEffectsTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.CommittedEffectsTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ReminderPublicVersionTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ReminderPublicVersionTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ModernSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ModernSafetyTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q23",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.WidgetPresentationSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.WidgetPresentationSafetyTest.xml",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.WidgetPaintParityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.WidgetPaintParityTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.NeoWidgetIntegrationTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoWidgetIntegrationTest.xml",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q24",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.NeoRescueIntegrityTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.NeoRescueIntegrityTest.xml",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ModernSafetyTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ModernSafetyTest.xml",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q25",
+      "software_evidence": [],
+      "software_result": "See local build/identity reports",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q26",
+      "software_evidence": [],
+      "software_result": "NOT RUN — physical upgrade",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q27",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.PremiumLargeBackupTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.PremiumLargeBackupTest.xml",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    },
+    {
+      "id": "Q28",
+      "software_evidence": [
+        {
+          "suite": "com.todoshift.app.v11.ui.CalendarUiRegressionTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.CalendarUiRegressionTest.xml",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.PremiumSettingsUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.PremiumSettingsUiTest.xml",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "com.todoshift.app.v11.ui.NeoRescueUiTest",
+          "evidence": "/workspace/output/premium-recovery/P06/junit/TEST-com.todoshift.app.v11.ui.NeoRescueUiTest.xml",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "software_result": "PASS — associated regression subset only",
+      "acceptance": "PENDING",
+      "device_result": "BLOCKED — ENVIRONMENT",
+      "outstanding": "Execute full original Q criterion on authorized Android/Honor with matching signing, real providers/IME/Launcher/TalkBack and comparative performance. Named tests do not prove every editor/interleaving or visual combination."
+    }
+  ]
+}

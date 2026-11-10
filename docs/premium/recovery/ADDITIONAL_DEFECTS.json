@@ -1,0 +1,29 @@
+{
+  "source_sha": "eeb1af78251e20c15c47f989bdaea80419104563",
+  "defects": [
+    {
+      "id": "R30",
+      "evidence": "Native source-backed feature screenshots showed duplicated shell/child title and Back",
+      "fix": "One shell title and guarded Back, child suppression only on focused Premium routes; Classic/standalone unaffected",
+      "test": "PremiumNavigationActivityTest.invalidRawAccentIsGuardedOnTabSwitchAndDiscardActuallyLeavesStudio asserts one actual title and Back"
+    },
+    {
+      "id": "R31",
+      "evidence": "A removed option UI-direction PNG remained in reused capture output",
+      "fix": "Optional native Test task deletes only its generated capture output before rerun; final fresh manifest excludes stale file",
+      "test": "Fresh native capture and filename/checksum inventory, not device evidence"
+    },
+    {
+      "id": "R32",
+      "evidence": "Neo4WidgetPrivacy.amountsHidden getBoolean threw for wrong stored type, preventing masked render",
+      "fix": "Fail closed to hidden without rewriting raw preference",
+      "test": "WidgetPresentationSafetyTest.corruptPrivacyPreferencesFailClosedAndKeepRawBytes"
+    },
+    {
+      "id": "R33",
+      "evidence": "Fresh actual MainActivity native capture at 320dp and confirmed system fontScale2 showed seventh weekday/column offscreen; source widened grid beyond viewport",
+      "fix": "Keep seven columns in viewport, use distinct two-letter English headers with full spoken weekday, stack independent badges and measure extra rows vertically at large text; no new clock/shift math; pinned-note icon gets its own measured line at large type and production preview reserves the same content space",
+      "test": "CalendarUiRegressionTest.narrowTwoHundredPercentWeekShowsAllColumnsAndStacksIndependentBadges; fresh actual MainActivity screenshot; PremiumSettingsUiTest.productionCalendarPreviewKeepsLargeTypePinDateAndBadgesSeparate"
+    }
+  ]
+}

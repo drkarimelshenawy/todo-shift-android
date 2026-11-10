@@ -92,8 +92,23 @@
     },
     {
       "phase": "P06",
-      "development_gate": "IN PROGRESS",
-      "entry_sha": "37723d1fb9825ff6bac9c83c8e1051e9c453d527"
+      "development_gate": "PASS",
+      "entry_sha": "37723d1fb9825ff6bac9c83c8e1051e9c453d527",
+      "source_sha": "eeb1af78251e20c15c47f989bdaea80419104563",
+      "evidence": [
+        "/workspace/output/premium-recovery/P06/RESULT.json",
+        "P06/native-junit and NATIVE-SHA256.json",
+        "PremiumLargeBackupTest",
+        "CalendarUiRegressionTest narrow 200% bounds and PremiumSettingsUiTest production preview",
+        "P06/BUILD-INPUTS.json",
+        "P06/LINT-COMPARISON.json",
+        "P06-source.json and P06-kotlin.log"
+      ],
+      "risks": [
+        "Original release/device gates unchanged HOLD; no Android/Honor or installed certificate",
+        "CI workflow prepared/structurally checked, not executed or pushed",
+        "Physical p95/peak memory/battery and full visual/editor/toggle matrix remain acceptance pending"
+      ]
     }
   ]
 }

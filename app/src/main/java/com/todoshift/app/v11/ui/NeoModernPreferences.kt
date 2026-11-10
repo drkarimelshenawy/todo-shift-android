@@ -44,19 +44,6 @@ fun NeoDirectionPreferences(p: NeoAppearance, update: (NeoAppearance) -> Unit) {
 @Composable
 fun NeoCalendarPreferences(p: NeoAppearance, update: (NeoAppearance) -> Unit) {
     NeoChoice(
-        neoLabel("أول يوم", "First weekday"),
-        listOf(6, 7, 1),
-        p.firstWeekday,
-        {
-            when (it) {
-                6 -> neoLabel("السبت", "Saturday")
-                7 -> neoLabel("الأحد", "Sunday")
-                else -> neoLabel("الاثنين", "Monday")
-            }
-        },
-        { update(p.copy(firstWeekday = it)) },
-    )
-    NeoChoice(
         neoLabel("حجم الخلايا", "Cell size"),
         NeoCellSize.entries,
         p.cellSize,
@@ -79,6 +66,10 @@ fun NeoCalendarPreferences(p: NeoAppearance, update: (NeoAppearance) -> Unit) {
     NeoSwitch(neoLabel("مؤشرات المهام", "Task indicators"), p.showTaskIndicators) {
         update(p.copy(showTaskIndicators = it))
     }
+}
+
+@Composable
+fun NeoTodayPreferences(p: NeoAppearance, update: (NeoAppearance) -> Unit) {
     NeoChoice(
         neoLabel("تمييز اليوم", "Today highlight"),
         NeoTodayStyle.entries,

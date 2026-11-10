@@ -6,16 +6,16 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,232 +41,158 @@ fun V11DayDetailsScreen(
     onBack: () -> Unit,
     onDatabaseChange: (V11Database) -> Unit,
     financeAuthorized: Boolean = false,
-    financeAmountsVisible: Boolean = false
+    financeAmountsVisible: Boolean = false,
 ) {
+    var editingNoteId by rememberSaveable { mutableStateOf<String?>(null) }
+    val noteNavigator = LocalNeoFeatures.current
     val showDayMoney = !LocalV11NeoEnabled.current || (financeAuthorized && financeAmountsVisible)
-    var date by remember(initialDate) {
-        mutableStateOf(initialDate)
-    }
+    var date by remember(initialDate) { mutableStateOf(initialDate) }
 
-    var addType by remember {
-        mutableStateOf<DayItemTypeV11?>(null)
-    }
+    var addType by rememberSaveable { mutableStateOf<DayItemTypeV11?>(null) }
 
     var pendingEditSegmentId by remember { mutableStateOf<String?>(null) }
 
-    var pendingDeleteSegmentId by remember {
-        mutableStateOf<String?>(null)
-    }
+    var pendingDeleteSegmentId by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
 
     val notificationPermissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts
-                .RequestPermission()
-        ) { }
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     fun ensureNotificationPermission() {
         if (
             Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission
-                    .POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) != PackageManager.PERMISSION_GRANTED
         ) {
-            notificationPermissionLauncher
-                .launch(
-                    Manifest.permission
-                        .POST_NOTIFICATIONS
-                )
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
-    val entries = db.days.filter {
-        it.date == date.toString()
-    }
+    val entries = db.days.filter { it.date == date.toString() }
 
-    val items = db.dayItems
-        .filter { it.date == date.toString() }
-        .sortedBy { it.createdAt }
+    val items =
+        db.dayItems
+            .filter { it.date == date.toString() }
+            .sortedWith(
+                compareByDescending<DayItemV11> { it.title.startsWith("📌") }
+                    .thenBy { it.createdAt }
+            )
 
     Scaffold(
         topBar = {
-            Surface(
-                tonalElevation = 2.dp
-            ) {
+            Surface(tonalElevation = 2.dp) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(if (LocalV11NeoEnabled.current) Modifier.heightIn(min = 58.dp) else Modifier.statusBarsPadding().height(58.dp))
-                        .padding(horizontal = 6.dp),
-                    verticalAlignment =
-                        Alignment.CenterVertically
+                    modifier =
+                        Modifier.fillMaxWidth()
+                            .then(
+                                if (LocalV11NeoEnabled.current) Modifier.heightIn(min = 58.dp)
+                                else Modifier.statusBarsPadding().height(58.dp)
+                            )
+                            .padding(horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(
-                        onClick = onBack
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            neoLiteral("رجوع", "Back")
-                        )
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, neoLiteral("رجوع", "Back"))
                     }
 
-                    IconButton(
-                        onClick = {
-                            date = date.minusDays(1)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.ChevronLeft,
-                            neoLiteral("اليوم السابق", "Previous day")
-                        )
+                    IconButton(onClick = { date = date.minusDays(1) }) {
+                        Icon(Icons.Default.ChevronLeft, neoLiteral("اليوم السابق", "Previous day"))
                     }
 
                     Spacer(Modifier.weight(1f))
 
-                    Column(
-                        horizontalAlignment =
-                            Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            date.toString(),
-                            fontWeight = FontWeight.Black
-                        )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(date.toString(), fontWeight = FontWeight.Black)
 
                         if (date == LocalDate.now()) {
                             Text(
                                 neoLiteral("اليوم", "Today"),
-                                style =
-                                    MaterialTheme.typography
-                                        .labelSmall,
-                                color = Color(0xFF4F709C)
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF4F709C),
                             )
                         }
                     }
 
                     Spacer(Modifier.weight(1f))
 
-                    IconButton(
-                        onClick = {
-                            date = date.plusDays(1)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            neoLiteral("اليوم التالي", "Next day")
-                        )
+                    IconButton(onClick = { date = date.plusDays(1) }) {
+                        Icon(Icons.Default.ChevronRight, neoLiteral("اليوم التالي", "Next day"))
                     }
                 }
             }
         }
     ) { padding ->
-
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(
-                    rememberScrollState()
-                )
-                .padding(14.dp)
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(14.dp)
         ) {
-
             Text(
                 neoLiteral("الشيفتات", "Shifts"),
-                style =
-                    MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
             )
 
             Spacer(Modifier.height(8.dp))
 
             if (entries.flatMap { it.segments }.isEmpty()) {
-                V11EmptyCard(
-                    neoLiteral("لا توجد شيفتات في هذا اليوم", "No shifts on this day")
-                )
+                V11EmptyCard(neoLiteral("لا توجد شيفتات في هذا اليوم", "No shifts on this day"))
             }
 
             entries.forEach { entry ->
-                val calendar =
-                    db.calendars.firstOrNull {
-                        it.id == entry.calendarId
-                    }
+                val calendar = db.calendars.firstOrNull { it.id == entry.calendarId }
 
                 entry.segments.forEach { segment ->
-                    val place =
-                        workplaces.firstOrNull {
-                            it.id == segment.workplaceId
-                        }
+                    val place = workplaces.firstOrNull { it.id == segment.workplaceId }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment =
-                                Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            IconButton(
-                                onClick = {
-                                    pendingDeleteSegmentId =
-                                        segment.id
-                                }
-                            ) {
+                            IconButton(onClick = { pendingDeleteSegmentId = segment.id }) {
                                 Icon(
                                     Icons.Default.Delete,
                                     neoLiteral("حذف", "Delete"),
-                                    tint =
-                                        MaterialTheme.colorScheme
-                                            .error
+                                    tint = MaterialTheme.colorScheme.error,
                                 )
                             }
 
                             if (segment.kind != ShiftKind.OFF) {
                                 IconButton(onClick = { pendingEditSegmentId = segment.id }) {
-                                    Icon(Icons.Default.Edit, contentDescription = neoLiteral("تعديل وقت الشيفت", "Edit shift time"))
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription =
+                                            neoLiteral("تعديل وقت الشيفت", "Edit shift time"),
+                                    )
                                 }
                             }
 
                             Spacer(Modifier.weight(1f))
 
-                            Column(
-                                horizontalAlignment =
-                                    Alignment.End
-                            ) {
-                                Text(
-                                    neoShiftText(
-                                        segment.kind
-                                    ),
-                                    fontWeight =
-                                        FontWeight.Black
-                                )
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(neoShiftText(segment.kind), fontWeight = FontWeight.Black)
 
                                 Text(
-                                    listOfNotNull(
-                                        place?.name,
-                                        calendar?.name
-                                    ).joinToString(" • "),
-                                    style =
-                                        MaterialTheme.typography
-                                            .bodySmall
+                                    listOfNotNull(place?.name, calendar?.name).joinToString(" • "),
+                                    style = MaterialTheme.typography.bodySmall,
                                 )
 
-                                segment.timeRange()
-                                    ?.let { range ->
-                                        Text(
-                                            "${timeText(range.startMinute)} - ${timeText(range.endMinute)}",
-                                            style =
-                                                MaterialTheme.typography
-                                                    .labelSmall,
-                                            color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
-                                        )
-                                    }
+                                segment.timeRange()?.let { range ->
+                                    Text(
+                                        "${timeText(range.startMinute)} - ${timeText(range.endMinute)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color =
+                                            if (LocalV11NeoEnabled.current)
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            else Color.Gray,
+                                    )
+                                }
                             }
                         }
                     }
@@ -275,75 +201,34 @@ fun V11DayDetailsScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            val dueObligations =
-            remember(
-                db,
-                date
-            ) {
-                V11ObligationEngine
-                    .itemsForDate(
-                        db,
-                        date
-                    )
-            }
+            val dueObligations = remember(db, date) { V11ObligationEngine.itemsForDate(db, date) }
 
-        if (
-            dueObligations
-                .isNotEmpty()
-        ) {
-            Spacer(
-                Modifier.height(10.dp)
-            )
+            if (dueObligations.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
 
-            Text(
-                neoLiteral("التزامات اليوم", "Today's commitments"),
-                fontWeight =
-                    FontWeight.Black,
-                fontSize = 18.sp
-            )
+                Text(
+                    neoLiteral("التزامات اليوم", "Today's commitments"),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                )
 
-            Spacer(
-                Modifier.height(6.dp)
-            )
+                Spacer(Modifier.height(6.dp))
 
-            dueObligations
-                .forEach {
-                    info ->
+                dueObligations.forEach { info ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                        Column(modifier = Modifier.padding(11.dp)) {
+                            Text(info.obligation.name, fontWeight = FontWeight.Black)
 
-                    Card(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    vertical =
-                                        3.dp
-                                )
-                    ) {
-                        Column(
-                            modifier =
-                                Modifier.padding(
-                                    11.dp
-                                )
-                        ) {
                             Text(
-                                info.obligation
-                                    .name,
-                                fontWeight =
-                                    FontWeight.Black
+                                neoObligationState(info.state),
+                                style = MaterialTheme.typography.labelMedium,
                             )
 
                             Text(
-                                neoObligationState(
-                                        info.state
-                                    ),
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .labelMedium
-                            )
-
-                            Text(
-                                if (!showDayMoney) "••••••" else neoLiteral("المستحق: ${
+                                if (!showDayMoney) "••••••"
+                                else
+                                    neoLiteral(
+                                        "المستحق: ${
                                     "%.2f".format(
                                         info.expected
                                     )
@@ -351,7 +236,8 @@ fun V11DayDetailsScreen(
                                     "%.2f".format(
                                         info.remaining
                                     )
-                                } ج", "Expected: ${
+                                } ج",
+                                        "Expected: ${
                                     "%.2f".format(
                                         info.expected
                                     )
@@ -359,30 +245,25 @@ fun V11DayDetailsScreen(
                                     "%.2f".format(
                                         info.remaining
                                     )
-                                } EGP"),
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .bodySmall
+                                } EGP",
+                                    ),
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                     }
                 }
 
-            Spacer(
-                Modifier.height(10.dp)
-            )
-        }
+                Spacer(Modifier.height(10.dp))
+            }
 
-        Row(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 V11AddItemButton(
                     neoLiteral("مهمة", "Task"),
                     Icons.Default.TaskAlt,
-                    Modifier.weight(1f)
+                    Modifier.weight(1f),
                 ) {
                     addType = DayItemTypeV11.TASK
                 }
@@ -390,7 +271,7 @@ fun V11DayDetailsScreen(
                 V11AddItemButton(
                     neoLiteral("مشوار", "Errand"),
                     Icons.Default.DirectionsCar,
-                    Modifier.weight(1f)
+                    Modifier.weight(1f),
                 ) {
                     addType = DayItemTypeV11.ERRAND
                 }
@@ -400,22 +281,20 @@ fun V11DayDetailsScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 V11AddItemButton(
                     neoLiteral("تذكير", "Reminder"),
                     Icons.Default.Notifications,
-                    Modifier.weight(1f)
+                    Modifier.weight(1f),
                 ) {
-                    addType =
-                        DayItemTypeV11.REMINDER
+                    addType = DayItemTypeV11.REMINDER
                 }
 
                 V11AddItemButton(
                     neoLiteral("ملاحظة", "Note"),
                     Icons.Default.Notes,
-                    Modifier.weight(1f)
+                    Modifier.weight(1f),
                 ) {
                     addType = DayItemTypeV11.NOTE
                 }
@@ -425,153 +304,100 @@ fun V11DayDetailsScreen(
 
             Text(
                 neoLiteral("تنظيم اليوم", "Day organizer"),
-                style =
-                    MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
             )
 
             Spacer(Modifier.height(8.dp))
 
             if (items.isEmpty()) {
                 V11EmptyCard(
-                    neoLiteral("لا توجد مهام أو مشاوير أو تذكيرات", "No tasks, errands or reminders")
+                    neoLiteral(
+                        "لا توجد مهام أو مشاوير أو تذكيرات",
+                        "No tasks, errands or reminders",
+                    )
                 )
             }
 
             items.forEach { item ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth().padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         IconButton(
                             onClick = {
                                 // Reminder effects follow a confirmed database commit in V11Home.
 
-                                onDatabaseChange(
-                                    V11DayOrganizerController
-                                        .delete(
-                                            db,
-                                            item.id
-                                        )
-                                )
+                                onDatabaseChange(V11DayOrganizerController.delete(db, item.id))
                             }
                         ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                neoLiteral("حذف", "Delete")
-                            )
+                            Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))
                         }
 
-                        if (
-                            item.type !=
-                            DayItemTypeV11.NOTE
-                        ) {
+                        if (LocalV11NeoEnabled.current && item.type == DayItemTypeV11.NOTE) {
+                            IconButton(onClick = { editingNoteId = item.id }) {
+                                Icon(Icons.Default.Edit, neoLabel("تعديل الملاحظة", "Edit note"))
+                            }
+                            TextButton(onClick = { noteNavigator.open("ATTACHMENTS", item.id) }) {
+                                Text(neoLabel("مرفق", "Attach"))
+                            }
+                        }
+                        if (item.type != DayItemTypeV11.NOTE) {
                             Checkbox(
                                 checked = item.completed,
                                 onCheckedChange = {
-                                    val updated =
-                                        V11DayOrganizerController
-                                            .toggle(
-                                                db,
-                                                item.id
-                                            )
+                                    val updated = V11DayOrganizerController.toggle(db, item.id)
 
-                                    val changed =
-                                        updated.dayItems
-                                            .firstOrNull {
-                                                it.id ==
-                                                    item.id
-                                            }
+                                    val changed = updated.dayItems.firstOrNull { it.id == item.id }
 
-                                    if (
-                                        changed?.completed ==
-                                        true
-                                    ) {
-                                        ToDoShiftReminder
-                                            .cancel(
-                                                context,
-                                                item.id
-                                            )
-                                    } else if (
-                                        changed != null
-                                    ) {
-                                        ToDoShiftReminder
-                                            .schedule(
-                                                context,
-                                                changed
-                                            )
+                                    if (changed?.completed == true) {
+                                        ToDoShiftReminder.cancel(context, item.id)
+                                    } else if (changed != null) {
+                                        ToDoShiftReminder.schedule(context, changed)
                                     }
 
-                                    onDatabaseChange(
-                                        updated
-                                    )
-                                }
+                                    onDatabaseChange(updated)
+                                },
                             )
                         }
 
                         Spacer(Modifier.weight(1f))
 
-                        Column(
-                            horizontalAlignment =
-                                Alignment.End
-                        ) {
-                            Text(
-                                item.title,
-                                fontWeight =
-                                    FontWeight.Bold
-                            )
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(item.title, fontWeight = FontWeight.Bold)
 
                             if (item.details.isNotBlank()) {
-                                Text(
-                                    item.details,
-                                    style =
-                                        MaterialTheme.typography
-                                            .bodySmall
-                                )
+                                Text(item.details, style = MaterialTheme.typography.bodySmall)
                             }
 
                             Text(
                                 itemTypeLabel(item.type),
-                                style =
-                                    MaterialTheme.typography
-                                        .labelSmall,
-                                color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+                                style = MaterialTheme.typography.labelSmall,
+                                color =
+                                    if (LocalV11NeoEnabled.current)
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    else Color.Gray,
                             )
 
                             item.reminderAt?.let { millis ->
                                 val reminderTime =
-                                    java.time.Instant
-                                        .ofEpochMilli(
-                                            millis
-                                        )
-                                        .atZone(
-                                            ZoneId
-                                                .systemDefault()
-                                        )
+                                    java.time.Instant.ofEpochMilli(millis)
+                                        .atZone(ZoneId.systemDefault())
 
                                 Text(
-                                    neoLiteral("تنبيه ${"%02d:%02d".format(
+                                    neoLiteral(
+                                        "تنبيه ${"%02d:%02d".format(
                                         reminderTime.hour,
-                                        reminderTime.minute
-                                    )}", "Reminder ${"%02d:%02d".format(
+                                        reminderTime.minute,
+                                    )}",
+                                        "Reminder ${"%02d:%02d".format(
                                         reminderTime.hour,
-                                        reminderTime.minute
-                                    )}"),
-                                    style =
-                                        MaterialTheme.typography
-                                            .labelSmall,
-                                    color =
-                                        MaterialTheme
-                                            .colorScheme
-                                            .primary
+                                        reminderTime.minute,
+                                    )}",
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
                                 )
                             }
                         }
@@ -589,12 +415,20 @@ fun V11DayDetailsScreen(
             LaunchedEffect(segmentId) { pendingEditSegmentId = null }
         } else {
             val range = segment.timeRange()
-            var startText by remember(segmentId) {
-                mutableStateOf(range?.startMinute?.let { "%02d:%02d".format(it / 60, it % 60) } ?: "")
-            }
-            var endText by remember(segmentId) {
-                mutableStateOf(range?.endMinute?.let { if (it == 1440) "24:00" else "%02d:%02d".format(it / 60, it % 60) } ?: "")
-            }
+            var startText by
+                remember(segmentId) {
+                    mutableStateOf(
+                        range?.startMinute?.let { "%02d:%02d".format(it / 60, it % 60) } ?: ""
+                    )
+                }
+            var endText by
+                remember(segmentId) {
+                    mutableStateOf(
+                        range?.endMinute?.let {
+                            if (it == 1440) "24:00" else "%02d:%02d".format(it / 60, it % 60)
+                        } ?: ""
+                    )
+                }
             var editError by remember(segmentId) { mutableStateOf<String?>(null) }
             fun parseTime(value: String, end: Boolean): Int? {
                 val parts = value.trim().split(":")
@@ -609,157 +443,169 @@ fun V11DayDetailsScreen(
                 title = { Text(neoLiteral("تعديل أوقات الشيفت", "Edit shift times")) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(neoLiteral("الشيفت العابر لمنتصف الليل يظل في يوم بدايته فقط، بحد أقصى 24 ساعة.", "An overnight shift stays on its start date, up to 24 hours."))
-                        OutlinedTextField(value = startText, onValueChange = { startText = it },
-                            label = { Text(neoLiteral("البداية HH:mm", "Start HH:mm")) }, singleLine = true)
-                        OutlinedTextField(value = endText, onValueChange = { endText = it },
-                            label = { Text(neoLiteral("النهاية HH:mm", "End HH:mm")) }, singleLine = true)
+                        Text(
+                            neoLiteral(
+                                "الشيفت العابر لمنتصف الليل يظل في يوم بدايته فقط، بحد أقصى 24 ساعة.",
+                                "An overnight shift stays on its start date, up to 24 hours.",
+                            )
+                        )
+                        OutlinedTextField(
+                            value = startText,
+                            onValueChange = { startText = it },
+                            label = { Text(neoLiteral("البداية HH:mm", "Start HH:mm")) },
+                            singleLine = true,
+                        )
+                        OutlinedTextField(
+                            value = endText,
+                            onValueChange = { endText = it },
+                            label = { Text(neoLiteral("النهاية HH:mm", "End HH:mm")) },
+                            singleLine = true,
+                        )
                         editError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = {
-                        val start = parseTime(startText, false)
-                        val end = parseTime(endText, true)
-                        if (start == null || end == null) {
-                            editError = neoLiteral("أدخل الوقت بصيغة HH:mm", "Enter time in HH:mm format")
-                        } else {
-                            try {
-                                val normalizedEnd = if (end <= start) end + 1440 else end
-                                val updated = V11DayController.editSegmentTime(db, segmentId, start, normalizedEnd)
-                                onDatabaseChange(updated)
-                                pendingEditSegmentId = null
-                            } catch (e: IllegalArgumentException) {
-                                editError = e.message ?: neoLiteral("تعذر تعديل الوقت", "Cannot change time")
+                    TextButton(
+                        onClick = {
+                            val start = parseTime(startText, false)
+                            val end = parseTime(endText, true)
+                            if (start == null || end == null) {
+                                editError =
+                                    neoLiteral(
+                                        "أدخل الوقت بصيغة HH:mm",
+                                        "Enter time in HH:mm format",
+                                    )
+                            } else {
+                                try {
+                                    val normalizedEnd = if (end <= start) end + 1440 else end
+                                    val updated =
+                                        V11DayController.editSegmentTime(
+                                            db,
+                                            segmentId,
+                                            start,
+                                            normalizedEnd,
+                                        )
+                                    onDatabaseChange(updated)
+                                    pendingEditSegmentId = null
+                                } catch (e: IllegalArgumentException) {
+                                    editError =
+                                        e.message
+                                            ?: neoLiteral("تعذر تعديل الوقت", "Cannot change time")
+                                }
                             }
                         }
-                    }) { Text(neoLiteral("حفظ", "Save")) }
+                    ) {
+                        Text(neoLiteral("حفظ", "Save"))
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingEditSegmentId = null }) { Text(neoLiteral("إلغاء", "Cancel")) }
-                }
+                    TextButton(onClick = { pendingEditSegmentId = null }) {
+                        Text(neoLiteral("إلغاء", "Cancel"))
+                    }
+                },
             )
         }
     }
 
     pendingDeleteSegmentId?.let { segmentId ->
         AlertDialog(
-            onDismissRequest = {
-                pendingDeleteSegmentId = null
-            },
-            title = {
-                Text(neoLiteral("حذف الشيفت", "Delete shift"))
-            },
-            text = {
-                Text(neoLiteral("هل تريد حذف هذا الشيفت؟", "Delete this shift?"))
-            },
+            onDismissRequest = { pendingDeleteSegmentId = null },
+            title = { Text(neoLiteral("حذف الشيفت", "Delete shift")) },
+            text = { Text(neoLiteral("هل تريد حذف هذا الشيفت؟", "Delete this shift?")) },
             confirmButton = {
                 Button(
                     onClick = {
-                        onDatabaseChange(
-                            V11DayController
-                                .deleteSegment(
-                                    db,
-                                    segmentId
-                                )
-                        )
+                        onDatabaseChange(V11DayController.deleteSegment(db, segmentId))
                         pendingDeleteSegmentId = null
                     },
                     colors =
                         ButtonDefaults.buttonColors(
-                            containerColor =
-                                MaterialTheme
-                                    .colorScheme
-                                    .error
-                        )
+                            containerColor = MaterialTheme.colorScheme.error
+                        ),
                 ) {
                     Text(neoLiteral("حذف", "Delete"))
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        pendingDeleteSegmentId = null
-                    }
-                ) {
+                TextButton(onClick = { pendingDeleteSegmentId = null }) {
                     Text(neoLiteral("إلغاء", "Cancel"))
                 }
-            }
+            },
         )
     }
 
-    addType?.let { type ->
-        V11AddDayItemDialog(
-            type = type,
-            dateForReminder =
-                date.toString(),
-            onDismiss = {
+    if (LocalV11NeoEnabled.current && (editingNoteId != null || addType == DayItemTypeV11.NOTE)) {
+        val existing = db.dayItems.firstOrNull { it.id == editingNoteId }
+        NeoDayNoteDialog(
+            date,
+            existing,
+            {
+                editingNoteId = null
                 addType = null
             },
-            onSave = {
-                    title,
-                    details,
-                    reminderAt ->
-
-                val calendarId =
-                    db.calendars
-                        .firstOrNull {
-                            it.id ==
-                                activeCalendarId
-                        }
-                        ?.id
-                        ?: db.calendars
-                            .sortedBy { it.order }
-                            .firstOrNull()
-                            ?.id
-
-                val updated =
-                    V11DayOrganizerController.add(
-                        db = db,
-                        date = date.toString(),
-                        calendarId = calendarId,
-                        type = type,
-                        title = title,
-                        details = details,
-                        reminderAt = reminderAt
-                    )
-
-                val created =
-                    updated.dayItems
-                        .lastOrNull()
-
-                if (
-                    created != null &&
-                    created.reminderAt != null
-                ) {
-                    ensureNotificationPermission()
-
-                    // Scheduling follows a confirmed commit in V11Home.
-                }
-
-                onDatabaseChange(
-                    updated
-                )
-
-                addType = null
-            }
-        )
+        ) { note ->
+            val savedNote = if (existing == null) note.copy(calendarId = activeCalendarId) else note
+            onDatabaseChange(
+                db.copy(dayItems = db.dayItems.filterNot { it.id == savedNote.id } + savedNote)
+            )
+            editingNoteId = null
+            addType = null
+        }
     }
+    addType
+        ?.takeIf { !LocalV11NeoEnabled.current || it != DayItemTypeV11.NOTE }
+        ?.let { type ->
+            V11AddDayItemDialog(
+                type = type,
+                dateForReminder = date.toString(),
+                onDismiss = { addType = null },
+                onSave = { title, details, reminderAt ->
+                    val calendarId =
+                        db.calendars.firstOrNull { it.id == activeCalendarId }?.id
+                            ?: db.calendars.sortedBy { it.order }.firstOrNull()?.id
+
+                    val updated =
+                        V11DayOrganizerController.add(
+                            db = db,
+                            date = date.toString(),
+                            calendarId = calendarId,
+                            type = type,
+                            title = title,
+                            details = details,
+                            reminderAt = reminderAt,
+                        )
+
+                    val created = updated.dayItems.lastOrNull()
+
+                    if (created != null && created.reminderAt != null) {
+                        ensureNotificationPermission()
+
+                        // Scheduling follows a confirmed commit in V11Home.
+                    }
+
+                    onDatabaseChange(updated)
+
+                    addType = null
+                },
+            )
+        }
 }
 
 @Composable
-private fun V11EmptyCard(
-    text: String
-) {
+private fun V11EmptyCard(text: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF2F4F7)
+        color =
+            if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.surfaceVariant
+            else Color(0xFFF2F4F7),
     ) {
         Text(
             text,
             modifier = Modifier.padding(14.dp),
-            color = if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+            color =
+                if (LocalV11NeoEnabled.current) MaterialTheme.colorScheme.onSurfaceVariant
+                else Color.Gray,
         )
     }
 }
@@ -769,17 +615,10 @@ private fun V11AddItemButton(
     text: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    FilledTonalButton(
-        onClick = onClick,
-        modifier = modifier
-    ) {
-        Icon(
-            icon,
-            null,
-            modifier = Modifier.size(18.dp)
-        )
+    FilledTonalButton(onClick = onClick, modifier = modifier) {
+        Icon(icon, null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(4.dp))
         Text(text)
     }
@@ -790,140 +629,82 @@ private fun V11AddDayItemDialog(
     type: DayItemTypeV11,
     dateForReminder: String,
     onDismiss: () -> Unit,
-    onSave: (
-        String,
-        String,
-        Long?
-    ) -> Unit
+    onSave: (String, String, Long?) -> Unit,
 ) {
-    var title by remember {
-        mutableStateOf("")
-    }
+    var title by rememberSaveable { mutableStateOf("") }
 
-    var details by remember {
-        mutableStateOf("")
-    }
+    var details by rememberSaveable { mutableStateOf("") }
 
-    val context =
-        LocalContext.current
+    val context = LocalContext.current
 
-    var reminderHour by remember {
-        mutableIntStateOf(9)
-    }
+    var reminderHour by rememberSaveable { mutableIntStateOf(9) }
 
-    var reminderMinute by remember {
-        mutableIntStateOf(0)
-    }
+    var reminderMinute by rememberSaveable { mutableIntStateOf(0) }
 
-    var reminderEnabled by remember {
-        mutableStateOf(
-            type ==
-                DayItemTypeV11.REMINDER
+    var reminderEnabled by rememberSaveable { mutableStateOf(type == DayItemTypeV11.REMINDER) }
+
+    val leave =
+        rememberNeoEditorExit(
+            listOf(title, details, reminderHour, reminderMinute, reminderEnabled),
+            onDismiss,
         )
-    }
-
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                neoLiteral("إضافة ${itemTypeLabel(type)}", "Add ${itemTypeLabel(type)}")
-            )
-        },
+        onDismissRequest = leave,
+        title = { Text(neoLiteral("إضافة ${itemTypeLabel(type)}", "Add ${itemTypeLabel(type)}")) },
         text = {
             Column {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = {
-                        title = it
-                    },
-                    label = {
-                        Text(neoLiteral("العنوان", "Title"))
-                    },
-                    modifier =
-                        Modifier.fillMaxWidth()
+                    onValueChange = { title = it },
+                    label = { Text(neoLiteral("العنوان", "Title")) },
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(Modifier.height(8.dp))
 
                 OutlinedTextField(
                     value = details,
-                    onValueChange = {
-                        details = it
-                    },
-                    label = {
-                        Text(neoLiteral("التفاصيل", "Details"))
-                    },
-                    modifier =
-                        Modifier.fillMaxWidth()
+                    onValueChange = { details = it },
+                    label = { Text(neoLiteral("التفاصيل", "Details")) },
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                if (
-                    type !=
-                    DayItemTypeV11.NOTE
-                ) {
-                    Spacer(
-                        Modifier.height(10.dp)
-                    )
+                if (type != DayItemTypeV11.NOTE) {
+                    Spacer(Modifier.height(10.dp))
 
                     Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth(),
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Switch(
-                            checked =
-                                reminderEnabled,
-                            onCheckedChange = {
-                                reminderEnabled =
-                                    it
-                            }
+                            checked = reminderEnabled,
+                            onCheckedChange = { reminderEnabled = it },
                         )
 
-                        Spacer(
-                            Modifier.width(8.dp)
-                        )
+                        Spacer(Modifier.width(8.dp))
 
-                        Text(
-                            neoLiteral("تنبيه", "Alert")
-                        )
+                        Text(neoLiteral("تنبيه", "Alert"))
 
-                        Spacer(
-                            Modifier.weight(1f)
-                        )
+                        Spacer(Modifier.weight(1f))
 
-                        if (
-                            reminderEnabled
-                        ) {
+                        if (reminderEnabled) {
                             OutlinedButton(
                                 onClick = {
                                     TimePickerDialog(
-                                        context,
-                                        {
-                                            _,
-                                            hour,
-                                            minute ->
+                                            context,
+                                            { _, hour, minute ->
+                                                reminderHour = hour
 
-                                            reminderHour =
-                                                hour
-
-                                            reminderMinute =
-                                                minute
-                                        },
-                                        reminderHour,
-                                        reminderMinute,
-                                        true
-                                    ).show()
+                                                reminderMinute = minute
+                                            },
+                                            reminderHour,
+                                            reminderMinute,
+                                            true,
+                                        )
+                                        .show()
                                 }
                             ) {
-                                Text(
-                                    "%02d:%02d"
-                                        .format(
-                                            reminderHour,
-                                            reminderMinute
-                                        )
-                                )
+                                Text("%02d:%02d".format(reminderHour, reminderMinute))
                             }
                         }
                     }
@@ -934,54 +715,30 @@ private fun V11AddDayItemDialog(
             Button(
                 onClick = {
                     val reminderAt =
-                        if (
-                            reminderEnabled &&
-                            type !=
-                                DayItemTypeV11.NOTE
-                        ) {
+                        if (reminderEnabled && type != DayItemTypeV11.NOTE) {
                             LocalDateTime.of(
-                                LocalDate.parse(
-                                    dateForReminder
-                                ),
-                                LocalTime.of(
-                                    reminderHour,
-                                    reminderMinute
+                                    LocalDate.parse(dateForReminder),
+                                    LocalTime.of(reminderHour, reminderMinute),
                                 )
-                            )
-                                .atZone(
-                                    ZoneId
-                                        .systemDefault()
-                                )
+                                .atZone(ZoneId.systemDefault())
                                 .toInstant()
                                 .toEpochMilli()
                         } else {
                             null
                         }
 
-                    onSave(
-                        title,
-                        details,
-                        reminderAt
-                    )
+                    onSave(title, details, reminderAt)
                 },
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank(),
             ) {
                 Text(neoLiteral("حفظ", "Save"))
             }
         },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
-                Text(neoLiteral("إلغاء", "Cancel"))
-            }
-        }
+        dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
     )
 }
 
-private fun itemTypeLabel(
-    type: DayItemTypeV11
-): String =
+private fun itemTypeLabel(type: DayItemTypeV11): String =
     when (type) {
         DayItemTypeV11.TASK -> neoLiteral("مهمة", "Task")
         DayItemTypeV11.ERRAND -> neoLiteral("مشوار", "Errand")
@@ -989,9 +746,7 @@ private fun itemTypeLabel(
         DayItemTypeV11.NOTE -> neoLiteral("ملاحظة", "Note")
     }
 
-private fun timeText(
-    minute: Int
-): String {
+private fun timeText(minute: Int): String {
     if (minute == 1440) return "24:00"
 
     val h = minute / 60

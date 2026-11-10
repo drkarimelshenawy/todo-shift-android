@@ -254,7 +254,9 @@ fun V11Home(
     var neoAppearance by remember { mutableStateOf(loaded.appearance) }
     var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction) }
     var pendingTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
-    var modernToolsOpen by remember { mutableStateOf(false) }
+    var modernToolsOpen by rememberSaveable { mutableStateOf(false) }
+    var featureRoute by rememberSaveable { mutableStateOf("SEARCH") }
+    var featureOwner by rememberSaveable { mutableStateOf<String?>(null) }
     var temporaryFocus by remember { mutableStateOf(false) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
     var calendarActionId by remember { mutableIntStateOf(0) }
@@ -421,6 +423,46 @@ fun V11Home(
         ) {
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalV11NeoEnabled provides (uiSettings.experience == V11Experience.PREMIUM),
+                LocalNeoFeatures provides
+                    NeoFeatureNavigator { id, owner ->
+                        when (id) {
+                            "WORKPLACES" -> {
+                                modernToolsOpen = false
+                                showWorkplaces = true
+                            }
+                            "CALENDAR_MANAGER" -> {
+                                modernToolsOpen = false
+                                tab = 0
+                                calendarManagerRequest++
+                            }
+                            else -> {
+                                featureRoute = id
+                                featureOwner = owner
+                                modernToolsOpen = true
+                            }
+                        }
+                    },
+                LocalNeoUndo provides
+                    NeoUndoAction(
+                        undoHistory.isNotEmpty() &&
+                            !writeBusy &&
+                            ModernOperations.canUndo(db, undoHistory.last(), accountsUnlocked)
+                    ) {
+                        if (
+                            undoHistory.isNotEmpty() &&
+                                ModernOperations.canUndo(db, undoHistory.last(), accountsUnlocked)
+                        ) {
+                            val audit =
+                                AuditEntryV11(
+                                    java.util.UUID.randomUUID().toString(),
+                                    "UNDO",
+                                    "DATABASE",
+                                    "last-edit",
+                                    "User confirmed undo",
+                                )
+                            saveDb(undoHistory.last().copy(auditLog = db.auditLog + audit), false)
+                        }
+                    },
                 LocalNeoFocus provides temporaryFocus,
                 LocalNeoFocusChange provides { temporaryFocus = it },
                 LocalNeoNavigateDate provides
@@ -449,7 +491,19 @@ fun V11Home(
                                     calendarActionId++
                                 },
                                 onManage = { calendarManagerRequest++ },
-                                onOverview = { modernToolsOpen = true },
+                                onOverview = {
+                                    featureRoute = "SEARCH"
+                                    featureOwner = null
+                                    modernToolsOpen = true
+                                },
+                                featureDestination =
+                                    when (tab) {
+                                        0 -> "Calendar"
+                                        1 -> "Schedules"
+                                        4 -> "Tasks"
+                                        2 -> "Finances"
+                                        else -> "Settings"
+                                    },
                                 title =
                                     if (uiSettings.experience == V11Experience.PREMIUM)
                                         when {
@@ -465,30 +519,6 @@ fun V11Home(
                                 moneyVisible = moneyVisible,
                                 onToggleMoney = { moneyVisible = !moneyVisible },
                             )
-                            if (undoHistory.isNotEmpty())
-                                TextButton(
-                                    enabled =
-                                        !writeBusy &&
-                                            ModernOperations.canUndo(
-                                                db,
-                                                undoHistory.last(),
-                                                accountsUnlocked,
-                                            ),
-                                    onClick = {
-                                        val previous = undoHistory.last()
-                                        if (
-                                            ModernOperations.canUndo(db, previous, accountsUnlocked)
-                                        ) {
-                                            val audit = AuditEntryV11(
-                                                java.util.UUID.randomUUID().toString(),
-                                                "UNDO", "DATABASE", "last-edit", "User confirmed undo"
-                                            )
-                                            saveDb(previous.copy(auditLog = db.auditLog + audit), false)
-                                        }
-                                    },
-                                ) {
-                                    Text(neoLiteral("تراجع عن آخر تعديل", "Undo last change"))
-                                }
                         }
                     },
                     bottomBar = {
@@ -531,21 +561,67 @@ fun V11Home(
                             Neo4Atmosphere(Modifier.matchParentSize())
                         if (modernToolsOpen) {
                             BackHandler { modernToolsOpen = false }
-                            NeoModernHub(
-                                db,
-                                oldData.workplaces,
-                                accountsUnlocked,
-                                moneyVisible,
-                                { saveDb(it) },
-                                { date ->
-                                    modernToolsOpen = false
-                                    launchDate = date
-                                    month = YearMonth.from(date)
-                                    tab = 0
-                                    calendarAction = null
-                                },
-                                { modernToolsOpen = false },
-                            )
+                            key(featureRoute, featureOwner) {
+                                if (
+                                    featureRoute in
+                                        NeoFeatureCatalog.entries
+                                            .filter { it.group.isNotEmpty() }
+                                            .map { it.id } &&
+                                        featureRoute !in
+                                            listOf(
+                                                "NOTIFICATIONS",
+                                                "HEALTH",
+                                                "FOCUS",
+                                                "USAGE",
+                                                "STORAGE",
+                                            )
+                                ) {
+                                    NeoRescueSettings(
+                                        db,
+                                        uiSettings,
+                                        securitySettings,
+                                        securityStore,
+                                        accountsUnlocked,
+                                        { accountsUnlocked = true },
+                                        {
+                                            securitySettings = it
+                                            moneyVisible = !it.hideAmounts
+                                            accountsUnlocked =
+                                                !it.protectAccounts ||
+                                                    (it.mode == V11LockMode.NONE &&
+                                                        !it.biometricEnabled)
+                                        },
+                                        { saveUi(it) },
+                                        { state ->
+                                            db = state.database
+                                            oldData = state.legacy
+                                            uiSettings = state.ui
+                                            neoAppearance = state.appearance
+                                            activeCalendarId = state.activeCalendarId
+                                        },
+                                        initialPage = featureRoute,
+                                        onBack = { modernToolsOpen = false },
+                                    )
+                                } else
+                                    NeoModernHub(
+                                        db,
+                                        oldData.workplaces,
+                                        accountsUnlocked,
+                                        moneyVisible,
+                                        { saveDb(it) },
+                                        { date ->
+                                            modernToolsOpen = false
+                                            launchDate = date
+                                            month = YearMonth.from(date)
+                                            tab = 0
+                                            calendarAction = null
+                                        },
+                                        { modernToolsOpen = false },
+                                        initialSection = featureRoute,
+                                        focused = true,
+                                        initialOwner = featureOwner,
+                                    )
+                            }
                         } else if (showWorkplaces) {
                             V11WorkplacesScreen(
                                 workplaces = NeoRatePolicy.display(db, oldData.workplaces),
@@ -914,6 +990,7 @@ private fun V11GlobalHeader(
     onAdd: () -> Unit = {},
     onManage: () -> Unit = {},
     onOverview: () -> Unit = {},
+    featureDestination: String = "",
 ) {
     if (LocalV11NeoEnabled.current) {
         val p = LocalNeoAppearance.current
@@ -928,6 +1005,7 @@ private fun V11GlobalHeader(
             onManage,
             true,
             onOverview,
+            featureDestination,
         )
         return
     }
@@ -1031,6 +1109,7 @@ private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                             if (outlined) Icons.Outlined.Settings else Icons.Rounded.Settings,
                         ),
                     )
+                    .sortedBy { listOf(0, 1, 4, 2, 3).indexOf(it.first) }
                     .forEach { (index, label, icon) ->
                         NavigationBarItem(
                             selected = selectedTab == index,

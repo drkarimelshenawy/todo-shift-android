@@ -1,0 +1,11 @@
+# UX rescue architecture and feature inventory
+
+Baseline: 6a0acb77720290a305703df578f4d1646f8976c8. All changes remain on feat/neo-luxury-4.1-ultimate. Acceptance of 4.1.1 was rejected by the user; its 111 automated passes do not imply visual acceptance.
+
+Existing architecture: V11Home owns database snapshots, checked CAS saves, security state, undo and five destination IDs. V11CalendarUi owns painter/day detail/calendar management; NeoCalendar renders cells. V11SchedulesUi combines timeline and calendar administration. V11TasksUi owns task workflows; QuickTaskActivity is the separate launcher/widget editor. V11FinanceUi owns payments/obligations; NeoModernHub currently contains most reviewed bulk operations. V11MoreUi and NeoAppearanceStudio contain duplicated settings routes. NeoAppearanceStore/Codec, V11UiSettingsStore, NeoSmartStore and private attachment storage retain independent compatible preferences.
+
+Rescue architecture: preserve controllers and persistence; add a typed user-facing feature catalog and route dispatcher shared by contextual action menus and settings search. Each operation opens focused content directly, with no generic Tool selector. Six settings groups own authoritative controls. Appearance Studio becomes a vertical section editor with compact component preview and apply/discard. Calendar paint enters directly from a brush, with fixed eraser/Done and colored scrollable workplace/type choices. Navigation order is Calendar, Schedules, Tasks, Finances, Settings while stable destination IDs/deep links remain unchanged.
+
+Inventory: all 130 prior requirements are imported into the new acceptance/discoverability matrix; retained Classic preferences remain available without being silently overwritten. No new database migration is planned. Source-level verification and automated tests are recorded separately from actual pixel inspection and physical-device acceptance.
+
+Internal stages: (1) catalog/shared compact components/default identity, (2) settings/studio/direct feature routing, (3) calendar/painter/schedules/tasks/finance, (4) editor/attachment integrity and regression coverage, (5) visual evidence attempts, (6) final verification/version/feature-only push/CI/artifact delivery. Continue through all stages; stage commits are preservation points, not acceptance gates.

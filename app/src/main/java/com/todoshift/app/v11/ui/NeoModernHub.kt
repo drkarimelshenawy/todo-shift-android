@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -29,35 +30,40 @@ fun NeoModernHub(
     onChange: (V11Database) -> Unit,
     onOpenDate: (LocalDate) -> Unit,
     onBack: () -> Unit,
+    initialSection: String = "SEARCH",
+    focused: Boolean = false,
+    initialOwner: String? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val store = remember { NeoSmartStore(context.applicationContext) }
-    var section by remember { mutableStateOf("SEARCH") }
+    var section by remember { mutableStateOf(initialSection) }
     var error by remember { mutableStateOf<String?>(null) }
     var confirmationBase by remember { mutableStateOf(db) }
     var confirmation by remember { mutableStateOf<Pair<String, V11Database>?>(null) }
-    var query by remember { mutableStateOf("") }
-    var from by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
-    var to by remember { mutableStateOf(LocalDate.now().toString()) }
-    var destination by remember { mutableStateOf(LocalDate.now().plusDays(7).toString()) }
-    var monthA by remember { mutableStateOf(YearMonth.now().toString()) }
-    var monthB by remember { mutableStateOf(YearMonth.now().minusMonths(1).toString()) }
-    var workplace by remember { mutableStateOf(workplaces.firstOrNull()?.id) }
-    var type by remember { mutableStateOf(ShiftKind.FULL_DAY) }
-    var name by remember { mutableStateOf("") }
-    var titles by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var editingTemplate by remember { mutableStateOf<String?>(null) }
-    var templateKind by remember { mutableStateOf<ShiftKind?>(null) }
-    var templateCalendar by remember { mutableStateOf<String?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var from by rememberSaveable { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
+    var to by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    var destination by rememberSaveable { mutableStateOf(LocalDate.now().plusDays(7).toString()) }
+    var monthA by rememberSaveable { mutableStateOf(YearMonth.now().toString()) }
+    var monthB by rememberSaveable { mutableStateOf(YearMonth.now().minusMonths(1).toString()) }
+    var workplace by rememberSaveable { mutableStateOf(workplaces.firstOrNull()?.id) }
+    var type by rememberSaveable { mutableStateOf(ShiftKind.FULL_DAY) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var titles by rememberSaveable { mutableStateOf("") }
+    var amount by rememberSaveable { mutableStateOf("") }
+    var editingTemplate by rememberSaveable { mutableStateOf<String?>(null) }
+    var templateKind by rememberSaveable { mutableStateOf<ShiftKind?>(null) }
+    var templateCalendar by rememberSaveable { mutableStateOf<String?>(null) }
     var shiftTemplates by remember {
         mutableStateOf(store.snapshot().optJSONArray("shiftTemplates") ?: org.json.JSONArray())
     }
     var templates by remember { mutableStateOf(store.templates()) }
-    var payment by remember { mutableStateOf(db.payments.firstOrNull()?.id) }
+    var payment by rememberSaveable { mutableStateOf(db.payments.firstOrNull()?.id) }
     var csv by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var detachedReview by remember { mutableStateOf<Set<String>?>(null) }
+    var storageRevision by remember { mutableIntStateOf(0) }
     val exporter =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri
             ->
@@ -81,7 +87,7 @@ fun NeoModernHub(
             db.tasks.map { it.id to it.title } +
                 db.dayItems.filter { it.type == DayItemTypeV11.NOTE }.map { it.id to it.title }
         }
-    var owner by remember { mutableStateOf(owners.firstOrNull()?.first) }
+    var owner by rememberSaveable { mutableStateOf(initialOwner ?: owners.firstOrNull()?.first) }
     val attachments = remember { NeoAttachmentStore(context.applicationContext) }
     var attachmentList by remember { mutableStateOf(attachments.list()) }
     val importer =
@@ -118,41 +124,81 @@ fun NeoModernHub(
                 }
             }
     }
+    detachedReview?.let { names ->
+        AlertDialog(
+            onDismissRequest = { detachedReview = null },
+            title = { Text(neoLabel("حذف ملفات غير مرتبطة؟", "Delete detached files?")) },
+            text = {
+                Text(
+                    neoLabel(
+                        "سيُحذف ${names.size} ملفًا غير مرتبط نهائيًا؛ لن تتغير السجلات",
+                        "Permanently delete ${names.size} detached files; records are unchanged",
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        attempt {
+                            attachments.removeDetached(names)
+                            storageRevision++
+                            detachedReview = null
+                        }
+                    }
+                ) {
+                    Text(neoLabel("حذف الملفات غير المرتبطة", "Delete detached files"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { detachedReview = null }) {
+                    Text(neoLabel("إلغاء", "Cancel"))
+                }
+            },
+        )
+    }
     val financial = financeAuthorized && moneyVisible
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
-        Text(
-            neoLabel("أدوات التنظيم والمراجعة", "Organize and review"),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        NeoChoice(
-            neoLabel("الأداة", "Tool"),
-            listOf(
-                "SEARCH",
-                "COPY",
-                "SHIFT_TEMPLATE",
-                "TASK_TEMPLATES",
-                "RATES",
-                "COMPARE",
-                "STATEMENT",
-                "PAYMENTS",
-                "MONTH_REVIEW",
-                "HEALTH",
-                "NOTIFICATIONS",
-                "ATTACHMENTS",
-                "FOCUS",
-                "USAGE",
-            ),
-            section,
-            { neoToolLabel(it) },
-            {
-                section = it
-                error = null
-            },
-        )
+        if (focused)
+            NeoPageHeader(
+                NeoFeatureCatalog.get(section)?.let { neoLabel(it.ar, it.en) }
+                    ?: neoToolLabel(section),
+                onBack,
+            )
+        else TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
+        if (!focused)
+            Text(
+                neoLabel("أدوات التنظيم والمراجعة", "Organize and review"),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        if (!focused)
+            NeoChoice(
+                neoLabel("الأداة", "Tool"),
+                listOf(
+                    "SEARCH",
+                    "COPY",
+                    "SHIFT_TEMPLATE",
+                    "TASK_TEMPLATES",
+                    "RATES",
+                    "COMPARE",
+                    "STATEMENT",
+                    "PAYMENTS",
+                    "MONTH_REVIEW",
+                    "HEALTH",
+                    "NOTIFICATIONS",
+                    "ATTACHMENTS",
+                    "FOCUS",
+                    "USAGE",
+                ),
+                section,
+                { neoToolLabel(it) },
+                {
+                    section = it
+                    error = null
+                },
+            )
         if (
             section in listOf("RATES", "COMPARE", "STATEMENT", "PAYMENTS", "MONTH_REVIEW") &&
                 !financial
@@ -166,12 +212,21 @@ fun NeoModernHub(
             )
         when (section) {
             "SEARCH" -> {
+                val navigator = LocalNeoFeatures.current
                 OutlinedTextField(
                     query,
                     { query = it },
                     label = { Text(neoLabel("بحث شامل", "Global search")) },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                NeoFeatureCatalog.search(query).take(12).forEach { feature ->
+                    NeoSettingsRow(
+                        neoLabel(feature.ar, feature.en),
+                        neoLabel("إعداد أو إجراء", "Setting or action"),
+                    ) {
+                        navigator.open(feature.id)
+                    }
+                }
                 val result =
                     ModernOperations.search(db, query, financial) +
                         workplaces
@@ -180,7 +235,13 @@ fun NeoModernHub(
                                 ModernOperations.SearchResult("WORKPLACE", it.id, null, it.name)
                             }
                 result.take(100).forEach { row ->
-                    TextButton(onClick = { row.date?.let { onOpenDate(LocalDate.parse(it)) } }) {
+                    TextButton(
+                        onClick = {
+                            if (row.type == "WORKPLACE") navigator.open("WORKPLACES")
+                            else if (row.type == "PAYMENT") navigator.open("PAYMENTS")
+                            else row.date?.let { onOpenDate(LocalDate.parse(it)) }
+                        }
+                    ) {
                         Text("${row.type} • ${row.date.orEmpty()} • ${row.text.take(160)}")
                     }
                 }
@@ -219,7 +280,8 @@ fun NeoModernHub(
                     Text(neoLabel("مراجعة النسخ", "Review copy"))
                 }
             }
-            "SHIFT_TEMPLATE" -> {
+            "SHIFT_TEMPLATE",
+            "PAINT_SHORTCUTS" -> {
                 NeoChoice(
                     neoLabel("مكان العمل", "Workplace"),
                     workplaces.map { it.id },
@@ -806,6 +868,32 @@ fun NeoModernHub(
                             }
                         }
                     }
+            }
+            "STORAGE" -> {
+                val unused = remember(storageRevision) { attachments.detachedNames() }
+                Text(
+                    neoLabel("مساحة الملفات الخاصة: ", "Private attachment bytes: ") +
+                        attachments.storedBytes()
+                )
+                Text(neoLabel("ملفات غير مرتبطة: ", "Detached files: ") + unused.size)
+                Text(
+                    neoLabel(
+                        "لا تُحذف المرفقات المرتبطة أو الأرشيفات",
+                        "Attached files and safety archives are preserved",
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedButton(
+                    enabled = unused.isNotEmpty(),
+                    onClick = { detachedReview = unused },
+                ) {
+                    Text(
+                        neoLabel(
+                            "مراجعة تنظيف الملفات غير المرتبطة",
+                            "Review detached-file cleanup",
+                        )
+                    )
+                }
             }
             "FOCUS" -> NeoFocusControls()
             "USAGE" -> {

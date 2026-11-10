@@ -99,6 +99,7 @@ fun NeoCalendarArea(
         onMonthChange(YearMonth.from(date))
         if (!paintMode) onSelectedDate(date)
     }
+    val noteNavigator = LocalNeoFeatures.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val noteStore = remember { NeoSmartStore(context.applicationContext) }
     var noteRevision by remember { mutableIntStateOf(0) }
@@ -231,7 +232,11 @@ fun NeoCalendarArea(
                         NeoCellSize.COMFORTABLE -> 64.dp
                         NeoCellSize.LARGE -> 88.dp
                     }
-                val rowHeight = ((maxHeight - headerHeight) / rows).coerceAtLeast(minimumHeight)
+                val rowHeight =
+                    ((maxHeight - headerHeight) / rows).coerceIn(
+                        minimumHeight,
+                        minimumHeight + 12.dp,
+                    )
                 val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
                 val contentWidth =
                     if (columns == 1) maxWidth
@@ -397,6 +402,14 @@ fun NeoCalendarArea(
                             }
                             TextButton(
                                 onClick = {
+                                    sheetDate = null
+                                    noteNavigator.open("ATTACHMENTS", note.id)
+                                }
+                            ) {
+                                Text(neoLabel("مرفق", "Attach"))
+                            }
+                            TextButton(
+                                onClick = {
                                     onDatabaseChange(
                                         db.copy(
                                             dayItems = db.dayItems.filterNot { it.id == note.id }
@@ -536,7 +549,7 @@ private fun NeoCalendarCell(
                                             .removePrefix("📌 ")
                                             .removePrefix("★ ")
                                             .removePrefix("⚠ "),
-                                    maxLines = 2,
+                                    maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = c.onSurface,
@@ -559,10 +572,25 @@ private fun NeoCalendarCell(
                         }
                     if (p.showShiftNames)
                         Text(
-                            segments.joinToString("/") { it.kind.name },
+                            segments.joinToString("/") {
+                                when (it.kind) {
+                                    ShiftKind.FULL_DAY -> "24h"
+                                    ShiftKind.LONG -> "Long"
+                                    ShiftKind.NIGHT -> neoLiteral("ليل", "Night")
+                                    ShiftKind.MORNING -> neoLiteral("ص", "AM")
+                                    ShiftKind.EVENING -> neoLiteral("م", "PM")
+                                    ShiftKind.OFF -> neoLiteral("راحة", "Off")
+                                }
+                            },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.labelSmall,
+                            color = c.onSurface,
+                            modifier =
+                                Modifier.background(
+                                    c.surface.copy(alpha = .9f),
+                                    RoundedCornerShape(3.dp),
+                                ),
                         )
                 }
             if (segments.isNotEmpty() || (p.showTaskIndicators && (tasks > 0 || events > 0)))

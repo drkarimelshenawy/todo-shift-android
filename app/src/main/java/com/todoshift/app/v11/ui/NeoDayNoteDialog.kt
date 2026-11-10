@@ -3,6 +3,7 @@ package com.todoshift.app.v11.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -19,15 +20,15 @@ fun NeoDayNoteDialog(
 ) {
     val context = LocalContext.current
     val styleStore = remember { NeoSmartStore(context.applicationContext) }
-    val id = remember(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
-    var color by remember(id) { mutableStateOf(styleStore.noteColor(id)) }
+    val id = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
+    var color by rememberSaveable(id) { mutableStateOf(styleStore.noteColor(id)) }
     var border by
         remember(id) {
             mutableStateOf(
                 styleStore.snapshot().optJSONObject("noteBorders")?.optBoolean(id, false) ?: false
             )
         }
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
     val originalText =
         existing?.title?.removePrefix("📌 ")?.removePrefix("★ ")?.removePrefix("⚠ ").orEmpty()
     var text by
@@ -41,7 +42,7 @@ fun NeoDayNoteDialog(
                     .orEmpty()
             )
         }
-    var details by remember(existing?.id) { mutableStateOf(existing?.details.orEmpty()) }
+    var details by rememberSaveable(existing?.id) { mutableStateOf(existing?.details.orEmpty()) }
     var marker by
         remember(existing?.id) {
             mutableStateOf(
@@ -53,9 +54,9 @@ fun NeoDayNoteDialog(
                 }
             )
         }
-    val initialMarker = remember(id) { marker }
-    val initialBorder = remember(id) { border }
-    var confirmDiscard by remember { mutableStateOf(false) }
+    val initialMarker = rememberSaveable(id) { marker }
+    val initialBorder = rememberSaveable(id) { border }
+    var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     fun leave() {
         if (
             text != originalText ||

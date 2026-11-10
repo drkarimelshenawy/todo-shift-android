@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -76,21 +77,22 @@ fun V11TasksScreen(
 
     var filter by remember { mutableStateOf(TaskFilterV11.TODAY) }
 
-    var editingTask by remember { mutableStateOf<TaskV11?>(null) }
+    var editingTaskId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingTask = db.tasks.firstOrNull { it.id == editingTaskId }
 
     var pendingDelete by remember { mutableStateOf<TaskV11?>(null) }
-    var showEditor by remember { mutableStateOf(false) }
+    var showEditor by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(initialAction, initialTaskId) {
         when (initialAction) {
             "add" -> {
-                editingTask = null
+                editingTaskId = null
                 showEditor = true
             }
             "open" -> {
                 val requestedTask = db.tasks.firstOrNull { it.id == initialTaskId }
                 if (requestedTask != null) {
-                    editingTask = requestedTask
+                    editingTaskId = requestedTask?.id
                     showEditor = true
                 }
             }
@@ -163,7 +165,7 @@ fun V11TasksScreen(
                             workplaces,
                             onQuickAction = { action ->
                                 if (action == NeoQuickAction.ADD_TASK) {
-                                    editingTask = null
+                                    editingTaskId = null
                                     showEditor = true
                                 } else onQuickAction(action)
                             },
@@ -256,7 +258,7 @@ fun V11TasksScreen(
                             )
                         },
                         onEdit = {
-                            editingTask = task
+                            editingTaskId = task.id
                             showEditor = true
                         },
                         onDelete = { pendingDelete = task },
@@ -267,7 +269,7 @@ fun V11TasksScreen(
 
         FloatingActionButton(
             onClick = {
-                editingTask = null
+                editingTaskId = null
                 showEditor = true
             },
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
@@ -304,7 +306,7 @@ fun V11TasksScreen(
             workplaces = workplaces,
             onDismiss = {
                 showEditor = false
-                editingTask = null
+                editingTaskId = null
             },
             onSave = { task ->
                 val exists = db.tasks.any { it.id == task.id }
@@ -327,7 +329,7 @@ fun V11TasksScreen(
                 onDatabaseChange(db.copy(tasks = updated))
 
                 showEditor = false
-                editingTask = null
+                editingTaskId = null
             },
         )
     }
@@ -389,31 +391,50 @@ private fun TaskStatCardV11(modifier: Modifier, value: Int, label: String) {
 
 @Composable
 private fun TaskFiltersV11(selected: TaskFilterV11, onSelected: (TaskFilterV11) -> Unit) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        TaskFilterV11.entries.forEach { filter ->
-            FilterChip(
-                selected = selected == filter,
-                onClick = { onSelected(filter) },
-                label = {
-                    Text(
-                        when (filter) {
-                            TaskFilterV11.TODAY -> neoLiteral("اليوم", "Today")
-                            TaskFilterV11.UPCOMING -> neoLiteral("القادمة", "Upcoming")
-                            TaskFilterV11.OVERDUE -> neoLiteral("المتأخرة", "Overdue")
-                            TaskFilterV11.COMPLETED -> neoLiteral("المكتملة", "Completed")
-                            TaskFilterV11.ALL -> neoLiteral("الكل", "All")
-                        }
-                    )
+    if (LocalV11NeoEnabled.current) {
+        Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+            NeoChoice(
+                neoLabel("عرض المهام", "Show tasks"),
+                TaskFilterV11.entries,
+                selected,
+                {
+                    when (it) {
+                        TaskFilterV11.TODAY -> neoLabel("اليوم", "Today")
+                        TaskFilterV11.UPCOMING -> neoLabel("القادمة", "Upcoming")
+                        TaskFilterV11.OVERDUE -> neoLabel("المتأخرة", "Overdue")
+                        TaskFilterV11.COMPLETED -> neoLabel("المكتملة", "Completed")
+                        TaskFilterV11.ALL -> neoLabel("الكل", "All")
+                    }
                 },
+                onSelected,
             )
         }
-    }
+    } else
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            TaskFilterV11.entries.forEach { filter ->
+                FilterChip(
+                    selected = selected == filter,
+                    onClick = { onSelected(filter) },
+                    label = {
+                        Text(
+                            when (filter) {
+                                TaskFilterV11.TODAY -> neoLiteral("اليوم", "Today")
+                                TaskFilterV11.UPCOMING -> neoLiteral("القادمة", "Upcoming")
+                                TaskFilterV11.OVERDUE -> neoLiteral("المتأخرة", "Overdue")
+                                TaskFilterV11.COMPLETED -> neoLiteral("المكتملة", "Completed")
+                                TaskFilterV11.ALL -> neoLiteral("الكل", "All")
+                            }
+                        )
+                    },
+                )
+            }
+        }
 }
 
 @Composable
@@ -423,6 +444,7 @@ private fun TaskCardV11(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val navigator = LocalNeoFeatures.current
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -512,12 +534,42 @@ private fun TaskCardV11(
                 )
             }
 
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, contentDescription = neoLiteral("تعديل", "Edit"))
-            }
+            if (LocalV11NeoEnabled.current) {
+                var menu by remember { mutableStateOf(false) }
+                Box {
+                    TextButton(onClick = { menu = true }) { Text("⋮") }
+                    DropdownMenu(menu, { menu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(neoLabel("تعديل", "Edit")) },
+                            onClick = {
+                                menu = false
+                                onEdit()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(neoLabel("المرفقات", "Attachments")) },
+                            onClick = {
+                                menu = false
+                                navigator.open("ATTACHMENTS", task.id)
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(neoLabel("حذف", "Delete")) },
+                            onClick = {
+                                menu = false
+                                onDelete()
+                            },
+                        )
+                    }
+                }
+            } else {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = neoLiteral("تعديل", "Edit"))
+                }
 
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = neoLiteral("حذف", "Delete"))
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = neoLiteral("حذف", "Delete"))
+                }
             }
         }
     }
@@ -532,27 +584,29 @@ fun FullTaskEditorDialogV11(
     onSave: (TaskV11) -> Unit,
 ) {
     val editorContext = LocalContext.current
-    var title by remember(existing?.id) { mutableStateOf(existing?.title ?: "") }
+    var title by rememberSaveable(existing?.id) { mutableStateOf(existing?.title ?: "") }
 
-    var details by remember(existing?.id) { mutableStateOf(existing?.details ?: "") }
+    var details by rememberSaveable(existing?.id) { mutableStateOf(existing?.details ?: "") }
 
     var date by
         remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }
 
-    var time by remember(existing?.id) { mutableStateOf(existing?.time ?: "") }
+    var time by rememberSaveable(existing?.id) { mutableStateOf(existing?.time ?: "") }
 
     var priority by
         remember(existing?.id) { mutableStateOf(existing?.priority ?: TaskPriorityV11.NORMAL) }
 
-    var repeat by remember(existing?.id) { mutableStateOf(existing?.repeat ?: TaskRepeatV11.NONE) }
+    var repeat by
+        rememberSaveable(existing?.id) { mutableStateOf(existing?.repeat ?: TaskRepeatV11.NONE) }
 
-    var workplaceId by remember(existing?.id) { mutableStateOf(existing?.workplaceId) }
+    var workplaceId by rememberSaveable(existing?.id) { mutableStateOf(existing?.workplaceId) }
 
-    var calendarId by remember(existing?.id) { mutableStateOf(existing?.calendarId) }
+    var calendarId by rememberSaveable(existing?.id) { mutableStateOf(existing?.calendarId) }
 
-    var linkedShiftId by remember(existing?.id) { mutableStateOf(existing?.linkedShiftId) }
+    var linkedShiftId by rememberSaveable(existing?.id) { mutableStateOf(existing?.linkedShiftId) }
 
-    var reminderEnabled by remember(existing?.id) { mutableStateOf(existing?.reminderAt != null) }
+    var reminderEnabled by
+        rememberSaveable(existing?.id) { mutableStateOf(existing?.reminderAt != null) }
 
     var reminderTime by
         remember(existing?.id) {
@@ -571,11 +625,11 @@ fun FullTaskEditorDialogV11(
             )
         }
 
-    var workplaceMenu by remember { mutableStateOf(false) }
+    var workplaceMenu by rememberSaveable { mutableStateOf(false) }
 
-    var calendarMenu by remember { mutableStateOf(false) }
+    var calendarMenu by rememberSaveable { mutableStateOf(false) }
 
-    var shiftMenu by remember { mutableStateOf(false) }
+    var shiftMenu by rememberSaveable { mutableStateOf(false) }
 
     val initialValues =
         remember(existing?.id) {
@@ -593,7 +647,7 @@ fun FullTaskEditorDialogV11(
                 reminderTime,
             )
         }
-    var discardChanges by remember { mutableStateOf(false) }
+    var discardChanges by rememberSaveable { mutableStateOf(false) }
     fun leaveEditor() {
         if (
             listOf(

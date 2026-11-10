@@ -1,11 +1,18 @@
 package com.todoshift.app.v11.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Undo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.data.Workplace
@@ -27,6 +34,7 @@ fun NeoPainterBar(
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
+    val navigator = LocalNeoFeatures.current
     val store = remember { NeoSmartStore(context.applicationContext) }
     val saved = remember { store.snapshot() }
     var workplace by remember {
@@ -76,41 +84,81 @@ fun NeoPainterBar(
                                 runCatching { store.update { it.put("paintKind", type.name) } }
                                     .onFailure { error = it.message }
                             },
+                            leadingIcon = {
+                                Box(
+                                    Modifier.size(10.dp)
+                                        .background(
+                                            neoHexColor(
+                                                if (type == ShiftKind.OFF) "#748195"
+                                                else
+                                                    LocalNeoAppearance.current.shiftPaints[type]
+                                                        ?.takeIf { it.mode != NeoPaintMode.INHERIT }
+                                                        ?.first
+                                                        ?: workplaces
+                                                            .firstOrNull { it.id == workplace }
+                                                            ?.colorHex
+                                                        ?: "#00A4B8"
+                                            ),
+                                            CircleShape,
+                                        )
+                                )
+                            },
                             label = { Text(neoShiftLabel(type)) },
                         )
                     }
                 }
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                val favoriteWorkplace = saved.optString("favoriteWorkplace")
-                val favoriteKind =
-                    runCatching { ShiftKind.valueOf(saved.optString("favoriteKind")) }.getOrNull()
-                if (favoriteKind != null && workplaces.any { it.id == favoriteWorkplace })
-                    AssistChip(
-                        onClick = {
-                            workplace = favoriteWorkplace
-                            kind = favoriteKind
-                            erase = false
-                            typesOpen = false
-                        },
-                        label = {
-                            Text("★ " + workplaces.first { it.id == favoriteWorkplace }.name)
-                        },
-                    )
-                workplaces.forEach { place ->
-                    FilterChip(
-                        selected = workplace == place.id && !erase,
-                        onClick = {
-                            workplace = place.id
-                            erase = false
-                            typesOpen = true
-                            runCatching { store.update { it.put("paintWorkplace", place.id) } }
-                                .onFailure { error = it.message }
-                        },
-                        label = { Text(place.name) },
-                    )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    val favoriteWorkplace = saved.optString("favoriteWorkplace")
+                    val favoriteKind =
+                        runCatching { ShiftKind.valueOf(saved.optString("favoriteKind")) }
+                            .getOrNull()
+                    if (favoriteKind != null && workplaces.any { it.id == favoriteWorkplace })
+                        AssistChip(
+                            onClick = {
+                                workplace = favoriteWorkplace
+                                kind = favoriteKind
+                                erase = false
+                                typesOpen = false
+                            },
+                            label = {
+                                Text("★ " + workplaces.first { it.id == favoriteWorkplace }.name)
+                            },
+                        )
+                    workplaces.forEach { place ->
+                        val color = neoHexColor(place.colorHex)
+                        val ink = if (color.luminance() > .179f) Color.Black else Color.White
+                        FilterChip(
+                            selected = workplace == place.id && !erase,
+                            onClick = {
+                                workplace = place.id
+                                erase = false
+                                typesOpen = true
+                                runCatching { store.update { it.put("paintWorkplace", place.id) } }
+                                    .onFailure { error = it.message }
+                            },
+                            leadingIcon = {
+                                Box(Modifier.size(12.dp).background(color, CircleShape))
+                            },
+                            colors =
+                                FilterChipDefaults.filterChipColors(
+                                    containerColor = color.copy(alpha = .12f),
+                                    selectedContainerColor = color,
+                                    selectedLabelColor = ink,
+                                    selectedLeadingIconColor = ink,
+                                ),
+                            label = { Text(place.name, maxLines = 1) },
+                        )
+                    }
+                    if (workplaces.isEmpty())
+                        TextButton(onClick = { navigator.open("WORKPLACES") }) {
+                            Text(
+                                neoLabel("أضف مكان عمل من الإعدادات", "Add a workplace in Settings")
+                            )
+                        }
                 }
                 FilterChip(
                     selected = erase,
@@ -120,31 +168,30 @@ fun NeoPainterBar(
                     },
                     label = { Text(neoLabel("ممحاة", "Eraser")) },
                 )
-                TextButton(onClick = onExit) { Text(neoLabel("تم", "Done")) }
+                TextButton(onClick = onExit) { Text("✓ " + neoLabel("تم", "Done")) }
             }
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                val undo = LocalNeoUndo.current
+                IconButton(enabled = undo.enabled, onClick = undo.perform) {
+                    Icon(Icons.Rounded.Undo, neoLabel("تراجع", "Undo"))
+                }
                 FilterChip(
                     selected = bulk,
                     onClick = {
                         onBulk(!bulk)
                         onClear()
                     },
-                    label = { Text(neoLabel("تحديد متعدد", "Multiple dates")) },
+                    label = { Text(neoLabel("أيام متعددة", "Multiple dates")) },
                 )
                 if (bulk)
                     TextButton(enabled = dates.isNotEmpty(), onClick = { apply(dates) }) {
                         Text(neoLabel("مراجعة ${dates.size}", "Review ${dates.size}"))
                     }
-                if (!erase)
+                else
                     Text(
-                        neoLabel(
-                            "أوقات جديدة من ٩ صباحًا؛ الرسم نسبي",
-                            "New times offset from 09:00; bands are decorative",
-                        ),
+                        neoShiftLabel(kind),
                         style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 8.dp),
                     )
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

@@ -1,8 +1,6 @@
 package com.todoshift.app.v11.ui
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,7 +56,7 @@ fun NeoShiftTimeline(
                 Text(neoLabel("السابق", "Previous"))
             }
             Text(
-                month.toString(),
+                neoMonthTitle(month, LocalNeoEnglish.current),
                 Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
             )
@@ -69,18 +67,13 @@ fun NeoShiftTimeline(
                 Text(neoLabel("فلاتر", "Filters"))
             }
         }
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            NeoTimelineFilter.entries.forEach { filter ->
-                FilterChip(
-                    selected = filter == p.timelineFilter,
-                    onClick = { update(p.copy(timelineFilter = filter)) },
-                    label = { Text(neoEnumLabel(filter)) },
-                )
-            }
-        }
+        NeoChoice(
+            neoLabel("فترة الورديات", "Shift period"),
+            NeoTimelineFilter.entries,
+            p.timelineFilter,
+            { neoEnumLabel(it) },
+            { update(p.copy(timelineFilter = it)) },
+        )
         val monthRows =
             db.days.filter { it.calendarId in visibleIds && it.date.startsWith(month.toString()) }
         val workedDays =
@@ -103,7 +96,7 @@ fun NeoShiftTimeline(
                 neoLabel("نوع الشيفت", "Shift type"),
                 listOf<ShiftKind?>(null) + ShiftKind.entries,
                 kindFilter,
-                { it?.name ?: neoLabel("الكل", "All") },
+                { it?.let { kind -> neoShiftLabel(kind) } ?: neoLabel("الكل", "All") },
                 { kindFilter = it },
             )
             workplaces.forEach { place ->

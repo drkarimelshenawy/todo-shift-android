@@ -28,8 +28,8 @@ fun NeoPaymentForm(
         rememberSaveable(existing?.id) {
             mutableStateOf(existing?.receivedDate ?: LocalDate.now().toString())
         }
-    var source by remember { mutableStateOf(existing?.sourceId) }
-    var method by remember { mutableStateOf(existing?.paymentMethodId) }
+    var source by rememberSaveable { mutableStateOf(existing?.sourceId) }
+    var method by rememberSaveable { mutableStateOf(existing?.paymentMethodId) }
     var note by rememberSaveable { mutableStateOf(existing?.note.orEmpty()) }
     var submitted by remember { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current

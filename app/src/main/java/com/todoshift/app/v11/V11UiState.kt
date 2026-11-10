@@ -6,12 +6,12 @@ enum class TodayHighlightStyle {
     RING,
     PULSE,
     BORDER_TINT,
-    NONE
+    NONE,
 }
 
 enum class FabSide {
     LEFT,
-    RIGHT
+    RIGHT,
 }
 
 enum class V11AppTheme {
@@ -20,42 +20,41 @@ enum class V11AppTheme {
     OCEAN,
     FOREST,
     SAND,
-    MONO
+    MONO,
 }
 
 enum class V11CalendarStyle {
     CLASSIC,
     COMPACT,
-    CARDS
+    CARDS,
 }
 
 enum class V11Experience {
-    CLASSIC, PREMIUM
+    CLASSIC,
+    PREMIUM,
 }
 
 enum class V11PremiumBrightness {
-    SYSTEM, LIGHT, DARK
+    SYSTEM,
+    LIGHT,
+    DARK,
 }
 
 enum class V11WidgetTheme {
     FOLLOW_APP,
     LIGHT,
     DARK,
-    TRANSPARENT
+    TRANSPARENT,
 }
 
 data class V11UiSettings(
-    val todayHighlightStyle: TodayHighlightStyle =
-        TodayHighlightStyle.BORDER_TINT,
+    val todayHighlightStyle: TodayHighlightStyle = TodayHighlightStyle.BORDER_TINT,
     val todayHighlightColor: String = "#213555",
     val fabSide: FabSide = FabSide.RIGHT,
     val showWorkplaceNames: Boolean = false,
-    val appTheme: V11AppTheme =
-        V11AppTheme.TODO_SHIFT,
-    val calendarStyle: V11CalendarStyle =
-        V11CalendarStyle.CLASSIC,
-    val widgetTheme: V11WidgetTheme =
-        V11WidgetTheme.FOLLOW_APP,
-    val experience: V11Experience = V11Experience.CLASSIC,
-    val premiumBrightness: V11PremiumBrightness = V11PremiumBrightness.SYSTEM
+    val appTheme: V11AppTheme = V11AppTheme.TODO_SHIFT,
+    val calendarStyle: V11CalendarStyle = V11CalendarStyle.CLASSIC,
+    val widgetTheme: V11WidgetTheme = V11WidgetTheme.FOLLOW_APP,
+    val experience: V11Experience = V11Experience.PREMIUM,
+    val premiumBrightness: V11PremiumBrightness = V11PremiumBrightness.SYSTEM,
 )

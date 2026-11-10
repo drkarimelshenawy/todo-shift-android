@@ -156,9 +156,9 @@ fun neoTypography(p: NeoAppearance): Typography {
 @Composable
 fun neoSpacing() =
     when (LocalNeoAppearance.current.density) {
-        NeoDensity.COMPACT -> 10.dp
-        NeoDensity.BALANCED -> 16.dp
-        NeoDensity.COMFORTABLE -> 22.dp
+        NeoDensity.COMPACT -> 8.dp
+        NeoDensity.BALANCED -> 12.dp
+        NeoDensity.COMFORTABLE -> 16.dp
     }
 
 @Composable
@@ -275,7 +275,7 @@ fun Card(
             if (neo)
                 CardDefaults.cardElevation(
                     defaultElevation =
-                        if (p.showEffects && !LocalNeoRuntimeReduced.current && p.glow) 2.dp
+                        if (p.showEffects && !LocalNeoRuntimeReduced.current && p.glow) 1.dp
                         else 0.dp,
                     pressedElevation = if (p.reduceMotion) 0.dp else 1.dp,
                 )

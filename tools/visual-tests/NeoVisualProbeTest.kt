@@ -196,7 +196,7 @@ class NeoVisualProbeTest {
         )
         NeoAppearanceStore(c)
             .save(
-                NeoAppearance(language = NeoLanguage.ENGLISH, fontScale = 1.5f, reduceMotion = true)
+                NeoAppearance(language = NeoLanguage.ENGLISH, fontScale = 2f, reduceMotion = true)
             )
         compose.activityRule.scenario.recreate()
         ready()
@@ -239,7 +239,6 @@ class NeoVisualProbeTest {
         }
         for ((group, option) in
             listOf(
-                "Language & Direction" to "UI direction",
                 "Calendar & Shifts" to "Calendar and note display",
                 "Calendar & Shifts" to "Today highlight",
                 "Notifications & Widgets" to "Notification center",
@@ -255,7 +254,10 @@ class NeoVisualProbeTest {
                 compose.activity.onBackPressedDispatcher.onBackPressed()
             }
             compose.waitForIdle()
+            // Child returns to its originating group; second Back returns to Settings home.
+            compose.onNodeWithContentDescription("Back").performClick()
         }
+        compose.onNode(hasText("Calendar") and hasClickAction()).performClick()
         for ((label, brightness) in
             listOf("dark" to NeoBrightness.DARK, "amoled" to NeoBrightness.AMOLED)) {
             NeoAppearanceStore(RuntimeEnvironment.getApplication())

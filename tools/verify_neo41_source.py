@@ -18,8 +18,11 @@ critical += ['app/src/main/java/com/todoshift/app/data/AppStorage.kt', 'app/src/
 for p in critical: require(unchanged(p), 'Protected baseline changed: ' + p)
 build = text('app/build.gradle.kts')
 require('applicationId = "com.todoshift.app"' in build, 'Application ID changed')
-require(int(re.search(r'versionCode = (\d+)', build)[1]) > 30, 'Version code did not increase')
-require('versionName = "4.2.0"' in build, 'Wrong version name')
+candidate = json.loads(text('tools/PREMIUM_CANDIDATE.json'))
+require(candidate['applicationId'] == 'com.todoshift.app', 'Candidate application ID changed')
+require(candidate['versionCode'] > 31, 'Candidate does not exceed baseline version')
+require(int(re.search(r'versionCode = (\d+)', build)[1]) == candidate['versionCode'], 'Wrong candidate version code')
+require(f'versionName = "{candidate["versionName"]}"' in build, 'Wrong candidate version name')
 def signing(s): return s[s.index('    signingConfigs {'):s.index('    compileOptions {')]
 require(hashlib.sha256(signing(build).encode()).hexdigest() == REFERENCE['signing_sha256'], 'Signing configuration changed')
 for p in (ROOT/'app/src').rglob('*.kt'):

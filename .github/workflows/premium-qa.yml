@@ -1,0 +1,91 @@
+name: Premium isolated QA (no release)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed rescue commit SHA
+        required: true
+        type: string
+      native_diagnostics:
+        description: Capture Robolectric native diagnostics (not device acceptance)
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/work/todo-shift-premium-rescue'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Enforce source and branch
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/work/todo-shift-premium-rescue
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git merge-base --is-ancestor e178b134658afad04d645b044f24d236594cbe33 HEAD
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Prepare ephemeral test signing (never production credentials)
+        run: |
+          TEST_KEY_PASSWORD=$(openssl rand -hex 24)
+          echo "::add-mask::$TEST_KEY_PASSWORD"
+          echo "TODOSHIFT_SIGNING_PASSWORD=$TEST_KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "TODOSHIFT_SIGNING_FILE=$RUNNER_TEMP/premium-test.jks" >> "$GITHUB_ENV"
+          export TEST_KEY_PASSWORD
+          keytool -genkeypair -keystore "$RUNNER_TEMP/premium-test.jks" -storetype JKS -alias todoshift -keyalg RSA -keysize 2048 -validity 30 -dname 'CN=Premium Ephemeral CI Test' -storepass:env TEST_KEY_PASSWORD -keypass:env TEST_KEY_PASSWORD >/dev/null 2>&1
+          chmod 600 "$RUNNER_TEMP/premium-test.jks"
+          keytool -exportcert -keystore "$RUNNER_TEMP/premium-test.jks" -alias todoshift -storepass:env TEST_KEY_PASSWORD > "$RUNNER_TEMP/public-cert.der"
+          echo "TEST_CERT_SHA=$(sha256sum "$RUNNER_TEMP/public-cert.der" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Source, tests, lint and debug
+        run: |
+          python3 tools/verify_neo41_source.py
+          gradle --no-daemon -I tools/premium_qa.init.gradle testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - name: Verify and stage candidate
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk --build-tools "$ANDROID_HOME/build-tools/35.0.0" --expected-sha "$EXPECTED_SHA" --expected-certificate "$TEST_CERT_SHA" --output delivery/identity
+          APK_NAME=$(python3 -c 'import json; c=json.load(open("tools/PREMIUM_CANDIDATE.json")); print("ToDoShift-"+c["versionName"]+"-vc"+str(c["versionCode"])+"-ISOLATED-TEST.apk")')
+          cp app/build/outputs/apk/debug/app-debug.apk "delivery/$APK_NAME"
+          mkdir -p delivery/qa
+          cp -R app/build/test-results/testDebugUnitTest delivery/qa/junit
+          cp app/build/reports/lint-results-debug.* delivery/qa/
+          git rev-parse HEAD > delivery/SOURCE-COMMIT.txt
+      - name: Optional native diagnostics (must succeed when requested)
+        if: inputs.native_diagnostics
+        run: |
+          gradle --no-daemon -I tools/premium_qa.init.gradle -I tools/visual_capture.init.gradle testDebugUnitTest --tests com.todoshift.app.v11.ui.NeoVisualProbeTest
+          test -n "$(find app/build/ux-visual-evidence -name '*.png' -print -quit)"
+          cp -R app/build/ux-visual-evidence delivery/native-diagnostics
+          cp -R app/build/test-results/testDebugUnitTest delivery/native-junit
+      - name: Artifact checksums
+        run: |
+          (cd delivery && find . -type f -exec sha256sum {} + > ../DELIVERY-SHA256SUMS)
+          mv DELIVERY-SHA256SUMS delivery/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Premium-isolated-TEST-${{ github.sha }}
+          path: |
+            delivery/
+            app/build/reports/lint-results-debug.*
+            app/build/test-results/testDebugUnitTest/*.xml
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove ephemeral private material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/premium-test.jks" "$RUNNER_TEMP/public-cert.der"

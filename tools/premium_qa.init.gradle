@@ -1,0 +1,7 @@
+// Test worker budget only. Does not change app/runtime/signing configuration.
+allprojects {
+    tasks.withType(Test).configureEach {
+        maxHeapSize = '1536m'
+        systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+    }
+}

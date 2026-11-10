@@ -1,0 +1,8 @@
+{
+  "applicationId": "com.todoshift.app",
+  "versionCode": 32,
+  "versionName": "4.3.0-premium-dev",
+  "branch": "work/todo-shift-premium-rescue",
+  "baseline": "e178b134658afad04d645b044f24d236594cbe33",
+  "classification": "ISOLATED TEST ONLY — release HOLD; installed certificate unverified"
+}

@@ -30,10 +30,17 @@ internal class NeoTaskCommit(
                     } catch (failure: Exception) {
                         // Never repeat an uncertain write until the committed store has been
                         // inspected.
-                        val confirmed = read().tasks.firstOrNull { it.id == task.id }
+                        val confirmedDatabase = read()
+                        val confirmed = confirmedDatabase.tasks.firstOrNull { it.id == task.id }
                         if (confirmed == null) return@synchronized Result.Retry
                         if (!same(confirmed)) return@synchronized Result.Conflict
+                        // SharedPreferences may expose a failed disk write through its memory
+                        // cache.
+                        // Require a positive write acknowledgement before calling it committed.
+                        write(confirmedDatabase, confirmedDatabase)
                     }
+                } else {
+                    write(current, current)
                 }
                 Result.Committed(runCatching { synchronizeServices(task) }.isFailure)
             } catch (failure: Exception) {

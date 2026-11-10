@@ -495,7 +495,7 @@ class Neo4LocalBackup(context: Context) :
                     )
                 writeAtomic(quarantine, journalBytes)
             }
-            NeoCommittedEffects(app).prepare(oldDatabase ?: V11Database())
+            NeoCommittedEffects(app).prepare(oldDatabase ?: V11Database(), parsed.database)
             writeAtomic(journal, journalBytes)
             try {
                 restoreCheckpoint("journal")
@@ -563,6 +563,11 @@ class Neo4LocalBackup(context: Context) :
             check(legacy.load() == expectedLegacy && storage.load() == expected) {
                 "Data changed; reopen before editing workplaces"
             }
+            NeoNewReferenceGuard.validateWorkplaceRemoval(
+                expected,
+                expectedLegacy.workplaces.map { it.id }.toSet(),
+                workplaces.map { it.id }.toSet(),
+            )
             val updatedLegacy = expectedLegacy.copy(workplaces = workplaces)
             val newPlaces =
                 workplaces.filter { place -> expectedLegacy.workplaces.none { it.id == place.id } }
@@ -574,6 +579,7 @@ class Neo4LocalBackup(context: Context) :
                     .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
             val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
             require(snapshot.size <= 48 * 1024 * 1024)
+            NeoCommittedEffects(app).prepare(expected, updated)
             writeAtomic(journal, snapshot)
             try {
                 legacy.save(updatedLegacy)
@@ -595,6 +601,40 @@ class Neo4LocalBackup(context: Context) :
             updatedLegacy to updated
         }
 
+    /** Journaled single-store save: failure cannot be mistaken for a durable cache-only update. */
+    internal fun commitDatabase(
+        expected: V11Database,
+        next: V11Database,
+        checkpoint: (String) -> Unit = {},
+    ): V11Database =
+        synchronized(Neo4DataGate.monitor) {
+            recoverIfNeeded()
+            check(storage.load() == expected) { "Data changed; draft retained" }
+            NeoNewReferenceGuard.validate(expected, next) {
+                legacy.load().workplaces.map { it.id }.toSet()
+            }
+            val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+            val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+            require(snapshot.size <= 48 * 1024 * 1024)
+            NeoCommittedEffects(app).prepare(expected, next)
+            writeAtomic(journal, snapshot)
+            try {
+                checkpoint("journal")
+                storage.save(next)
+                checkpoint("database")
+                journal.delete()
+                check(!journal.baseFile.exists()) { "Unable to finalize database commit" }
+            } catch (failure: Exception) {
+                try {
+                    recoverIfNeeded()
+                } catch (rollback: Exception) {
+                    failure.addSuppressed(rollback)
+                }
+                throw failure
+            }
+            next
+        }
+
     /** Text and decorative metadata share the existing rollback journal and restore gate. */
     internal fun saveNote(
         expected: V11Database,
@@ -614,13 +654,16 @@ class Neo4LocalBackup(context: Context) :
             }
             val next =
                 expected.copy(dayItems = expected.dayItems.filterNot { it.id == note.id } + note)
+            NeoNewReferenceGuard.validate(expected, next) {
+                legacy.load().workplaces.map { it.id }.toSet()
+            }
             val previous =
                 JSONObject()
                     .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
                     .put(NeoSmartStore.NAME, capture(prefs(NeoSmartStore.NAME)))
             val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
             require(snapshot.size <= 48 * 1024 * 1024)
-            NeoCommittedEffects(app).prepare(expected)
+            NeoCommittedEffects(app).prepare(expected, next)
             writeAtomic(journal, snapshot)
             try {
                 checkpoint("journal")

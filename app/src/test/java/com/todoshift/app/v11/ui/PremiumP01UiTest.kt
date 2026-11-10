@@ -99,4 +99,45 @@ class PremiumP01UiTest {
         compose.runOnIdle { completion!!(true) }
         assertEquals(1, dismissed)
     }
+
+    @Test
+    fun restoredDraftDoesNotAdoptAChangedRecordRevision() {
+        val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
+        val record =
+            mutableStateOf(TaskV11("revision-fixture", "Original fixture", date = "2026-11-10"))
+        var unchanged = false
+        restoration.setContent {
+            unchanged = rememberNeoDraftUnchanged(record.value.id, record.value)
+        }
+        compose.runOnIdle {
+            assertTrue(unchanged)
+            record.value = record.value.copy(title = "Concurrent fixture")
+        }
+        compose.runOnIdle { assertFalse(unchanged) }
+        restoration.emulateSavedInstanceStateRestore()
+        compose.runOnIdle { assertFalse(unchanged) }
+    }
+
+    @Test
+    fun paymentRequestAndAllocationIdsSurviveUnknownAcknowledgementAndRecreation() {
+        val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
+        val requests = mutableListOf<PaymentV11>()
+        restoration.setContent {
+            NeoEnvironment(NeoAppearance(language = NeoLanguage.ENGLISH), true, {}) {
+                V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
+                    NeoPaymentForm(V11Database(), java.time.YearMonth.of(2026, 11), null, {}) {
+                        requests.add(it)
+                    }
+                }
+            }
+        }
+        compose.onNodeWithText("Amount").performTextInput("9,000")
+        compose.onNodeWithText("Save").performClick()
+        restoration.emulateSavedInstanceStateRestore()
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(2, requests.size)
+        assertEquals(requests[0].id, requests[1].id)
+        assertEquals(requests[0].allocations.single().id, requests[1].allocations.single().id)
+        assertEquals(900000L, LocalizedNumbers.cents(requests[1].amount))
+    }
 }

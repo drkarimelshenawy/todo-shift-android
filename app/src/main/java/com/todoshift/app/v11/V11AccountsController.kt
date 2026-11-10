@@ -13,38 +13,46 @@ object V11AccountsController {
         accrualMonth: String,
         sourceId: String?,
         paymentMethodId: String?,
-        note: String
+        note: String,
+        recordId: String = UUID.randomUUID().toString(),
     ): V11Database {
+        check(db.payments.none { it.id == recordId }) {
+            "This request was already saved. Review the stored record before opening a new entry."
+        }
         if (amount <= 0.0) return db
 
-        val allocation = PaymentAllocationV11(
-            id = UUID.randomUUID().toString(),
-            accrualMonth = accrualMonth,
-            sourceId = sourceId,
-            amount = amount
-        )
+        val allocation =
+            PaymentAllocationV11(
+                id = UUID.randomUUID().toString(),
+                accrualMonth = accrualMonth,
+                sourceId = sourceId,
+                amount = amount,
+            )
 
-        val payment = PaymentV11(
-            id = UUID.randomUUID().toString(),
-            amount = amount,
-            receivedDate = receivedDate,
-            accrualMonth = accrualMonth,
-            sourceId = sourceId,
-            paymentMethodId = paymentMethodId,
-            note = note,
-            allocations = listOf(allocation)
-        )
+        val payment =
+            PaymentV11(
+                id = recordId,
+                amount = amount,
+                receivedDate = receivedDate,
+                accrualMonth = accrualMonth,
+                sourceId = sourceId,
+                paymentMethodId = paymentMethodId,
+                note = note,
+                allocations = listOf(allocation),
+            )
 
         return db.copy(
             payments = db.payments + payment,
-            auditLog = db.auditLog + AuditEntryV11(
-                id = UUID.randomUUID().toString(),
-                action = "PAYMENT_ADD",
-                entityType = "payment",
-                entityId = payment.id,
-                description = "إضافة دفعة $amount",
-                createdAt = System.currentTimeMillis()
-            )
+            auditLog =
+                db.auditLog +
+                    AuditEntryV11(
+                        id = UUID.randomUUID().toString(),
+                        action = "PAYMENT_ADD",
+                        entityType = "payment",
+                        entityId = payment.id,
+                        description = "إضافة دفعة $amount",
+                        createdAt = System.currentTimeMillis(),
+                    ),
         )
     }
 
@@ -52,170 +60,97 @@ object V11AccountsController {
         db: V11Database,
         name: String,
         type: IncomeSourceTypeV11,
-        fixedAmount: Double?
+        fixedAmount: Double?,
+        recordId: String = UUID.randomUUID().toString(),
     ): V11Database {
+        check(db.incomeSources.none { it.id == recordId }) {
+            "This request was already saved. Review the stored record before opening a new entry."
+        }
         if (name.isBlank()) return db
 
         return db.copy(
-            incomeSources = db.incomeSources +
-                IncomeSourceV11(
-                    id = UUID.randomUUID().toString(),
-                    name = name.trim(),
-                    type = type,
-                    fixedMonthlyAmount = fixedAmount,
-                    order = db.incomeSources.size
-                )
+            incomeSources =
+                db.incomeSources +
+                    IncomeSourceV11(
+                        id = recordId,
+                        name = name.trim(),
+                        type = type,
+                        fixedMonthlyAmount = fixedAmount,
+                        order = db.incomeSources.size,
+                    )
         )
     }
 
-    fun updateIncomeSource(
-        db: V11Database,
-        source: IncomeSourceV11
-    ): V11Database =
-        db.copy(
-            incomeSources =
-                db.incomeSources.map {
-                    if (it.id == source.id)
-                        source
-                    else
-                        it
-                }
-        )
+    fun updateIncomeSource(db: V11Database, source: IncomeSourceV11): V11Database =
+        db.copy(incomeSources = db.incomeSources.map { if (it.id == source.id) source else it })
 
-    fun moveIncomeSource(
-        db: V11Database,
-        id: String,
-        direction: Int
-    ): V11Database {
-        val items =
-            db.incomeSources
-                .sortedBy { it.order }
-                .toMutableList()
+    fun moveIncomeSource(db: V11Database, id: String, direction: Int): V11Database {
+        val items = db.incomeSources.sortedBy { it.order }.toMutableList()
 
-        val index =
-            items.indexOfFirst {
-                it.id == id
-            }
+        val index = items.indexOfFirst { it.id == id }
 
-        if (index < 0)
-            return db
+        if (index < 0) return db
 
-        val target =
-            index + direction
+        val target = index + direction
 
-        if (target !in items.indices)
-            return db
+        if (target !in items.indices) return db
 
         val tmp = items[index]
         items[index] = items[target]
         items[target] = tmp
 
-        return db.copy(
-            incomeSources =
-                items.mapIndexed {
-                    order,
-                    item ->
-                    item.copy(
-                        order = order
-                    )
-                }
-        )
+        return db.copy(incomeSources = items.mapIndexed { order, item -> item.copy(order = order) })
     }
 
-    fun deleteIncomeSource(
-        db: V11Database,
-        id: String
-    ): V11Database =
-        db.copy(
-            incomeSources =
-                db.incomeSources.filterNot {
-                    it.id == id
-                }
-        )
+    fun deleteIncomeSource(db: V11Database, id: String): V11Database =
+        db.copy(incomeSources = db.incomeSources.filterNot { it.id == id })
 
     fun addPaymentMethod(
         db: V11Database,
-        name: String
+        name: String,
+        recordId: String = UUID.randomUUID().toString(),
     ): V11Database {
+        check(db.paymentMethods.none { it.id == recordId }) {
+            "This request was already saved. Review the stored record before opening a new entry."
+        }
         if (name.isBlank()) return db
 
         return db.copy(
             paymentMethods =
                 db.paymentMethods +
                     PaymentMethodV11(
-                        id = UUID.randomUUID()
-                            .toString(),
+                        id = recordId,
                         name = name.trim(),
-                        order =
-                            db.paymentMethods.size
+                        order = db.paymentMethods.size,
                     )
         )
     }
 
-    fun updatePaymentMethod(
-        db: V11Database,
-        method: PaymentMethodV11
-    ): V11Database =
-        db.copy(
-            paymentMethods =
-                db.paymentMethods.map {
-                    if (it.id == method.id)
-                        method
-                    else
-                        it
-                }
-        )
+    fun updatePaymentMethod(db: V11Database, method: PaymentMethodV11): V11Database =
+        db.copy(paymentMethods = db.paymentMethods.map { if (it.id == method.id) method else it })
 
-    fun movePaymentMethod(
-        db: V11Database,
-        id: String,
-        direction: Int
-    ): V11Database {
-        val items =
-            db.paymentMethods
-                .sortedBy { it.order }
-                .toMutableList()
+    fun movePaymentMethod(db: V11Database, id: String, direction: Int): V11Database {
+        val items = db.paymentMethods.sortedBy { it.order }.toMutableList()
 
-        val index =
-            items.indexOfFirst {
-                it.id == id
-            }
+        val index = items.indexOfFirst { it.id == id }
 
-        if (index < 0)
-            return db
+        if (index < 0) return db
 
-        val target =
-            index + direction
+        val target = index + direction
 
-        if (target !in items.indices)
-            return db
+        if (target !in items.indices) return db
 
         val tmp = items[index]
         items[index] = items[target]
         items[target] = tmp
 
         return db.copy(
-            paymentMethods =
-                items.mapIndexed {
-                    order,
-                    item ->
-                    item.copy(
-                        order = order
-                    )
-                }
+            paymentMethods = items.mapIndexed { order, item -> item.copy(order = order) }
         )
     }
 
-    fun deletePaymentMethod(
-        db: V11Database,
-        id: String
-    ): V11Database =
-        db.copy(
-            paymentMethods =
-                db.paymentMethods.filterNot {
-                    it.id == id
-                }
-        )
+    fun deletePaymentMethod(db: V11Database, id: String): V11Database =
+        db.copy(paymentMethods = db.paymentMethods.filterNot { it.id == id })
 
     fun addObligation(
         db: V11Database,
@@ -227,40 +162,39 @@ object V11AccountsController {
         dueDay: Int?,
         installmentCount: Int?,
         reminderDaysBefore: Int,
-        note: String
+        note: String,
+        recordId: String = UUID.randomUUID().toString(),
     ): V11Database {
+        check(db.obligations.none { it.id == recordId }) {
+            "This request was already saved. Review the stored record before opening a new entry."
+        }
         if (name.isBlank()) return db
 
-        val item = ObligationV11(
-            id = UUID.randomUUID().toString(),
-            name = name.trim(),
-            type = type,
-            totalAmount = totalAmount,
-            installmentAmount = installmentAmount,
-            startDate = startDate,
-            dueDay = dueDay,
-            installmentCount = installmentCount,
-            reminderDaysBefore =
-                reminderDaysBefore,
-            note = note
-        )
+        val item =
+            ObligationV11(
+                id = recordId,
+                name = name.trim(),
+                type = type,
+                totalAmount = totalAmount,
+                installmentAmount = installmentAmount,
+                startDate = startDate,
+                dueDay = dueDay,
+                installmentCount = installmentCount,
+                reminderDaysBefore = reminderDaysBefore,
+                note = note,
+            )
 
         return db.copy(
-            obligations =
-                db.obligations + item,
+            obligations = db.obligations + item,
             auditLog =
                 db.auditLog +
                     AuditEntryV11(
-                        id = UUID.randomUUID()
-                            .toString(),
-                        action =
-                            "OBLIGATION_ADD",
-                        entityType =
-                            "obligation",
+                        id = UUID.randomUUID().toString(),
+                        action = "OBLIGATION_ADD",
+                        entityType = "obligation",
                         entityId = item.id,
-                        description =
-                            "إضافة التزام ${item.name}"
-                    )
+                        description = "إضافة التزام ${item.name}",
+                    ),
         )
     }
 
@@ -269,150 +203,78 @@ object V11AccountsController {
         obligationId: String,
         month: String,
         amount: Double,
-        methodId: String?
+        methodId: String?,
+        recordId: String = UUID.randomUUID().toString(),
     ): V11Database {
+        check(db.obligationPayments.none { it.id == recordId }) {
+            "This request was already saved. Review the stored record before opening a new entry."
+        }
         if (amount <= 0.0) return db
 
-        val obligation =
-            db.obligations
-                .firstOrNull {
-                    it.id == obligationId
-                }
-                ?: return db
+        val obligation = db.obligations.firstOrNull { it.id == obligationId } ?: return db
 
-        val ym =
-            runCatching {
-                YearMonth.parse(month)
-            }.getOrNull()
-                ?: return db
+        val ym = runCatching { YearMonth.parse(month) }.getOrNull() ?: return db
 
-        val info =
-            V11ObligationEngine
-                .monthInfo(
-                    db,
-                    obligation,
-                    ym
-                )
+        val info = V11ObligationEngine.monthInfo(db, obligation, ym)
 
-        if (
-            info.expected <= 0.0 ||
-            info.remaining <= 0.0
-        ) {
+        if (info.expected <= 0.0 || info.remaining <= 0.0) {
             return db
         }
 
-        val safeAmount =
-            minOf(
-                amount,
-                info.remaining
-            )
+        val safeAmount = minOf(amount, info.remaining)
 
         val payment =
             ObligationPaymentV11(
-                id = UUID.randomUUID()
-                    .toString(),
-                obligationId =
-                    obligationId,
-                dueMonth =
-                    month,
-                amount =
-                    safeAmount,
-                paidDate =
-                    LocalDate.now()
-                        .toString(),
-                paymentMethodId =
-                    methodId
+                id = recordId,
+                obligationId = obligationId,
+                dueMonth = month,
+                amount = safeAmount,
+                paidDate = LocalDate.now().toString(),
+                paymentMethodId = methodId,
             )
 
         var updated =
             db.copy(
-                obligationPayments =
-                    db.obligationPayments +
-                        payment,
+                obligationPayments = db.obligationPayments + payment,
                 auditLog =
                     db.auditLog +
                         AuditEntryV11(
-                            id = UUID.randomUUID()
-                                .toString(),
-                            action =
-                                "OBLIGATION_PAYMENT",
-                            entityType =
-                                "obligation",
-                            entityId =
-                                obligationId,
-                            description =
-                                "سداد ${safeAmount} للالتزام ${obligation.name}"
-                        )
+                            id = UUID.randomUUID().toString(),
+                            action = "OBLIGATION_PAYMENT",
+                            entityType = "obligation",
+                            entityId = obligationId,
+                            description = "سداد ${safeAmount} للالتزام ${obligation.name}",
+                        ),
             )
 
-        val totalRemaining =
-            obligationRemaining(
-                updated,
-                obligation
-            )
+        val totalRemaining = obligationRemaining(updated, obligation)
 
-        if (
-            totalRemaining != null &&
-            totalRemaining <= 0.0001
-        ) {
+        if (totalRemaining != null && totalRemaining <= 0.0001) {
             updated =
                 updated.copy(
                     obligations =
-                        updated.obligations
-                            .map {
-                                if (
-                                    it.id ==
-                                    obligationId
-                                ) {
-                                    it.copy(
-                                        status =
-                                            ObligationStatusV11
-                                                .PAID
-                                    )
-                                } else {
-                                    it
-                                }
+                        updated.obligations.map {
+                            if (it.id == obligationId) {
+                                it.copy(status = ObligationStatusV11.PAID)
+                            } else {
+                                it
                             }
+                        }
                 )
         }
 
         return updated
     }
 
-    fun obligationPaid(
-        db: V11Database,
-        id: String
-    ): Double =
-        db.obligationPayments
-            .filter {
-                it.obligationId == id
-            }
-            .sumOf { it.amount }
+    fun obligationPaid(db: V11Database, id: String): Double =
+        db.obligationPayments.filter { it.obligationId == id }.sumOf { it.amount }
 
-    fun obligationRemaining(
-        db: V11Database,
-        obligation: ObligationV11
-    ): Double? {
-        val total =
-            obligation.totalAmount
-                ?: return null
+    fun obligationRemaining(db: V11Database, obligation: ObligationV11): Double? {
+        val total = obligation.totalAmount ?: return null
 
-        return (
-            total -
-                obligationPaid(
-                    db,
-                    obligation.id
-                )
-            ).coerceAtLeast(0.0)
+        return (total - obligationPaid(db, obligation.id)).coerceAtLeast(0.0)
     }
 
-    fun monthObligationDue(
-        db: V11Database,
-        month: YearMonth
-    ): Double =
-        V11ObligationEngine
-            .totalDue(
-                db,
-                month
-            )
+    fun monthObligationDue(db: V11Database, month: YearMonth): Double =
+        V11ObligationEngine.totalDue(db, month)
 }

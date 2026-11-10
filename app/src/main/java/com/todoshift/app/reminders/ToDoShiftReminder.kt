@@ -266,8 +266,19 @@ object ToDoShiftReminder {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
+        val publicNotification =
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("ToDo Shift")
+                .setContentText("افتح التطبيق للتفاصيل / Open the app for details")
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+                .build()
+
         val notification =
             NotificationCompat.Builder(context, CHANNEL_ID)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setPublicVersion(publicNotification)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title.ifBlank { "تذكير ToDo Shift" })
                 .setContentText(details.ifBlank { date })

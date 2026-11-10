@@ -17,7 +17,7 @@ class CommittedEffectsTest {
             V11Database(tasks = listOf(TaskV11("removed", "Old fixture", date = "2026-11-10")))
         val confirmed =
             previous.copy(tasks = listOf(TaskV11("kept", "New fixture", date = "2026-11-10")))
-        NeoCommittedEffects(c).prepare(previous)
+        NeoCommittedEffects(c).prepare(previous, confirmed)
         try {
             NeoCommittedEffects(c)
                 .reconcile(confirmed, {}, { error("Injected service failure") }, {})
@@ -30,5 +30,32 @@ class CommittedEffectsTest {
         assertEquals(confirmed, scheduled)
         NeoCommittedEffects(c)
             .reconcile(confirmed, { fail("Already acknowledged") }, { fail("No repeat") }, {})
+    }
+
+    @Test
+    fun unrelatedDataSaveDoesNotCancelAnUnchangedReminder() {
+        val c = RuntimeEnvironment.getApplication()
+        val before =
+            V11Database(
+                tasks =
+                    listOf(
+                        TaskV11(
+                            "unchanged",
+                            "Fixture",
+                            date = "2026-11-10",
+                            reminderAt = 123456789L,
+                        )
+                    )
+            )
+        NeoCommittedEffects(c).prepare(before, before)
+        var scheduled = false
+        NeoCommittedEffects(c)
+            .reconcile(
+                before,
+                { fail("Unchanged reminder must not be cancelled") },
+                { scheduled = true },
+                {},
+            )
+        assertTrue(scheduled)
     }
 }

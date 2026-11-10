@@ -133,7 +133,7 @@ fun V11FinanceScreen(
                     )
                     .forEachIndexed { index, title ->
                         TextButton(
-                            onClick = { financeSection = index },
+                            onClick = neoWriteAction { financeSection = index },
                             modifier = Modifier.weight(1f),
                             colors =
                                 ButtonDefaults.textButtonColors(
@@ -199,7 +199,10 @@ fun V11FinanceScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        Button(onClick = { paymentOpen = true }, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = neoWriteAction { paymentOpen = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Icon(Icons.Default.Add, null)
             Spacer(Modifier.width(5.dp))
             Text(neoLiteral("تسجيل مبلغ مستلم", "Record received payment"))
@@ -213,14 +216,14 @@ fun V11FinanceScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilledTonalButton(
-                    onClick = { sourceManagerOpen = true },
+                    onClick = neoWriteAction { sourceManagerOpen = true },
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(neoLiteral("مصادر الدخل", "Income sources"))
                 }
 
                 FilledTonalButton(
-                    onClick = { methodManagerOpen = true },
+                    onClick = neoWriteAction { methodManagerOpen = true },
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(neoLiteral("طرق الدفع", "Payment methods"))
@@ -241,7 +244,7 @@ fun V11FinanceScreen(
                         ?: neoLiteral("غير محدد", "Unspecified")
 
                 Surface(
-                    onClick = { workplaceDetailsId = summary.workplaceId },
+                    onClick = neoWriteAction { workplaceDetailsId = summary.workplaceId },
                     shape = MaterialTheme.shapes.medium,
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
@@ -289,7 +292,7 @@ fun V11FinanceScreen(
                     val method = db.paymentMethods.firstOrNull { it.id == payment.paymentMethodId }
 
                     Card(
-                        onClick = { paymentDetailsId = payment.id },
+                        onClick = neoWriteAction { paymentDetailsId = payment.id },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -324,7 +327,7 @@ fun V11FinanceScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                FilledTonalButton(onClick = { obligationOpen = true }) {
+                FilledTonalButton(onClick = neoWriteAction { obligationOpen = true }) {
                     Icon(Icons.Default.Add, null)
                     Text(neoLiteral("إضافة", "Add"))
                 }
@@ -381,7 +384,9 @@ fun V11FinanceScreen(
                                 )
                             }
 
-                            IconButton(onClick = { editingObligationId = obligation.id }) {
+                            IconButton(
+                                onClick = neoWriteAction { editingObligationId = obligation.id }
+                            ) {
                                 Icon(
                                     Icons.Default.Edit,
                                     contentDescription =
@@ -431,7 +436,7 @@ fun V11FinanceScreen(
                         }
 
                         Button(
-                            onClick = { payingObligationId = obligation.id },
+                            onClick = neoWriteAction { payingObligationId = obligation.id },
                             modifier = Modifier.fillMaxWidth(),
                             enabled =
                                 obligation.status == ObligationStatusV11.ACTIVE &&
@@ -483,11 +488,19 @@ fun V11FinanceScreen(
     }
 
     editingPayment?.let { payment ->
+        val unchanged = rememberNeoDraftUnchanged(payment.id, payment)
+        val reject = LocalNeoRejectWrite.current
         V11EditPaymentDialog(
             payment = payment,
             db = db,
             onDismiss = { editingPaymentId = null },
             onSave = { updated ->
+                if (!unchanged) {
+                    reject(
+                        "Record changed. Draft retained; reopen after reviewing the stored value."
+                    )
+                    return@V11EditPaymentDialog
+                }
                 val saveAction = {
                     commit(
                         db.copy(
@@ -511,11 +524,19 @@ fun V11FinanceScreen(
     }
 
     editingObligation?.let { obligation ->
+        val unchanged = rememberNeoDraftUnchanged(obligation.id, obligation)
+        val reject = LocalNeoRejectWrite.current
         V11EditObligationDialog(
             db = db,
             obligation = obligation,
             onDismiss = { editingObligationId = null },
             onSave = { updated ->
+                if (!unchanged) {
+                    reject(
+                        "Record changed. Draft retained; reopen after reviewing the stored value."
+                    )
+                    return@V11EditObligationDialog
+                }
                 val saveAction = {
                     commit(
                         db.copy(
@@ -596,7 +617,7 @@ fun V11FinanceScreen(
                 remaining = info.remaining,
                 db = db,
                 onDismiss = { payingObligationId = null },
-                onSave = { amount, methodId ->
+                onSave = { amount, methodId, recordId ->
                     commit(
                         V11AccountsController.payObligation(
                             db = db,
@@ -604,6 +625,7 @@ fun V11FinanceScreen(
                             month = month.toString(),
                             amount = amount,
                             methodId = methodId,
+                            recordId = recordId,
                         )
                     ) {
                         payingObligationId = null
@@ -762,7 +784,7 @@ private fun V11PaymentDetailsDialog(
 }
 
 @Composable
-private fun V11EditPaymentDialog(
+internal fun V11EditPaymentDialog(
     payment: PaymentV11,
     db: V11Database,
     onDismiss: () -> Unit,
@@ -789,6 +811,8 @@ private fun V11EditPaymentDialog(
 
     var methodId by rememberSaveable(payment.id) { mutableStateOf(payment.paymentMethodId) }
 
+    val amountInput = MoneyInput.parse(amount)
+    val dateValid = runCatching { LocalDate.parse(date) }.isSuccess
     val leave = rememberNeoEditorExit(listOf(amount, date, note, sourceId, methodId), onDismiss)
     AlertDialog(
         onDismissRequest = leave,
@@ -797,14 +821,19 @@ private fun V11EditPaymentDialog(
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = amount,
-                    isError = amount.isNotBlank() && amount.toMoneyOrNull() == null,
+                    isError = amount.isNotBlank() && !amountInput.positive,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (amount.isNotBlank() && amount.toMoneyOrNull() == null)
-                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                        if (amount.isNotBlank() && !amountInput.positive)
+                            Text(
+                                neoLiteral(
+                                    "أدخل مبلغًا موجبًا صحيحًا",
+                                    "Enter a valid positive amount",
+                                )
+                            )
                     },
                     onValueChange = { amount = it },
                     label = { Text(neoLiteral("المبلغ", "Amount")) },
@@ -813,6 +842,8 @@ private fun V11EditPaymentDialog(
 
                 OutlinedTextField(
                     value = date,
+                    isError = date.isNotBlank() && !dateValid,
+                    supportingText = { if (!dateValid) Text("YYYY-MM-DD") },
                     onValueChange = { date = it },
                     label = { Text(neoLiteral("تاريخ الاستلام", "Received date")) },
                     singleLine = true,
@@ -829,7 +860,7 @@ private fun V11EditPaymentDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
                                 selected = sourceId == source.id,
-                                onClick = { sourceId = source.id },
+                                onClick = neoWriteAction { sourceId = source.id },
                             )
                             Text(source.name)
                         }
@@ -844,7 +875,7 @@ private fun V11EditPaymentDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
                                 selected = methodId == method.id,
-                                onClick = { methodId = method.id },
+                                onClick = neoWriteAction { methodId = method.id },
                             )
                             Text(method.name)
                         }
@@ -871,26 +902,27 @@ private fun V11EditPaymentDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    val newAmount = amount.toMoneyOrNull() ?: return@Button
+                onClick =
+                    neoWriteAction {
+                        val newAmount = amountInput.amount ?: return@neoWriteAction
 
-                    val oldAmount = payment.amount
+                        val oldAmount = payment.amount
 
-                    val newAllocations =
-                        ModernOperations.resizedAllocations(payment.allocations, newAmount)
+                        val newAllocations =
+                            ModernOperations.resizedAllocations(payment.allocations, newAmount)
 
-                    onSave(
-                        payment.copy(
-                            amount = newAmount,
-                            receivedDate = date,
-                            sourceId = sourceId,
-                            paymentMethodId = methodId,
-                            note = note,
-                            allocations = newAllocations,
+                        onSave(
+                            payment.copy(
+                                amount = newAmount,
+                                receivedDate = date,
+                                sourceId = sourceId,
+                                paymentMethodId = methodId,
+                                note = note,
+                                allocations = newAllocations,
+                            )
                         )
-                    )
-                },
-                enabled = amount.toMoneyOrNull() != null,
+                    },
+                enabled = amountInput.positive && dateValid,
             ) {
                 Text(neoLiteral("حفظ التعديل", "Save change"))
             }
@@ -1008,7 +1040,10 @@ private fun V11EditObligationDialog(
 
                 ObligationTypeV11.entries.forEach { item ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = type == item, onClick = { type = item })
+                        RadioButton(
+                            selected = type == item,
+                            onClick = neoWriteAction { type = item },
+                        )
                         Text(obligationLabel(item))
                     }
                 }
@@ -1016,19 +1051,20 @@ private fun V11EditObligationDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    onSave(
-                        obligation.copy(
-                            name = name,
-                            type = type,
-                            totalAmount = totalInput.amount,
-                            installmentAmount = installmentInput.amount,
-                            dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
-                            installmentCount = count.toLocalizedIntOrNull(),
-                            note = note,
+                onClick =
+                    neoWriteAction {
+                        onSave(
+                            obligation.copy(
+                                name = name,
+                                type = type,
+                                totalAmount = totalInput.amount,
+                                installmentAmount = installmentInput.amount,
+                                dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
+                                installmentCount = count.toLocalizedIntOrNull(),
+                                note = note,
+                            )
                         )
-                    )
-                },
+                    },
                 enabled =
                     name.isNotBlank() && totalInput.optionalValid && installmentInput.optionalValid,
             ) {
@@ -1087,7 +1123,7 @@ private fun money(value: Double, visible: Boolean): String =
     else "${"%.2f".format(value)} ج"
 
 @Composable
-private fun V11PaymentDialog(
+internal fun V11PaymentDialog(
     month: YearMonth,
     db: V11Database,
     onDismiss: () -> Unit,
@@ -1095,6 +1131,9 @@ private fun V11PaymentDialog(
 ) {
     if (LocalV11NeoEnabled.current) {
         NeoPaymentForm(db, month, null, onDismiss) { payment ->
+            check(db.payments.none { it.id == payment.id }) {
+                "This payment request was already saved. Review the stored record before opening a new entry."
+            }
             onSave(
                 db.copy(
                     payments = db.payments + payment,
@@ -1113,6 +1152,7 @@ private fun V11PaymentDialog(
         return
     }
 
+    val recordId = rememberSaveable { java.util.UUID.randomUUID().toString() }
     var amount by rememberSaveable { mutableStateOf("") }
 
     var date by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
@@ -1127,6 +1167,8 @@ private fun V11PaymentDialog(
         mutableStateOf(db.paymentMethods.firstOrNull { it.active }?.id)
     }
 
+    val amountInput = MoneyInput.parse(amount)
+    val dateValid = runCatching { LocalDate.parse(date) }.isSuccess
     val leave = rememberNeoEditorExit(listOf(amount, date, note, sourceId, methodId), onDismiss)
     AlertDialog(
         onDismissRequest = leave,
@@ -1135,14 +1177,19 @@ private fun V11PaymentDialog(
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = amount,
-                    isError = amount.isNotBlank() && amount.toMoneyOrNull() == null,
+                    isError = amount.isNotBlank() && !amountInput.positive,
                     keyboardOptions =
                         androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                         ),
                     supportingText = {
-                        if (amount.isNotBlank() && amount.toMoneyOrNull() == null)
-                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                        if (amount.isNotBlank() && !amountInput.positive)
+                            Text(
+                                neoLiteral(
+                                    "أدخل مبلغًا موجبًا صحيحًا",
+                                    "Enter a valid positive amount",
+                                )
+                            )
                     },
                     onValueChange = { amount = it },
                     label = { Text(neoLiteral("المبلغ", "Amount")) },
@@ -1151,6 +1198,8 @@ private fun V11PaymentDialog(
 
                 OutlinedTextField(
                     value = date,
+                    isError = date.isNotBlank() && !dateValid,
+                    supportingText = { if (!dateValid) Text("YYYY-MM-DD") },
                     onValueChange = { date = it },
                     label = { Text(neoLiteral("تاريخ الاستلام", "Received date")) },
                     singleLine = true,
@@ -1167,7 +1216,7 @@ private fun V11PaymentDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
                                 selected = sourceId == source.id,
-                                onClick = { sourceId = source.id },
+                                onClick = neoWriteAction { sourceId = source.id },
                             )
 
                             Text(source.name)
@@ -1183,7 +1232,7 @@ private fun V11PaymentDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
                                 selected = methodId == method.id,
-                                onClick = { methodId = method.id },
+                                onClick = neoWriteAction { methodId = method.id },
                             )
 
                             Text(method.name)
@@ -1199,21 +1248,25 @@ private fun V11PaymentDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    val value = amount.toMoneyOrNull() ?: return@Button
+                enabled = amountInput.positive && dateValid,
+                onClick =
+                    neoWriteAction {
+                        if (!amountInput.positive || !dateValid) return@neoWriteAction
+                        val value = amountInput.amount ?: return@neoWriteAction
 
-                    onSave(
-                        V11AccountsController.addPayment(
-                            db = db,
-                            amount = value,
-                            receivedDate = date,
-                            accrualMonth = month.toString(),
-                            sourceId = sourceId,
-                            paymentMethodId = methodId,
-                            note = note,
+                        onSave(
+                            V11AccountsController.addPayment(
+                                db = db,
+                                amount = value,
+                                receivedDate = date,
+                                accrualMonth = month.toString(),
+                                sourceId = sourceId,
+                                paymentMethodId = methodId,
+                                note = note,
+                                recordId = recordId,
+                            )
                         )
-                    )
-                }
+                    },
             ) {
                 Text(neoLiteral("حفظ", "Save"))
             }
@@ -1229,6 +1282,7 @@ private fun V11IncomeSourcesDialog(
     onDatabaseChange: (V11Database) -> Unit,
 ) {
     val commit = rememberNeoCommit(onDatabaseChange)
+    var recordId by rememberSaveable { mutableStateOf(java.util.UUID.randomUUID().toString()) }
     var newName by rememberSaveable { mutableStateOf("") }
 
     var fixedAmount by rememberSaveable { mutableStateOf("") }
@@ -1255,16 +1309,20 @@ private fun V11IncomeSourcesDialog(
                         Column(modifier = Modifier.padding(7.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
-                                    onClick = {
-                                        onDatabaseChange(
-                                            V11AccountsController.deleteIncomeSource(db, source.id)
-                                        )
-                                    }
+                                    onClick =
+                                        neoWriteAction {
+                                            onDatabaseChange(
+                                                V11AccountsController.deleteIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                )
+                                            )
+                                        }
                                 ) {
                                     Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))
                                 }
 
-                                IconButton(onClick = { editingId = source.id }) {
+                                IconButton(onClick = neoWriteAction { editingId = source.id }) {
                                     Icon(Icons.Default.Edit, neoLiteral("تعديل", "Edit"))
                                 }
 
@@ -1291,15 +1349,16 @@ private fun V11IncomeSourcesDialog(
                                 horizontalArrangement = Arrangement.Center,
                             ) {
                                 IconButton(
-                                    onClick = {
-                                        onDatabaseChange(
-                                            V11AccountsController.moveIncomeSource(
-                                                db,
-                                                source.id,
-                                                -1,
+                                    onClick =
+                                        neoWriteAction {
+                                            onDatabaseChange(
+                                                V11AccountsController.moveIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                    -1,
+                                                )
                                             )
-                                        )
-                                    },
+                                        },
                                     enabled = index > 0,
                                 ) {
                                     Icon(Icons.Default.KeyboardArrowUp, neoLiteral("لأعلى", "Up"))
@@ -1312,11 +1371,16 @@ private fun V11IncomeSourcesDialog(
                                 )
 
                                 IconButton(
-                                    onClick = {
-                                        onDatabaseChange(
-                                            V11AccountsController.moveIncomeSource(db, source.id, 1)
-                                        )
-                                    },
+                                    onClick =
+                                        neoWriteAction {
+                                            onDatabaseChange(
+                                                V11AccountsController.moveIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                    1,
+                                                )
+                                            )
+                                        },
                                     enabled = index < ordered.lastIndex,
                                 ) {
                                     Icon(
@@ -1369,21 +1433,24 @@ private fun V11IncomeSourcesDialog(
                 )
 
                 Button(
-                    onClick = {
-                        if (newName.isNotBlank() && fixedAmountInput.optionalValid) {
-                            commit(
-                                V11AccountsController.addIncomeSource(
-                                    db = db,
-                                    name = newName.trim(),
-                                    type = IncomeSourceTypeV11.OTHER,
-                                    fixedAmount = fixedAmountInput.amount,
-                                )
-                            ) {
-                                newName = ""
-                                fixedAmount = ""
+                    onClick =
+                        neoWriteAction {
+                            if (newName.isNotBlank() && fixedAmountInput.optionalValid) {
+                                commit(
+                                    V11AccountsController.addIncomeSource(
+                                        db = db,
+                                        name = newName.trim(),
+                                        type = IncomeSourceTypeV11.OTHER,
+                                        fixedAmount = fixedAmountInput.amount,
+                                        recordId = recordId,
+                                    )
+                                ) {
+                                    newName = ""
+                                    recordId = java.util.UUID.randomUUID().toString()
+                                    fixedAmount = ""
+                                }
                             }
-                        }
-                    },
+                        },
                     enabled = newName.isNotBlank() && fixedAmountInput.optionalValid,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -1395,10 +1462,16 @@ private fun V11IncomeSourcesDialog(
     )
 
     editing?.let { source ->
+        val unchanged = rememberNeoDraftUnchanged(source.id, source)
+        val reject = LocalNeoRejectWrite.current
         V11EditIncomeSourceDialog(
             source = source,
             onDismiss = { editingId = null },
             onSave = {
+                if (!unchanged) {
+                    reject("Income source changed. Draft retained; review before reopening.")
+                    return@V11EditIncomeSourceDialog
+                }
                 commit(V11AccountsController.updateIncomeSource(db, it)) { editingId = null }
             },
         )
@@ -1449,9 +1522,12 @@ internal fun V11EditIncomeSourceDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    onSave(source.copy(name = name.trim(), fixedMonthlyAmount = amountInput.amount))
-                },
+                onClick =
+                    neoWriteAction {
+                        onSave(
+                            source.copy(name = name.trim(), fixedMonthlyAmount = amountInput.amount)
+                        )
+                    },
                 enabled = name.isNotBlank() && amountInput.optionalValid,
             ) {
                 Text(neoLiteral("حفظ", "Save"))
@@ -1468,6 +1544,7 @@ private fun V11PaymentMethodsDialog(
     onDatabaseChange: (V11Database) -> Unit,
 ) {
     val commit = rememberNeoCommit(onDatabaseChange)
+    var recordId by rememberSaveable { mutableStateOf(java.util.UUID.randomUUID().toString()) }
     var newName by rememberSaveable { mutableStateOf("") }
 
     var editingId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -1493,36 +1570,47 @@ private fun V11PaymentMethodsDialog(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             IconButton(
-                                onClick = {
-                                    onDatabaseChange(
-                                        V11AccountsController.deletePaymentMethod(db, method.id)
-                                    )
-                                }
+                                onClick =
+                                    neoWriteAction {
+                                        onDatabaseChange(
+                                            V11AccountsController.deletePaymentMethod(db, method.id)
+                                        )
+                                    }
                             ) {
                                 Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))
                             }
 
-                            IconButton(onClick = { editingId = method.id }) {
+                            IconButton(onClick = neoWriteAction { editingId = method.id }) {
                                 Icon(Icons.Default.Edit, neoLiteral("تعديل", "Edit"))
                             }
 
                             IconButton(
-                                onClick = {
-                                    onDatabaseChange(
-                                        V11AccountsController.movePaymentMethod(db, method.id, -1)
-                                    )
-                                },
+                                onClick =
+                                    neoWriteAction {
+                                        onDatabaseChange(
+                                            V11AccountsController.movePaymentMethod(
+                                                db,
+                                                method.id,
+                                                -1,
+                                            )
+                                        )
+                                    },
                                 enabled = index > 0,
                             ) {
                                 Icon(Icons.Default.KeyboardArrowUp, neoLiteral("لأعلى", "Up"))
                             }
 
                             IconButton(
-                                onClick = {
-                                    onDatabaseChange(
-                                        V11AccountsController.movePaymentMethod(db, method.id, 1)
-                                    )
-                                },
+                                onClick =
+                                    neoWriteAction {
+                                        onDatabaseChange(
+                                            V11AccountsController.movePaymentMethod(
+                                                db,
+                                                method.id,
+                                                1,
+                                            )
+                                        )
+                                    },
                                 enabled = index < ordered.lastIndex,
                             ) {
                                 Icon(Icons.Default.KeyboardArrowDown, neoLiteral("لأسفل", "Down"))
@@ -1546,13 +1634,21 @@ private fun V11PaymentMethodsDialog(
                 )
 
                 Button(
-                    onClick = {
-                        if (newName.isNotBlank()) {
-                            commit(V11AccountsController.addPaymentMethod(db, newName.trim())) {
-                                newName = ""
+                    onClick =
+                        neoWriteAction {
+                            if (newName.isNotBlank()) {
+                                commit(
+                                    V11AccountsController.addPaymentMethod(
+                                        db,
+                                        newName.trim(),
+                                        recordId,
+                                    )
+                                ) {
+                                    newName = ""
+                                    recordId = java.util.UUID.randomUUID().toString()
+                                }
                             }
-                        }
-                    },
+                        },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(neoLiteral("إضافة طريقة الدفع", "Add payment method"))
@@ -1579,18 +1675,19 @@ private fun V11PaymentMethodsDialog(
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        if (name.isNotBlank()) {
-                            commit(
-                                V11AccountsController.updatePaymentMethod(
-                                    db,
-                                    method.copy(name = name.trim()),
-                                )
-                            ) {
-                                editingId = null
+                    onClick =
+                        neoWriteAction {
+                            if (name.isNotBlank()) {
+                                commit(
+                                    V11AccountsController.updatePaymentMethod(
+                                        db,
+                                        method.copy(name = name.trim()),
+                                    )
+                                ) {
+                                    editingId = null
+                                }
                             }
                         }
-                    }
                 ) {
                     Text(neoLiteral("حفظ", "Save"))
                 }
@@ -1613,6 +1710,7 @@ private fun V11ObligationDialog(
         return
     }
 
+    val recordId = rememberSaveable { java.util.UUID.randomUUID().toString() }
     var name by rememberSaveable { mutableStateOf("") }
 
     var total by rememberSaveable { mutableStateOf("") }
@@ -1686,7 +1784,7 @@ private fun V11ObligationDialog(
 
                 ObligationTypeV11.entries.forEach {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = type == it, onClick = { type = it })
+                        RadioButton(selected = type == it, onClick = neoWriteAction { type = it })
 
                         Text(obligationLabel(it))
                     }
@@ -1695,22 +1793,24 @@ private fun V11ObligationDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    onSave(
-                        V11AccountsController.addObligation(
-                            db = db,
-                            name = name,
-                            type = type,
-                            totalAmount = totalInput.amount,
-                            installmentAmount = installmentInput.amount,
-                            startDate = LocalDate.now().toString(),
-                            dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
-                            installmentCount = count.toLocalizedIntOrNull(),
-                            reminderDaysBefore = 3,
-                            note = "",
+                onClick =
+                    neoWriteAction {
+                        onSave(
+                            V11AccountsController.addObligation(
+                                db = db,
+                                name = name,
+                                type = type,
+                                totalAmount = totalInput.amount,
+                                installmentAmount = installmentInput.amount,
+                                startDate = LocalDate.now().toString(),
+                                dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
+                                installmentCount = count.toLocalizedIntOrNull(),
+                                reminderDaysBefore = 3,
+                                note = "",
+                                recordId = recordId,
+                            )
                         )
-                    )
-                },
+                    },
                 enabled =
                     name.isNotBlank() && totalInput.optionalValid && installmentInput.optionalValid,
             ) {
@@ -1739,8 +1839,9 @@ private fun V11ObligationPaymentDialog(
     remaining: Double,
     db: V11Database,
     onDismiss: () -> Unit,
-    onSave: (Double, String?) -> Unit,
+    onSave: (Double, String?, String) -> Unit,
 ) {
+    val recordId = rememberSaveable { java.util.UUID.randomUUID().toString() }
     var amount by
         rememberSaveable(obligation.id, month) {
             mutableStateOf(if (remaining > 0.0) "%.2f".format(remaining) else "")
@@ -1805,7 +1906,7 @@ private fun V11ObligationPaymentDialog(
                             ) {
                                 RadioButton(
                                     selected = methodId == method.id,
-                                    onClick = { methodId = method.id },
+                                    onClick = neoWriteAction { methodId = method.id },
                                 )
 
                                 Text(method.name)
@@ -1816,11 +1917,12 @@ private fun V11ObligationPaymentDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    val parsed = amountInput.amount ?: return@Button
+                onClick =
+                    neoWriteAction {
+                        val parsed = amountInput.amount ?: return@neoWriteAction
 
-                    onSave(parsed, methodId)
-                },
+                        onSave(parsed, methodId, recordId)
+                    },
                 enabled = amountInput.positive,
             ) {
                 Text(neoLiteral("حفظ السداد", "Save payment"))

@@ -22,6 +22,8 @@ fun NeoPaymentForm(
     onDismiss: () -> Unit,
     onSave: (PaymentV11) -> Unit,
 ) {
+    val recordId = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
+    val allocationId = rememberSaveable(existing?.id) { UUID.randomUUID().toString() }
     var amount by
         rememberSaveable(existing?.id) { mutableStateOf(existing?.amount?.toString().orEmpty()) }
     var date by
@@ -90,44 +92,39 @@ fun NeoPaymentForm(
                         !write.pending &&
                         (amount.toMoneyOrNull() ?: 0.0) > 0 &&
                         runCatching { LocalDate.parse(date) }.isSuccess,
-                onClick = {
-                    if (submitted) return@Button
-                    submitted = true
-                    keyboard?.hide()
-                    val value = amount.toMoneyOrNull()!!
-                    val base =
-                        existing
-                            ?: PaymentV11(
-                                UUID.randomUUID().toString(),
-                                value,
-                                date,
-                                month.toString(),
-                            )
-                    val allocations =
-                        if (existing == null)
-                            listOf(
-                                PaymentAllocationV11(
-                                    UUID.randomUUID().toString(),
-                                    month.toString(),
-                                    source,
-                                    value,
+                onClick =
+                    neoWriteAction {
+                        if (submitted) return@neoWriteAction
+                        submitted = true
+                        keyboard?.hide()
+                        val value = amount.toMoneyOrNull()!!
+                        val base = existing ?: PaymentV11(recordId, value, date, month.toString())
+                        val allocations =
+                            if (existing == null)
+                                listOf(
+                                    PaymentAllocationV11(
+                                        allocationId,
+                                        month.toString(),
+                                        source,
+                                        value,
+                                    )
                                 )
+                            else
+                                ModernOperations.resizedAllocations(base.allocations, value).map {
+                                    if (it.sourceId == base.sourceId) it.copy(sourceId = source)
+                                    else it
+                                }
+                        onSave(
+                            base.copy(
+                                amount = value,
+                                receivedDate = date,
+                                sourceId = source,
+                                paymentMethodId = method,
+                                note = note,
+                                allocations = allocations,
                             )
-                        else
-                            ModernOperations.resizedAllocations(base.allocations, value).map {
-                                if (it.sourceId == base.sourceId) it.copy(sourceId = source) else it
-                            }
-                    onSave(
-                        base.copy(
-                            amount = value,
-                            receivedDate = date,
-                            sourceId = source,
-                            paymentMethodId = method,
-                            note = note,
-                            allocations = allocations,
                         )
-                    )
-                },
+                    },
             ) {
                 Text(neoLabel("حفظ", "Save"))
             }
@@ -143,6 +140,7 @@ fun NeoObligationForm(
     onSave: (V11Database) -> Unit,
     existing: ObligationV11? = null,
 ) {
+    val recordId = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
     var type by rememberSaveable {
         mutableStateOf(
             if (existing?.note?.startsWith("[SAVINGS]") == true) "SAVINGS"
@@ -256,65 +254,71 @@ fun NeoObligationForm(
         confirmButton = {
             Button(
                 enabled = valid && !submitted && !write.pending,
-                onClick = {
-                    if (submitted) return@Button
-                    submitted = true
-                    val base =
-                        runCatching { ObligationTypeV11.valueOf(type) }
-                            .getOrDefault(ObligationTypeV11.OTHER)
-                    if (existing != null)
-                        onSave(
-                            db.copy(
-                                obligations =
-                                    db.obligations.map {
-                                        if (it.id == existing.id)
-                                            it.copy(
-                                                name = name,
-                                                type = base,
-                                                totalAmount =
-                                                    if (recurring) null else total.toMoneyOrNull(),
-                                                installmentAmount = installment.toMoneyOrNull(),
-                                                startDate = date,
-                                                dueDay = dueDay,
-                                                installmentCount =
-                                                    if (
-                                                        type in
-                                                            listOf(
-                                                                "INSTALLMENT",
-                                                                "LOAN",
-                                                                "ASSOCIATION",
-                                                            )
-                                                    )
-                                                        count.toLocalizedIntOrNull()
-                                                    else null,
-                                                note =
-                                                    (if (type in listOf("SAVINGS", "SUBSCRIPTION"))
-                                                        "[$type] "
-                                                    else "") + note,
-                                            )
-                                        else it
-                                    }
+                onClick =
+                    neoWriteAction {
+                        if (submitted) return@neoWriteAction
+                        submitted = true
+                        val base =
+                            runCatching { ObligationTypeV11.valueOf(type) }
+                                .getOrDefault(ObligationTypeV11.OTHER)
+                        if (existing != null)
+                            onSave(
+                                db.copy(
+                                    obligations =
+                                        db.obligations.map {
+                                            if (it.id == existing.id)
+                                                it.copy(
+                                                    name = name,
+                                                    type = base,
+                                                    totalAmount =
+                                                        if (recurring) null
+                                                        else total.toMoneyOrNull(),
+                                                    installmentAmount = installment.toMoneyOrNull(),
+                                                    startDate = date,
+                                                    dueDay = dueDay,
+                                                    installmentCount =
+                                                        if (
+                                                            type in
+                                                                listOf(
+                                                                    "INSTALLMENT",
+                                                                    "LOAN",
+                                                                    "ASSOCIATION",
+                                                                )
+                                                        )
+                                                            count.toLocalizedIntOrNull()
+                                                        else null,
+                                                    note =
+                                                        (if (
+                                                            type in
+                                                                listOf("SAVINGS", "SUBSCRIPTION")
+                                                        )
+                                                            "[$type] "
+                                                        else "") + note,
+                                                )
+                                            else it
+                                        }
+                                )
                             )
-                        )
-                    else
-                        onSave(
-                            V11AccountsController.addObligation(
-                                db,
-                                name,
-                                base,
-                                if (recurring) null else total.toMoneyOrNull(),
-                                installment.toMoneyOrNull(),
-                                date,
-                                dueDay,
-                                if (type in listOf("INSTALLMENT", "LOAN", "ASSOCIATION"))
-                                    count.toLocalizedIntOrNull()
-                                else null,
-                                3,
-                                (if (type in listOf("SAVINGS", "SUBSCRIPTION")) "[$type] "
-                                else "") + note,
+                        else
+                            onSave(
+                                V11AccountsController.addObligation(
+                                    db,
+                                    name,
+                                    base,
+                                    if (recurring) null else total.toMoneyOrNull(),
+                                    installment.toMoneyOrNull(),
+                                    date,
+                                    dueDay,
+                                    if (type in listOf("INSTALLMENT", "LOAN", "ASSOCIATION"))
+                                        count.toLocalizedIntOrNull()
+                                    else null,
+                                    3,
+                                    (if (type in listOf("SAVINGS", "SUBSCRIPTION")) "[$type] "
+                                    else "") + note,
+                                    recordId = recordId,
+                                )
                             )
-                        )
-                },
+                    },
             ) {
                 Text(neoLabel("حفظ", "Save"))
             }
@@ -351,7 +355,7 @@ private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): () -> Un
                 TextButton(onClick = onDismiss) { Text(neoLabel("تجاهل", "Discard")) }
             },
             dismissButton = {
-                TextButton(onClick = { confirm = false }) {
+                TextButton(onClick = neoWriteAction { confirm = false }) {
                     Text(neoLabel("متابعة", "Keep editing"))
                 }
             },

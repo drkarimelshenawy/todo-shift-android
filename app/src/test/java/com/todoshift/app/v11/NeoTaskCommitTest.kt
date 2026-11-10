@@ -40,13 +40,13 @@ class NeoTaskCommitTest {
                 { _, next ->
                     db = next
                     writes++
-                    error("Injected after commit")
+                    if (writes == 1) error("Injected after commit")
                 },
                 {},
             )
         assertEquals(NeoTaskCommit.Result.Committed(false), commit.submit(task))
         assertEquals(NeoTaskCommit.Result.Committed(false), commit.submit(task))
-        assertEquals(1, writes)
+        assertEquals(3, writes)
         assertEquals(listOf(task), db.tasks)
     }
 
@@ -61,7 +61,7 @@ class NeoTaskCommitTest {
     }
 
     @Test
-    fun sideEffectFailureDoesNotMisreportDataFailureOrRepeatWrite() {
+    fun sideEffectFailureDoesNotMisreportDataFailureOrDuplicateRecords() {
         var db = V11Database()
         var fail = true
         var writes = 0
@@ -77,7 +77,32 @@ class NeoTaskCommitTest {
         assertEquals(NeoTaskCommit.Result.Committed(true), commit.submit(task))
         fail = false
         assertEquals(NeoTaskCommit.Result.Committed(false), commit.submit(task))
-        assertEquals(1, writes)
+        assertEquals(2, writes)
         assertEquals(listOf(task), db.tasks)
+    }
+
+    @Test
+    fun visibleMemoryWithoutDurableAcknowledgementIsNeverReportedCommitted() {
+        var visible = V11Database()
+        var durable = visible
+        var allowDisk = false
+        var effects = 0
+        val commit =
+            NeoTaskCommit(
+                { visible },
+                { _, next ->
+                    visible = next
+                    if (!allowDisk) error("Disk failed after memory updated")
+                    durable = next
+                },
+                { effects++ },
+            )
+        assertEquals(NeoTaskCommit.Result.Retry, commit.submit(task))
+        assertEquals(NeoTaskCommit.Result.Retry, commit.submit(task))
+        assertTrue(durable.tasks.isEmpty())
+        assertEquals(0, effects)
+        allowDisk = true
+        assertEquals(NeoTaskCommit.Result.Committed(false), commit.submit(task))
+        assertEquals(listOf(task), durable.tasks)
     }
 }

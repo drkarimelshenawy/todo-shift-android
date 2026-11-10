@@ -247,7 +247,11 @@ fun V11Home(
         if (repaired != db) {
             writeBusy = true
             try {
-                withContext(Dispatchers.IO) { runtime.saveIfCurrent(db, repaired) }
+                withContext(Dispatchers.IO) {
+                    com.todoshift.app.backup
+                        .Neo4LocalBackup(context.applicationContext)
+                        .commitDatabase(db, repaired)
+                }
                 db = repaired
             } catch (failure: Exception) {
                 writeFailure = failure.message ?: "Storage failure"
@@ -338,16 +342,9 @@ fun V11Home(
             var committed = false
             try {
                 withContext(Dispatchers.IO) {
-                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
-                        check(runtime.start() == expected) { "Data changed; draft retained" }
-                        NeoCommittedEffects(context).prepare(expected)
-                        try {
-                            runtime.saveIfCurrent(expected, value)
-                        } catch (failure: Exception) {
-                            // A failed acknowledgement must not cause a duplicate retry.
-                            if (runtime.start() != value) throw failure
-                        }
-                    }
+                    com.todoshift.app.backup
+                        .Neo4LocalBackup(context.applicationContext)
+                        .commitDatabase(expected, value)
                 }
                 committed = true
                 if (recordUndo) {
@@ -371,6 +368,56 @@ fun V11Home(
                 completed(committed)
             }
         }
+    }
+
+    fun saveWorkplaces(
+        workplaces: List<com.todoshift.app.data.Workplace>,
+        completed: (Boolean) -> Unit = {},
+    ) {
+        if (writeBusy || writeFailure != null) {
+            completed(false)
+            return
+        }
+        val expectedLegacy = displayedLegacy
+        val expected = displayedDb
+        writeBusy = true
+        writeScope.launch {
+            var committed = false
+            try {
+                val (savedLegacy, savedDb) =
+                    withContext(Dispatchers.IO) {
+                        com.todoshift.app.backup
+                            .Neo4LocalBackup(context.applicationContext)
+                            .updateWorkplaces(expectedLegacy, expected, workplaces)
+                    }
+                committed = true
+                oldData = savedLegacy
+                db = savedDb
+                withContext(Dispatchers.IO) {
+                    runCatching { NeoCommittedEffects(context).reconcile(runtime.start()) }
+                        .onFailure {
+                            writeFailure =
+                                "Data saved; reminder/widget refresh is pending and will retry on reopening."
+                        }
+                }
+            } catch (failure: Exception) {
+                writeFailure = failure.message ?: "Workplace save not confirmed; draft retained"
+            } finally {
+                writeBusy = false
+                completed(committed)
+            }
+        }
+    }
+
+    fun adoptRestore(state: com.todoshift.app.backup.Neo4RestoredState) {
+        db = state.database
+        oldData = state.legacy
+        uiSettings = state.ui
+        neoAppearance = state.appearance
+        activeCalendarId = state.activeCalendarId
+        undoHistory.clear()
+        accountsUnlocked =
+            securitySettings.mode == V11LockMode.NONE && !securitySettings.biometricEnabled
     }
 
     fun saveUi(value: V11UiSettings) {
@@ -443,6 +490,12 @@ fun V11Home(
                         if (undoHistory.size > 20) undoHistory.removeAt(0)
                         db = next
                     },
+                LocalNeoRestoreCommitted provides { state -> adoptRestore(state) },
+                LocalNeoWorkplaceCommitRequest provides
+                    { places, completed ->
+                        saveWorkplaces(places, completed)
+                    },
+                LocalNeoRejectWrite provides { message -> writeFailure = message },
                 LocalNeoCommitRequest provides
                     { next, completed ->
                         saveDb(next, completed = completed)
@@ -679,36 +732,7 @@ fun V11Home(
                                             db.tasks.mapNotNull { it.workplaceId })
                                         .toSet(),
                                 onBack = { showWorkplaces = false },
-                                onSaveWorkplaces = { workplaces ->
-                                    if (!writeBusy && writeFailure == null) {
-                                        val expectedLegacy = displayedLegacy
-                                        val expected = displayedDb
-                                        writeBusy = true
-                                        writeScope.launch {
-                                            try {
-                                                val (savedLegacy, savedDb) =
-                                                    withContext(Dispatchers.IO) {
-                                                        com.todoshift.app.backup
-                                                            .Neo4LocalBackup(
-                                                                context.applicationContext
-                                                            )
-                                                            .updateWorkplaces(
-                                                                expectedLegacy,
-                                                                expected,
-                                                                workplaces,
-                                                            )
-                                                    }
-                                                oldData = savedLegacy
-                                                db = savedDb
-                                            } catch (failure: Exception) {
-                                                writeFailure =
-                                                    failure.message ?: "Workplace save failed"
-                                            } finally {
-                                                writeBusy = false
-                                            }
-                                        }
-                                    }
-                                },
+                                onSaveWorkplaces = { saveWorkplaces(it) },
                             )
                         } else {
                             when (tab) {
@@ -789,13 +813,7 @@ fun V11Home(
                                         workplaces = oldData.workplaces,
                                         financeAuthorized = accountsUnlocked,
                                         onAccountsUnlocked = { accountsUnlocked = true },
-                                        onNeoRestored = { state ->
-                                            db = state.database
-                                            oldData = state.legacy
-                                            uiSettings = state.ui
-                                            neoAppearance = state.appearance
-                                            activeCalendarId = state.activeCalendarId
-                                        },
+                                        onNeoRestored = { state -> adoptRestore(state) },
                                         db = db,
                                         uiSettings = uiSettings,
                                         moneyVisible = moneyVisible,

@@ -33,6 +33,10 @@ fun NeoDayNoteDialog(
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf(false) }
     val id = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
+    val intendedCalendarId by rememberSaveable(id) { mutableStateOf(calendarId) }
+    val noteUnchanged =
+        rememberNeoDraftUnchanged("note-$id", expectedDatabase.dayItems.firstOrNull { it.id == id })
+    val styleUnchanged = rememberNeoDraftUnchanged("note-style-$id", expectedMetadata)
     var color by rememberSaveable(id) { mutableStateOf(styleStore.noteColor(id)) }
     var border by
         rememberSaveable(id) {
@@ -101,25 +105,25 @@ fun NeoDayNoteDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     text,
-                    { text = it.take(300) },
+                    { if (!pending) text = it.take(300) },
                     label = { Text(neoLabel("النص الظاهر بالتقويم", "Calendar note text")) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     details,
-                    { details = it.take(4000) },
+                    { if (!pending) details = it.take(4000) },
                     label = { Text(neoLabel("تفاصيل", "Details")) },
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     color,
-                    { color = it.take(7) },
+                    { if (!pending) color = it.take(7) },
                     label = { Text(neoLabel("لون الحد أو النقطة", "Border/dot color")) },
                     isError = !color.matches(Regex("#[0-9a-fA-F]{6}")),
                 )
                 NeoSwitch(neoLabel("حد حول النص بدل نقطة", "Text border instead of dot"), border) {
-                    border = it
+                    if (!pending) border = it
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 NeoChoice(
@@ -127,7 +131,7 @@ fun NeoDayNoteDialog(
                     listOf("", "📌", "★", "⚠"),
                     marker,
                     { it.ifEmpty { neoLabel("بدون", "None") } },
-                    { marker = it },
+                    { if (!pending) marker = it },
                 )
             }
         },
@@ -135,6 +139,11 @@ fun NeoDayNoteDialog(
             Button(
                 enabled = !pending && text.isNotBlank() && color.matches(Regex("#[0-9a-fA-F]{6}")),
                 onClick = {
+                    if (!noteUnchanged || !styleUnchanged) {
+                        error =
+                            "Note was saved or changed elsewhere. Draft retained; review the stored note before reopening."
+                        return@Button
+                    }
                     val note =
                         (existing
                                 ?: DayItemV11(
@@ -142,7 +151,7 @@ fun NeoDayNoteDialog(
                                     date.toString(),
                                     type = DayItemTypeV11.NOTE,
                                     title = "",
-                                    calendarId = calendarId,
+                                    calendarId = intendedCalendarId,
                                 ))
                             .copy(
                                 title = (if (marker.isBlank()) "" else "$marker ") + text.trim(),

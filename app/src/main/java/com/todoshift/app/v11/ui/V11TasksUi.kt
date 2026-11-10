@@ -307,6 +307,8 @@ fun V11TasksScreen(
     }
 
     if (showEditor) {
+        val unchanged = rememberNeoDraftUnchanged(editingTaskId ?: "new-task", editingTask)
+        val reject = LocalNeoRejectWrite.current
         TaskEditorDialogV11(
             existing = editingTask,
             db = db,
@@ -316,6 +318,12 @@ fun V11TasksScreen(
                 editingTaskId = null
             },
             onSave = { task ->
+                if (!unchanged || (editingTaskId == null && db.tasks.any { it.id == task.id })) {
+                    reject(
+                        "Task changed or was already saved. Draft retained; review the stored record before retrying."
+                    )
+                    return@TaskEditorDialogV11
+                }
                 val exists = db.tasks.any { it.id == task.id }
 
                 val updated =

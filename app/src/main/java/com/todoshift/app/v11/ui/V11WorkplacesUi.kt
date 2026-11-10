@@ -60,6 +60,8 @@ fun V11WorkplacesScreen(
     datedRateKeys: Set<String> = emptySet(),
     protectedWorkplaceIds: Set<String> = emptySet(),
 ) {
+    val commit = rememberNeoWorkplaceCommit(onSaveWorkplaces)
+    val reject = LocalNeoRejectWrite.current
     var editingId by rememberSaveable { mutableStateOf<String?>(null) }
     val editing = workplaces.firstOrNull { it.id == editingId }
 
@@ -209,21 +211,30 @@ fun V11WorkplacesScreen(
             initial = null,
             onDismiss = { adding = false },
             onSave = { value ->
-                onSaveWorkplaces(workplaces + value)
-                adding = false
+                if (workplaces.any { it.id == value.id }) {
+                    reject(
+                        "Workplace request already saved; review the stored workplace before opening a new entry."
+                    )
+                    return@V11WorkplaceEditor
+                }
+                commit(workplaces + value) { adding = false }
             },
         )
     }
 
     editing?.let { workplace ->
+        val unchanged = rememberNeoDraftUnchanged(workplace.id, workplace)
         V11WorkplaceEditor(
             initial = workplace,
             lockedKinds =
                 ShiftKind.entries.filter { "${workplace.id}|${it.name}" in datedRateKeys }.toSet(),
             onDismiss = { editingId = null },
             onSave = { value ->
-                onSaveWorkplaces(workplaces.map { if (it.id == value.id) value else it })
-                editingId = null
+                if (!unchanged) {
+                    reject("Workplace changed. Draft retained; review before reopening.")
+                    return@V11WorkplaceEditor
+                }
+                commit(workplaces.map { if (it.id == value.id) value else it }) { editingId = null }
             },
         )
     }
@@ -248,8 +259,7 @@ fun V11WorkplacesScreen(
                 TextButton(
                     enabled = workplace.id !in protectedWorkplaceIds,
                     onClick = {
-                        onSaveWorkplaces(workplaces.filterNot { it.id == workplace.id })
-                        deleting = null
+                        commit(workplaces.filterNot { it.id == workplace.id }) { deleting = null }
                     },
                 ) {
                     Text(neoLiteral("حذف", "Delete"))
@@ -269,6 +279,7 @@ private fun V11WorkplaceEditor(
     onDismiss: () -> Unit,
     onSave: (Workplace) -> Unit,
 ) {
+    val recordId = rememberSaveable(initial?.id) { initial?.id ?: UUID.randomUUID().toString() }
     var name by rememberSaveable(initial?.id) { mutableStateOf(initial?.name ?: "") }
 
     var colorHex by
@@ -415,7 +426,7 @@ private fun V11WorkplaceEditor(
                 onClick = {
                     onSave(
                         Workplace(
-                            id = initial?.id ?: UUID.randomUUID().toString(),
+                            id = recordId,
                             name = name.trim(),
                             colorHex = colorHex,
                             fullDayRate = fullDay.toMoneyOrNull() ?: 0.0,

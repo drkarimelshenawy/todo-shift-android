@@ -546,6 +546,7 @@ fun V11DayDetailsScreen(
     addType
         ?.takeIf { !LocalV11NeoEnabled.current || it != DayItemTypeV11.NOTE }
         ?.let { type ->
+            val recordId = rememberSaveable { java.util.UUID.randomUUID().toString() }
             V11AddDayItemDialog(
                 type = type,
                 dateForReminder = date.toString(),
@@ -564,6 +565,7 @@ fun V11DayDetailsScreen(
                             title = title,
                             details = details,
                             reminderAt = reminderAt,
+                            recordId = recordId,
                         )
 
                     val created = updated.dayItems.lastOrNull()
@@ -674,20 +676,21 @@ private fun V11AddDayItemDialog(
 
                         if (reminderEnabled) {
                             OutlinedButton(
-                                onClick = {
-                                    TimePickerDialog(
-                                            context,
-                                            { _, hour, minute ->
-                                                reminderHour = hour
+                                onClick =
+                                    neoWriteAction {
+                                        TimePickerDialog(
+                                                context,
+                                                { _, hour, minute ->
+                                                    reminderHour = hour
 
-                                                reminderMinute = minute
-                                            },
-                                            reminderHour,
-                                            reminderMinute,
-                                            true,
-                                        )
-                                        .show()
-                                }
+                                                    reminderMinute = minute
+                                                },
+                                                reminderHour,
+                                                reminderMinute,
+                                                true,
+                                            )
+                                            .show()
+                                    }
                             ) {
                                 Text("%02d:%02d".format(reminderHour, reminderMinute))
                             }
@@ -698,22 +701,23 @@ private fun V11AddDayItemDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    val reminderAt =
-                        if (reminderEnabled && type != DayItemTypeV11.NOTE) {
-                            LocalDateTime.of(
-                                    LocalDate.parse(dateForReminder),
-                                    LocalTime.of(reminderHour, reminderMinute),
-                                )
-                                .atZone(ZoneId.systemDefault())
-                                .toInstant()
-                                .toEpochMilli()
-                        } else {
-                            null
-                        }
+                onClick =
+                    neoWriteAction {
+                        val reminderAt =
+                            if (reminderEnabled && type != DayItemTypeV11.NOTE) {
+                                LocalDateTime.of(
+                                        LocalDate.parse(dateForReminder),
+                                        LocalTime.of(reminderHour, reminderMinute),
+                                    )
+                                    .atZone(ZoneId.systemDefault())
+                                    .toInstant()
+                                    .toEpochMilli()
+                            } else {
+                                null
+                            }
 
-                    onSave(title, details, reminderAt)
-                },
+                        onSave(title, details, reminderAt)
+                    },
                 enabled = title.isNotBlank(),
             ) {
                 Text(neoLiteral("حفظ", "Save"))

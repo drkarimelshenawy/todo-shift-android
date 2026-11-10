@@ -262,4 +262,30 @@ class BackupRecoveryTest {
             assertFalse(File(context.filesDir, "neo4-restore-journal.json").exists())
         }
     }
+
+    @Test
+    fun databaseWriteFailureAndInterruptionRecoverBeforeRetry() {
+        val runtime = V11Runtime(context)
+        val before = runtime.start()
+        val next =
+            before.copy(tasks = listOf(TaskV11("journal-task", "Fixture", date = "2026-11-10")))
+        for (boundary in listOf("journal", "database")) {
+            try {
+                backup().commitDatabase(before, next) {
+                    if (it == boundary) throw AssertionError("Simulated interruption")
+                }
+                fail("Must interrupt")
+            } catch (expected: AssertionError) {}
+            assertEquals(before, runtime.start())
+        }
+        try {
+            backup().commitDatabase(before, next) {
+                if (it == "database") error("Injected acknowledgement failure")
+            }
+            fail("Must fail")
+        } catch (expected: IllegalStateException) {}
+        assertEquals(before, runtime.start())
+        assertEquals(next, backup().commitDatabase(before, next))
+        assertEquals(next, runtime.start())
+    }
 }

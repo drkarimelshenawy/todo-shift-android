@@ -98,14 +98,14 @@ class QuickTaskActivity : FragmentActivity() {
                                                         NeoTaskCommit(
                                                                 runtime::start,
                                                                 { expected, next ->
-                                                                    NeoCommittedEffects(
+                                                                    com.todoshift.app.backup
+                                                                        .Neo4LocalBackup(
                                                                             applicationContext
                                                                         )
-                                                                        .prepare(expected)
-                                                                    runtime.saveIfCurrent(
-                                                                        expected,
-                                                                        next,
-                                                                    )
+                                                                        .commitDatabase(
+                                                                            expected,
+                                                                            next,
+                                                                        )
                                                                 },
                                                                 {
                                                                     com.todoshift.app.reminders

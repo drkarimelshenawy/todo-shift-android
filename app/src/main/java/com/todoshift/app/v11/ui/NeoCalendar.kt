@@ -58,6 +58,7 @@ fun NeoCalendarArea(
     onOpenDay: () -> Unit,
     modifier: Modifier = Modifier,
     onDatabaseChange: (V11Database) -> Unit = {},
+    creationCalendarId: String? = null,
 ) {
     val focus = LocalNeoFocus.current || LocalNeoRuntimeReduced.current
     val p = LocalNeoAppearance.current
@@ -362,10 +363,7 @@ fun NeoCalendarArea(
             date,
             editingNote,
             expectedDatabase = db,
-            calendarId =
-                com.todoshift.app.v11.V11ActiveCalendarStore(context).load()?.takeIf { id ->
-                    db.calendars.any { it.id == id }
-                },
+            calendarId = creationCalendarId,
             onDismiss = {
                 noteDate = null
                 editingNote = null

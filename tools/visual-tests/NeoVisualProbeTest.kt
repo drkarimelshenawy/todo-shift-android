@@ -211,6 +211,9 @@ class NeoVisualProbeTest {
         runtime.saveIfCurrent(runtime.start(), db)
         compose.activityRule.scenario.recreate()
         ready()
+        compose
+            .onNodeWithContentDescription(LocalDate.now().toString(), substring = true)
+            .performScrollTo()
         shot("13-calendar-en-narrow-filled-200")
     }
 

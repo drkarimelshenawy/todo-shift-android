@@ -50,7 +50,7 @@ fun V11DayDetailsScreen(
 
     var addType by rememberSaveable { mutableStateOf<DayItemTypeV11?>(null) }
 
-    var pendingEditSegmentId by remember { mutableStateOf<String?>(null) }
+    var pendingEditSegmentId by rememberSaveable { mutableStateOf<String?>(null) }
 
     var pendingDeleteSegmentId by remember { mutableStateOf<String?>(null) }
 
@@ -362,9 +362,10 @@ fun V11DayDetailsScreen(
                             )
                         }
 
-                        Spacer(Modifier.weight(1f))
-
-                        Column(horizontalAlignment = Alignment.End) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.End,
+                        ) {
                             Text(item.title, fontWeight = FontWeight.Bold)
 
                             if (item.details.isNotBlank()) {
@@ -416,16 +417,16 @@ fun V11DayDetailsScreen(
         } else {
             val range = segment.timeRange()
             var startText by
-                remember(segmentId) {
+                rememberSaveable(segmentId) {
                     mutableStateOf(
                         range?.startMinute?.let { "%02d:%02d".format(it / 60, it % 60) } ?: ""
                     )
                 }
             var endText by
-                remember(segmentId) {
+                rememberSaveable(segmentId) {
                     mutableStateOf(
                         range?.endMinute?.let {
-                            if (it == 1440) "24:00" else "%02d:%02d".format(it / 60, it % 60)
+                            if (it == 1440) "24:00" else "%02d:%02d".format((it / 60) % 24, it % 60)
                         } ?: ""
                     )
                 }
@@ -433,13 +434,15 @@ fun V11DayDetailsScreen(
             fun parseTime(value: String, end: Boolean): Int? {
                 val parts = value.trim().split(":")
                 if (parts.size != 2) return null
-                val h = parts[0].toIntOrNull() ?: return null
-                val m = parts[1].toIntOrNull() ?: return null
+                val h = parts[0].toLocalizedIntOrNull() ?: return null
+                val m = parts[1].toLocalizedIntOrNull() ?: return null
                 if (m !in 0..59 || h !in 0..24 || (h == 24 && (m != 0 || !end))) return null
                 return h * 60 + m
             }
+            val leaveTime =
+                rememberNeoEditorExit(listOf(startText, endText), { pendingEditSegmentId = null })
             AlertDialog(
-                onDismissRequest = { pendingEditSegmentId = null },
+                onDismissRequest = leaveTime,
                 title = { Text(neoLiteral("تعديل أوقات الشيفت", "Edit shift times")) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -499,9 +502,7 @@ fun V11DayDetailsScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingEditSegmentId = null }) {
-                        Text(neoLiteral("إلغاء", "Cancel"))
-                    }
+                    TextButton(onClick = leaveTime) { Text(neoLiteral("إلغاء", "Cancel")) }
                 },
             )
         }

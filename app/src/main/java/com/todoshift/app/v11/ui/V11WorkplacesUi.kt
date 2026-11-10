@@ -60,9 +60,10 @@ fun V11WorkplacesScreen(
     datedRateKeys: Set<String> = emptySet(),
     protectedWorkplaceIds: Set<String> = emptySet(),
 ) {
-    var editing by remember { mutableStateOf<Workplace?>(null) }
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = workplaces.firstOrNull { it.id == editingId }
 
-    var adding by remember { mutableStateOf(false) }
+    var adding by rememberSaveable { mutableStateOf(false) }
 
     var deleting by remember { mutableStateOf<Workplace?>(null) }
 
@@ -117,7 +118,7 @@ fun V11WorkplacesScreen(
                 Card(
                     modifier =
                         Modifier.fillMaxWidth().padding(vertical = 5.dp).clickable {
-                            editing = workplace
+                            editingId = workplace.id
                         },
                     shape = RoundedCornerShape(18.dp),
                 ) {
@@ -160,7 +161,7 @@ fun V11WorkplacesScreen(
                             )
                         }
 
-                        IconButton(onClick = { editing = workplace }) {
+                        IconButton(onClick = { editingId = workplace.id }) {
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = neoLiteral("تعديل", "Edit"),
@@ -219,10 +220,10 @@ fun V11WorkplacesScreen(
             initial = workplace,
             lockedKinds =
                 ShiftKind.entries.filter { "${workplace.id}|${it.name}" in datedRateKeys }.toSet(),
-            onDismiss = { editing = null },
+            onDismiss = { editingId = null },
             onSave = { value ->
                 onSaveWorkplaces(workplaces.map { if (it.id == value.id) value else it })
-                editing = null
+                editingId = null
             },
         )
     }

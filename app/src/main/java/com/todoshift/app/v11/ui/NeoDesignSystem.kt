@@ -61,8 +61,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
             !dark -> Color(0xFFF3F6FA)
             p.brightness == NeoBrightness.AMOLED -> Color.Black
             p.palette == NeoPalette.EMERALD_LUXURY -> Color(0xFF071310)
-            p.palette in listOf(NeoPalette.CHAMPAGNE_GOLD, NeoPalette.SUNSET_COPPER) ->
-                Color(0xFF12100F)
+            p.palette == NeoPalette.SUNSET_COPPER -> Color(0xFF12100F)
             p.palette == NeoPalette.ROYAL_VIOLET -> Color(0xFF0E0A17)
             p.palette in listOf(NeoPalette.MONOCHROME, NeoPalette.TITANIUM_SILVER) ->
                 Color(0xFF101216)

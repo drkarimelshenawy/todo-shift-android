@@ -294,14 +294,16 @@ fun NeoAppearance.cardVisible(card: NeoDashboardCard): Boolean =
         })
 
 fun NeoAppearance.withDashboardCard(card: NeoDashboardCard, visible: Boolean): NeoAppearance {
-    val p = copy(hiddenCards = if (visible) hiddenCards - card else hiddenCards + card)
-    return when (card) {
-        NeoDashboardCard.CURRENT_SHIFT,
-        NeoDashboardCard.SUMMARY -> p.copy(showDailySummary = visible)
-        NeoDashboardCard.NEXT_SHIFT -> p.copy(showNextShift = visible)
-        NeoDashboardCard.TASKS -> p.copy(showTaskSummary = visible)
-        NeoDashboardCard.NEXT_EVENT -> p.copy(showOptionalInfo = visible)
-    }
+    val current = NeoDashboardCard.entries.filter { cardVisible(it) }.toSet()
+    val next = if (visible) current + card else current - card
+    return copy(
+        hiddenCards = NeoDashboardCard.entries.filter { it !in next }.toSet(),
+        showDailySummary =
+            NeoDashboardCard.CURRENT_SHIFT in next || NeoDashboardCard.SUMMARY in next,
+        showNextShift = NeoDashboardCard.NEXT_SHIFT in next,
+        showTaskSummary = NeoDashboardCard.TASKS in next,
+        showOptionalInfo = NeoDashboardCard.NEXT_EVENT in next,
+    )
 }
 
 /** Visual identities never mutate the independent language/direction configuration. */
@@ -314,3 +316,12 @@ fun NeoAppearance.preservingLocaleOf(current: NeoAppearance): NeoAppearance =
         weekdayDirection = current.weekdayDirection,
         firstWeekday = current.firstWeekday,
     )
+
+/** Today pulse is independent of page transitions; accessibility/runtime reduction still wins. */
+fun neoTodayPulseEnabled(p: NeoAppearance, runtimeReduced: Boolean, focus: Boolean): Boolean =
+    p.todayStyle == NeoTodayStyle.PULSE &&
+        !p.reduceMotion &&
+        p.motion > 0 &&
+        p.performance != NeoPerformance.LIGHTWEIGHT &&
+        !runtimeReduced &&
+        !focus

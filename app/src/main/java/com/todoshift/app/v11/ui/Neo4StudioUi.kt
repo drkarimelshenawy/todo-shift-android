@@ -58,7 +58,14 @@ fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
                         )
                         Row(
                             Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(
+                                    when (draft.density) {
+                                        NeoDensity.COMPACT -> 3.dp
+                                        NeoDensity.BALANCED -> 5.dp
+                                        NeoDensity.COMFORTABLE -> 8.dp
+                                    }
+                                ),
                         ) {
                             listOf(
                                     ShiftKind.FULL_DAY,
@@ -472,7 +479,7 @@ fun neo4Label(value: Any): String =
         Neo4WidgetTheme.TRANSPARENT -> neoLabel("شفاف", "Transparent")
         NeoBackground.GRADIENT -> neoLabel("تدرج", "Gradient")
         NeoBackground.IMAGE -> neoLabel("صورة", "Image")
-        NeoBackground.CLASSIC -> "Classic"
+        NeoBackground.CLASSIC -> neoLabel("سادة", "Plain")
         NeoLayoutPreset.MINIMAL -> "Minimal"
         NeoLayoutPreset.BALANCED -> "Balanced"
         NeoLayoutPreset.RICH -> "Rich"

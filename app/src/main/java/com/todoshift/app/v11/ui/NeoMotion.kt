@@ -36,3 +36,37 @@ fun neoTransition(p: NeoAppearance, forward: Boolean = true): ContentTransform {
                 (slideOutVertically(tween(d)) { -it * sign } + fadeOut(tween(d)))
     }
 }
+
+data class NeoNavigationFrame(
+    val alpha: Float = 1f,
+    val x: Float = 0f,
+    val y: Float = 0f,
+    val scale: Float = 1f,
+    val rotationY: Float = 0f,
+)
+
+fun neoNavigationFrame(
+    p: NeoAppearance,
+    progress: Float,
+    rtl: Boolean,
+    runtimeReduced: Boolean,
+): NeoNavigationFrame {
+    if (p.motionMillis == 0 || runtimeReduced) return NeoNavigationFrame()
+    val t = progress.coerceIn(0f, 1f)
+    val left = 1f - t
+    val sign = if (rtl) -1f else 1f
+    return when (p.transition) {
+        NeoTransition.FADE -> NeoNavigationFrame(alpha = t)
+        NeoTransition.SLIDE -> NeoNavigationFrame(alpha = .7f + .3f * t, x = left * sign)
+        NeoTransition.FLIP ->
+            NeoNavigationFrame(alpha = .7f + .3f * t, rotationY = 85f * left * sign)
+        NeoTransition.ZOOM -> NeoNavigationFrame(alpha = .7f + .3f * t, scale = .9f + .1f * t)
+        NeoTransition.STACK ->
+            NeoNavigationFrame(
+                alpha = .7f + .3f * t,
+                x = .25f * left * sign,
+                scale = .95f + .05f * t,
+            )
+        NeoTransition.VERTICAL -> NeoNavigationFrame(alpha = .7f + .3f * t, y = left)
+    }
+}

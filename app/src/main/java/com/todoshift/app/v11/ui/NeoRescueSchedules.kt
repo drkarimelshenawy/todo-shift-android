@@ -29,7 +29,7 @@ fun NeoRescueSchedules(
     var selected by remember { mutableIntStateOf(0) }
     val nav = LocalNeoFeatures.current
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(NeoSpace.page),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),
         verticalArrangement = Arrangement.spacedBy(NeoSpace.gap),
     ) {
         Row(Modifier.fillMaxWidth()) {

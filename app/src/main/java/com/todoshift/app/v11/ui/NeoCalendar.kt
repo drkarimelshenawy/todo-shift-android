@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -140,18 +141,41 @@ fun NeoCalendarArea(
                 }
             }
             Row(
-                Modifier.fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                NeoCalendarView.entries.forEach { item ->
-                    FilterChip(
-                        selected = view == item,
-                        enabled = !paintMode,
-                        onClick = { update(p.copy(calendarView = item)) },
-                        label = { Text(neoEnumLabel(item)) },
-                    )
+                val constrained =
+                    androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 340 ||
+                        androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
+                if (constrained)
+                    Box(Modifier.weight(1f)) {
+                        NeoChoice(
+                            neoLabel("العرض", "View"),
+                            NeoCalendarView.entries,
+                            view,
+                            { neoEnumLabel(it) },
+                            { if (!paintMode) update(p.copy(calendarView = it)) },
+                        )
+                    }
+                else {
+                    NeoCalendarView.entries.forEach { item ->
+                        FilterChip(
+                            selected = view == item,
+                            enabled = !paintMode,
+                            onClick = { update(p.copy(calendarView = item)) },
+                            modifier = Modifier.weight(1f),
+                            label = {
+                                Text(
+                                    neoEnumLabel(item),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                        )
+                    }
+                }
+                IconButton(onClick = onToday) {
+                    Icon(Icons.Rounded.Today, neoLabel("الانتقال لليوم", "Jump to today"))
                 }
             }
         }
@@ -525,6 +549,16 @@ private fun NeoCalendarCell(
                 color =
                     (if (today) c.primary else c.onSurface).copy(alpha = if (muted) 0.6f else 1f),
             )
+            if (p.showNoteIcons)
+                notes.firstOrNull()?.title?.let { title ->
+                    val marker = listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
+                    if (marker != null)
+                        Text(
+                            marker,
+                            modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                }
             if ((p.showNotes && notes.isNotEmpty()) || (p.showShiftNames && segments.isNotEmpty()))
                 Column(Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 2.dp)) {
                     if (p.showNotes)
@@ -543,18 +577,18 @@ private fun NeoCalendarCell(
                                 if (!noteBorder)
                                     Box(Modifier.size(4.dp).background(noteColor, CircleShape))
                                 Text(
-                                    if (p.showNoteIcons) note.title
-                                    else
-                                        note.title
-                                            .removePrefix("📌 ")
-                                            .removePrefix("★ ")
-                                            .removePrefix("⚠ "),
+                                    note.title
+                                        .removePrefix("📌 ")
+                                        .removePrefix("★ ")
+                                        .removePrefix("⚠ "),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = c.onSurface,
                                     modifier =
-                                        Modifier.then(
+                                        Modifier.weight(1f)
+                                            .semantics { contentDescription = note.title }
+                                            .then(
                                                 if (noteBorder)
                                                     Modifier.border(
                                                         1.dp,
@@ -570,7 +604,7 @@ private fun NeoCalendarCell(
                                 )
                             }
                         }
-                    if (p.showShiftNames)
+                    if (p.showShiftNames && segments.any { it.kind != ShiftKind.OFF })
                         Text(
                             segments.joinToString("/") {
                                 when (it.kind) {

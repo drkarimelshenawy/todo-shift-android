@@ -28,7 +28,15 @@ fun NeoCalendarManagerDialog(
     var color by rememberSaveable { mutableStateOf("#00A4B8") }
     var form by rememberSaveable { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val leave = rememberNeoEditorExit(listOf(form, name, color), onDismiss)
+    val original = db.calendars.firstOrNull { it.id == editing }
+    val leave =
+        rememberNeoEditorExit(
+            listOf(
+                if (form && name != original?.name.orEmpty()) name else "",
+                if (form && color != (original?.colorHex ?: "#00A4B8")) color else "",
+            ),
+            onDismiss,
+        )
     AlertDialog(
         onDismissRequest = leave,
         title = { Text(neoLabel("التقاويم", "Calendars")) },
@@ -74,7 +82,8 @@ fun NeoCalendarManagerDialog(
                             }
                             IconButton(onClick = { onPrimary(calendar.id) }) {
                                 Icon(
-                                    Icons.Rounded.CheckCircle,
+                                    if (primary == calendar.id) Icons.Rounded.CheckCircle
+                                    else Icons.Rounded.RadioButtonUnchecked,
                                     neoLabel(
                                         "وجهة الإضافة ${calendar.name}",
                                         "Creation destination ${calendar.name}",
@@ -82,7 +91,7 @@ fun NeoCalendarManagerDialog(
                                     tint =
                                         if (primary == calendar.id)
                                             MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.outlineVariant,
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             IconButton(

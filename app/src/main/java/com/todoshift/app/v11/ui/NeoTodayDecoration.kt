@@ -16,13 +16,7 @@ import com.todoshift.app.v11.*
 fun BoxScope.NeoTodayDecoration(today: Boolean, tomorrow: Boolean, p: NeoAppearance) {
     val color = neoHexColor(p.todayColor)
     if (today) {
-        val animate =
-            !LocalNeoRuntimeReduced.current &&
-                !LocalNeoFocus.current &&
-                p.todayStyle == NeoTodayStyle.PULSE &&
-                !p.reduceMotion &&
-                p.performance != NeoPerformance.LIGHTWEIGHT &&
-                p.optionalTransitions
+        val animate = neoTodayPulseEnabled(p, LocalNeoRuntimeReduced.current, LocalNeoFocus.current)
         val alpha =
             if (animate)
                 rememberInfiniteTransition(label = "todayPulse")

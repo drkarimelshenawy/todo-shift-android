@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,9 +37,19 @@ fun NeoAppearanceStudio(
 ) {
     val saved = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
-    var draft by remember(saved) { mutableStateOf(saved) }
-    var section by remember { mutableStateOf<NeoStudioSection?>(null) }
-    var accent by remember(saved.accentHex) { mutableStateOf(saved.accentHex) }
+    var draft by
+        rememberSaveable(
+            saved,
+            stateSaver =
+                androidx.compose.runtime.saveable.Saver<NeoAppearance, String>(
+                    save = { Neo4AppearanceCodec.encode(it).toString() },
+                    restore = { Neo4AppearanceCodec.decode(org.json.JSONObject(it)) },
+                ),
+        ) {
+            mutableStateOf(saved)
+        }
+    var section by rememberSaveable { mutableStateOf<NeoStudioSection?>(null) }
+    var accent by rememberSaveable(saved.accentHex) { mutableStateOf(saved.accentHex) }
     var discard by remember { mutableStateOf(false) }
     val valid = accent.isEmpty() || accent.matches(Regex("#[0-9a-fA-F]{6}"))
     fun leave() {
@@ -210,6 +223,12 @@ fun NeoAppearanceStudio(
                                         { draft = draft.copy(iconStyle = it) },
                                     )
                                     NeoSwitch(
+                                        neoLabel("مؤثرات اختيارية", "Optional visual effects"),
+                                        draft.showEffects,
+                                    ) {
+                                        draft = draft.copy(showEffects = it)
+                                    }
+                                    NeoSwitch(
                                         neoLabel("أسطح شفافة", "Translucent surfaces"),
                                         draft.glass,
                                     ) {
@@ -329,11 +348,19 @@ fun <T> NeoChoice(
     onSelected: (T) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, style = MaterialTheme.typography.labelLarge)
-        Box {
-            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(label(selected))
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            modifier = Modifier.weight(1f).padding(end = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Box(Modifier.widthIn(max = 180.dp)) {
+            TextButton(onClick = { expanded = true }) {
+                Text(label(selected), maxLines = 2)
+                Icon(Icons.Rounded.KeyboardArrowDown, null)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->

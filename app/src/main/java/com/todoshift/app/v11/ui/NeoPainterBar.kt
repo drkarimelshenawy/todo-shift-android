@@ -18,6 +18,9 @@ import androidx.compose.ui.unit.dp
 import com.todoshift.app.data.Workplace
 import com.todoshift.app.v11.*
 import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun NeoPainterBar(
@@ -34,6 +37,8 @@ fun NeoPainterBar(
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var committing by remember { mutableStateOf(false) }
     val navigator = LocalNeoFeatures.current
     val store = remember { NeoSmartStore(context.applicationContext) }
     val saved = remember { store.snapshot() }
@@ -123,6 +128,13 @@ fun NeoPainterBar(
                                 kind = favoriteKind
                                 erase = false
                                 typesOpen = false
+                                runCatching {
+                                        store.update {
+                                            it.put("paintWorkplace", favoriteWorkplace)
+                                                .put("paintKind", favoriteKind.name)
+                                        }
+                                    }
+                                    .onFailure { error = it.message }
                             },
                             label = {
                                 Text("★ " + workplaces.first { it.id == favoriteWorkplace }.name)
@@ -199,7 +211,7 @@ fun NeoPainterBar(
     }
     review?.let { preview ->
         AlertDialog(
-            onDismissRequest = { review = null },
+            onDismissRequest = { if (!committing) review = null },
             title = { Text(neoLabel("مراجعة الرسم", "Review painting")) },
             text = {
                 Text(
@@ -218,22 +230,40 @@ fun NeoPainterBar(
             },
             confirmButton = {
                 Button(
+                    enabled = !committing,
                     onClick = {
-                        if (db == preview.before) {
-                            onCommit(preview.candidate)
-                            onClear()
-                            review = null
-                        } else {
+                        if (db != preview.before) {
                             error = "Data changed; review again"
                             review = null
+                        } else {
+                            committing = true
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        com.todoshift.app.backup.createNeoSafetyCopy(
+                                            context.applicationContext,
+                                            preview.before,
+                                        )
+                                    }
+                                    onCommit(preview.candidate)
+                                    onClear()
+                                    review = null
+                                } catch (e: Exception) {
+                                    error = e.message ?: "Safety copy failed; no change saved"
+                                } finally {
+                                    committing = false
+                                }
+                            }
                         }
-                    }
+                    },
                 ) {
                     Text(neoLabel("تأكيد", "Confirm"))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { review = null }) { Text(neoLabel("إلغاء", "Cancel")) }
+                TextButton(enabled = !committing, onClick = { review = null }) {
+                    Text(neoLabel("إلغاء", "Cancel"))
+                }
             },
         )
     }

@@ -45,7 +45,7 @@ fun NeoPaymentForm(
                 NeoMoneyInput(amount, { amount = it })
                 NeoDateInput(neoLabel("تاريخ الاستلام", "Received date"), date) { date = it }
                 NeoChoice(
-                    neoLabel("مصدر الدخل", "Income source"),
+                    neoLabel("مكان العمل أو مصدر الدخل", "Workplace or income source"),
                     listOf<String?>(null) +
                         db.incomeSources.filter { it.active || it.id == source }.map { it.id },
                     source,

@@ -154,8 +154,9 @@ fun V11TasksScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding =
+                PaddingValues(start = if (neo) neoSpacing() else 0.dp, end = if (neo) neoSpacing() else 0.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(if (neo) neoSpacing() else 8.dp),
         ) {
             item(key = "task-controls") {
                 Column {
@@ -447,7 +448,9 @@ private fun TaskCardV11(
     val navigator = LocalNeoFeatures.current
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(if (LocalV11NeoEnabled.current) neoSpacing() else 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (LocalV11NeoEnabled.current) {
@@ -475,7 +478,10 @@ private fun TaskCardV11(
             Spacer(Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                if (LocalV11NeoEnabled.current) {
+                if (
+                    LocalV11NeoEnabled.current &&
+                        task.priority in listOf(TaskPriorityV11.HIGH, TaskPriorityV11.URGENT)
+                ) {
                     Text(
                         neoPriorityLabel(task.priority),
                         style = MaterialTheme.typography.labelSmall,
@@ -589,12 +595,16 @@ fun FullTaskEditorDialogV11(
     var details by rememberSaveable(existing?.id) { mutableStateOf(existing?.details ?: "") }
 
     var date by
-        remember(existing?.id) { mutableStateOf(existing?.date ?: LocalDate.now().toString()) }
+        rememberSaveable(existing?.id) {
+            mutableStateOf(existing?.date ?: LocalDate.now().toString())
+        }
 
     var time by rememberSaveable(existing?.id) { mutableStateOf(existing?.time ?: "") }
 
     var priority by
-        remember(existing?.id) { mutableStateOf(existing?.priority ?: TaskPriorityV11.NORMAL) }
+        rememberSaveable(existing?.id) {
+            mutableStateOf(existing?.priority ?: TaskPriorityV11.NORMAL)
+        }
 
     var repeat by
         rememberSaveable(existing?.id) { mutableStateOf(existing?.repeat ?: TaskRepeatV11.NONE) }
@@ -609,7 +619,7 @@ fun FullTaskEditorDialogV11(
         rememberSaveable(existing?.id) { mutableStateOf(existing?.reminderAt != null) }
 
     var reminderTime by
-        remember(existing?.id) {
+        rememberSaveable(existing?.id) {
             mutableStateOf(
                 existing?.reminderAt?.let { millis ->
                     runCatching {

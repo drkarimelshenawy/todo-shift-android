@@ -178,7 +178,11 @@ object ToDoShiftReminder {
         NotificationManagerCompat.from(context).cancel(requestCode(id))
     }
 
-    fun rescheduleAll(context: Context, db: V11Database) {
+    fun rescheduleAll(
+        context: Context,
+        db: V11Database,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
         createChannel(context)
         if (
             com.todoshift.app.v11
@@ -194,7 +198,7 @@ object ToDoShiftReminder {
                         .toEpochMilli() - 30 * 60 * 1000
                 if (
                     com.todoshift.app.v11.NeoNotificationPolicy.deliveryTime(context, whenMs) >
-                        System.currentTimeMillis()
+                        nowMillis
                 )
                     schedule(
                         context,
@@ -216,7 +220,7 @@ object ToDoShiftReminder {
                     com.todoshift.app.v11.NeoNotificationPolicy.deliveryTime(
                         context,
                         it.reminderAt,
-                    ) > System.currentTimeMillis()
+                    ) > nowMillis
             }
             .forEach { schedule(context, it) }
 
@@ -227,7 +231,7 @@ object ToDoShiftReminder {
                     com.todoshift.app.v11.NeoNotificationPolicy.deliveryTime(
                         context,
                         it.reminderAt,
-                    ) > System.currentTimeMillis()
+                    ) > nowMillis
             }
             .forEach { schedule(context, it) }
     }

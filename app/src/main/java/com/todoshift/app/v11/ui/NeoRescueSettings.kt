@@ -80,7 +80,7 @@ fun NeoRescueSettings(
         }
     }
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(NeoSpace.page),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),
         verticalArrangement = Arrangement.spacedBy(NeoSpace.gap),
     ) {
         if (page == "HOME") {
@@ -94,7 +94,7 @@ fun NeoRescueSettings(
             if (query.isBlank())
                 neoSettingsGroups.forEach { (id, ar, en) ->
                     NeoSettingsRow(neoLabel(ar, en)) {
-                        page = if (id == "APPEARANCE") "APPEARANCE_GROUP" else id + "_GROUP"
+                        if (id == "APPEARANCE") nav.open("APPEARANCE") else page = id + "_GROUP"
                     }
                 }
             else
@@ -193,30 +193,16 @@ fun NeoRescueSettings(
                             { neoEnumLabel(it) },
                             { update(p.copy(performance = it)) },
                         )
+                    "FINANCE_DISPLAY" ->
+                        NeoSwitch(neoLabel("رسم الحسابات", "Finance chart"), p.showFinanceChart) {
+                            update(p.copy(showFinanceChart = it))
+                        }
                     "TASK_OVERVIEW" -> {
-                        NeoSwitch(neoLabel("ملخص المهام", "Task overview"), p.showTaskSummary) {
-                            update(p.copy(showTaskSummary = it))
-                        }
                         NeoSwitch(
-                            neoLabel("ملخص اليوم داخل المهام", "Daily summary in Tasks"),
-                            p.showDailySummary,
+                            neoLabel("الترحيب داخل المهام", "Greeting in Tasks"),
+                            p.showGreeting,
                         ) {
-                            update(p.copy(showDailySummary = it))
-                        }
-                        NeoSwitch(neoLabel("الوردية التالية", "Next shift"), p.showNextShift) {
-                            update(p.copy(showNextShift = it))
-                        }
-                        NeoSwitch(
-                            neoLabel("بطاقات إضافية", "Secondary cards"),
-                            p.showSecondaryCards,
-                        ) {
-                            update(p.copy(showSecondaryCards = it))
-                        }
-                        NeoSwitch(
-                            neoLabel("معلومات إضافية", "Optional information"),
-                            p.showOptionalInfo,
-                        ) {
-                            update(p.copy(showOptionalInfo = it))
+                            update(p.copy(showGreeting = it))
                         }
                         NeoSwitch(
                             neoLabel("ملخص الحسابات داخل المهام", "Finance summary in Tasks"),
@@ -225,10 +211,16 @@ fun NeoRescueSettings(
                             update(p.copy(showFinanceSummary = it))
                         }
                         NeoSwitch(
-                            neoLabel("فتح ملخص المهام تلقائيًا", "Expand task overview"),
+                            neoLabel("فتح الملخص تلقائيًا", "Expand task overview"),
                             p.dashboardExpanded,
                         ) {
                             update(p.copy(dashboardExpanded = it))
+                        }
+                        NeoSwitch(
+                            neoLabel("بطاقات إضافية", "Secondary cards"),
+                            p.showSecondaryCards,
+                        ) {
+                            update(p.copy(showSecondaryCards = it))
                         }
                         p.dashboardOrder.forEach { card ->
                             NeoSwitch(neoCardLabel(card), p.cardVisible(card)) {
@@ -266,9 +258,6 @@ fun NeoRescueSettings(
                             p.showShiftNotes,
                         ) {
                             update(p.copy(showShiftNotes = it))
-                        }
-                        NeoSwitch(neoLabel("رسم الحسابات", "Finance chart"), p.showFinanceChart) {
-                            update(p.copy(showFinanceChart = it))
                         }
                     }
                     "LEGACY" -> {

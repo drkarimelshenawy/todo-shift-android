@@ -19,6 +19,42 @@ class ModernSafetyTest {
         get() = RuntimeEnvironment.getApplication()
 
     @Test
+    fun rebootRescheduleKeepsDeferredQuietHourReminderAfterOriginalTimePassed() {
+        val now =
+            java.time.LocalDate.now()
+                .atTime(23, 45)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+        val original = now - 30 * 60 * 1000
+        assertTrue(now > original)
+        NeoSmartStore(context).update { it.put("quietHours", true).put("notify_tasks", true) }
+        val task =
+            TaskV11(
+                "quiet-reboot-fixture",
+                "Synthetic reminder",
+                date = "2026-11-10",
+                reminderAt = original,
+            )
+        com.todoshift.app.reminders.ToDoShiftReminder.rescheduleAll(
+            context,
+            V11Database(tasks = listOf(task)),
+            nowMillis = now,
+        )
+        val manager =
+            context.getSystemService(android.content.Context.ALARM_SERVICE)
+                as android.app.AlarmManager
+        val alarm =
+            org.robolectric.Shadows.shadowOf(manager).scheduledAlarms.firstOrNull {
+                org.robolectric.Shadows.shadowOf(it.operation)
+                    .savedIntent
+                    .getStringExtra("reminder_id") == task.id
+            }
+        assertNotNull(alarm)
+        assertEquals(NeoNotificationPolicy.deliveryTime(context, original), alarm!!.triggerAtTime)
+    }
+
+    @Test
     fun beforeChangeCopyIsPreviewableAndDoesNotChangeCurrentData() {
         val runtime = V11Runtime(context)
         val db = runtime.start()

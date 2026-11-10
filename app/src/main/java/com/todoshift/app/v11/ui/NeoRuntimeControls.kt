@@ -97,5 +97,28 @@ fun NeoNotificationControls(db: V11Database) {
     ) {
         Text(neoLabel("أذونات Android", "Android permissions"))
     }
+    if (android.os.Build.VERSION.SDK_INT >= 31) {
+        val alarm =
+            context.getSystemService(android.content.Context.ALARM_SERVICE)
+                as android.app.AlarmManager
+        Text(
+            neoLabel("دقة التنبيهات: ", "Alarm precision: ") +
+                if (alarm.canScheduleExactAlarms()) neoLabel("دقيقة", "Exact")
+                else neoLabel("تقريبية حسب النظام", "Approximate, controlled by Android"),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        TextButton(
+            onClick = {
+                context.startActivity(
+                    android.content.Intent(
+                        android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                        android.net.Uri.parse("package:${context.packageName}"),
+                    )
+                )
+            }
+        ) {
+            Text(neoLabel("إذن التنبيه الدقيق", "Exact alarm permission"))
+        }
+    }
     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 }

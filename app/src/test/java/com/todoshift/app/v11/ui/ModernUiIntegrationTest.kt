@@ -114,7 +114,7 @@ class ModernUiIntegrationTest {
                 {},
             )
         }
-        compose.onNodeWithText("📌 Synthetic pinned note").assertExists()
+        compose.onNodeWithText("Synthetic pinned note").assertExists()
     }
 
     @Test

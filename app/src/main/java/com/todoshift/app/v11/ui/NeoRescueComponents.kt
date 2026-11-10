@@ -34,6 +34,7 @@ data class NeoFeature(
 object NeoFeatureCatalog {
     val entries =
         listOf(
+            NeoFeature("FINANCE_DISPLAY", "عرض الحسابات", "Finance display", "Finances", "FINANCE"),
             NeoFeature("COPY", "نسخ الورديات", "Copy shifts", "Calendar"),
             NeoFeature(
                 "PAINT_SHORTCUTS",
@@ -313,3 +314,15 @@ fun rememberNeoEditorExit(values: List<Any?>, onDismiss: () -> Unit): () -> Unit
         )
     return { if (values != initial) confirm = true else onDismiss() }
 }
+
+@Composable
+fun neoSearchCategory(type: String): String =
+    when (type) {
+        "TASK" -> neoLabel("مهام", "Tasks")
+        "NOTE" -> neoLabel("ملاحظات", "Notes")
+        "EVENT" -> neoLabel("مواعيد", "Events")
+        "SHIFT" -> neoLabel("ورديات", "Shifts")
+        "PAYMENT" -> neoLabel("دفعات", "Payments")
+        "WORKPLACE" -> neoLabel("أماكن العمل", "Workplaces")
+        else -> type
+    }

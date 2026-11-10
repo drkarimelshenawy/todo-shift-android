@@ -308,10 +308,7 @@ fun NeoTaskSearch(
     db: V11Database,
 ) {
     var filtersOpen by remember { mutableStateOf(false) }
-    Column(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         OutlinedTextField(
             query,
             onQueryChange,

@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -273,9 +274,22 @@ fun V11Home(
         neoAppearance.palette,
         neoAppearance.brightness,
         neoAppearance.accentHex,
+        neoAppearance.transition,
+        neoAppearance.transitionSpeed,
+        neoAppearance.optionalTransitions,
+        neoAppearance.performance,
+        temporaryFocus,
     ) {
-        if (uiSettings.experience == V11Experience.PREMIUM && neoAppearance.motionMillis > 0) {
-            contentAlpha.snapTo(0.86f)
+        if (
+            uiSettings.experience == V11Experience.PREMIUM &&
+                neoAppearance.motionMillis > 0 &&
+                !temporaryFocus &&
+                !(neoAppearance.performance == NeoPerformance.AUTO &&
+                    (context.getSystemService(android.content.Context.ACTIVITY_SERVICE)
+                            as android.app.ActivityManager)
+                        .isLowRamDevice)
+        ) {
+            contentAlpha.snapTo(0f)
             contentAlpha.animateTo(
                 1f,
                 androidx.compose.animation.core.tween(neoAppearance.motionMillis),
@@ -298,9 +312,15 @@ fun V11Home(
     }
 
     val undoHistory = remember { mutableStateListOf<V11Database>() }
+    val displayedDb = db
+    val displayedLegacy = oldData
     fun saveDb(value: V11Database, recordUndo: Boolean = true) {
         if (writeBusy || writeFailure != null) return
-        val expected = db
+        val expected = displayedDb
+        if (expected != db) {
+            writeFailure = "Data changed; reopen before editing. No overwrite was made."
+            return
+        }
         writeBusy = true
         writeScope.launch {
             try {
@@ -426,6 +446,12 @@ fun V11Home(
                 LocalNeoFeatures provides
                     NeoFeatureNavigator { id, owner ->
                         when (id) {
+                            "TASK_DETAIL" -> {
+                                modernToolsOpen = false
+                                tab = 4
+                                pendingTaskAction = "open"
+                                pendingTaskId = owner
+                            }
                             "WORKPLACES" -> {
                                 modernToolsOpen = false
                                 showWorkplaces = true
@@ -473,6 +499,14 @@ fun V11Home(
                         calendarAction = null
                     },
             ) {
+                val navigationFrame =
+                    neoNavigationFrame(
+                        neoAppearance,
+                        contentAlpha.value,
+                        androidx.compose.ui.platform.LocalLayoutDirection.current ==
+                            androidx.compose.ui.unit.LayoutDirection.Rtl,
+                        LocalNeoRuntimeReduced.current || temporaryFocus,
+                    )
                 Scaffold(
                     containerColor =
                         if (uiSettings.experience == V11Experience.PREMIUM) Color.Transparent
@@ -509,7 +543,7 @@ fun V11Home(
                                         when {
                                             showWorkplaces -> neoLabel("أماكن العمل", "Workplaces")
                                             tab == 0 -> neoLabel("التقويم", "Calendar")
-                                            tab == 1 -> neoLabel("جداولي", "Shifts")
+                                            tab == 1 -> neoLabel("جداولي", "Schedules")
                                             tab == 2 -> neoLabel("الحسابات", "Finance")
                                             tab == 3 -> neoLabel("الإعدادات", "Settings")
                                             else -> neoLabel("المهام", "Tasks")
@@ -553,7 +587,15 @@ fun V11Home(
                                 .padding(padding)
                                 .then(
                                     if (uiSettings.experience == V11Experience.PREMIUM)
-                                        Modifier.graphicsLayer { alpha = contentAlpha.value }
+                                        Modifier.graphicsLayer {
+                                            alpha = navigationFrame.alpha
+                                            translationX = navigationFrame.x * size.width
+                                            translationY = navigationFrame.y * size.height
+                                            scaleX = navigationFrame.scale
+                                            scaleY = navigationFrame.scale
+                                            rotationY = navigationFrame.rotationY
+                                            cameraDistance = 12f * density
+                                        }
                                     else Modifier
                                 )
                     ) {
@@ -627,15 +669,14 @@ fun V11Home(
                                 workplaces = NeoRatePolicy.display(db, oldData.workplaces),
                                 datedRateKeys = NeoRatePolicy.ownedKeys(db),
                                 protectedWorkplaceIds =
-                                    db.days
-                                        .flatMap { it.segments }
-                                        .mapNotNull { it.workplaceId }
+                                    (db.days.flatMap { it.segments }.mapNotNull { it.workplaceId } +
+                                            db.tasks.mapNotNull { it.workplaceId })
                                         .toSet(),
                                 onBack = { showWorkplaces = false },
                                 onSaveWorkplaces = { workplaces ->
                                     if (!writeBusy && writeFailure == null) {
-                                        val expectedLegacy = oldData
-                                        val expected = db
+                                        val expectedLegacy = displayedLegacy
+                                        val expected = displayedDb
                                         writeBusy = true
                                         writeScope.launch {
                                             try {
@@ -1084,7 +1125,7 @@ private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                 listOf(
                         Triple(
                             1,
-                            neoLabel(neoLiteral("جداولي", "Shifts"), "Shifts"),
+                            neoLabel("جداولي", "Schedules"),
                             if (outlined) Icons.Outlined.DateRange else Icons.Rounded.DateRange,
                         ),
                         Triple(
@@ -1131,9 +1172,23 @@ private fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                                     )
                             },
                             label = {
+                                val width =
+                                    androidx.compose.ui.platform.LocalConfiguration.current
+                                        .screenWidthDp
+                                        .dp / 5 - 2.dp
+                                val large =
+                                    androidx.compose.ui.platform.LocalDensity.current.fontScale >
+                                        1.3f
                                 Text(
                                     label,
-                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.requiredWidth(width),
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = if (large) 10.sp else 11.sp
+                                        ),
                                     fontWeight =
                                         if (selectedTab == index) FontWeight.Bold
                                         else FontWeight.Normal,

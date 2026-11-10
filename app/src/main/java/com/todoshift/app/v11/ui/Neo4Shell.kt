@@ -39,7 +39,11 @@ fun Neo4CompactHeader(
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (p.showBrand) {
+            val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+            val constrained =
+                configuration.screenWidthDp < 340 &&
+                    androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
+            if (p.showBrand && !constrained) {
                 androidx.compose.foundation.Image(
                     androidx.compose.ui.res.painterResource(
                         com.todoshift.app.R.drawable.neo41_brand_emblem

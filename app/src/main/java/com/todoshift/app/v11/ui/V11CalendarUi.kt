@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -94,7 +95,16 @@ fun V11CalendarScreen(
     var modernPaintRequest by remember { mutableIntStateOf(0) }
     var bulkPaint by remember { mutableStateOf(false) }
     var paintDates by remember { mutableStateOf(setOf<LocalDate>()) }
-    var openDay by remember { mutableStateOf<LocalDate?>(null) }
+    var openDay by
+        rememberSaveable(
+            stateSaver =
+                androidx.compose.runtime.saveable.Saver<LocalDate?, String>(
+                    save = { it?.toString() },
+                    restore = { LocalDate.parse(it) },
+                )
+        ) {
+            mutableStateOf<LocalDate?>(null)
+        }
     var showCalendarManager by remember { mutableStateOf(false) }
     var quickAddOpen by remember { mutableStateOf(false) }
     LaunchedEffect(managerRequest) {
@@ -287,7 +297,10 @@ fun V11CalendarScreen(
         },
     ) { innerPadding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 10.dp)
+            modifier =
+                Modifier.fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = if (LocalV11NeoEnabled.current) neoSpacing() else 10.dp)
         ) {
             if (uiSettings.experience == V11Experience.CLASSIC) {
                 Row(

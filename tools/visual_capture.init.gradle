@@ -1,0 +1,9 @@
+// Optional isolated screenshot probe. Not part of the default unit suite.
+gradle.projectsEvaluated {
+    gradle.rootProject.project(':app') {
+        android.sourceSets.test.java.srcDir(rootProject.file('tools/visual-tests'))
+        tasks.withType(Test).configureEach {
+            systemProperty 'neo.capture.dir', rootProject.file('app/build/ux-visual-evidence').absolutePath
+        }
+    }
+}

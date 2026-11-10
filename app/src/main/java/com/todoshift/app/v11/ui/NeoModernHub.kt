@@ -59,7 +59,9 @@ fun NeoModernHub(
         mutableStateOf(store.snapshot().optJSONArray("shiftTemplates") ?: org.json.JSONArray())
     }
     var templates by remember { mutableStateOf(store.templates()) }
-    var payment by rememberSaveable { mutableStateOf(db.payments.firstOrNull()?.id) }
+    var payment by rememberSaveable {
+        mutableStateOf(initialOwner ?: db.payments.firstOrNull()?.id)
+    }
     var csv by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var detachedReview by remember { mutableStateOf<Set<String>?>(null) }
@@ -158,7 +160,7 @@ fun NeoModernHub(
     }
     val financial = financeAuthorized && moneyVisible
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (focused)
@@ -237,12 +239,15 @@ fun NeoModernHub(
                 result.take(100).forEach { row ->
                     TextButton(
                         onClick = {
-                            if (row.type == "WORKPLACE") navigator.open("WORKPLACES")
-                            else if (row.type == "PAYMENT") navigator.open("PAYMENTS")
+                            if (row.type == "TASK") navigator.open("TASK_DETAIL", row.id)
+                            else if (row.type == "WORKPLACE") navigator.open("WORKPLACES")
+                            else if (row.type == "PAYMENT") navigator.open("PAYMENTS", row.id)
                             else row.date?.let { onOpenDate(LocalDate.parse(it)) }
                         }
                     ) {
-                        Text("${row.type} • ${row.date.orEmpty()} • ${row.text.take(160)}")
+                        Text(
+                            "${neoSearchCategory(row.type)} • ${row.date.orEmpty()} • ${row.text.take(160)}"
+                        )
                     }
                 }
             }
@@ -322,70 +327,74 @@ fun NeoModernHub(
                 ) {
                     Text(neoLabel("مراجعة", "Review"))
                 }
-                OutlinedTextField(
-                    name,
-                    { name = it },
-                    label = { Text(neoLabel("اسم قالب الشيفت", "Shift template name")) },
-                )
-                TextButton(
-                    enabled = name.isNotBlank(),
-                    onClick = {
-                        attempt {
-                            store.update { o ->
-                                val a = o.optJSONArray("shiftTemplates") ?: org.json.JSONArray()
-                                require(a.length() < 30)
-                                a.put(
-                                    org.json
-                                        .JSONObject()
-                                        .put("id", UUID.randomUUID().toString())
-                                        .put("name", name.take(100))
-                                        .put("workplace", workplace.orEmpty())
-                                        .put("kind", type.name)
-                                )
-                                o.put("shiftTemplates", a)
+                if (section == "SHIFT_TEMPLATE") {
+                    OutlinedTextField(
+                        name,
+                        { name = it },
+                        label = { Text(neoLabel("اسم قالب الشيفت", "Shift template name")) },
+                    )
+                    TextButton(
+                        enabled = name.isNotBlank(),
+                        onClick = {
+                            attempt {
+                                store.update { o ->
+                                    val a = o.optJSONArray("shiftTemplates") ?: org.json.JSONArray()
+                                    require(a.length() < 30)
+                                    a.put(
+                                        org.json
+                                            .JSONObject()
+                                            .put("id", UUID.randomUUID().toString())
+                                            .put("name", name.take(100))
+                                            .put("workplace", workplace.orEmpty())
+                                            .put("kind", type.name)
+                                    )
+                                    o.put("shiftTemplates", a)
+                                }
+                                shiftTemplates = store.snapshot().getJSONArray("shiftTemplates")
+                                name = ""
                             }
-                            shiftTemplates = store.snapshot().getJSONArray("shiftTemplates")
-                            name = ""
+                        },
+                    ) {
+                        Text(neoLabel("حفظ قالب مستقل", "Save reusable shift template"))
+                    }
+                    for (index in 0 until shiftTemplates.length()) {
+                        val template = shiftTemplates.getJSONObject(index)
+                        TextButton(
+                            onClick = {
+                                workplace = template.getString("workplace")
+                                type = ShiftKind.valueOf(template.getString("kind"))
+                            }
+                        ) {
+                            Text(template.getString("name"))
                         }
-                    },
-                ) {
-                    Text(neoLabel("حفظ قالب مستقل", "Save reusable shift template"))
+                    }
                 }
-                for (index in 0 until shiftTemplates.length()) {
-                    val template = shiftTemplates.getJSONObject(index)
+                if (section == "PAINT_SHORTCUTS") {
                     TextButton(
                         onClick = {
-                            workplace = template.getString("workplace")
-                            type = ShiftKind.valueOf(template.getString("kind"))
+                            attempt {
+                                val latest =
+                                    db.days.map { LocalDate.parse(it.date) }.maxOrNull()
+                                        ?: LocalDate.now()
+                                destination = latest.plusDays(1).toString()
+                            }
                         }
                     ) {
-                        Text(template.getString("name"))
+                        Text(neoLabel("اقتراح اليوم التالي فقط", "Suggest next date only"))
                     }
-                }
-                TextButton(
-                    onClick = {
-                        attempt {
-                            val latest =
-                                db.days.map { LocalDate.parse(it.date) }.maxOrNull()
-                                    ?: LocalDate.now()
-                            destination = latest.plusDays(1).toString()
-                        }
-                    }
-                ) {
-                    Text(neoLabel("اقتراح اليوم التالي فقط", "Suggest next date only"))
-                }
-                TextButton(
-                    onClick = {
-                        attempt {
-                            store.update {
-                                it.put("favoriteWorkplace", workplace.orEmpty())
-                                    .put("favoriteKind", type.name)
+                    TextButton(
+                        onClick = {
+                            attempt {
+                                store.update {
+                                    it.put("favoriteWorkplace", workplace.orEmpty())
+                                        .put("favoriteKind", type.name)
+                                }
+                                error = neoLiteral("حُفظ المفضل", "Favorite saved")
                             }
-                            error = neoLiteral("حُفظ المفضل", "Favorite saved")
                         }
+                    ) {
+                        Text(neoLabel("حفظ كمفضل للرسم", "Save paint favorite"))
                     }
-                ) {
-                    Text(neoLabel("حفظ كمفضل للرسم", "Save paint favorite"))
                 }
             }
             "TASK_TEMPLATES" -> {
@@ -737,6 +746,21 @@ fun NeoModernHub(
                         }
                 }
             "HEALTH" -> {
+                val withSources = NeoWorkplaceSources.ensure(db, workplaces)
+                if (withSources != db)
+                    OutlinedButton(
+                        onClick = {
+                            confirmationBase = db
+                            confirmation =
+                                neoLiteral(
+                                    "إنشاء روابط مصادر دخل لأماكن العمل فقط؛ تُحفظ السجلات السابقة",
+                                    "Create missing workplace income-source links only; existing records are preserved",
+                                ) to withSources
+                        }
+                    ) {
+                        Text(neoLabel("مراجعة روابط أماكن العمل", "Review workplace source links"))
+                    }
+
                 var confirmRepair by remember { mutableStateOf(false) }
                 TextButton(onClick = { confirmRepair = true }) {
                     Text(

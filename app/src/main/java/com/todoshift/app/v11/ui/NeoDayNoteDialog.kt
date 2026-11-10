@@ -23,7 +23,7 @@ fun NeoDayNoteDialog(
     val id = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
     var color by rememberSaveable(id) { mutableStateOf(styleStore.noteColor(id)) }
     var border by
-        remember(id) {
+        rememberSaveable(id) {
             mutableStateOf(
                 styleStore.snapshot().optJSONObject("noteBorders")?.optBoolean(id, false) ?: false
             )
@@ -32,7 +32,7 @@ fun NeoDayNoteDialog(
     val originalText =
         existing?.title?.removePrefix("📌 ")?.removePrefix("★ ")?.removePrefix("⚠ ").orEmpty()
     var text by
-        remember(existing?.id) {
+        rememberSaveable(existing?.id) {
             mutableStateOf(
                 existing
                     ?.title
@@ -44,7 +44,7 @@ fun NeoDayNoteDialog(
         }
     var details by rememberSaveable(existing?.id) { mutableStateOf(existing?.details.orEmpty()) }
     var marker by
-        remember(existing?.id) {
+        rememberSaveable(existing?.id) {
             mutableStateOf(
                 when {
                     existing?.title?.startsWith("📌") == true -> "📌"

@@ -37,30 +37,38 @@ fun V11FinanceScreen(
 ) {
     val result = remember(db, month) { V11FinanceEngine.month(db = db, month = month) }
 
-    var paymentOpen by remember { mutableStateOf(false) }
+    var paymentOpen by rememberSaveable { mutableStateOf(false) }
 
-    var obligationOpen by remember { mutableStateOf(false) }
+    var obligationOpen by rememberSaveable { mutableStateOf(false) }
 
-    var sourceManagerOpen by remember { mutableStateOf(false) }
+    var sourceManagerOpen by rememberSaveable { mutableStateOf(false) }
 
-    var methodManagerOpen by remember { mutableStateOf(false) }
+    var methodManagerOpen by rememberSaveable { mutableStateOf(false) }
 
-    var payingObligationId by remember { mutableStateOf<String?>(null) }
+    var payingObligationId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    var workplaceDetailsId by remember { mutableStateOf<String?>(null) }
+    var workplaceDetailsId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    var paymentDetails by remember { mutableStateOf<PaymentV11?>(null) }
+    var paymentDetailsId by rememberSaveable { mutableStateOf<String?>(null) }
+    val paymentDetails = db.payments.firstOrNull { it.id == paymentDetailsId }
 
-    var editingPayment by remember { mutableStateOf<PaymentV11?>(null) }
+    var editingPaymentId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingPayment = db.payments.firstOrNull { it.id == editingPaymentId }
 
-    var editingObligation by remember { mutableStateOf<ObligationV11?>(null) }
+    var editingObligationId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingObligation = db.obligations.firstOrNull { it.id == editingObligationId }
 
     var pendingProtectedAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
-    var financeSection by remember { mutableIntStateOf(0) }
+    var financeSection by rememberSaveable { mutableIntStateOf(0) }
     val obligationDue = V11AccountsController.monthObligationDue(db, month)
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp)) {
+    Column(
+        modifier =
+            Modifier.fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(if (LocalV11NeoEnabled.current) neoSpacing() else 14.dp)
+    ) {
         if (LocalV11NeoEnabled.current) {
             V11NeoSectionHero(
                 neoLabel(neoLiteral("نظرة مالية", "Financial overview"), "Financial overview"),
@@ -280,7 +288,7 @@ fun V11FinanceScreen(
                     val method = db.paymentMethods.firstOrNull { it.id == payment.paymentMethodId }
 
                     Card(
-                        onClick = { paymentDetails = payment },
+                        onClick = { paymentDetailsId = payment.id },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -372,7 +380,7 @@ fun V11FinanceScreen(
                                 )
                             }
 
-                            IconButton(onClick = { editingObligation = obligation }) {
+                            IconButton(onClick = { editingObligationId = obligation.id }) {
                                 Icon(
                                     Icons.Default.Edit,
                                     contentDescription =
@@ -465,10 +473,10 @@ fun V11FinanceScreen(
                     }
                     ?.let { workplaceId -> workplaces.firstOrNull { it.id == workplaceId }?.name },
             moneyVisible = moneyVisible,
-            onDismiss = { paymentDetails = null },
+            onDismiss = { paymentDetailsId = null },
             onEdit = {
-                paymentDetails = null
-                editingPayment = payment
+                paymentDetailsId = null
+                editingPaymentId = payment.id
             },
         )
     }
@@ -477,7 +485,7 @@ fun V11FinanceScreen(
         V11EditPaymentDialog(
             payment = payment,
             db = db,
-            onDismiss = { editingPayment = null },
+            onDismiss = { editingPaymentId = null },
             onSave = { updated ->
                 val saveAction = {
                     onDatabaseChange(
@@ -485,7 +493,7 @@ fun V11FinanceScreen(
                             payments = db.payments.map { if (it.id == updated.id) updated else it }
                         )
                     )
-                    editingPayment = null
+                    editingPaymentId = null
                 }
 
                 val securityEnabled =
@@ -504,7 +512,7 @@ fun V11FinanceScreen(
         V11EditObligationDialog(
             db = db,
             obligation = obligation,
-            onDismiss = { editingObligation = null },
+            onDismiss = { editingObligationId = null },
             onSave = { updated ->
                 val saveAction = {
                     onDatabaseChange(
@@ -513,7 +521,7 @@ fun V11FinanceScreen(
                                 db.obligations.map { if (it.id == updated.id) updated else it }
                         )
                     )
-                    editingObligation = null
+                    editingObligationId = null
                 }
 
                 val securityEnabled =
@@ -1224,7 +1232,8 @@ private fun V11IncomeSourcesDialog(
 
     var fixedAmount by rememberSaveable { mutableStateOf("") }
 
-    var editing by remember { mutableStateOf<IncomeSourceV11?>(null) }
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = db.incomeSources.firstOrNull { it.id == editingId }
 
     val leave = rememberNeoEditorExit(listOf(newName, fixedAmount), onDismiss)
     AlertDialog(
@@ -1253,7 +1262,7 @@ private fun V11IncomeSourcesDialog(
                                     Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))
                                 }
 
-                                IconButton(onClick = { editing = source }) {
+                                IconButton(onClick = { editingId = source.id }) {
                                     Icon(Icons.Default.Edit, neoLiteral("تعديل", "Edit"))
                                 }
 
@@ -1385,10 +1394,10 @@ private fun V11IncomeSourcesDialog(
     editing?.let { source ->
         V11EditIncomeSourceDialog(
             source = source,
-            onDismiss = { editing = null },
+            onDismiss = { editingId = null },
             onSave = {
                 onDatabaseChange(V11AccountsController.updateIncomeSource(db, it))
-                editing = null
+                editingId = null
             },
         )
     }
@@ -1462,7 +1471,8 @@ private fun V11PaymentMethodsDialog(
 ) {
     var newName by rememberSaveable { mutableStateOf("") }
 
-    var editing by remember { mutableStateOf<PaymentMethodV11?>(null) }
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = db.paymentMethods.firstOrNull { it.id == editingId }
 
     val leave = rememberNeoEditorExit(listOf(newName), onDismiss)
     AlertDialog(
@@ -1493,7 +1503,7 @@ private fun V11PaymentMethodsDialog(
                                 Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))
                             }
 
-                            IconButton(onClick = { editing = method }) {
+                            IconButton(onClick = { editingId = method.id }) {
                                 Icon(Icons.Default.Edit, neoLiteral("تعديل", "Edit"))
                             }
 
@@ -1555,10 +1565,11 @@ private fun V11PaymentMethodsDialog(
     )
 
     editing?.let { method ->
-        var name by remember(method.id) { mutableStateOf(method.name) }
+        var name by rememberSaveable(method.id) { mutableStateOf(method.name) }
 
+        val leaveMethod = rememberNeoEditorExit(listOf(name), { editingId = null })
         AlertDialog(
-            onDismissRequest = { editing = null },
+            onDismissRequest = leaveMethod,
             title = { Text(neoLiteral("تعديل طريقة الدفع", "Edit payment method")) },
             text = {
                 OutlinedTextField(
@@ -1578,7 +1589,7 @@ private fun V11PaymentMethodsDialog(
                                     method.copy(name = name.trim()),
                                 )
                             )
-                            editing = null
+                            editingId = null
                         }
                     }
                 ) {
@@ -1586,7 +1597,7 @@ private fun V11PaymentMethodsDialog(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { editing = null }) { Text(neoLiteral("إلغاء", "Cancel")) }
+                TextButton(onClick = leaveMethod) { Text(neoLiteral("إلغاء", "Cancel")) }
             },
         )
     }

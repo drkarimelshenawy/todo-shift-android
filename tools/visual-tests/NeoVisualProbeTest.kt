@@ -196,13 +196,22 @@ class NeoVisualProbeTest {
         )
         NeoAppearanceStore(c)
             .save(
-                NeoAppearance(language = NeoLanguage.ENGLISH, fontScale = 1f, reduceMotion = true)
+                NeoAppearance(
+                    language = NeoLanguage.ENGLISH,
+                    fontScale = 1f,
+                    showShiftNames = true,
+                    reduceMotion = true,
+                )
             )
         RuntimeEnvironment.setFontScale(2f)
         assertEquals(2f, RuntimeEnvironment.getFontScale(), 0f)
         compose.activityRule.scenario.recreate()
         ready()
         shot("12-calendar-en-narrow-empty-large-text")
+        runtime.saveIfCurrent(runtime.start(), db)
+        compose.activityRule.scenario.recreate()
+        ready()
+        shot("13-calendar-en-narrow-filled-200")
     }
 
     @Test

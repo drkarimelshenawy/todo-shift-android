@@ -30,10 +30,15 @@ class CalendarUiRegressionTest {
         language: NeoLanguage = NeoLanguage.ENGLISH,
         fontScale: Float = 1f,
         showNames: Boolean = false,
+        width: Int = 360,
+        withTasks: Boolean = false,
     ) {
         val db =
             V11Database(
                 calendars = listOf(AppCalendarV11("a", "Work", "#123456")),
+                tasks =
+                    if (withTasks) listOf(TaskV11("task", "Fixture", date = date.toString()))
+                    else emptyList(),
                 days =
                     listOf(
                         DayEntryV11(
@@ -61,7 +66,7 @@ class CalendarUiRegressionTest {
             ) {
                 V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
                     CompositionLocalProvider(LocalV11NeoEnabled provides true) {
-                        Box(Modifier.width(360.dp).height(600.dp)) {
+                        Box(Modifier.width(width.dp).height(600.dp)) {
                             NeoCalendarArea(
                                 YearMonth.from(date),
                                 db,
@@ -150,6 +155,41 @@ class CalendarUiRegressionTest {
         org.junit.Assert.assertTrue(
             "Shift label must not collide with its count: date=$dateBounds name=$nameBounds count=$countBounds",
             countBounds.top >= nameBounds.bottom,
+        )
+    }
+
+    @Test
+    fun narrowTwoHundredPercentWeekShowsAllColumnsAndStacksIndependentBadges() {
+        render(
+            ShiftKind.MORNING,
+            false,
+            fontScale = 2f,
+            showNames = true,
+            width = 320,
+            withTasks = true,
+        )
+        val friday =
+            compose.onNodeWithText("Fr").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        org.junit.Assert.assertTrue(
+            "Seventh column must fit: $friday",
+            friday.left >= 0f && friday.right <= with(compose.density) { 320.dp.toPx() },
+        )
+        val task =
+            compose.onNodeWithText("☑1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val shifts =
+            compose.onNodeWithText("×1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val name =
+            compose
+                .onNodeWithText("Morning", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        org.junit.Assert.assertTrue(
+            "Independent counts need separate rows: $task $shifts",
+            task.bottom <= shifts.top,
+        )
+        org.junit.Assert.assertTrue(
+            "Labels and counts must not overlap: $name $task",
+            name.bottom <= task.top,
         )
     }
 }

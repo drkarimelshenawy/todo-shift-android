@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -321,8 +320,20 @@ fun NeoCalendarArea(
                             1
                         else -> 0
                     }
+                val badgeRows =
+                    if (fontScale > 1.3f)
+                        presentation.values
+                            .maxOfOrNull { day ->
+                                (if (p.showTaskIndicators && day.tasks > 0) 1 else 0) +
+                                    (if (p.showTaskIndicators && day.events > 0) 1 else 0) +
+                                    (if (day.segments.isNotEmpty()) 1 else 0)
+                            }
+                            ?.coerceAtLeast(1) ?: 1
+                    else 1
                 val contentMinimum =
-                    cellMetrics.dateHeight + cellMetrics.captionHeight * (detailLines + 1) + 12.dp
+                    cellMetrics.dateHeight +
+                        cellMetrics.captionHeight * (detailLines + badgeRows) +
+                        12.dp
                 val minimumHeight =
                     maxOf(
                         contentMinimum,
@@ -337,17 +348,9 @@ fun NeoCalendarArea(
                         minimumHeight,
                         minimumHeight + 12.dp,
                     )
-                val contentWidth =
-                    if (columns == 1) maxWidth
-                    else maxOf(maxWidth, (20.dp * fontScale + 8.dp) * columns + 18.dp)
-                Column(
-                    Modifier.fillMaxSize()
-                        .then(
-                            if (contentWidth > maxWidth)
-                                Modifier.horizontalScroll(rememberScrollState())
-                            else Modifier
-                        )
-                ) {
+                // Keep the complete week visible; grow rows vertically for large type.
+                val contentWidth = maxWidth
+                Column(Modifier.fillMaxSize()) {
                     Column(Modifier.width(contentWidth).verticalScroll(rememberScrollState())) {
                         CompositionLocalProvider(
                             androidx.compose.ui.platform.LocalLayoutDirection provides
@@ -355,9 +358,11 @@ fun NeoCalendarArea(
                         ) {
                             Row(Modifier.fillMaxWidth().height(headerHeight)) {
                                 repeat(columns) { col ->
+                                    val weekday = start.plusDays(col.toLong())
+                                    val fullLabel =
+                                        weekday.format(DateTimeFormatter.ofPattern("EEEE", locale))
                                     Text(
-                                        start
-                                            .plusDays(col.toLong())
+                                        weekday
                                             .format(
                                                 DateTimeFormatter.ofPattern(
                                                     if (columns == 1) "EEEE"
@@ -365,8 +370,20 @@ fun NeoCalendarArea(
                                                     else "EEEEE",
                                                     locale,
                                                 )
-                                            ),
-                                        modifier = Modifier.weight(1f),
+                                            )
+                                            .let {
+                                                if (
+                                                    columns > 1 &&
+                                                        LocalNeoEnglish.current &&
+                                                        fontScale > 1.3f
+                                                )
+                                                    it.take(2)
+                                                else it
+                                            },
+                                        modifier =
+                                            Modifier.weight(1f).semantics {
+                                                contentDescription = fullLabel
+                                            },
                                         textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -552,7 +569,7 @@ fun NeoCalendarArea(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun NeoCalendarCell(
     date: LocalDate,
@@ -709,15 +726,20 @@ internal fun NeoCalendarCell(
                         )
                 }
             if (segments.isNotEmpty() || (p.showTaskIndicators && (tasks > 0 || events > 0)))
-                Row(
-                    Modifier.align(Alignment.BottomStart).padding(5.dp),
+                FlowRow(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(2.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    maxItemsInEachRow =
+                        if (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f) 1
+                        else Int.MAX_VALUE,
                 ) {
                     if (p.showTaskIndicators && tasks > 0)
                         Text(
                             "☑${if(tasks>99) "99+" else tasks}",
                             style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                             color = c.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier =
                                 Modifier.background(
                                     c.surface.copy(alpha = .95f),
@@ -729,6 +751,8 @@ internal fun NeoCalendarCell(
                             "◷${if(events>99) "99+" else events}",
                             style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                             color = c.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier =
                                 Modifier.background(
                                     c.surface.copy(alpha = .95f),
@@ -741,6 +765,7 @@ internal fun NeoCalendarCell(
                             else "×${segments.size}",
                             color = c.onSurface,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                             modifier =
                                 Modifier.background(c.surface, RoundedCornerShape(4.dp))

@@ -54,6 +54,7 @@ fun V11TasksScreen(
     onQuickAction: (NeoQuickAction) -> Unit = {},
     onInitialActionHandled: () -> Unit = {},
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     val context = LocalContext.current
 
     val notificationPermissionLauncher =
@@ -291,8 +292,9 @@ fun V11TasksScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        pendingDelete = null
-                        onDatabaseChange(db.copy(tasks = db.tasks.filterNot { it.id == task.id }))
+                        commit(db.copy(tasks = db.tasks.filterNot { it.id == task.id })) {
+                            pendingDelete = null
+                        }
                     }
                 ) {
                     Text(neoLabel("حذف", "Delete"))
@@ -323,18 +325,11 @@ fun V11TasksScreen(
                         db.tasks + task
                     }
 
-                Unit // Reminder effects follow a confirmed database commit in V11Home.
-
-                if (task.reminderAt != null) {
-                    ensureNotificationPermission()
+                commit(db.copy(tasks = updated)) {
+                    if (task.reminderAt != null) ensureNotificationPermission()
+                    showEditor = false
+                    editingTaskId = null
                 }
-
-                Unit // Reminder effects follow a confirmed database commit in V11Home.
-
-                onDatabaseChange(db.copy(tasks = updated))
-
-                showEditor = false
-                editingTaskId = null
             },
         )
     }

@@ -361,12 +361,16 @@ fun NeoCalendarArea(
         NeoDayNoteDialog(
             date,
             editingNote,
+            expectedDatabase = db,
+            calendarId =
+                com.todoshift.app.v11.V11ActiveCalendarStore(context).load()?.takeIf { id ->
+                    db.calendars.any { it.id == id }
+                },
             onDismiss = {
                 noteDate = null
                 editingNote = null
             },
         ) { note ->
-            onDatabaseChange(db.copy(dayItems = db.dayItems.filterNot { it.id == note.id } + note))
             noteRevision++
             noteDate = null
             editingNote = null

@@ -23,6 +23,7 @@ fun NeoCalendarManagerDialog(
     onChange: (V11Database) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val commit = rememberNeoCommit(onChange)
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     var name by rememberSaveable { mutableStateOf("") }
     var color by rememberSaveable { mutableStateOf("#00A4B8") }
@@ -137,7 +138,7 @@ fun NeoCalendarManagerDialog(
                         onClick = {
                             try {
                                 val old = db.calendars.firstOrNull { it.id == editing }
-                                onChange(
+                                commit(
                                     if (old == null)
                                         V11CalendarController.addCalendar(db, name.trim(), color)
                                     else
@@ -145,11 +146,12 @@ fun NeoCalendarManagerDialog(
                                             db,
                                             old.copy(name = name.trim(), colorHex = color),
                                         )
-                                )
-                                form = false
-                                name = ""
-                                color = "#00A4B8"
-                                editing = null
+                                ) {
+                                    form = false
+                                    name = ""
+                                    color = "#00A4B8"
+                                    editing = null
+                                }
                             } catch (e: Exception) {
                                 error = e.message
                             }

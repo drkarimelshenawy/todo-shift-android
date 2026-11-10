@@ -297,6 +297,7 @@ fun NeoContextActions(destination: String) {
 /** Shared guard for inherited editors; the current editor remains mounted while confirming. */
 @Composable
 fun rememberNeoEditorExit(values: List<Any?>, onDismiss: () -> Unit): () -> Unit {
+    val pending = LocalNeoEditorWriteState.current.pending
     val initial = rememberSaveable { values.toList() }
     var confirm by remember { mutableStateOf(false) }
     if (confirm)
@@ -312,7 +313,11 @@ fun rememberNeoEditorExit(values: List<Any?>, onDismiss: () -> Unit): () -> Unit
                 }
             },
         )
-    return { if (values != initial) confirm = true else onDismiss() }
+    return {
+        if (!pending) {
+            if (values != initial) confirm = true else onDismiss()
+        }
+    }
 }
 
 @Composable

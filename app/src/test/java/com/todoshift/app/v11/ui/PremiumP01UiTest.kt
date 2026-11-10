@@ -74,4 +74,29 @@ class PremiumP01UiTest {
         assertEquals(2, submitted.size)
         assertEquals(submitted[0].id, submitted[1].id)
     }
+
+    @Test
+    fun completionContractNeverDismissesOnEnqueueOrRejectedWrite() {
+        var completion: ((Boolean) -> Unit)? = null
+        var dismissed = 0
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalNeoCommitRequest provides { _, done -> completion = done }
+            ) {
+                val commit = rememberNeoCommit { fail("Must use root result") }
+                androidx.compose.material3.Button(
+                    onClick = { commit(V11Database()) { dismissed++ } }
+                ) {
+                    androidx.compose.material3.Text("Submit fixture")
+                }
+            }
+        }
+        compose.onNodeWithText("Submit fixture").performClick()
+        assertEquals(0, dismissed)
+        compose.runOnIdle { completion!!(false) }
+        assertEquals(0, dismissed)
+        compose.onNodeWithText("Submit fixture").performClick()
+        compose.runOnIdle { completion!!(true) }
+        assertEquals(1, dismissed)
+    }
 }

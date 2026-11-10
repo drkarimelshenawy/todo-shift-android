@@ -34,6 +34,7 @@ fun NeoModernHub(
     focused: Boolean = false,
     initialOwner: String? = null,
 ) {
+    val commit = rememberNeoCommit(onChange)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val store = remember { NeoSmartStore(context.applicationContext) }
@@ -965,8 +966,7 @@ fun NeoModernHub(
                                         expected,
                                     )
                                 }
-                                confirmation = null
-                                onChange(candidate)
+                                commit(candidate) { confirmation = null }
                             } catch (e: Exception) {
                                 error = e.message
                                 confirmation = null

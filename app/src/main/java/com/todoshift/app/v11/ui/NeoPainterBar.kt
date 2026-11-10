@@ -36,6 +36,7 @@ fun NeoPainterBar(
     onCommit: (V11Database) -> Unit,
     onExit: () -> Unit,
 ) {
+    val commit = rememberNeoCommit(onCommit)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var committing by remember { mutableStateOf(false) }
@@ -64,8 +65,7 @@ fun NeoPainterBar(
             val result = NeoPaintOperations.preview(db, selected, calendar, kind, workplace, erase)
             if (result.conflicts.isNotEmpty() || erase || selected.size > 1) review = result
             else {
-                onCommit(result.candidate)
-                onClear()
+                commit(result.candidate) { onClear() }
             }
         } catch (e: Exception) {
             error = e.message
@@ -245,9 +245,10 @@ fun NeoPainterBar(
                                             preview.before,
                                         )
                                     }
-                                    onCommit(preview.candidate)
-                                    onClear()
-                                    review = null
+                                    commit(preview.candidate) {
+                                        onClear()
+                                        review = null
+                                    }
                                 } catch (e: Exception) {
                                     error = e.message ?: "Safety copy failed; no change saved"
                                 } finally {

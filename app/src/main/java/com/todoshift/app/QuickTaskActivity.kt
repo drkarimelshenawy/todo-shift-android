@@ -56,8 +56,11 @@ class QuickTaskActivity : FragmentActivity() {
             LaunchedEffect(Unit) {
                 try {
                     withContext(Dispatchers.IO) {
-                            V11Runtime(applicationContext).start() to
-                                AppStorage(applicationContext).load().workplaces
+                            val confirmed = V11Runtime(applicationContext).start()
+                            runCatching {
+                                NeoCommittedEffects(applicationContext).reconcile(confirmed)
+                            }
+                            confirmed to AppStorage(applicationContext).load().workplaces
                         }
                         .let {
                             state = it.first
@@ -94,7 +97,16 @@ class QuickTaskActivity : FragmentActivity() {
                                                     val result =
                                                         NeoTaskCommit(
                                                                 runtime::start,
-                                                                runtime::saveIfCurrent,
+                                                                { expected, next ->
+                                                                    NeoCommittedEffects(
+                                                                            applicationContext
+                                                                        )
+                                                                        .prepare(expected)
+                                                                    runtime.saveIfCurrent(
+                                                                        expected,
+                                                                        next,
+                                                                    )
+                                                                },
                                                                 {
                                                                     com.todoshift.app.reminders
                                                                         .ToDoShiftReminder

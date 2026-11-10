@@ -32,6 +32,8 @@ fun NeoPaymentForm(
     var method by rememberSaveable { mutableStateOf(existing?.paymentMethodId) }
     var note by rememberSaveable { mutableStateOf(existing?.note.orEmpty()) }
     var submitted by remember { mutableStateOf(false) }
+    val write = LocalNeoEditorWriteState.current
+    LaunchedEffect(write.error) { if (write.error != null) submitted = false }
     val keyboard = LocalSoftwareKeyboardController.current
     val leave = neoDiscardGuard(listOf(amount, date, source, method, note), onDismiss)
     AlertDialog(
@@ -85,6 +87,7 @@ fun NeoPaymentForm(
             Button(
                 enabled =
                     !submitted &&
+                        !write.pending &&
                         (amount.toMoneyOrNull() ?: 0.0) > 0 &&
                         runCatching { LocalDate.parse(date) }.isSuccess,
                 onClick = {
@@ -165,6 +168,8 @@ fun NeoObligationForm(
         )
     }
     var submitted by remember { mutableStateOf(false) }
+    val write = LocalNeoEditorWriteState.current
+    LaunchedEffect(write.error) { if (write.error != null) submitted = false }
     val recurring = type in listOf("SUBSCRIPTION", "RECURRING_BILL")
     val valid =
         name.isNotBlank() &&
@@ -250,7 +255,7 @@ fun NeoObligationForm(
         },
         confirmButton = {
             Button(
-                enabled = valid && !submitted,
+                enabled = valid && !submitted && !write.pending,
                 onClick = {
                     if (submitted) return@Button
                     submitted = true
@@ -335,6 +340,7 @@ fun neoObligationType(s: String): String =
 /** Keeps edits in place unless the user explicitly discards them. */
 @Composable
 private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): () -> Unit {
+    val pending = LocalNeoEditorWriteState.current.pending
     val initial = remember { values.toList() }
     var confirm by remember { mutableStateOf(false) }
     if (confirm)
@@ -350,5 +356,9 @@ private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): () -> Un
                 }
             },
         )
-    return { if (values != initial) confirm = true else onDismiss() }
+    return {
+        if (!pending) {
+            if (values != initial) confirm = true else onDismiss()
+        }
+    }
 }

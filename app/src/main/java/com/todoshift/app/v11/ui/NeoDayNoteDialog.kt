@@ -10,16 +10,28 @@ import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 import java.time.LocalDate
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+val LocalNeoNoteCommitted = staticCompositionLocalOf<(V11Database) -> Unit> { {} }
 
 @Composable
 fun NeoDayNoteDialog(
     date: LocalDate,
     existing: DayItemV11?,
+    expectedDatabase: V11Database,
+    calendarId: String?,
     onDismiss: () -> Unit,
     onSave: (DayItemV11) -> Unit,
 ) {
     val context = LocalContext.current
     val styleStore = remember { NeoSmartStore(context.applicationContext) }
+    val expectedMetadata = remember { styleStore.snapshot().toString() }
+    val expected = remember { expectedDatabase }
+    val committed = LocalNeoNoteCommitted.current
+    val scope = rememberCoroutineScope()
+    var pending by remember { mutableStateOf(false) }
     val id = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
     var color by rememberSaveable(id) { mutableStateOf(styleStore.noteColor(id)) }
     var border by
@@ -58,6 +70,7 @@ fun NeoDayNoteDialog(
     val initialBorder = rememberSaveable(id) { border }
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     fun leave() {
+        if (pending) return
         if (
             text != originalText ||
                 details != existing?.details.orEmpty() ||
@@ -82,7 +95,7 @@ fun NeoDayNoteDialog(
             },
         )
     AlertDialog(
-        onDismissRequest = { leave() },
+        onDismissRequest = { if (!pending) leave() },
         title = { Text(neoLabel("ملاحظة مستقلة", "Independent note") + " • $date") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -120,37 +133,46 @@ fun NeoDayNoteDialog(
         },
         confirmButton = {
             Button(
-                enabled = text.isNotBlank() && color.matches(Regex("#[0-9a-fA-F]{6}")),
+                enabled = !pending && text.isNotBlank() && color.matches(Regex("#[0-9a-fA-F]{6}")),
                 onClick = {
-                    try {
-                        styleStore.setNoteColor(id, color)
-                        styleStore.update { o ->
-                            val borders = o.optJSONObject("noteBorders") ?: org.json.JSONObject()
-                            borders.put(id, border)
-                            o.put("noteBorders", borders)
+                    val note =
+                        (existing
+                                ?: DayItemV11(
+                                    id,
+                                    date.toString(),
+                                    type = DayItemTypeV11.NOTE,
+                                    title = "",
+                                    calendarId = calendarId,
+                                ))
+                            .copy(
+                                title = (if (marker.isBlank()) "" else "$marker ") + text.trim(),
+                                details = details,
+                            )
+                    pending = true
+                    error = null
+                    scope.launch {
+                        try {
+                            val next =
+                                withContext(Dispatchers.IO) {
+                                    com.todoshift.app.backup
+                                        .Neo4LocalBackup(context.applicationContext)
+                                        .saveNote(expected, expectedMetadata, note, color, border)
+                                }
+                            committed(next)
+                            onSave(note)
+                        } catch (failure: Exception) {
+                            error = failure.message ?: "Note save failed; draft retained"
+                        } finally {
+                            pending = false
                         }
-                        onSave(
-                            (existing
-                                    ?: DayItemV11(
-                                        id,
-                                        date.toString(),
-                                        type = DayItemTypeV11.NOTE,
-                                        title = "",
-                                    ))
-                                .copy(
-                                    title =
-                                        (if (marker.isBlank()) "" else "$marker ") + text.trim(),
-                                    details = details,
-                                )
-                        )
-                    } catch (e: Exception) {
-                        error = e.message
                     }
                 },
             ) {
                 Text(neoLabel("حفظ", "Save"))
             }
         },
-        dismissButton = { TextButton(onClick = { leave() }) { Text(neoLabel("إلغاء", "Cancel")) } },
+        dismissButton = {
+            TextButton(onClick = { if (!pending) leave() }) { Text(neoLabel("إلغاء", "Cancel")) }
+        },
     )
 }

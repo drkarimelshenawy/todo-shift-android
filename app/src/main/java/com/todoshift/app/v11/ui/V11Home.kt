@@ -72,8 +72,10 @@ fun V11Home(
             boot =
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     NeoSmartStore(context.applicationContext).snapshot()
+                    val confirmed = runtime.start()
+                    runCatching { NeoCommittedEffects(context).reconcile(confirmed) }
                     com.todoshift.app.backup.Neo4BootState(
-                        runtime.start(),
+                        confirmed,
                         oldStorage.load(),
                         uiStore.load(),
                         NeoAppearanceStore(context.applicationContext).load(),
@@ -112,13 +114,19 @@ fun V11Home(
                         Text("جارٍ الحفظ… / Saving…")
                     } else {
                         Text(
-                            "تعذر تأكيد الحفظ / Save could not be confirmed",
+                            "حالة الحفظ / Save status",
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            "تم إيقاف التعديل لحماية البيانات. أغلق التطبيق وافتحه للتحقق؛ لا تمسح التخزين. / Editing is paused. Close and reopen to verify storage; do not clear app data."
+                            if (writeFailure!!.startsWith("Data saved;"))
+                                "حُفظت البيانات؛ تحديث الخدمات يحتاج إعادة محاولة. / Data saved; service refresh needs retry."
+                            else
+                                "لم يتأكد الحفظ؛ المسودة باقية للمراجعة والمحاولة. / Save not confirmed; your draft remains for review and retry."
                         )
                         Text(writeFailure!!, style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { writeFailure = null }) {
+                            Text("العودة للمحرر / Return to editor")
+                        }
                     }
                 }
             }
@@ -314,59 +322,45 @@ fun V11Home(
     val undoHistory = remember { mutableStateListOf<V11Database>() }
     val displayedDb = db
     val displayedLegacy = oldData
-    fun saveDb(value: V11Database, recordUndo: Boolean = true) {
-        if (writeBusy || writeFailure != null) return
+    fun saveDb(value: V11Database, recordUndo: Boolean = true, completed: (Boolean) -> Unit = {}) {
+        if (writeBusy || writeFailure != null) {
+            completed(false)
+            return
+        }
         val expected = displayedDb
         if (expected != db) {
             writeFailure = "Data changed; reopen before editing. No overwrite was made."
+            completed(false)
             return
         }
         writeBusy = true
         writeScope.launch {
+            var committed = false
             try {
-                withContext(Dispatchers.IO) { runtime.saveIfCurrent(expected, value) }
+                withContext(Dispatchers.IO) {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        check(runtime.start() == expected) { "Data changed; draft retained" }
+                        NeoCommittedEffects(context).prepare(expected)
+                        try {
+                            runtime.saveIfCurrent(expected, value)
+                        } catch (failure: Exception) {
+                            // A failed acknowledgement must not cause a duplicate retry.
+                            if (runtime.start() != value) throw failure
+                        }
+                    }
+                }
+                committed = true
                 if (recordUndo) {
                     undoHistory.add(expected)
                     if (undoHistory.size > 20) undoHistory.removeAt(0)
                 } else if (undoHistory.isNotEmpty()) undoHistory.removeAt(undoHistory.lastIndex)
                 db = value
                 withContext(Dispatchers.IO) {
-                    runCatching {
-                        val changedTasks =
-                            expected.tasks.filter { old -> value.tasks.none { it == old } }
-                        val changedEvents =
-                            expected.dayItems.filter { old -> value.dayItems.none { it == old } }
-                        changedTasks.forEach {
-                            com.todoshift.app.reminders.ToDoShiftReminder.cancel(context, it.id)
+                    runCatching { NeoCommittedEffects(context).reconcile(runtime.start()) }
+                        .onFailure {
+                            writeFailure =
+                                "Data saved; reminder/widget refresh is pending and will retry on reopening."
                         }
-                        changedEvents.forEach {
-                            com.todoshift.app.reminders.ToDoShiftReminder.cancel(context, it.id)
-                        }
-                        value.tasks
-                            .filter { it !in expected.tasks }
-                            .forEach {
-                                com.todoshift.app.reminders.ToDoShiftReminder.schedule(context, it)
-                            }
-                        value.dayItems
-                            .filter { it !in expected.dayItems }
-                            .forEach {
-                                com.todoshift.app.reminders.ToDoShiftReminder.schedule(context, it)
-                            }
-                        val oldSegments = expected.days.flatMap { it.segments }
-                        val newSegments = value.days.flatMap { it.segments }
-                        if (oldSegments != newSegments) {
-                            oldSegments.forEach {
-                                com.todoshift.app.reminders.ToDoShiftReminder.cancel(
-                                    context,
-                                    "shift-${it.id}",
-                                )
-                            }
-                            com.todoshift.app.reminders.ToDoShiftReminder.rescheduleAll(
-                                context,
-                                value,
-                            )
-                        }
-                    }
                 }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
@@ -374,6 +368,7 @@ fun V11Home(
                 writeFailure = failure.message ?: "Storage failure"
             } finally {
                 writeBusy = false
+                completed(committed)
             }
         }
     }
@@ -442,6 +437,17 @@ fun V11Home(
             premiumBrightness = uiSettings.premiumBrightness,
         ) {
             androidx.compose.runtime.CompositionLocalProvider(
+                LocalNeoNoteCommitted provides
+                    { next ->
+                        undoHistory.add(db)
+                        if (undoHistory.size > 20) undoHistory.removeAt(0)
+                        db = next
+                    },
+                LocalNeoCommitRequest provides
+                    { next, completed ->
+                        saveDb(next, completed = completed)
+                    },
+                LocalNeoEditorWriteState provides NeoEditorWriteState(writeBusy, writeFailure),
                 LocalV11NeoEnabled provides (uiSettings.experience == V11Experience.PREMIUM),
                 LocalNeoFeatures provides
                     NeoFeatureNavigator { id, owner ->

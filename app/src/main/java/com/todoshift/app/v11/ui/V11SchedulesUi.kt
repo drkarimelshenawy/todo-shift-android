@@ -35,6 +35,7 @@ fun V11SchedulesScreen(
     financeAuthorized: Boolean = false,
     financeAmountsVisible: Boolean = false,
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     var timelineDay by remember { mutableStateOf<Pair<java.time.LocalDate, String>?>(null) }
     androidx.activity.compose.BackHandler(enabled = timelineDay != null) { timelineDay = null }
     timelineDay?.let { (date, calendarId) ->
@@ -337,9 +338,7 @@ fun V11SchedulesScreen(
             calendar = calendar,
             onDismiss = { editingCalendar = null },
             onSave = { updated ->
-                onDatabaseChange(V11CalendarController.updateCalendar(db, updated))
-
-                editingCalendar = null
+                commit(V11CalendarController.updateCalendar(db, updated)) { editingCalendar = null }
             },
         )
     }

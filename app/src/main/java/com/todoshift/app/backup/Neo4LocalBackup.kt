@@ -37,6 +37,7 @@ class Neo4LocalBackup(context: Context) :
             "todo_shift_cloud_readiness",
             NeoSmartStore.NAME,
         )
+    internal var restoreCheckpoint: (String) -> Unit = {}
     private val journal = AtomicFile(File(app.filesDir, "neo4-restore-journal.json"))
 
     private fun prefs(name: String) = app.getSharedPreferences(name, Context.MODE_PRIVATE)
@@ -455,28 +456,30 @@ class Neo4LocalBackup(context: Context) :
             uiPreferences.forEach { name ->
                 parsed.sections["prefs/$name.json"]?.let { targets[name] = json(it) }
             }
-            // Stage image files before changing data. Existing files with different content are
-            // rejected.
+            val previous = JSONObject()
+            targets.keys.forEach { name -> previous.put(name, capture(prefs(name))) }
+            val createdAssets = JSONArray()
             parsed.sections
                 .filterKeys { Neo4BackupFormat.safeAsset(it) || NeoAttachmentStore.safePath(it) }
                 .forEach { (path, data) ->
                     val file =
                         if (NeoAttachmentStore.safePath(path)) File(app.filesDir, path)
                         else File(app.filesDir, path.substringAfter('/'))
-                    check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs())
-                    if (file.exists())
-                        require(
-                            Neo4BackupFormat.sha256(file.readBytes()) ==
-                                Neo4BackupFormat.sha256(data)
-                        ) {
-                            "Image filename collision"
-                        }
-                    else writeAtomic(AtomicFile(file), data)
+                    if (!file.exists())
+                        createdAssets.put(
+                            JSONObject()
+                                .put("path", path)
+                                .put("sha256", Neo4BackupFormat.sha256(data))
+                        )
                 }
-            val previous = JSONObject()
-            targets.keys.forEach { name -> previous.put(name, capture(prefs(name))) }
             val journalBytes =
-                bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+                bytes(
+                    JSONObject()
+                        .put("format", 1)
+                        .put("previous", previous)
+                        .put("createdAssets", createdAssets)
+                        .toString()
+                )
             require(journalBytes.size <= 48 * 1024 * 1024) {
                 "Rollback snapshot exceeds recovery limit"
             }
@@ -492,21 +495,44 @@ class Neo4LocalBackup(context: Context) :
                     )
                 writeAtomic(quarantine, journalBytes)
             }
+            NeoCommittedEffects(app).prepare(oldDatabase ?: V11Database())
             writeAtomic(journal, journalBytes)
             try {
-                targets.forEach { (name, data) -> writePreferences(prefs(name), data) }
+                restoreCheckpoint("journal")
+                // Stage image files before changing data. Existing files with different content are
+                // rejected.
+                parsed.sections
+                    .filterKeys {
+                        Neo4BackupFormat.safeAsset(it) || NeoAttachmentStore.safePath(it)
+                    }
+                    .forEach { (path, data) ->
+                        val file =
+                            if (NeoAttachmentStore.safePath(path)) File(app.filesDir, path)
+                            else File(app.filesDir, path.substringAfter('/'))
+                        check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs())
+                        if (file.exists())
+                            require(
+                                Neo4BackupFormat.sha256(file.readBytes()) ==
+                                    Neo4BackupFormat.sha256(data)
+                            ) {
+                                "Image filename collision"
+                            }
+                        else writeAtomic(AtomicFile(file), data)
+                    }
+                restoreCheckpoint("assets")
+                targets.forEach { (name, data) ->
+                    writePreferences(prefs(name), data)
+                    restoreCheckpoint("prefs:$name")
+                }
                 // Success becomes durable only after every preference commit has completed.
                 journal.delete()
                 check(!journal.baseFile.exists()) { "Unable to finalize restore journal" }
-            } catch (failure: Throwable) {
+            } catch (failure: Exception) {
                 try {
-                    previous.keys().forEach { name ->
-                        writePreferences(prefs(name), previous.getJSONObject(name))
-                    }
-                    journal.delete()
-                } catch (rollback: Throwable) {
+                    recoverIfNeeded()
+                } catch (rollback: Exception) {
                     failure.addSuppressed(rollback)
-                } // Keep journal for recovery on next startup.
+                }
                 throw failure
             }
             val warnings = mutableListOf<String>()
@@ -569,6 +595,60 @@ class Neo4LocalBackup(context: Context) :
             updatedLegacy to updated
         }
 
+    /** Text and decorative metadata share the existing rollback journal and restore gate. */
+    internal fun saveNote(
+        expected: V11Database,
+        expectedMetadata: String,
+        note: DayItemV11,
+        color: String,
+        border: Boolean,
+        checkpoint: (String) -> Unit = {},
+    ): V11Database =
+        synchronized(Neo4DataGate.monitor) {
+            recoverIfNeeded()
+            require(note.type == DayItemTypeV11.NOTE)
+            require(color.matches(Regex("#[0-9a-fA-F]{6}")))
+            val smart = NeoSmartStore(app)
+            check(storage.load() == expected && smart.snapshot().toString() == expectedMetadata) {
+                "Data changed; reopen before saving the note. Draft retained."
+            }
+            val next =
+                expected.copy(dayItems = expected.dayItems.filterNot { it.id == note.id } + note)
+            val previous =
+                JSONObject()
+                    .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+                    .put(NeoSmartStore.NAME, capture(prefs(NeoSmartStore.NAME)))
+            val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+            require(snapshot.size <= 48 * 1024 * 1024)
+            NeoCommittedEffects(app).prepare(expected)
+            writeAtomic(journal, snapshot)
+            try {
+                checkpoint("journal")
+                storage.save(next)
+                checkpoint("text")
+                smart.update { o ->
+                    val colors = o.optJSONObject("noteColors") ?: JSONObject()
+                    colors.put(note.id, color)
+                    o.put("noteColors", colors)
+                    val borders = o.optJSONObject("noteBorders") ?: JSONObject()
+                    borders.put(note.id, border)
+                    o.put("noteBorders", borders)
+                }
+                checkpoint("style")
+                journal.delete()
+                check(!journal.baseFile.exists()) { "Unable to finalize note transaction" }
+            } catch (failure: Exception) {
+                try {
+                    recoverIfNeeded()
+                } catch (rollback: Exception) {
+                    failure.addSuppressed(rollback)
+                }
+                throw failure
+            }
+            runCatching { Neo4WidgetRefresh.schedule(app) }
+            next
+        }
+
     fun recoverIfNeeded() =
         synchronized(Neo4DataGate.monitor) {
             val raw =
@@ -585,8 +665,30 @@ class Neo4LocalBackup(context: Context) :
                     it in uiPreferences || it == "todo_shift_v11" || it == "todo_shift_data"
                 }
             )
+            val created = o.optJSONArray("createdAssets") ?: JSONArray()
+            for (i in 0 until created.length()) {
+                val asset = created.getJSONObject(i)
+                val path = asset.getString("path")
+                require(Neo4BackupFormat.safeAsset(path) || NeoAttachmentStore.safePath(path))
+                require(asset.getString("sha256").matches(Regex("[0-9a-f]{64}")))
+            }
             previous.keys().forEach { name ->
                 writePreferences(prefs(name), previous.getJSONObject(name))
+            }
+            for (i in 0 until created.length()) {
+                val asset = created.getJSONObject(i)
+                val path = asset.getString("path")
+                val file =
+                    if (NeoAttachmentStore.safePath(path)) File(app.filesDir, path)
+                    else File(app.filesDir, path.substringAfter('/'))
+                // Keep anything referenced by the restored snapshot, preexisting, or modified.
+                if (
+                    !previous.toString().contains(file.name) &&
+                        file.isFile &&
+                        Neo4BackupFormat.sha256(file.readBytes()) == asset.getString("sha256")
+                ) {
+                    check(file.delete()) { "Unable to remove interrupted staged asset" }
+                }
             }
             journal.delete()
         }

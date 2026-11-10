@@ -87,6 +87,7 @@ fun V11CalendarScreen(
     managerRequest: Int = 0,
     onManagerHandled: () -> Unit = {},
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     var selectedDate by remember(initialDate) { mutableStateOf(initialDate) }
     var paletteOpen by remember { mutableStateOf(false) }
     var selectedWorkplace by remember { mutableStateOf<Workplace?>(null) }
@@ -246,21 +247,18 @@ fun V11CalendarScreen(
                                             return
                                         }
 
-                                        pendingPaintDb = null
-                                        pendingPaintQueue = emptyList()
-
-                                        onDatabaseChange(updated)
+                                        commit(updated) {
+                                            pendingPaintDb = null
+                                            pendingPaintQueue = emptyList()
+                                            paintMode = false
+                                            paintDates = emptySet()
+                                            selectedPaintKind = null
+                                            selectedWorkplace = null
+                                            paletteOpen = false
+                                        }
                                     }
 
                                     continueQueue(db)
-                                }
-
-                                if (pendingConflict == null) {
-                                    paintMode = false
-                                    paintDates = emptySet()
-                                    selectedPaintKind = null
-                                    selectedWorkplace = null
-                                    paletteOpen = false
                                 }
                             } else if (uiSettings.experience == V11Experience.PREMIUM) {
                                 if (paletteOpen) {
@@ -547,15 +545,15 @@ fun V11CalendarScreen(
                                     val calendar = conflict.calendarId
 
                                     if (kind == null || remaining.isEmpty()) {
-                                        pendingPaintDb = null
-                                        pendingPaintQueue = emptyList()
-
-                                        onDatabaseChange(updated)
-                                        paintMode = false
-                                        paintDates = emptySet()
-                                        selectedPaintKind = null
-                                        selectedWorkplace = null
-                                        paletteOpen = false
+                                        commit(updated) {
+                                            pendingPaintDb = null
+                                            pendingPaintQueue = emptyList()
+                                            paintMode = false
+                                            paintDates = emptySet()
+                                            selectedPaintKind = null
+                                            selectedWorkplace = null
+                                            paletteOpen = false
+                                        }
                                     } else {
                                         val queue = remaining.toMutableList()
 
@@ -596,12 +594,13 @@ fun V11CalendarScreen(
 
                                         pendingPaintQueue = emptyList()
 
-                                        onDatabaseChange(updated)
-                                        paintMode = false
-                                        paintDates = emptySet()
-                                        selectedPaintKind = null
-                                        selectedWorkplace = null
-                                        paletteOpen = false
+                                        commit(updated) {
+                                            paintMode = false
+                                            paintDates = emptySet()
+                                            selectedPaintKind = null
+                                            selectedWorkplace = null
+                                            paletteOpen = false
+                                        }
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -1518,6 +1517,7 @@ private fun V11CalendarManagerSheet(
     onDismiss: () -> Unit,
     onDatabaseChange: (V11Database) -> Unit,
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     if (LocalV11NeoEnabled.current) {
         NeoCalendarManagerDialog(
             db,
@@ -1686,9 +1686,9 @@ private fun V11CalendarManagerSheet(
                 onClick = {
                     if (newName.isBlank()) return@Button
 
-                    onDatabaseChange(V11CalendarController.addCalendar(db, newName, selectedColor))
-
-                    newName = ""
+                    commit(V11CalendarController.addCalendar(db, newName, selectedColor)) {
+                        newName = ""
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {

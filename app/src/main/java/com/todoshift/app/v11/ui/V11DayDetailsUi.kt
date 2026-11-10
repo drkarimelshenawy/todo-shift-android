@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.todoshift.app.data.Workplace
-import com.todoshift.app.reminders.ToDoShiftReminder
 import com.todoshift.app.v11.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -43,6 +42,7 @@ fun V11DayDetailsScreen(
     financeAuthorized: Boolean = false,
     financeAmountsVisible: Boolean = false,
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     var editingNoteId by rememberSaveable { mutableStateOf<String?>(null) }
     val noteNavigator = LocalNeoFeatures.current
     val showDayMoney = !LocalV11NeoEnabled.current || (financeAuthorized && financeAmountsVisible)
@@ -349,14 +349,6 @@ fun V11DayDetailsScreen(
                                 onCheckedChange = {
                                     val updated = V11DayOrganizerController.toggle(db, item.id)
 
-                                    val changed = updated.dayItems.firstOrNull { it.id == item.id }
-
-                                    if (changed?.completed == true) {
-                                        ToDoShiftReminder.cancel(context, item.id)
-                                    } else if (changed != null) {
-                                        ToDoShiftReminder.schedule(context, changed)
-                                    }
-
                                     onDatabaseChange(updated)
                                 },
                             )
@@ -488,8 +480,7 @@ fun V11DayDetailsScreen(
                                             start,
                                             normalizedEnd,
                                         )
-                                    onDatabaseChange(updated)
-                                    pendingEditSegmentId = null
+                                    commit(updated) { pendingEditSegmentId = null }
                                 } catch (e: IllegalArgumentException) {
                                     editError =
                                         e.message
@@ -516,8 +507,9 @@ fun V11DayDetailsScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        onDatabaseChange(V11DayController.deleteSegment(db, segmentId))
-                        pendingDeleteSegmentId = null
+                        commit(V11DayController.deleteSegment(db, segmentId)) {
+                            pendingDeleteSegmentId = null
+                        }
                     },
                     colors =
                         ButtonDefaults.buttonColors(
@@ -540,15 +532,13 @@ fun V11DayDetailsScreen(
         NeoDayNoteDialog(
             date,
             existing,
+            db,
+            activeCalendarId,
             {
                 editingNoteId = null
                 addType = null
             },
         ) { note ->
-            val savedNote = if (existing == null) note.copy(calendarId = activeCalendarId) else note
-            onDatabaseChange(
-                db.copy(dayItems = db.dayItems.filterNot { it.id == savedNote.id } + savedNote)
-            )
             editingNoteId = null
             addType = null
         }
@@ -577,16 +567,10 @@ fun V11DayDetailsScreen(
                         )
 
                     val created = updated.dayItems.lastOrNull()
-
-                    if (created != null && created.reminderAt != null) {
-                        ensureNotificationPermission()
-
-                        // Scheduling follows a confirmed commit in V11Home.
+                    commit(updated) {
+                        if (created?.reminderAt != null) ensureNotificationPermission()
+                        addType = null
                     }
-
-                    onDatabaseChange(updated)
-
-                    addType = null
                 },
             )
         }

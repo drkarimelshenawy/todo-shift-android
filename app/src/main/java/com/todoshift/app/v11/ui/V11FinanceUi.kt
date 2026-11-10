@@ -35,6 +35,7 @@ fun V11FinanceScreen(
     securityStore: V11SecurityStore,
     onDatabaseChange: (V11Database) -> Unit,
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     val result = remember(db, month) { V11FinanceEngine.month(db = db, month = month) }
 
     var paymentOpen by rememberSaveable { mutableStateOf(false) }
@@ -488,12 +489,13 @@ fun V11FinanceScreen(
             onDismiss = { editingPaymentId = null },
             onSave = { updated ->
                 val saveAction = {
-                    onDatabaseChange(
+                    commit(
                         db.copy(
                             payments = db.payments.map { if (it.id == updated.id) updated else it }
                         )
-                    )
-                    editingPaymentId = null
+                    ) {
+                        editingPaymentId = null
+                    }
                 }
 
                 val securityEnabled =
@@ -515,13 +517,14 @@ fun V11FinanceScreen(
             onDismiss = { editingObligationId = null },
             onSave = { updated ->
                 val saveAction = {
-                    onDatabaseChange(
+                    commit(
                         db.copy(
                             obligations =
                                 db.obligations.map { if (it.id == updated.id) updated else it }
                         )
-                    )
-                    editingObligationId = null
+                    ) {
+                        editingObligationId = null
+                    }
                 }
 
                 val securityEnabled =
@@ -553,10 +556,7 @@ fun V11FinanceScreen(
             month = month,
             db = db,
             onDismiss = { paymentOpen = false },
-            onSave = {
-                onDatabaseChange(it)
-                paymentOpen = false
-            },
+            onSave = { commit(it) { paymentOpen = false } },
         )
     }
 
@@ -564,10 +564,7 @@ fun V11FinanceScreen(
         V11ObligationDialog(
             db = db,
             onDismiss = { obligationOpen = false },
-            onSave = {
-                onDatabaseChange(it)
-                obligationOpen = false
-            },
+            onSave = { commit(it) { obligationOpen = false } },
         )
     }
 
@@ -600,7 +597,7 @@ fun V11FinanceScreen(
                 db = db,
                 onDismiss = { payingObligationId = null },
                 onSave = { amount, methodId ->
-                    onDatabaseChange(
+                    commit(
                         V11AccountsController.payObligation(
                             db = db,
                             obligationId = obligation.id,
@@ -608,9 +605,9 @@ fun V11FinanceScreen(
                             amount = amount,
                             methodId = methodId,
                         )
-                    )
-
-                    payingObligationId = null
+                    ) {
+                        payingObligationId = null
+                    }
                 },
             )
         }
@@ -1231,6 +1228,7 @@ private fun V11IncomeSourcesDialog(
     onDismiss: () -> Unit,
     onDatabaseChange: (V11Database) -> Unit,
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     var newName by rememberSaveable { mutableStateOf("") }
 
     var fixedAmount by rememberSaveable { mutableStateOf("") }
@@ -1373,17 +1371,17 @@ private fun V11IncomeSourcesDialog(
                 Button(
                     onClick = {
                         if (newName.isNotBlank() && fixedAmountInput.optionalValid) {
-                            onDatabaseChange(
+                            commit(
                                 V11AccountsController.addIncomeSource(
                                     db = db,
                                     name = newName.trim(),
                                     type = IncomeSourceTypeV11.OTHER,
                                     fixedAmount = fixedAmountInput.amount,
                                 )
-                            )
-
-                            newName = ""
-                            fixedAmount = ""
+                            ) {
+                                newName = ""
+                                fixedAmount = ""
+                            }
                         }
                     },
                     enabled = newName.isNotBlank() && fixedAmountInput.optionalValid,
@@ -1401,8 +1399,7 @@ private fun V11IncomeSourcesDialog(
             source = source,
             onDismiss = { editingId = null },
             onSave = {
-                onDatabaseChange(V11AccountsController.updateIncomeSource(db, it))
-                editingId = null
+                commit(V11AccountsController.updateIncomeSource(db, it)) { editingId = null }
             },
         )
     }
@@ -1470,6 +1467,7 @@ private fun V11PaymentMethodsDialog(
     onDismiss: () -> Unit,
     onDatabaseChange: (V11Database) -> Unit,
 ) {
+    val commit = rememberNeoCommit(onDatabaseChange)
     var newName by rememberSaveable { mutableStateOf("") }
 
     var editingId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -1550,10 +1548,9 @@ private fun V11PaymentMethodsDialog(
                 Button(
                     onClick = {
                         if (newName.isNotBlank()) {
-                            onDatabaseChange(
-                                V11AccountsController.addPaymentMethod(db, newName.trim())
-                            )
-                            newName = ""
+                            commit(V11AccountsController.addPaymentMethod(db, newName.trim())) {
+                                newName = ""
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -1584,13 +1581,14 @@ private fun V11PaymentMethodsDialog(
                 Button(
                     onClick = {
                         if (name.isNotBlank()) {
-                            onDatabaseChange(
+                            commit(
                                 V11AccountsController.updatePaymentMethod(
                                     db,
                                     method.copy(name = name.trim()),
                                 )
-                            )
-                            editingId = null
+                            ) {
+                                editingId = null
+                            }
                         }
                     }
                 ) {

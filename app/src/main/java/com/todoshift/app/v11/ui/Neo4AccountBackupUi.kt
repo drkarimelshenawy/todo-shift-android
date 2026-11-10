@@ -139,7 +139,8 @@ fun Neo4AccountBackupPage(
         }
     if (!financeAuthorized) {
         Column(Modifier.fillMaxSize()) {
-            TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
+            if (!LocalNeoShellPageHeader.current)
+                TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
             Text(
                 neoLabel(
                     "تحتوي النسخ على بيانات مالية؛ تحقق من هويتك أولًا",
@@ -155,11 +156,13 @@ fun Neo4AccountBackupPage(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
-        Text(
-            neoLabel("الحساب والنسخ الاحتياطي", "Account & Backup"),
-            style = MaterialTheme.typography.titleLarge,
-        )
+        if (!LocalNeoShellPageHeader.current)
+            TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
+        if (!LocalNeoShellPageHeader.current)
+            Text(
+                neoLabel("الحساب والنسخ الاحتياطي", "Account & Backup"),
+                style = MaterialTheme.typography.titleLarge,
+            )
         Text(
             neoLabel("نسخ محلي يعمل فعليًا", "Local backup is available"),
             style = MaterialTheme.typography.titleMedium,

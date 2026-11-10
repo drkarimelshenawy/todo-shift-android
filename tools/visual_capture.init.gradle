@@ -3,6 +3,7 @@ gradle.projectsEvaluated {
     gradle.rootProject.project(':app') {
         android.sourceSets.test.java.srcDir(rootProject.file('tools/visual-tests'))
         tasks.withType(Test).configureEach {
+            doFirst { rootProject.delete(rootProject.file('app/build/ux-visual-evidence')) }
             systemProperty 'neo.capture.dir', rootProject.file('app/build/ux-visual-evidence').absolutePath
         }
     }

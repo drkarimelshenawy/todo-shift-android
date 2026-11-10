@@ -219,8 +219,12 @@ class NeoFeatureNavigator(val navigate: (String, String?) -> Unit) {
 
 val LocalNeoFeatures = staticCompositionLocalOf { NeoFeatureNavigator { _, _ -> } }
 
+// The root shell owns the title and guarded Back on focused feature routes.
+val LocalNeoShellPageHeader = staticCompositionLocalOf { false }
+
 @Composable
 fun NeoPageHeader(title: String, onBack: () -> Unit) {
+    if (LocalNeoShellPageHeader.current) return
     Row(
         Modifier.fillMaxWidth().heightIn(min = NeoSpace.row),
         verticalAlignment = Alignment.CenterVertically,

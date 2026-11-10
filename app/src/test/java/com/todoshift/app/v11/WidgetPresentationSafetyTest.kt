@@ -93,6 +93,10 @@ class WidgetPresentationSafetyTest {
             assertTrue(Neo4WidgetSettings(c).load(Neo4WidgetKind.TASKS).hideContent)
             assertEquals(raw, p.getString("TASKS", null))
         }
+        val privacy = c.getSharedPreferences("todo_shift_neo4_widget_privacy", 0)
+        check(privacy.edit().putString("amountsHidden", "corrupt-type").commit())
+        assertTrue(Neo4WidgetPrivacy.amountsHidden(c))
+        assertEquals("corrupt-type", privacy.getString("amountsHidden", null))
     }
 
     @Test

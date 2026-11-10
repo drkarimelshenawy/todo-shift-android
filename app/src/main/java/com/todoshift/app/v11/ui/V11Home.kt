@@ -578,6 +578,8 @@ fun V11Home(
             premiumBrightness = uiSettings.premiumBrightness,
         ) {
             androidx.compose.runtime.CompositionLocalProvider(
+                LocalNeoShellPageHeader provides
+                    (uiSettings.experience == V11Experience.PREMIUM && navigation.featureOpen),
                 LocalNeoLeaveGate provides leaveGate,
                 LocalNeoAppearanceCommit provides { value, done -> saveAppearance(value, done) },
                 LocalNeoNoteCommitted provides
@@ -669,6 +671,9 @@ fun V11Home(
                     topBar = {
                         Column {
                             V11GlobalHeader(
+                                onBack =
+                                    if (navigation.featureOpen) ({ go { navigation.back() } })
+                                    else null,
                                 calendarActions = navigation.tab == 0 && navigation.isRoot,
                                 onToday = {
                                     calendarAction = NeoQuickAction.TODAY
@@ -1162,6 +1167,7 @@ private fun V11GlobalHeader(
     onManage: () -> Unit = {},
     onOverview: () -> Unit = {},
     featureDestination: String = "",
+    onBack: (() -> Unit)? = null,
 ) {
     if (LocalV11NeoEnabled.current) {
         val p = LocalNeoAppearance.current
@@ -1177,6 +1183,7 @@ private fun V11GlobalHeader(
             true,
             onOverview,
             featureDestination,
+            onBack,
         )
         return
     }

@@ -1,7 +1,10 @@
 package com.todoshift.app.v11.ui
 
 import android.content.Intent
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.platform.app.InstrumentationRegistry
 import com.todoshift.app.MainActivity
 import com.todoshift.app.v11.*
@@ -88,6 +91,8 @@ class PremiumNavigationActivityTest {
     fun invalidRawAccentIsGuardedOnTabSwitchAndDiscardActuallyLeavesStudio() {
         ui.click("Settings")
         ui.click("Appearance & Design")
+        compose.onAllNodesWithText("Appearance Studio").assertCountEquals(1)
+        compose.onAllNodesWithContentDescription("Back").assertCountEquals(1)
         ui.click("Colors and background")
         ui.input("Custom accent #RRGGBB", "#12")
         compose.activityRule.scenario.recreate()

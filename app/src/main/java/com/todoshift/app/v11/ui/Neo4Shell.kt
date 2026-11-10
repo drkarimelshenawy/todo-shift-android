@@ -2,6 +2,7 @@ package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Visibility
@@ -28,6 +29,7 @@ fun Neo4CompactHeader(
     overview: Boolean,
     onOverview: () -> Unit,
     destination: String = "",
+    onBack: (() -> Unit)? = null,
 ) {
     val p = LocalNeoAppearance.current
     Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = p.cardOpacity)) {
@@ -38,6 +40,13 @@ fun Neo4CompactHeader(
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (onBack != null)
+                IconButton(onClick = onBack) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowBack,
+                        neoLabel("رجوع", "Back"),
+                    )
+                }
             val configuration = androidx.compose.ui.platform.LocalConfiguration.current
             val constrained =
                 configuration.screenWidthDp < 340 &&

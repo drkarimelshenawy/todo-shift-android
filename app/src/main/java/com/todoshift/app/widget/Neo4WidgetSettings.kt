@@ -160,9 +160,12 @@ data class Neo4WidgetSkin(val background: Int, val text: Int, val secondary: Int
 
 object Neo4WidgetPrivacy {
     fun amountsHidden(context: Context): Boolean =
-        context
-            .getSharedPreferences("todo_shift_neo4_widget_privacy", Context.MODE_PRIVATE)
-            .getBoolean("amountsHidden", true)
+        runCatching {
+                context
+                    .getSharedPreferences("todo_shift_neo4_widget_privacy", Context.MODE_PRIVATE)
+                    .getBoolean("amountsHidden", true)
+            }
+            .getOrDefault(true)
 
     fun update(context: Context, hidden: Boolean) {
         context

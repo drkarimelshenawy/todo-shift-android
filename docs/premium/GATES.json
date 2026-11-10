@@ -2,12 +2,18 @@
   {
     "phase": "P01",
     "entry_sha": "e178b134658afad04d645b044f24d236594cbe33",
-    "source_checkpoint_sha": "2604aa8a7d5a6b68c039d03ebff0cb07fe21a3cd",
+    "source_checkpoint_sha": "4c78f0bddfa134d593ce891e991456ccce0fd4e5",
     "exit_sha": null,
     "gate": "HOLD",
-    "tests": "See QA.md; no device acceptance",
-    "risks": "Open D07/D17/D18/D24 and incomplete fault matrix",
-    "evidence": "P01_HANDOFF.md"
+    "tests": "168 PASS, 0 FAIL/errors/skipped; lint 0 errors/45 warnings; debug build PASS. See QA.md for separately scoped native probe.",
+    "risks": "Q01/Q02 complete editor and Activity adversarial matrix incomplete; Q04/Q05/Q15/Q18 required device/provider/Launcher/privacy evidence missing. BLOCKED — ENVIRONMENT for Android/Honor/upgrade signature. Do not enter P02.",
+    "evidence": [
+      "P01_HANDOFF.md",
+      "QA.md",
+      "ADDITIONAL_DEFECTS.md",
+      "REMAINING.md"
+    ],
+    "resume_sha": "faf1c93dc7dc9eef9c9aab3ffe374e6bcc03c784"
   },
   {
     "phase": "P02",
@@ -16,8 +22,11 @@
     "exit_sha": null,
     "gate": "NOT RUN",
     "tests": "NOT RUN",
-    "risks": "Prior phase gate not passed; implementation must not start",
-    "evidence": null
+    "risks": "Sequential prerequisite P01 gate HOLD; no dependent implementation performed",
+    "evidence": [
+      "GATES.json",
+      "REMAINING.md"
+    ]
   },
   {
     "phase": "P03",
@@ -26,8 +35,11 @@
     "exit_sha": null,
     "gate": "NOT RUN",
     "tests": "NOT RUN",
-    "risks": "Prior phase gate not passed; implementation must not start",
-    "evidence": null
+    "risks": "Sequential prerequisite P01 gate HOLD; no dependent implementation performed",
+    "evidence": [
+      "GATES.json",
+      "REMAINING.md"
+    ]
   },
   {
     "phase": "P04",
@@ -36,8 +48,11 @@
     "exit_sha": null,
     "gate": "NOT RUN",
     "tests": "NOT RUN",
-    "risks": "Prior phase gate not passed; implementation must not start",
-    "evidence": null
+    "risks": "Sequential prerequisite P01 gate HOLD; no dependent implementation performed",
+    "evidence": [
+      "GATES.json",
+      "REMAINING.md"
+    ]
   },
   {
     "phase": "P05",
@@ -46,8 +61,12 @@
     "exit_sha": null,
     "gate": "NOT RUN",
     "tests": "NOT RUN",
-    "risks": "Prior phase gate not passed; implementation must not start",
-    "evidence": null
+    "risks": "Sequential prerequisite P01 gate HOLD; no dependent implementation performed",
+    "evidence": [
+      "GATES.json",
+      "REMAINING.md"
+    ],
+    "independent_preparation": "PRIVATE notification plus neutral publicVersion model regression only. Not entry/acceptance of P05."
   },
   {
     "phase": "P06",
@@ -56,7 +75,11 @@
     "exit_sha": null,
     "gate": "NOT RUN",
     "tests": "NOT RUN",
-    "risks": "Prior phase gate not passed; implementation must not start",
-    "evidence": null
+    "risks": "Sequential prerequisite P01 gate HOLD; no dependent implementation performed",
+    "evidence": [
+      "GATES.json",
+      "REMAINING.md"
+    ],
+    "independent_preparation": "Local experimental signing/metadata/evidence packaging only. Not entry/acceptance of P06."
   }
 ]

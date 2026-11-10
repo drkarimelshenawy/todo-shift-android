@@ -1,36 +1,48 @@
-# P01 checkpoint — HOLD, not a passed phase
+# P01 resumed implementation checkpoint — HOLD
 
-Input SHA: e178b134658afad04d645b044f24d236594cbe33.
-Source checkpoint SHA: 2604aa8a7d5a6b68c039d03ebff0cb07fe21a3cd.
-Branch: work/todo-shift-premium-rescue, created locally from the exact supplied baseline.
-Source branch remains at e178b13. No push, merge, release, PR, app installation, storage clear, data migration or version/signing change.
+This checkpoint contains substantive P01 implementation and regression work. It does **not** accept P01, complete the Premium rescue or enter the dependent P02–P06 stages.
 
-## Package and inventory
+Branch: `work/todo-shift-premium-rescue`.
+Original baseline/source ref: `e178b134658afad04d645b044f24d236594cbe33`.
+Resume input: `faf1c93dc7dc9eef9c9aab3ffe374e6bcc03c784` (preserved).
+Local P01 source checkpoints:
 
-All 13 supplied Markdown documents are retained verbatim in blueprint/ with SHA256 in BLUEPRINT_MANIFEST.json. The package contains no phone videos/images referenced by the defect register. Those original visual materials are not available here; they are not claimed reproduced. ACCEPTANCE.json retains 147 protected IDs (130 original +12 UX +5 PM); no blanket implementation or acceptance claim. WRITE_CALLSITES.txt is a production-source search inventory, not proof each call was executed.
+1. `7a747bdbc78b33975a63bfa6646c9e64777d7107` — journaled notes/restore, checked editor saves and service intent.
+2. `3f3b1c37f21e91fed3184ca9043c1d4f0333dc2a` — positive durable acknowledgement, stable request IDs and creation-reference validation.
+3. `4c78f0bddfa134d593ce891e991456ccce0fd4e5` — transactional effects rollback, persisted replay job/current-snapshot locking, widget completion and live-authorized Classic backup.
 
-## Changes and specific evidence
+App tree tested/built: `9f2edbcb390ccaf2db74de831e128574229db754`. A later documentation/probe-only commit may follow; final local SHA is in the external delivery manifest and Git history. **Accepted P01 exit SHA: none.**
 
-D01/D23: V11FinanceUi source create/edit and obligation payment no longer rewrite grouping commas to decimal dots. MoneyInput preserves original input and returns blank/invalid/cent-based value; the same result drives error/enablement/save in these paths. Classic obligation create/edit now prevent nonblank invalid total/installment being saved as null. Existing parser, records, schema and historical amounts are unchanged. MoneyInputTest covers ASCII/Arabic/Persian/mixed, grouped, decimal, rounding, malformed, zero and range cases. PremiumP01UiTest edits an income source with 9,00 (disabled/raw retained) then 9,000 and reopens actual V11 storage to check 900000 cents. This does NOT yet cover every financial editor from MainActivity.
+## Package and safety
 
-D16/D18 (external entry only): QuickTaskActivity keeps its editor composed while pending/failure; shared write state disables submit, keeps the raw draft and enables retry after an error. NeoTaskCommit submits under Neo4DataGate, reads fresh storage, uses CAS, preserves unrelated records, resolves ambiguous write exceptions by rereading the stable ID, distinguishes conflicts and data-committed/services-pending. A retry resynchronizes services without repeating the record. NeoTaskCommitTest injects before/after write, ID conflict and service failure. PremiumP01UiTest verifies pending/error draft retention and same-ID retry in the actual editor component. This is Robolectric component evidence, not full Launcher/Activity/process-death acceptance. Reminder permission remains after confirmed save.
+All14 Blueprint Markdown files are preserved verbatim, including P01–P06, with hashes in BLUEPRINT_MANIFEST.json. ACCEPTANCE.json retains all147 protected IDs (130 original +12UX +5PM); DEFECT_STATUS.json keeps D01–D29. No row is fully accepted by the existence of a test or file. The referenced original phone visual materials are unavailable and no original incident is claimed reproduced.
 
-## Open software work — not environment blockers
+Only the isolated work branch was committed. The local source ref remains e178b13; main/Luxury-v4/Premium-V-byWork are not present locally and were neither created nor updated. No remote push/fetch mutation, merge, force-push, tag, PR or release. No install/uninstall/storage clear or real user-data migration. Application/signing Gradle configuration, applicationId, launcher identity and version4.2.0/31 remain baseline; the sole Android entry addition is an internal signature-protected retry JobService. Private isolated test signing files are outside Git/delivery.
 
-- D07: Home still has Unit fire-and-forget save callbacks; all child editors need a checked asynchronous result before dismissal. Inventory every save/delete/restore entrance in Premium and Classic; explicitly test busy/CAS/I/O before/after commit and stable operation IDs. Do not label generic failure messages a complete contract.
-- D17: note text and NeoSmartStore style writes still have the baseline cross-store atomicity gap. Implement reviewed journal/recovery coordinated with restore and fault-test every write boundary before accepting Q03. Do not merely reorder style/text or delete orphan files as a substitute.
-- D18: root UI coroutine cancellation and side-effect recovery still require durable/idempotent reconciliation from confirmed storage. External-task result handling is only one path.
-- D24: restore asset staging before the preference journal remains to be fault-tested and safely tracked. Preserve existing linked/unknown files and rollback behavior.
-- Q01 all editor create/edit/pay/allocation/rate paths, Q02 all callsites, Q03 cross-store faults, Q04 every restore/provider interruption, Q05 finance privacy, Q15 full Activity faults and Q18 attachment lifecycle still need expanded tests. Current passing regressions are partial evidence only.
+## Implemented P01 changes
 
-## Environmental blockers
+- **D01/D23 money**: unified raw-input classification for blank/invalid/value; removed grouping-comma rewrite from source/obligation routes, prohibited silently nulling invalid nonblank obligation amounts, rejected invalid dates/zero Classic receipts with visible inline errors. Cent-based validation/reopen tests cover grouped ASCII/Arabic/Persian and Arabic decimal cases without rewriting historical records or changing existing clamping/formulas.
+- **D07/D16 editor contract**: Home has explicit async committed/rejected acknowledgement, shared pending/error state, retryable error modal and undo only after commit. Migrated task/finance/day/paint/calendar/workplace paths close/reset only on committed acknowledgement. Draft record IDs and original-record digests survive covered saved-state restorations, rejecting stale targets instead of overwriting. Notification permission is requested after task commit. Inventories/remaining unproven routes are explicit.
+- **D17 atomic notes**: `Neo4LocalBackup.saveNote` coordinates existing V11 text and SmartStore style with the shared rollback journal/gate and both expected snapshots. Note dialog keeps input pending/failure and retains intended calendar/record revision. Failure/injected process interruption recovers consistent prior state in tests.
+- **D18 write/service recovery**: all journaled DB/note/workplace/restore transactions snapshot pending side effects before preparing new intent; rollback restores that intent too. Production replay reads current confirmed data under the same gate, cancels only changed/removed prior alarms and positively acknowledges completed services. Persisted JobScheduler retries are best effort with boot/app-open fallback. OS delivery failure never converts a data commit into false data loss or duplicate records.
+- **D24 restore/assets**: journal before copying absent assets; records created path/hash; restores old preferences before cleanup and removes only new hash-matching unreferenced content. Existing linked/unknown/modified files are preserved. Root adopts full restored state, clears stale undo and re-locks finance rather than enqueueing a second save.
+- **Additional source findings**: new missing calendar/workplace/shift references rejected, hidden calendars remain valid and historical unchanged orphan references remain intact; referenced workplace removal blocked at backend; widget completion uses shared journal; Classic retains legacyJSON plus fullZIP and now shares bounded preview/token/validated safety archive and live finance authorization.
+- **Independent safety work**: PRIVATE/neutral-publicVersion notification model regression; does not mean P05 lock-screen/device acceptance. Experimental signing/build/evidence preparation does not mean P06 entry.
 
-APK packaging was attempted with the existing Gradle configuration and failed: SigningConfig persistentDebug is missing required property storeFile. Signing inputs were not configured for this invocation; credentials/configuration were not changed. Supply an authorized signing file/password through protected runtime variables (never chat/source) or an authorized isolated test-signing invocation; compare installed certificate before any upgrade. No newly signed APK is delivered from this checkpoint.
+Source locations: `V11Home.kt` saveDb/saveWorkplaces/adoptRestore, `NeoCommitRequest.kt`, `NeoTaskCommit.kt`, `MoneyInput.kt`, `V11FinanceUi.kt`, `NeoFinanceForms.kt`, `V11AccountsController.kt`, `NeoDayNoteDialog.kt`, `Neo4LocalBackup.kt`, `NeoCommittedEffects.kt`, `NeoEffectsJobService.kt`, `NeoNewReferenceGuard.kt`, `V11BackupRestoreUi.kt`, `TasksWidgetProvider.kt`. Exact current lines/callsites are in WRITE_CALLSITES.txt; changed-file status is in the external delivery report. No protected feature was intentionally removed or replaced by a new project/schema.
 
-ADB devices failed before enumeration because /home/agent/.android is read-only, including attempts using ANDROID_USER_HOME and ANDROID_SDK_HOME. SDK has no emulator executable, /dev/kvm is absent, and no physical Android/Honor is available. Q04/Q15/Q18 device/provider/Launcher and Q26 upgrade acceptance are BLOCKED. Required: usable emulator for A tests and isolated physical Android plus Honor for D/H, with synthetic fixtures and verified matching certificate/lineage. Do not substitute Robolectric for these environments.
+## Verification
 
-## Resume and rollback
+Final serial full run: **168 tests passed /0 failed /0 errors /0 skipped**,27 classes; lint **0 errors /45 warnings**; debug build PASS; protected11-file/source and standalone Kotlin checks PASS. Optional native probe separately: **2 passed /0 failed /0 skipped**,28 synthetic PNGs. APK signature/package/version/alignment inspected. QA.md contains exact commands, named tests, limitations and intermediate red/repair evidence. Tests do not prove physical power-loss/full-disk semantics or product acceptance.
 
-Resume P01 here, not P02 and not the old modernization. Keep the source checkpoint and raw QA outside Git. Address the open software list, rerun focused tests plus complete unit/lint/build, update all affected protected/QA rows individually. Advance only when the required gate evidence passes; environmental cases remain BLOCKED and independent P01 work can proceed. P02–P06 have no exit SHA or passed gates yet.
+## Gate and dependencies
 
-Code rollback is an isolated checkout/worktree at the recorded input/checkpoint, without reset of app data. No user-data upgrade occurred, so no data rollback is authorized or needed. Never force-push/rebase protected refs or imply this is a release-ready build.
+P01 **HOLD**: Q01/Q02 full editor/Activity adversarial matrix remains incomplete; Q04/Q05/Q15/Q18 real providers, lifecycle, privacy, launcher, Android/Honor acceptance lack required evidence. These are separated into unperformed software checks and **BLOCKED — ENVIRONMENT** cases in QA_STATUS.json/REMAINING.md. ADB now enumerates normally with no devices; SDK has no emulator and /dev/kvm is absent. Installed certificate is unavailable. The isolated test certificate differs from documented CI certificate; this same-code31 checkpoint is **not a safe in-place upgrade**.
+
+P02–P06 remain **NOT RUN** because their prerequisite gate has no accepted exit SHA. Their downstream UX defects are not erased from the defect matrix. Continue independent diagnosis/coverage but do not mark the main sequence advanced. Resume and resources required are in REMAINING.md. No Production Ready or zero-bug claim.
+
+## Rollback / artifacts
+
+Use a separate code checkout/worktree at one of the recorded checkpoints; never reset the user's app data or force-push. No actual user upgrade happened. Any future data rollback requires a verified archive and explicit reviewed recovery; older APK installation is not a data rollback strategy.
+
+Actual artifacts: `/workspace/output/premium-p01-resume/`. Experimental APK name/certificate/checksum and retrieval limits: INSTALL.md and QA.md. Raw XML/logs/screenshots are outside Git; generated archives/APKs/private credentials are not committed. Final source ZIP is a Git archive of the final local checkpoint. External delivery manifest/checksums bind it to the exact code and evidence without a self-referential Git hash.

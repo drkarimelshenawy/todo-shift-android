@@ -1,136 +1,358 @@
-app/src/main/java/com/todoshift/app/QuickTaskActivity.kt:97:                                                                runtime::saveIfCurrent,
+SOURCE CHECKPOINT 4c78f0bddfa134d593ce891e991456ccce0fd4e5
+Search inventory only; declarations/callbacks included, not executed-case coverage.
+app/src/main/java/com/todoshift/app/QuickTaskActivity.kt:105:                                                                        .commitDatabase(
 app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt:25:    fun save(kind: Neo4WidgetKind, value: Neo4WidgetOptions) {
 app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt:28:        check(editor.commit()) { "Unable to save widget settings" }
-app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt:325:        runtime.saveIfCurrent(db, updated)
-app/src/main/java/com/todoshift/app/widget/CalendarWidgetState.kt:32:    fun saveMonth(
+app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt:49:    fun apply(views: RemoteViews, root: Int, vararg textIds: Int) {
+app/src/main/java/com/todoshift/app/widget/Neo4WidgetSettings.kt:59:        context.getSharedPreferences("todo_shift_neo4_widget_privacy", Context.MODE_PRIVATE).edit().putBoolean("amountsHidden", hidden).apply()
+app/src/main/java/com/todoshift/app/widget/CalendarWidgetFactory.kt:504:            Intent().apply {
+app/src/main/java/com/todoshift/app/widget/Neo4SummaryWidgets.kt:37:        skin.apply(views, R.id.neo4_widget_root, R.id.neo4_widget_title, R.id.neo4_widget_value, R.id.neo4_widget_detail)
+app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt:101:                Intent(context, TasksWidgetService::class.java).apply {
+app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt:111:                Intent(context, MainActivity::class.java).apply {
+app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt:142:                Intent(context, TasksWidgetProvider::class.java).apply {
+app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt:163:                    .apply(
+app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt:202:                Intent(context, MainActivity::class.java).apply {
+app/src/main/java/com/todoshift/app/widget/TasksWidgetProvider.kt:258:            com.todoshift.app.backup.Neo4LocalBackup(context).commitDatabase(db, updated)
+app/src/main/java/com/todoshift/app/widget/TasksWidgetFactory.kt:90:        val completeIntent = Intent().apply {
+app/src/main/java/com/todoshift/app/widget/TasksWidgetFactory.kt:103:        val openIntent = Intent().apply {
+app/src/main/java/com/todoshift/app/widget/ToDoShiftWidget.kt:132:                ).apply {
+app/src/main/java/com/todoshift/app/widget/ToDoShiftWidget.kt:157:                ).apply {
+app/src/main/java/com/todoshift/app/widget/ToDoShiftWidget.kt:171:                ).apply {
+app/src/main/java/com/todoshift/app/widget/ToDoShiftWidget.kt:229:                ).apply {
+app/src/main/java/com/todoshift/app/widget/ToDoShiftWidget.kt:253:                neoSettings.skin(Neo4WidgetKind.CALENDAR).apply(views, R.id.widget_root, R.id.widget_title, R.id.widget_summary, R.id.widget_prev, R.id.widget_next)
+app/src/main/java/com/todoshift/app/widget/CalendarWidgetState.kt:46:            .apply()
+app/src/main/java/com/todoshift/app/widget/CalendarWidgetState.kt:59:            .apply()
 app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt:25:            check(prefs.edit().putString("data", next.toString()).commit()) {
-app/src/main/java/com/todoshift/app/v11/NeoSmartStore.kt:60:    fun saveTemplate(
-app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt:19:    onSave: (DayItemV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/V11DayOrganizerController.kt:48:    fun apply(
+app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt:26:    onSave: (DayItemV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt:168:                                        .saveNote(expected, expectedMetadata, note, color, border)
+app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt:171:                            onSave(note)
+app/src/main/java/com/todoshift/app/v11/ui/NeoDayNoteDialog.kt:173:                            error = failure.message ?: "Note save failed; draft retained"
+app/src/main/java/com/todoshift/app/v11/ui/V11AccountsSecurityUi.kt:631:                        Text(neoLiteral("تحقق وحفظ", "Verify and save"))
 app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt:23:    onSave: (PaymentV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt:117:                        onSave(
 app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt:140:    onSave: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:42:    onDatabaseChange: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt:265:                            onSave(
+app/src/main/java/com/todoshift/app/v11/ui/NeoFinanceForms.kt:303:                            onSave(
+app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt:45:                    save = { Neo4AppearanceCodec.encode(it).toString() },
+app/src/main/java/com/todoshift/app/v11/ui/NeoAppearanceStudio.kt:46:                    restore = { Neo4AppearanceCodec.decode(org.json.JSONObject(it)) },
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:41:    onDatabaseChange: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:45:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:330:                                // Reminder effects follow a confirmed database commit in V11Home.
 app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:332:                                onDatabaseChange(V11DayOrganizerController.delete(db, item.id))
-app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:360:                                    onDatabaseChange(updated)
-app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:491:                                    onDatabaseChange(updated)
-app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:519:                        onDatabaseChange(V11DayController.deleteSegment(db, segmentId))
-app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:549:            onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:587:                    onDatabaseChange(updated)
-app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:633:    onSave: (String, String, Long?) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:352:                                    onDatabaseChange(updated)
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:483:                                    commit(updated) { pendingEditSegmentId = null }
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:510:                        commit(V11DayController.deleteSegment(db, segmentId)) {
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:554:                onSave = { title, details, reminderAt ->
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:572:                    commit(updated) {
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:619:    onSave: (String, String, Long?) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11DayDetailsUi.kt:719:                        onSave(title, details, reminderAt)
 app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:36:    onDatabaseChange: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:491:                    onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:518:                    onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:557:                onDatabaseChange(it)
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:568:                onDatabaseChange(it)
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:578:            onDatabaseChange = onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:586:            onDatabaseChange = onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:603:                    onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:772:    onSave: (PaymentV11) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:910:    onSave: (ObligationV11) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1097:    onSave: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1232:    onDatabaseChange: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1261:                                        onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1297:                                        onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1318:                                        onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1376:                            onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1404:                onDatabaseChange(V11AccountsController.updateIncomeSource(db, it))
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1415:    onSave: (IncomeSourceV11) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1471:    onDatabaseChange: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1499:                                    onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1513:                                    onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1524:                                    onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1553:                            onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1587:                            onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1611:    onSave: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1744:    onSave: (Double, String?) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:270:    onSave: (Workplace) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:38:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:497:            onSave = { updated ->
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:505:                    commit(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:533:            onSave = { updated ->
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:541:                    commit(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:580:            onSave = { commit(it) { paymentOpen = false } },
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:588:            onSave = { commit(it) { obligationOpen = false } },
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:596:            onDatabaseChange = onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:604:            onDatabaseChange = onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:620:                onSave = { amount, methodId, recordId ->
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:621:                    commit(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:791:    onSave: (PaymentV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:799:            onSave,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:914:                        onSave(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:939:    onSave: (ObligationV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:945:            { candidate -> onSave(candidate.obligations.single { it.id == obligation.id }) },
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1056:                        onSave(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1130:    onSave: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1137:            onSave(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1257:                        onSave(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1282:    onDatabaseChange: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1284:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1314:                                            onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1354:                                            onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1376:                                            onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1439:                                commit(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1470:            onSave = {
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1475:                commit(V11AccountsController.updateIncomeSource(db, it)) { editingId = null }
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1485:    onSave: (IncomeSourceV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1527:                        onSave(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1544:    onDatabaseChange: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1546:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1575:                                        onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1590:                                        onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1606:                                        onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1640:                                commit(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1681:                                commit(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1706:    onSave: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1709:        NeoObligationForm(db, onDismiss, onSave)
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1798:                        onSave(
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1842:    onSave: (Double, String?, String) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11FinanceUi.kt:1924:                        onSave(parsed, methodId, recordId)
+app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt:86:        OutlinedButton(enabled = !busy, onClick = { importPicker.launch(arrayOf("application/zip", "application/json", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text(neoLabel("فحص نسخة للاستعادة", "Inspect backup for restore")) }
+app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt:114:        } }, { schedule = schedule.copy(frequency = it); cloud.save(schedule) })
+app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt:115:        NeoSwitch(neoLabel("Wi-Fi فقط عند تفعيل الخدمة مستقبلًا", "Wi-Fi only when cloud is implemented"), schedule.wifiOnly) { schedule = schedule.copy(wifiOnly = it); cloud.save(schedule) }
+app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt:130:                runCatching { withContext(Dispatchers.IO) { backup.restore(pending, pending.token) } }
+app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt:131:                    .onSuccess { value -> prepared = null; onRestored(value); failed = false; message = neoLiteral("تمت الاستعادة المحلية", "Local restore completed") + if (value.warnings.isEmpty()) "" else " • " + value.warnings.joinToString() }
+app/src/main/java/com/todoshift/app/v11/ui/Neo4AccountBackupUi.kt:134:            } }) { Text(neoLabel("تأكيد الاستعادة", "Confirm restore")) } },
+app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt:37:    val commit = rememberNeoCommit(onChange)
+app/src/main/java/com/todoshift/app/v11/ui/NeoModernHub.kt:969:                                commit(candidate) { confirmation = null }
+app/src/main/java/com/todoshift/app/v11/ui/NeoCommitRequest.kt:6:/** Completion means durable data commit, never merely enqueueing a UI coroutine. */
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:63:    val commit = rememberNeoWorkplaceCommit(onSaveWorkplaces)
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:213:            onSave = { value ->
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:220:                commit(workplaces + value) { adding = false }
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:232:            onSave = { value ->
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:237:                commit(workplaces.map { if (it.id == value.id) value else it }) { editingId = null }
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:262:                        commit(workplaces.filterNot { it.id == workplace.id }) { deleting = null }
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:280:    onSave: (Workplace) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11WorkplacesUi.kt:427:                    onSave(
+app/src/main/java/com/todoshift/app/v11/ui/SafeStorageRecovery.kt:59:                                        withContext(Dispatchers.IO) { backup.recoverFromBackup(p, p.token) }
+app/src/main/java/com/todoshift/app/v11/NeoCommittedEffects.kt:41:                prefs.edit().putBoolean("pending", true).putStringSet("cancelIds", ids).commit()
+app/src/main/java/com/todoshift/app/v11/NeoCommittedEffects.kt:78:            check(prefs.edit().clear().commit()) { "Refresh completed; acknowledgement pending" }
 app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:80:    onDatabaseChange: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:252:                                        onDatabaseChange(updated)
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:365:                    onDatabaseChange = onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:413:                    onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:494:            onDatabaseChange = onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:553:                                        onDatabaseChange(updated)
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:599:                                        onDatabaseChange(updated)
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:90:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:103:                    save = { it?.toString() },
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:104:                    restore = { LocalDate.parse(it) },
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:250:                                        commit(updated) {
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:364:                    onDatabaseChange = onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:412:                    onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:493:            onDatabaseChange = onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:549:                                        commit(updated) {
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:598:                                        commit(updated) {
 app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:671:            onDatabaseChange = onDatabaseChange,
 app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1519:    onDatabaseChange: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1526:            onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1581:                                onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1601:                                onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1689:                    onDatabaseChange(V11CalendarController.addCalendar(db, newName, selectedColor))
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:242:                withContext(Dispatchers.IO) { runtime.saveIfCurrent(db, repaired) }
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:317:    fun saveDb(value: V11Database, recordUndo: Boolean = true) {
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:327:                withContext(Dispatchers.IO) { runtime.saveIfCurrent(expected, value) }
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:381:    fun saveUi(value: V11UiSettings) {
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:737:                                                onDatabaseChange = { saveDb(it) },
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:751:                                        onDatabaseChange = { saveDb(it) },
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:777:                                            onDatabaseChange = { saveDb(it) },
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:831:                                        onDatabaseChange = { saveDb(it) },
-app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:858:                                        onDatabaseChange = { saveDb(it) },
-app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:20:    fun save(v: Neo4WidgetOptions) {
-app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt:60:    onDatabaseChange: (V11Database) -> Unit = {},
-app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt:369:            onDatabaseChange(db.copy(dayItems = db.dayItems.filterNot { it.id == note.id } + note))
-app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt:437:                                    onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt:27:    onSave: (TaskV11) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:33:    onDatabaseChange: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:47:            onDatabaseChange = onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:59:            onDatabaseChange,
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:123:                                onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:138:                                onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:185:                                onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:205:                                onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:227:                        onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:340:                onDatabaseChange(V11CalendarController.updateCalendar(db, updated))
-app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:352:    onSave: (AppCalendarV11) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:64:    fun restoreBackup(uri: Uri) {
-app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt:38:    fun save(key: String, value: Boolean) {
-app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:49:    onDatabaseChange: (V11Database) -> Unit,
-app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:258:                            onDatabaseChange(
-app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:295:                        onDatabaseChange(db.copy(tasks = db.tasks.filterNot { it.id == task.id }))
-app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:334:                onDatabaseChange(db.copy(tasks = updated))
-app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:594:    onSave: (TaskV11) -> Unit,
-app/src/main/java/com/todoshift/app/v11/NeoAppearanceStore.kt:88:    fun save(value: NeoAppearance) {
-app/src/main/java/com/todoshift/app/v11/NeoAppearanceStore.kt:117:        check(editor.commit()) { "Unable to save appearance" }
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1521:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1527:            onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1582:                                onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1602:                                onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt:1690:                    commit(V11CalendarController.addCalendar(db, newName, selectedColor)) {
 app/src/main/java/com/todoshift/app/v11/V11UiSettingsStore.kt:34:    fun save(settings: V11UiSettings) {
 app/src/main/java/com/todoshift/app/v11/V11UiSettingsStore.kt:47:        check(editor.commit()) { "Unable to save UI settings" }
-app/src/main/java/com/todoshift/app/v11/Neo4ImageStore.kt:26:    fun importPhoto(context: Context, uri: Uri): String {
+app/src/main/java/com/todoshift/app/v11/Neo4ImageStore.kt:19:        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+app/src/main/java/com/todoshift/app/v11/Neo4ImageStore.kt:28:        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+app/src/main/java/com/todoshift/app/v11/Neo4ImageStore.kt:34:        val bitmap = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample }) }
+app/src/main/java/com/todoshift/app/v11/Neo4ImageStore.kt:37:        val matrix = Matrix().apply { when (orientation) {
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:233:                activeCalendarStore.save(fallback)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:236:                writeFailure = failure.message ?: "Unable to save primary calendar"
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:253:                        .commitDatabase(db, repaired)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:347:                        .commitDatabase(expected, value)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:373:    fun saveWorkplaces(
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:404:                writeFailure = failure.message ?: "Workplace save not confirmed; draft retained"
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:425:            uiStore.save(value)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:428:            writeFailure = failure.message ?: "Settings save failed"
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:473:                neoStore.save(value)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:477:                writeFailure = failure.message ?: "Appearance save failed"
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:497:                        saveWorkplaces(places, completed)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:736:                                onSaveWorkplaces = { saveWorkplaces(it) },
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:759:                                                        activeCalendarStore.save(id)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:764:                                                                ?: "Unable to save primary calendar"
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:768:                                                onDatabaseChange = { saveDb(it) },
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:782:                                        onDatabaseChange = { saveDb(it) },
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:808:                                            onDatabaseChange = { saveDb(it) },
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:833:                                        onDatabaseRestored = { saveDb(it) },
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:856:                                        onDatabaseChange = { saveDb(it) },
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:874:                                                activeCalendarStore.save(id)
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:879:                                                        ?: "Unable to save primary calendar"
+app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt:883:                                        onDatabaseChange = { saveDb(it) },
+app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:20:    fun save(v: Neo4WidgetOptions) {
+app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:21:        try { store.save(kind, v); value = v; saveError = null }
+app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:34:        NeoChoice(neoLabel("ثيم مستقل", "Independent theme"), Neo4WidgetTheme.entries, value.theme, { neo4Label(it) }, { save(value.copy(theme = it)) })
+app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:36:        OutlinedTextField(accent, { accent = it.take(7); if (accent.isEmpty() || accent.matches(Regex("#[0-9a-fA-F]{6}"))) save(value.copy(accent = accent)) }, label = { Text("Accent #RRGGBB") }, modifier = Modifier.fillMaxWidth())
+app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:38:        NeoSwitch(neoLabel("تفاصيل إضافية", "Extra details"), value.showDetails) { save(value.copy(showDetails = it)) }
+app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:39:        NeoSwitch(neoLabel("إخفاء المحتوى", "Hide content"), value.hideContent) { save(value.copy(hideContent = it)) }
+app/src/main/java/com/todoshift/app/v11/ui/Neo4WidgetStudio.kt:41:            NeoSwitch(neoLabel("السماح بالمبالغ غير المحمية فقط", "Allow unprotected amounts only"), value.showAmounts) { save(value.copy(showAmounts = it)) }
 app/src/main/java/com/todoshift/app/v11/V11Runtime.kt:64:    fun save(db: V11Database) = synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+app/src/main/java/com/todoshift/app/v11/V11Runtime.kt:65:        storage.save(db)
+app/src/main/java/com/todoshift/app/v11/V11Runtime.kt:69:    /** Compare the complete expected snapshot under the same gate as restore. */
 app/src/main/java/com/todoshift/app/v11/V11Runtime.kt:70:    fun saveIfCurrent(expected: V11Database, next: V11Database) = synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
-app/src/main/java/com/todoshift/app/v11/V11Runtime.kt:80:    fun importJson(raw: String): V11Database =
+app/src/main/java/com/todoshift/app/v11/V11Runtime.kt:72:        storage.save(next)
+app/src/main/java/com/todoshift/app/v11/V11Runtime.kt:73:        // A widget failure must not turn a successful database commit into a false failure.
+app/src/main/java/com/todoshift/app/v11/ui/NeoCalendarManager.kt:26:    val commit = rememberNeoCommit(onChange)
+app/src/main/java/com/todoshift/app/v11/ui/NeoCalendarManager.kt:141:                                commit(
 app/src/main/java/com/todoshift/app/v11/ModernOperations.kt:7:/** All mutations return a candidate snapshot. UI must review it and use saveIfCurrent. */
+app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt:39:    val commit = rememberNeoCommit(onCommit)
+app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt:62:    fun apply(selected: Set<LocalDate>) {
+app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt:68:                commit(result.candidate) { onClear() }
+app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt:74:    LaunchedEffect(request) { if (request > 0 && !bulk) apply(setOf(clicked)) }
+app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt:199:                    TextButton(enabled = dates.isNotEmpty(), onClick = { apply(dates) }) {
+app/src/main/java/com/todoshift/app/v11/ui/NeoPainterBar.kt:248:                                    commit(preview.candidate) {
 app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt:136:    fun save(
+app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt:160:            .apply {
 app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt:164:        check(editor.commit()) { "Unable to save security settings" }
+app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt:205:            .apply()
+app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt:248:            .apply()
 app/src/main/java/com/todoshift/app/v11/V11SecurityStore.kt:302:            .commit()
+app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt:60:    onDatabaseChange: (V11Database) -> Unit = {},
+app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt:439:                                    onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt:27:    onSave: (TaskV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt:49:            onSave,
+app/src/main/java/com/todoshift/app/v11/ui/NeoQuickTask.kt:116:                    onSave(TaskV11(draftId, title.trim(), date = date))
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:33:    onDatabaseChange: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:38:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:48:            onDatabaseChange = onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:60:            onDatabaseChange,
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:124:                                onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:139:                                onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:186:                                onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:206:                                onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:228:                        onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:340:            onSave = { updated ->
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:341:                commit(V11CalendarController.updateCalendar(db, updated)) { editingCalendar = null }
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:351:    onSave: (AppCalendarV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11SchedulesUi.kt:422:                        onSave(calendar.copy(name = name.trim(), colorHex = colorHex))
 app/src/main/java/com/todoshift/app/v11/V11Storage.kt:35:        check(prefs.edit().putString(KEY_DATABASE, raw).putBoolean(KEY_MIGRATED, true).commit()) {
 app/src/main/java/com/todoshift/app/v11/V11Storage.kt:45:    fun save(db: V11Database) {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:48:            StorageRead.Missing -> error("Cannot save before explicit initialization or migration")
 app/src/main/java/com/todoshift/app/v11/V11Storage.kt:53:        check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { "Unable to persist database" }
-app/src/main/java/com/todoshift/app/v11/V11Storage.kt:68:    fun importJson(raw: String): V11Database {
-app/src/main/java/com/todoshift/app/v11/NeoAttachmentStore.kt:32:    fun import(owner: String, uri: Uri): Attachment =
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:127:        JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:131:            put("calendars", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:133:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:144:            put("days", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:146:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:152:                        put("segments", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:154:                                put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:189:            put("rates", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:191:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:201:            put("incomeSources", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:203:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:233:            put("paymentMethods", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:235:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:244:            put("payments", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:246:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:267:                        put("linkedShiftIds", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:271:                        put("allocations", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:273:                                put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:302:            put("settlements", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:304:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:331:            put("monthSnapshots", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:333:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:352:            put("auditLog", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:354:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:371:            put("dayItems", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:373:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:397:            put("tasks", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:399:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:445:            put("obligations", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:447:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:501:            put("obligationPayments", JSONArray().apply {
+app/src/main/java/com/todoshift/app/v11/V11Storage.kt:503:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/ui/V11SecuritySettingsUi.kt:434:                        store.save(finalSettings)
+app/src/main/java/com/todoshift/app/v11/ui/V11SecuritySettingsUi.kt:438:                        message = neoLiteral("تعذر حفظ الحماية؛ أغلق التطبيق وأعد فتحه للتحقق", "Security save could not be confirmed; close and reopen to verify")
+app/src/main/java/com/todoshift/app/v11/ui/V11SecuritySettingsUi.kt:702:                                neoLiteral("تعذر حفظ PIN", "Cannot save PIN")
+app/src/main/java/com/todoshift/app/v11/ui/V11SecuritySettingsUi.kt:845:                                            neoLiteral("تعذر حفظ النمط", "Cannot save pattern")
+app/src/main/java/com/todoshift/app/v11/ui/NeoRescueComponents.kt:159:                "Backup, restore and account",
+app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:24: * Classic compatibility entry; shares the bounded preview, safety archive and restore coordinator.
+app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:30:    onDatabaseRestored: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:151:        title = { Text(neoLiteral("النسخ والاستعادة", "Backup and restore")) },
+app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:195:            title = { Text(neoLiteral("مراجعة الاستعادة", "Review restore")) },
+app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:242:                                            coordinator.restore(preview, preview.token)
+app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:246:                                else onDatabaseRestored(restored.database)
+app/src/main/java/com/todoshift/app/v11/ui/V11BackupRestoreUi.kt:264:                    Text(neoLiteral("تأكيد الاستعادة", "Confirm restore"))
+app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt:38:    fun save(key: String, value: Boolean) {
+app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt:69:        save("notify_tasks", it)
+app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt:75:        save("notify_events", it)
+app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt:81:        save("notify_shifts", it)
+app/src/main/java/com/todoshift/app/v11/ui/NeoRuntimeControls.kt:87:        save("quietHours", it)
+app/src/main/java/com/todoshift/app/v11/ui/Neo4StudioUi.kt:426:            runCatching { store.save(name, draft) }
 app/src/main/java/com/todoshift/app/v11/Neo4Profiles.kt:15:    fun save(name: String, appearance: NeoAppearance) {
 app/src/main/java/com/todoshift/app/v11/Neo4Profiles.kt:20:        check(prefs.edit().putString("profiles", o.toString()).commit()) { "Unable to save layout profiles" }
 app/src/main/java/com/todoshift/app/v11/Neo4Profiles.kt:22:    fun delete(id: String) { val o = JSONObject(prefs.getString("profiles", "{}") ?: "{}"); o.remove(id); check(prefs.edit().putString("profiles", o.toString()).commit()) { "Unable to save layout profiles" } }
+app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt:47:    onDatabaseRestored: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt:78:            onDatabaseRestored,
+app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt:275:                    neoLiteral("النسخ الاحتياطي والاستعادة", "Backup and restore"),
+app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt:278:                        "Export and restore ToDo Shift data",
+app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt:540:                title = neoLiteral("النسخ الاحتياطي والاستعادة", "Backup and restore"),
+app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt:544:                    neoLiteral("فتح النسخ الاحتياطي والاستعادة", "Open backup and restore"),
+app/src/main/java/com/todoshift/app/v11/ui/V11MoreUi.kt:584:            onDatabaseRestored = onDatabaseRestored,
 app/src/main/java/com/todoshift/app/v11/V11ActiveCalendarStore.kt:20:    fun save(calendarId: String?) {
+app/src/main/java/com/todoshift/app/v11/V11ActiveCalendarStore.kt:21:        val editor = prefs.edit().apply {
 app/src/main/java/com/todoshift/app/v11/V11ActiveCalendarStore.kt:31:        check(editor.commit()) { "Unable to save primary calendar" }
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:414:    override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:420:    fun recoverFromBackup(
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:425:    private fun restoreChecked(
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:497:                targets.forEach { (name, data) -> writePreferences(prefs(name), data) }
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:504:                        writePreferences(prefs(name), previous.getJSONObject(name))
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:560:                        writePreferences(prefs(it), previous.getJSONObject(it))
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:572:    fun recoverIfNeeded() =
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:589:                writePreferences(prefs(name), previous.getJSONObject(name))
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:740:    private fun writePreferences(preferences: SharedPreferences, o: JSONObject) {
-app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:757:        check(editor.commit()) { "Unable to persist restored data" }
-app/src/main/java/com/todoshift/app/backup/BackupContracts.kt:14:interface RestoreCoordinator { fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState }
-app/src/main/java/com/todoshift/app/cloud/CloudReadinessStore.kt:9:    fun save(value: BackupSchedule) { prefs.edit().putString("frequency", value.frequency.name).putBoolean("wifiOnly", value.wifiOnly).apply() }
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:49:    onDatabaseChange: (V11Database) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:57:    val commit = rememberNeoCommit(onDatabaseChange)
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:259:                            onDatabaseChange(
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:295:                        commit(db.copy(tasks = db.tasks.filterNot { it.id == task.id })) {
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:320:            onSave = { task ->
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:336:                commit(db.copy(tasks = updated)) {
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:597:    onSave: (TaskV11) -> Unit,
+app/src/main/java/com/todoshift/app/v11/ui/V11TasksUi.kt:1091:                    onSave(
+app/src/main/java/com/todoshift/app/v11/NeoTaskCommit.kt:5:/** Idempotent external-task commit; a stable draft ID also resolves an ambiguous write result. */
+app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt:11:    fun encode(p: NeoAppearance): JSONObject = JSONObject().apply {
+app/src/main/java/com/todoshift/app/v11/Neo4AppearanceCodec.kt:80:        put("shiftPaints", org.json.JSONObject().apply { p.shiftPaints.forEach { (kind, paint) -> put(kind.name, org.json.JSONObject().put("mode", paint.mode.name).put("first", paint.first).put("second", paint.second).put("direction", paint.direction.name).put("strength", paint.strength.name)) } })
+app/src/main/java/com/todoshift/app/v11/NeoAppearanceStore.kt:88:    fun save(value: NeoAppearance) {
+app/src/main/java/com/todoshift/app/v11/NeoAppearanceStore.kt:90:            prefs.edit().apply {
+app/src/main/java/com/todoshift/app/v11/NeoAppearanceStore.kt:117:        check(editor.commit()) { "Unable to save appearance" }
+app/src/main/java/com/todoshift/app/MainActivity.kt:175:        storage.save(newData)
+app/src/main/java/com/todoshift/app/MainActivity.kt:249:            onSave = { entry ->
 app/src/main/java/com/todoshift/app/MainActivity.kt:636:    onSave: (ShiftEntry) -> Unit
+app/src/main/java/com/todoshift/app/MainActivity.kt:864:                    onSave(
+app/src/main/java/com/todoshift/app/MainActivity.kt:1463:            onSave = { amount, note ->
 app/src/main/java/com/todoshift/app/MainActivity.kt:1513:    onSave: (Double, String) -> Unit
+app/src/main/java/com/todoshift/app/MainActivity.kt:1565:                    onSave(
+app/src/main/java/com/todoshift/app/MainActivity.kt:2296:                        store.save(
+app/src/main/java/com/todoshift/app/MainActivity.kt:2330:                        store.save(
+app/src/main/java/com/todoshift/app/MainActivity.kt:2758:            onSave = { place ->
+app/src/main/java/com/todoshift/app/MainActivity.kt:2776:            onSave = { changed ->
 app/src/main/java/com/todoshift/app/MainActivity.kt:3912:    onSave: (Workplace) -> Unit
-app/src/main/java/com/todoshift/app/data/DayEngine.kt:16:    fun saveDetails(
+app/src/main/java/com/todoshift/app/MainActivity.kt:4069:                    onSave(
+app/src/main/java/com/todoshift/app/MainActivity.kt:4442:                                ShiftPainterEngine.apply(
+app/src/main/java/com/todoshift/app/MainActivity.kt:5301:                        DayEngine.saveNote(
+app/src/main/java/com/todoshift/app/MainActivity.kt:5573:                                        .saveNote(
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:41:    private val journal = AtomicFile(File(app.filesDir, "neo4-restore-journal.json"))
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:114:                        JSONArray().apply {
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:250:                    android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:415:    override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:421:    fun recoverFromBackup(
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:532:                // Success becomes durable only after every preference commit has completed.
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:534:                check(!journal.baseFile.exists()) { "Unable to finalize restore journal" }
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:594:                legacy.save(updatedLegacy)
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:595:                storage.save(updated)
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:613:    /** Journaled single-store save: failure cannot be mistaken for a durable cache-only update. */
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:614:    internal fun commitDatabase(
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:637:                storage.save(next)
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:640:                check(!journal.baseFile.exists()) { "Unable to finalize database commit" }
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:652:    /** Text and decorative metadata share the existing rollback journal and restore gate. */
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:653:    internal fun saveNote(
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:689:                storage.save(next)
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:723:            require(o.getInt("format") == 1) { "Unsupported restore recovery journal" }
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:762:        JSONObject().apply {
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:767:        JSONObject().apply {
+app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt:924:        check(editor.commit()) { "Unable to persist restored data" }
+app/src/main/java/com/todoshift/app/backup/BackupContracts.kt:14:interface RestoreCoordinator { fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState }
+app/src/main/java/com/todoshift/app/system/ShiftNotificationEngine.kt:33:                ).apply {
+app/src/main/java/com/todoshift/app/system/OnboardingStore.kt:27:            .apply()
+app/src/main/java/com/todoshift/app/system/OnboardingStore.kt:36:            .apply()
+app/src/main/java/com/todoshift/app/cloud/CloudReadinessStore.kt:9:    fun save(value: BackupSchedule) { prefs.edit().putString("frequency", value.frequency.name).putBoolean("wifiOnly", value.wifiOnly).apply() }
+app/src/main/java/com/todoshift/app/cloud/CloudReadinessStore.kt:11:    fun localSuccess(bytes: Long) { history.edit().putLong("lastLocalSuccess", System.currentTimeMillis()).putLong("lastLocalBytes", bytes).apply() }
+app/src/main/java/com/todoshift/app/cloud/CloudContracts.kt:28:/** True multi-device sync requires record revisions, tombstones and conflict resolution; it is not snapshot restore. */
 app/src/main/java/com/todoshift/app/data/DayEngine.kt:101:    fun saveNote(
-app/src/main/java/com/todoshift/app/data/DayEngine.kt:114:    fun saveExtraAmount(
+app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt:45:                .apply {
+app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt:81:            Intent(context, ToDoShiftReminderReceiver::class.java).apply {
+app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt:130:            Intent(context, ToDoShiftReminderReceiver::class.java).apply {
+app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt:161:            Intent(context, ToDoShiftReminderReceiver::class.java).apply {
+app/src/main/java/com/todoshift/app/reminders/ToDoShiftReminder.kt:253:            Intent(context, MainActivity::class.java).apply {
 app/src/main/java/com/todoshift/app/data/AppSettings.kt:48:    fun save(
+app/src/main/java/com/todoshift/app/data/AppSettings.kt:68:            .apply()
 app/src/main/java/com/todoshift/app/data/HistoryController.kt:13:        engine.commit(
-app/src/main/java/com/todoshift/app/data/BackupEngine.kt:199:    fun saveInternalBackup(
+app/src/main/java/com/todoshift/app/data/ShiftPainterEngine.kt:14:    fun apply(
 app/src/main/java/com/todoshift/app/data/AppStorage.kt:31:        check(prefs.edit().putString(KEY_DATABASE, toJson(fresh).toString()).commit()) {
 app/src/main/java/com/todoshift/app/data/AppStorage.kt:37:    fun save(data: AppData) {
 app/src/main/java/com/todoshift/app/data/AppStorage.kt:45:        check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { "Unable to persist legacy database" }
-app/src/main/java/com/todoshift/app/data/AppStorage.kt:53:    fun importJson(raw: String): AppData {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:92:        return JSONObject().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:95:            put("workplaces", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:97:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:110:            put("shifts", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:112:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:116:                        put("workplaceIds", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:137:            put("payments", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:139:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:148:            put("dayDetails", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:150:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:155:                        put("tasks", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:157:                                put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:170:            put("templates", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:172:                    put(JSONObject().apply {
+app/src/main/java/com/todoshift/app/data/AppStorage.kt:177:                        put("workplaceIds", JSONArray().apply {
+app/src/main/java/com/todoshift/app/data/MonthLockEngine.kt:32:            .apply()
+app/src/main/java/com/todoshift/app/data/MigrationEngine.kt:72:            .apply()
+app/src/main/java/com/todoshift/app/data/HistoryEngine.kt:13:    fun commit(

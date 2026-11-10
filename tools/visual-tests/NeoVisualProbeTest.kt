@@ -1,6 +1,7 @@
 package com.todoshift.app.v11.ui
 
 import android.graphics.Bitmap
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.todoshift.app.MainActivity
@@ -289,10 +290,58 @@ class NeoVisualProbeTest {
         compose.onNodeWithText("Tasks").performClick()
         compose.onNodeWithContentDescription("Add task").performClick()
         shot("07-task-dialog", settle = false)
+        // Separate production-component diagnostics; these do not claim root/IO fault reproduction.
+        val app = RuntimeEnvironment.getApplication()
+        val fixture = V11Runtime(app).start()
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            compose.activity.setContent {
+                NeoEnvironment(
+                    NeoAppearance(language = NeoLanguage.ENGLISH, reduceMotion = true),
+                    true,
+                    {},
+                ) {
+                    V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
+                        V11BackupRestoreDialog(app, fixture, {}, {}, financeAuthorized = true)
+                    }
+                }
+            }
+        }
+        shot("component-p01-classic-backup", settle = false)
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            compose.activity.setContent {
+                NeoEnvironment(
+                    NeoAppearance(language = NeoLanguage.ENGLISH, reduceMotion = true),
+                    true,
+                    {},
+                ) {
+                    V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            LocalNeoEditorWriteState provides
+                                NeoEditorWriteState(
+                                    error = "Synthetic write rejection; draft retained"
+                                )
+                        ) {
+                            TaskEditorDialogV11(
+                                TaskV11(
+                                    "retry-model",
+                                    "Retained synthetic draft",
+                                    date = LocalDate.now().toString(),
+                                ),
+                                fixture,
+                                emptyList(),
+                                {},
+                                {},
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        shot("component-p01-task-editor-error-model", settle = false)
         compose.activityRule.scenario.close()
         File(requireNotNull(System.getProperty("neo.capture.dir")), "EVIDENCE-LIMITS.txt")
             .writeText(
-                "Actual MainActivity, synthetic isolated fixtures, Robolectric native window drawing. Not an emulator or physical-device capture. No product acceptance or Honor/keyboard/doze/upgrade behavior is established. Modal captures are omitted when the window cannot be located. Colors and initial English/Arabic layouts were inspected separately; full manual matrix remains pending."
+                "Main workflow captures use actual MainActivity. component-p01-* replace Activity content with production components and a synthetic rejection model; they are not root/IO incident reproductions. Synthetic isolated fixtures, Robolectric native window drawing. Not an emulator or physical-device capture. No product acceptance or Honor/keyboard/doze/upgrade behavior is established. Modal captures are omitted when the window cannot be located. Colors and initial English/Arabic layouts were inspected separately; full manual matrix remains pending."
             )
     }
 }

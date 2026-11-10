@@ -1,0 +1,202 @@
+{
+  "source_sha": "4c78f0bddfa134d593ce891e991456ccce0fd4e5",
+  "cases": [
+    {
+      "id": "Q01",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "MoneyInputTest, FinancialRequestIdentityTest, ClassicReceiptSafetyTest, PremiumP01UiTest, ModernUiIntegrationTest",
+      "outstanding": "All editor/routes/reopen cents, keyboard and full Activity fault matrix",
+      "accepted": false
+    },
+    {
+      "id": "Q02",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "PremiumP01UiTest, NeoTaskCommitTest, NewReferenceSafetyTest, WorkplaceSaveAcceptanceTest, CommittedEffectsTest",
+      "outstanding": "Every callsite busy/CAS/I/O, Activity restoration/cursor/conflict matrix",
+      "accepted": false
+    },
+    {
+      "id": "Q03",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "NoteTransactionTest",
+      "outstanding": "Actual process/full-disk/power loss and Activity restoration",
+      "accepted": false
+    },
+    {
+      "id": "Q04",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "BackupRecoveryTest, AttachmentBackupTest",
+      "outstanding": "Real provider error/cancel/process interruption on Android/Honor",
+      "accepted": false
+    },
+    {
+      "id": "Q05",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "ClassicBackupAuthorizationTest, ModernUiIntegrationTest, ModernSafetyTest",
+      "outstanding": "Full search/export/background/widget/privacy/repair matrix",
+      "accepted": false
+    },
+    {
+      "id": "Q06",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q07",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q08",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q09",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q10",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q11",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q12",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q13",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q14",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q15",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "NeoWidgetIntegrationTest, NeoTaskCommitTest, PremiumP01UiTest",
+      "outstanding": "Actual launcher/window/permission/Honor behavior",
+      "accepted": false
+    },
+    {
+      "id": "Q16",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q17",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q18",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "AttachmentBackupTest, PhotoImportTest",
+      "outstanding": "Real providers/open/permissions/cancel/storage lifecycle",
+      "accepted": false
+    },
+    {
+      "id": "Q19",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q20",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q21",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q22",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "CommittedEffectsTest, ReminderPublicVersionTest",
+      "outstanding": "Independent model preparation, not P05 acceptance; actual delivery/lock screen/Doze/reboot",
+      "accepted": false
+    },
+    {
+      "id": "Q23",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q24",
+      "status": "NOT RUN",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Prior P01 gate HOLD; do not infer acceptance from baseline tests or sampled screenshots",
+      "accepted": false
+    },
+    {
+      "id": "Q25",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": "168 regular tests, lint/build/source/2 native probes/APK verification",
+      "outstanding": "Local partial evidence only; no new CI run; no whole-product acceptance",
+      "accepted": false
+    },
+    {
+      "id": "Q26",
+      "status": "BLOCKED — ENVIRONMENT",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Required physical Android/Honor, installed certificate/accepted candidate where applicable, performance/accessibility/device matrix unavailable",
+      "accepted": false
+    },
+    {
+      "id": "Q27",
+      "status": "BLOCKED — ENVIRONMENT",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Required physical Android/Honor, installed certificate/accepted candidate where applicable, performance/accessibility/device matrix unavailable",
+      "accepted": false
+    },
+    {
+      "id": "Q28",
+      "status": "BLOCKED — ENVIRONMENT",
+      "evidence": "No phase acceptance execution",
+      "outstanding": "Required physical Android/Honor, installed certificate/accepted candidate where applicable, performance/accessibility/device matrix unavailable",
+      "accepted": false
+    }
+  ],
+  "note": "All28 QA IDs retained. Targeted checks can pass while the row acceptance remains pending; unavailable-device cases do not hide unperformed software checks."
+}

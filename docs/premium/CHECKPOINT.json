@@ -1,0 +1,12 @@
+{
+  "baseline": "e178b134658afad04d645b044f24d236594cbe33",
+  "resume_sha": "faf1c93dc7dc9eef9c9aab3ffe374e6bcc03c784",
+  "source_sha": "4c78f0bddfa134d593ce891e991456ccce0fd4e5",
+  "app_tree": "9f2edbcb390ccaf2db74de831e128574229db754",
+  "branch": "work/todo-shift-premium-rescue",
+  "gate": "HOLD",
+  "accepted_exit_sha": null,
+  "stable_source_ref": "e178b134658afad04d645b044f24d236594cbe33",
+  "push_merge_release_install_clear": "NOT PERFORMED",
+  "artifact_root": "/workspace/output/premium-p01-resume"
+}

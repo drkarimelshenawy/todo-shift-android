@@ -10,7 +10,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "01.02",
@@ -21,7 +23,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "01.03",
@@ -32,7 +36,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "02.01",
@@ -43,7 +49,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q07 · Q11",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "02.02",
@@ -54,7 +62,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q07 · Q11",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "02.03",
@@ -65,7 +75,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q07 · Q11",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "03.01",
@@ -76,7 +88,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "03.02",
@@ -87,7 +101,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "03.03",
@@ -98,7 +114,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "04.01",
@@ -109,7 +127,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "04.02",
@@ -120,7 +140,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "04.03",
@@ -131,7 +153,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "05.01",
@@ -142,7 +166,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "05.02",
@@ -153,7 +179,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "05.03",
@@ -164,7 +192,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "05.04",
@@ -175,7 +205,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.01",
@@ -186,7 +218,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.02",
@@ -197,7 +231,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.03",
@@ -208,7 +244,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.04",
@@ -219,7 +257,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.05",
@@ -230,7 +270,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.06",
@@ -241,7 +283,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.07",
@@ -252,7 +296,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.08",
@@ -263,7 +309,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.09",
@@ -274,7 +322,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.10",
@@ -285,7 +335,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.11",
@@ -296,7 +348,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "06.12",
@@ -307,7 +361,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09 · Q10 · Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.01",
@@ -318,7 +374,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.02",
@@ -329,7 +387,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.03",
@@ -340,7 +400,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.04",
@@ -351,7 +413,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.05",
@@ -362,7 +426,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.06",
@@ -373,7 +439,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.07",
@@ -384,7 +452,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.08",
@@ -395,7 +465,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.09",
@@ -406,7 +478,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.10",
@@ -417,7 +491,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.11",
@@ -428,7 +504,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.12",
@@ -439,7 +517,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.13",
@@ -450,7 +530,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19 · Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "07.14",
@@ -461,7 +543,9 @@
       "phase": "[P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "08.01",
@@ -472,7 +556,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14 · Q15",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "08.02",
@@ -482,8 +568,13 @@
       "acceptance": "أدخل عنوانًا وتاريخًا واحفظ مرة واحدة",
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14 · Q15",
-      "status": "NOT RUN",
-      "evidence": []
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": [
+        "PremiumP01UiTest.failedQuickTaskKeepsRawDraftAndAllowsRetryWithoutChangingId"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "08.03",
@@ -494,7 +585,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14 · Q15",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "08.04",
@@ -504,8 +597,13 @@
       "acceptance": "تحقق من IDs للمكان والتقويم والوردية وعلاج الرابط الغائب",
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14 · Q15",
-      "status": "NOT RUN",
-      "evidence": []
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": [
+        "NewReferenceSafetyTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "08.05",
@@ -516,7 +614,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14 · Q15",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "08.06",
@@ -527,7 +627,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14 · Q15",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "08.07",
@@ -537,10 +639,13 @@
       "acceptance": "من Launcher/Widget افتح QuickTaskActivity دون الشاشة الكاملة",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q15",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "NeoWidgetIntegrationTest.widgetPlusLaunchesDialogActivityWithoutChangingStoredRecords"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "08.08",
@@ -550,10 +655,15 @@
       "acceptance": "إغلاق وتحديث الويدجت بعد ثبات المهمة فقط",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q15",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "NeoTaskCommitTest",
+        "NeoWidgetIntegrationTest.widgetCompletionUsesTheConfirmedStoreAndPreservesUnrelatedTasks",
+        "CommittedEffectsTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "08.09",
@@ -563,10 +673,12 @@
       "acceptance": "نفذ Q15 على Android وHonor فعلي",
       "phase": "[P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q15 · Q26",
-      "status": "NOT RUN",
+      "status": "BLOCKED — ENVIRONMENT",
       "evidence": [],
       "device_status": "BLOCKED",
-      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md."
+      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md.",
+      "accepted": false,
+      "outstanding": "No connected Android/Honor, matching installed signing certificate or accepted higher-version upgrade candidate."
     },
     {
       "id": "09.01",
@@ -577,7 +689,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q16",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "09.02",
@@ -588,7 +702,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q16",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "09.03",
@@ -599,7 +715,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q16",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "09.04",
@@ -610,7 +728,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q16",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "09.05",
@@ -621,7 +741,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q16",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "09.06",
@@ -632,7 +754,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q16",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.01",
@@ -643,7 +767,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.02",
@@ -654,7 +780,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.03",
@@ -665,7 +793,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.04",
@@ -676,7 +806,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.05",
@@ -687,7 +819,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.06",
@@ -698,7 +832,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.07",
@@ -709,7 +845,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.08",
@@ -719,10 +857,15 @@
       "acceptance": "نفذ جميع أشكال الأرقام المحددة على كل نموذج",
       "phase": "[P01](CODEX_PROMPTS/P01.md)",
       "qa": "Q01",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "MoneyInputTest",
+        "FinancialRequestIdentityTest",
+        "ClassicReceiptSafetyTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "10.09",
@@ -732,10 +875,15 @@
       "acceptance": "اختبر 9,000 و٩٬٠٠٠ و٩٠٠٠٫٥٠ وتنسيقًا ملتبسًا",
       "phase": "[P01](CODEX_PROMPTS/P01.md)",
       "qa": "Q01",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "MoneyInputTest",
+        "PremiumP01UiTest.groupedSourceEditReopensAsNineThousandAndInvalidStaysInEditor",
+        "FinancialRequestIdentityTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "10.10",
@@ -745,10 +893,14 @@
       "acceptance": "لوحة رقمية وخطأ موضعي يرفض الحفظ",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q01 · Q28",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "ClassicReceiptSafetyTest",
+        "ModernUiIntegrationTest.localizedPaymentInputPersistsTheExactNormalizedAmount"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "10.11",
@@ -759,7 +911,9 @@
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q01 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "10.12",
@@ -769,10 +923,15 @@
       "acceptance": "نقرتان أو إعادة طلب بعد انقطاع لا تكرران المعرف",
       "phase": "[P01](CODEX_PROMPTS/P01.md)",
       "qa": "Q02",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "FinancialRequestIdentityTest",
+        "NeoTaskCommitTest",
+        "PremiumP01UiTest.paymentRequestAndAllocationIdsSurviveUnknownAcknowledgementAndRecreation"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "10.13",
@@ -782,10 +941,15 @@
       "acceptance": "قارن الكسور وحدود التقريب بعد إعادة الفتح بالسنت",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q01 · Q17",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "MoneyInputTest",
+        "FinancialRequestIdentityTest",
+        "ModernOperationsTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "11.01",
@@ -796,7 +960,9 @@
       "phase": "[P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q25 · Q26 · Q27 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "11.02",
@@ -807,7 +973,9 @@
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P03](CODEX_PROMPTS/P03.md) · [P04](CODEX_PROMPTS/P04.md) · [P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q01 · Q11 · Q12 · Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "11.03",
@@ -818,7 +986,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md) · [P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q22",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "11.04",
@@ -828,8 +998,14 @@
       "acceptance": "ترقية واستعادة قديمة وحديثة مع أخطاء وانقطاع",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q04 · Q26",
-      "status": "NOT RUN",
-      "evidence": []
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": [
+        "SafePersistenceTest",
+        "BackupRecoveryTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "11.05",
@@ -840,7 +1016,9 @@
       "phase": "[P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q25 · Q26 · Q27 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "11.06",
@@ -853,7 +1031,9 @@
       "status": "NOT RUN",
       "evidence": [],
       "device_status": "BLOCKED",
-      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md."
+      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md.",
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.01",
@@ -864,7 +1044,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.02",
@@ -875,7 +1057,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.03",
@@ -886,7 +1070,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q13 · Q16",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.04",
@@ -897,7 +1083,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.05",
@@ -908,7 +1096,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q22",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.06",
@@ -919,7 +1109,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q15 · Q23",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.07",
@@ -929,8 +1121,14 @@
       "acceptance": "تحقق من محتوى الأرشيف وإمكانية فتحه قبل الاستعادة",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q04 · Q26",
-      "status": "NOT RUN",
-      "evidence": []
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": [
+        "BackupRecoveryTest",
+        "ClassicBackupAuthorizationTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "12.08",
@@ -941,7 +1139,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md)",
       "qa": "Q08 · Q05",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.09",
@@ -952,7 +1152,9 @@
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q05",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "12.10",
@@ -963,7 +1165,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md)",
       "qa": "Q06",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.01",
@@ -974,7 +1178,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.02",
@@ -985,7 +1191,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.03",
@@ -996,7 +1204,9 @@
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14 · Q02",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.04",
@@ -1007,7 +1217,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q14",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.05",
@@ -1018,7 +1230,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q21 · Q24",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.06",
@@ -1029,7 +1243,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q21 · Q24",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.07",
@@ -1040,7 +1256,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q21 · Q24",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "13.08",
@@ -1051,7 +1269,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q22 · Q24",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.01",
@@ -1062,7 +1282,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.02",
@@ -1073,7 +1295,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.03",
@@ -1084,7 +1308,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.04",
@@ -1095,7 +1321,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.05",
@@ -1106,7 +1334,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.06",
@@ -1117,7 +1347,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.07",
@@ -1128,7 +1360,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.08",
@@ -1139,7 +1373,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.09",
@@ -1150,7 +1386,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q08 · Q11",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "14.10",
@@ -1161,7 +1399,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q11 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.01",
@@ -1172,7 +1412,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.02",
@@ -1183,7 +1425,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.03",
@@ -1194,7 +1438,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.04",
@@ -1205,7 +1451,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.05",
@@ -1216,7 +1464,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.06",
@@ -1227,7 +1477,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.07",
@@ -1238,7 +1490,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.08",
@@ -1249,7 +1503,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.09",
@@ -1260,7 +1516,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.10",
@@ -1271,7 +1529,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "15.11",
@@ -1282,7 +1542,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q11 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.01",
@@ -1293,7 +1555,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q10 · Q12",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.02",
@@ -1304,7 +1568,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.03",
@@ -1315,7 +1581,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q16 · Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.04",
@@ -1326,7 +1594,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q13",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.05",
@@ -1337,7 +1607,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.06",
@@ -1348,7 +1620,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.07",
@@ -1359,7 +1633,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.08",
@@ -1370,7 +1646,9 @@
       "phase": "[P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q17",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.09",
@@ -1380,8 +1658,14 @@
       "acceptance": "استورد وحرر وافتح وأزل مرفق مهمة/ملاحظة وفق سياسة النوع",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q18",
-      "status": "NOT RUN",
-      "evidence": []
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": [
+        "AttachmentBackupTest",
+        "PhotoImportTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "16.10",
@@ -1391,8 +1675,14 @@
       "acceptance": "استعد ZIP وقارن hashes والروابط",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q04 · Q18",
-      "status": "NOT RUN",
-      "evidence": []
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": [
+        "AttachmentBackupTest",
+        "BackupRecoveryTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "16.11",
@@ -1403,7 +1693,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P04](CODEX_PROMPTS/P04.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q08 · Q15 · Q23",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.12",
@@ -1414,7 +1706,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q24",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.13",
@@ -1424,10 +1718,14 @@
       "acceptance": "مدخلات معدلة تبقى بعد إعادة الإنشاء والفشل، مع حارس مغادرة",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P02](CODEX_PROMPTS/P02.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q02 · Q06 · Q21",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "PremiumP01UiTest",
+        "WorkplaceSaveAcceptanceTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "16.14",
@@ -1438,7 +1736,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q24",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "16.15",
@@ -1449,7 +1749,9 @@
       "phase": "[P06](CODEX_PROMPTS/P06.md)",
       "qa": "Q25",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.01",
@@ -1460,7 +1762,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.02",
@@ -1471,7 +1775,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q20",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.03",
@@ -1482,7 +1788,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.04",
@@ -1493,7 +1801,9 @@
       "phase": "[P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q09",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.05",
@@ -1504,7 +1814,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q06 · Q19",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.06",
@@ -1515,7 +1827,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md)",
       "qa": "Q06",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.07",
@@ -1526,7 +1840,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q07 · Q21",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.08",
@@ -1537,7 +1853,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P04](CODEX_PROMPTS/P04.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q20 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.09",
@@ -1548,7 +1866,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q21",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "UX.10",
@@ -1558,10 +1878,15 @@
       "acceptance": "حارس ومحتوى قابل للاسترداد عند الخطأ وإعادة الإنشاء",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P02](CODEX_PROMPTS/P02.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q02 · Q06 · Q21",
-      "status": "NOT RUN",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
       "evidence": [
-        "2604aa8: MoneyInputTest, NeoTaskCommitTest, PremiumP01UiTest (partial only; see P01_HANDOFF.md)"
-      ]
+        "PremiumP01UiTest",
+        "WorkplaceSaveAcceptanceTest",
+        "ClassicReceiptSafetyTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "UX.11",
@@ -1571,8 +1896,13 @@
       "acceptance": "نظف فقط المرفقات المعروفة غير المرتبطة بعد تأكيد وفحص محدث",
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P04](CODEX_PROMPTS/P04.md)",
       "qa": "Q18",
-      "status": "NOT RUN",
-      "evidence": []
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "evidence": [
+        "AttachmentBackupTest"
+      ],
+      "accepted": false,
+      "verified_scope": "Targeted synthetic unit/integration/Compose regressions; see QA.md and TEST-INVENTORY.json for actual cases. Does not establish complete requirement acceptance.",
+      "outstanding": "Full specified QA journey/configurations and real Android/Honor evidence where required. See REMAINING.md; no device acceptance."
     },
     {
       "id": "UX.12",
@@ -1585,7 +1915,9 @@
       "status": "NOT RUN",
       "evidence": [],
       "device_status": "BLOCKED",
-      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md."
+      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md.",
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "PM.01",
@@ -1596,7 +1928,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md)",
       "qa": "Q07",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "PM.02",
@@ -1607,7 +1941,9 @@
       "phase": "[P02](CODEX_PROMPTS/P02.md) · [P03](CODEX_PROMPTS/P03.md)",
       "qa": "Q06 · Q08 · Q10",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "PM.03",
@@ -1618,7 +1954,9 @@
       "phase": "[P01](CODEX_PROMPTS/P01.md) · [P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q02 · Q20 · Q21",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "PM.04",
@@ -1629,7 +1967,9 @@
       "phase": "[P05](CODEX_PROMPTS/P05.md)",
       "qa": "Q21 · Q28",
       "status": "NOT RUN",
-      "evidence": []
+      "evidence": [],
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     },
     {
       "id": "PM.05",
@@ -1642,8 +1982,12 @@
       "status": "NOT RUN",
       "evidence": [],
       "device_status": "BLOCKED",
-      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md."
+      "blocker": "No usable Android/Honor/device certificate. See P01_HANDOFF.md.",
+      "accepted": false,
+      "outstanding": "Dependent Premium phase not entered; baseline feature may exist but is not accepted by this checkpoint."
     }
   ],
-  "gate_passed": false
+  "gate_passed": false,
+  "source_checkpoint_sha": "4c78f0bddfa134d593ce891e991456ccce0fd4e5",
+  "legend": "147 protected rows retained; partial tests never mean full acceptance. NOT RUN rows are not removed features."
 }

@@ -1,0 +1,229 @@
+{
+  "source_checkpoint_sha": "4c78f0bddfa134d593ce891e991456ccce0fd4e5",
+  "defects": [
+    {
+      "id": "D01",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "work": "money parsing/create-edit fixtures",
+      "evidence": [
+        "QA.md",
+        "ADDITIONAL_DEFECTS.md"
+      ],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D02",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D03",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D04",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D05",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D06",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D07",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "work": "checked Home/editor completion",
+      "evidence": [
+        "QA.md",
+        "ADDITIONAL_DEFECTS.md"
+      ],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D08",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D09",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D10",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D11",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D12",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D13",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D14",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D15",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D16",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "work": "external-task retry contract",
+      "evidence": [
+        "QA.md",
+        "ADDITIONAL_DEFECTS.md"
+      ],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D17",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "work": "journaled note text/style",
+      "evidence": [
+        "QA.md",
+        "ADDITIONAL_DEFECTS.md"
+      ],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D18",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "work": "journaled effects/replay",
+      "evidence": [
+        "QA.md",
+        "ADDITIONAL_DEFECTS.md"
+      ],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D19",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D20",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D21",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D22",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D23",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "work": "blank/invalid obligation amounts",
+      "evidence": [
+        "QA.md",
+        "ADDITIONAL_DEFECTS.md"
+      ],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D24",
+      "status": "PARTIAL — ACCEPTANCE PENDING",
+      "work": "journal-before-assets and rollback",
+      "evidence": [
+        "QA.md",
+        "ADDITIONAL_DEFECTS.md"
+      ],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D25",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D26",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D27",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D28",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    },
+    {
+      "id": "D29",
+      "status": "NOT RUN — DEPENDENT PHASE",
+      "work": "No claim that the reported UX/device defect was repaired in this P01 checkpoint",
+      "evidence": [],
+      "original_device_reproduced": false
+    }
+  ]
+}

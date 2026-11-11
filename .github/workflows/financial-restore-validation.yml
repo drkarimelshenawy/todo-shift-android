@@ -31,6 +31,7 @@ jobs:
           path: |
             app/build/test-results/testDebugUnitTest/*.xml
             app/build/reports/lint-results-debug.*
+            app/build/reports/widget-preview/*.png
   signed-test-apk:
     needs: verify
     if: github.event_name == 'push' && github.ref == 'refs/heads/fix/premium-financial-restore'
@@ -75,14 +76,15 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch fix/premium-financial-restore \
             --output delivery/identity
-          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-4.3.2-premium-test-vc34.apk
+          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-4.3.3-premium-test-vc35.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: Premium-Repair-PERSISTENT-SIGNED-vc34
+          name: Premium-Repair-PERSISTENT-SIGNED-vc35
           path: delivery/
           if-no-files-found: error
           retention-days: 30
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"
+

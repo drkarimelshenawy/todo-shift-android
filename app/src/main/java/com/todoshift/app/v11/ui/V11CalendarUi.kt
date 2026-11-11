@@ -106,6 +106,7 @@ fun V11CalendarScreen(
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by rememberSaveable { mutableStateOf(false) }
     var modernPaintRequest by remember { mutableIntStateOf(0) }
+    var paintPreview by remember { mutableStateOf<V11Database?>(null) }
     var bulkPaint by rememberSaveable { mutableStateOf(false) }
     var paintDates by
         rememberSaveable(
@@ -372,7 +373,7 @@ fun V11CalendarScreen(
                     )
                 NeoCalendarArea(
                     month = month,
-                    db = db,
+                    db = paintPreview ?: db,
                     workplaces = workplaces,
                     visibleCalendarIds = visibleCalendarIds,
                     selectedDate = selectedDate,
@@ -450,7 +451,9 @@ fun V11CalendarScreen(
                         paintDates = emptySet()
                         modernPaintRequest = 0
                         bulkPaint = false
+                        paintPreview = null
                     },
+                    onPreview = { paintPreview = it },
                 )
             } else if (paintMode) {
                 V11PaintStatusBar(
@@ -1738,3 +1741,4 @@ private fun V11CalendarManagerSheet(
         }
     }
 }
+

@@ -256,6 +256,23 @@ class ToDoShiftWidget :
                 views.setTextViewText(R.id.widget_title, month.atDay(1).format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", if (neoSettings.english()) java.util.Locale.ENGLISH else java.util.Locale.forLanguageTag("ar"))))
             }
 
+            val appearance = com.todoshift.app.v11.NeoAppearanceStore(context).load()
+            val skin = neoSettings.skin(Neo4WidgetKind.CALENDAR)
+            views.setInt(R.id.widget_root,"setBackgroundColor",Color.TRANSPARENT)
+            views.setImageViewBitmap(R.id.widget_panel,Neo4WidgetPainter.panel(skin.background,skin.accent))
+            val rtl = neoSettings.calendarRtl(appearance)
+            val direction = if(rtl) android.view.View.LAYOUT_DIRECTION_RTL else android.view.View.LAYOUT_DIRECTION_LTR
+            views.setInt(R.id.widget_grid,"setLayoutDirection",direction)
+            views.setInt(R.id.widget_weekdays,"setLayoutDirection",direction)
+            val weekdayIds=listOf(R.id.widget_weekday_0,R.id.widget_weekday_1,R.id.widget_weekday_2,R.id.widget_weekday_3,R.id.widget_weekday_4,R.id.widget_weekday_5,R.id.widget_weekday_6)
+            val locale=if(neoSettings.english()) java.util.Locale.ENGLISH else java.util.Locale.forLanguageTag("ar")
+            val ar=listOf("اثن","ثلا","أرب","خمي","جمع","سبت","أحد")
+            weekdayIds.forEachIndexed { index,id ->
+                val day=(appearance.firstWeekday-1+index)%7+1
+                views.setTextViewText(id,if(neoSettings.english()) java.time.DayOfWeek.of(day).getDisplayName(java.time.format.TextStyle.SHORT,locale) else ar[day-1])
+                views.setTextColor(id,skin.text)
+            }
+            views.setViewVisibility(R.id.widget_weekdays,if(neoSettings.load(Neo4WidgetKind.CALENDAR).hideContent) android.view.View.GONE else android.view.View.VISIBLE)
             manager.updateAppWidget(
                 widgetId,
                 views
@@ -422,6 +439,10 @@ class ToDoShiftWidget :
                 it
             )
         }
+    }
+
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: android.os.Bundle) {
+        updateWidget(context,manager,appWidgetId)
     }
 
     override fun onReceive(

@@ -55,7 +55,7 @@ class Neo4WidgetSettings(private val context: Context) {
                     o.optString("accent", "")
                         .takeIf { it.isEmpty() || it.matches(Regex("#[0-9a-fA-F]{6}")) }
                         .orEmpty(),
-                    o.optBoolean("showDetails", false),
+                    o.optBoolean("showDetails", kind == Neo4WidgetKind.CALENDAR),
                     o.optBoolean("hideContent", false),
                     o.optBoolean("showAmounts", false),
                 )
@@ -141,6 +141,16 @@ class Neo4WidgetSettings(private val context: Context) {
 
     fun modern(kind: Neo4WidgetKind) =
         explicit(kind) || V11UiSettingsStore(context).load().experience == V11Experience.PREMIUM
+
+    fun calendarRtl(appearance: NeoAppearance): Boolean = when(appearance.gridDirection) {
+        NeoDirection.RTL -> true
+        NeoDirection.LTR -> false
+        else -> when(appearance.uiDirection) {
+            NeoDirection.RTL -> true
+            NeoDirection.LTR -> false
+            else -> !english()
+        }
+    }
 
     fun english(): Boolean =
         when (NeoAppearanceStore(context).load().language) {

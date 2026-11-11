@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,6 +40,7 @@ fun NeoPainterBar(
     onClear: () -> Unit,
     onCommit: (V11Database) -> Unit,
     onExit: () -> Unit,
+    onPreview: (V11Database?) -> Unit = {},
 ) {
     val commit = rememberNeoCommit(onCommit)
     val context = LocalContext.current
@@ -64,11 +66,45 @@ fun NeoPainterBar(
     var review by remember { mutableStateOf<NeoPaintReview?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val write = LocalNeoEditorWriteState.current
+    var queue by rememberSaveable(
+        stateSaver = androidx.compose.runtime.saveable.listSaver<List<NeoPaintEdit>, String>(
+            save = { it.map(NeoPaintEdit::encode) }, restore = { it.map(NeoPaintEdit::decode) },
+        )
+    ) { mutableStateOf(emptyList<NeoPaintEdit>()) }
+    var inFlight by remember { mutableStateOf(false) }
+    var queuePaused by remember { mutableStateOf(false) }
+    var finishWhenSaved by remember { mutableStateOf(false) }
+    val rawCommit = LocalNeoCommitRequest.current
+    val draft = runCatching { queue.fold(db) { current, edit -> edit.apply(current) } }
+    LaunchedEffect(db, queue) { onPreview(draft.getOrNull().takeIf { queue.isNotEmpty() }) }
+    DisposableEffect(Unit) { onDispose { onPreview(null) } }
+    LaunchedEffect(queue, db, write.pending, write.error, queuePaused) {
+        if (queue.isEmpty() || inFlight || write.pending || write.error != null || queuePaused) return@LaunchedEffect
+        val head = queue.first()
+        try {
+            val next = head.apply(db)
+            inFlight = true
+            val done: (Boolean) -> Unit = { saved ->
+                inFlight = false
+                if (saved) { queue = queue.drop(1); onClear() }
+                else { queuePaused = true; error = "لم يتأكد الحفظ؛ الرسم محفوظ كمسودة / Save not confirmed; painting draft retained" }
+            }
+            if (rawCommit != null) rawCommit(next, done)
+            else { onCommit(next); done(true) }
+        } catch (failure: Exception) {
+            inFlight = false
+            queuePaused = true
+            error = failure.message
+        }
+    }
+    LaunchedEffect(queue, finishWhenSaved, inFlight) {
+        if (finishWhenSaved && queue.isEmpty() && !inFlight) { onPreview(null); onExit() }
+    }
     var confirmExit by remember { mutableStateOf(false) }
     var exitDestination by remember { mutableStateOf<(() -> Unit)?>(null) }
     var toolsOpen by remember { mutableStateOf(false) }
     fun requestExit(next: () -> Unit) {
-        if (committing || write.pending) return
+        if (committing || write.pending || queue.isNotEmpty()) { finishWhenSaved = true; return }
         if (dates.isNotEmpty()) {
             exitDestination = next
             confirmExit = true
@@ -81,7 +117,7 @@ fun NeoPainterBar(
     neoRegisterLeaveGuard { requestExit(it) }
     BackHandler {
         when {
-            committing || write.pending -> Unit
+            committing || write.pending || queue.isNotEmpty() -> { finishWhenSaved = true }
             review != null -> review = null
             typesOpen -> typesOpen = false
             else -> requestExit {}
@@ -146,7 +182,15 @@ fun NeoPainterBar(
             error = e.message
         }
     }
-    LaunchedEffect(request) { if (request > 0 && !bulk) apply(setOf(clicked)) }
+    LaunchedEffect(request) {
+        if (request > 0 && !bulk && calendar != null) {
+            try {
+                val base = queue.fold(db) { current, edit -> edit.apply(current) }
+                queue = queue + NeoPaintEdit.tap(base, clicked, calendar, kind, workplace, erase)
+                finishWhenSaved = false
+            } catch (failure: Exception) { error = failure.message }
+        }
+    }
     Surface(tonalElevation = 3.dp) {
         Column(Modifier.fillMaxWidth()) {
             if (typesOpen)
@@ -240,14 +284,7 @@ fun NeoPainterBar(
                             label = { Text(place.name, maxLines = 1) },
                         )
                     }
-                    if (workplaces.isEmpty())
-                        TextButton(onClick = { navigator.open("WORKPLACES") }) {
-                            Text(
-                                neoLabel("أضف مكان عمل من الإعدادات", "Add a workplace in Settings")
-                            )
-                        }
-                }
-                FilledIconToggleButton(
+                    FilledIconToggleButton(
                     checked = erase,
                     onCheckedChange = {
                         erase = it
@@ -255,6 +292,13 @@ fun NeoPainterBar(
                     },
                 ) {
                     Icon(Icons.AutoMirrored.Rounded.Backspace, neoLabel("ممحاة", "Eraser"))
+                }
+                    if (workplaces.isEmpty())
+                        TextButton(onClick = { navigator.open("WORKPLACES") }) {
+                            Text(
+                                neoLabel("أضف مكان عمل من الإعدادات", "Add a workplace in Settings")
+                            )
+                        }
                 }
                 Box {
                     IconButton(onClick = { toolsOpen = true }) {
@@ -264,7 +308,7 @@ fun NeoPainterBar(
                         val undo = LocalNeoUndo.current
                         DropdownMenuItem(
                             text = { Text(neoLabel("تراجع", "Undo")) },
-                            enabled = undo.enabled,
+                            enabled = undo.enabled && queue.isEmpty() && !write.pending,
                             onClick = {
                                 toolsOpen = false
                                 undo.perform()
@@ -272,6 +316,7 @@ fun NeoPainterBar(
                         )
                         DropdownMenuItem(
                             text = { Text(neoLabel("أيام متعددة", "Multiple dates")) },
+                            enabled = queue.isEmpty() && !write.pending,
                             onClick = {
                                 toolsOpen = false
                                 onBulk(!bulk)
@@ -280,7 +325,9 @@ fun NeoPainterBar(
                         )
                     }
                 }
-                TextButton(onClick = { requestExit {} }) { Text("✓ " + neoLabel("تم", "Done")) }
+                IconButton(onClick = { requestExit {} }) {
+                    Icon(Icons.Rounded.Check, neoLabel("تم", "Done"))
+                }
             }
             if (bulk)
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -297,6 +344,12 @@ fun NeoPainterBar(
                     }
                 }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (queuePaused) Row {
+                TextButton(onClick = { error = null; queuePaused = false }) { Text(neoLabel("إعادة المحاولة", "Retry")) }
+                TextButton(enabled = !inFlight, onClick = { queue = emptyList(); queuePaused = false; error = null; finishWhenSaved = false }) {
+                    Text(neoLabel("تجاهل الرسم غير المحفوظ", "Discard unsaved painting"))
+                }
+            }
         }
     }
     review?.let { preview ->

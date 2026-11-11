@@ -23,6 +23,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -411,12 +413,15 @@ fun NeoCalendarArea(
                             repeat(rows) { row ->
                                 Row(
                                     Modifier.fillMaxWidth().height(rowHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
                                 ) {
                                     repeat(columns) { col ->
                                         val cellDate =
                                             start.plusDays((row * columns + col).toLong())
                                         val key = cellDate.toString()
+                                        val monthEdges = NeoMonthGrid.edges(cellDate, shownMonth, p.firstWeekday)
+                                        val monthInk = MaterialTheme.colorScheme.primary
+                                        val gridRtl = gridDirection == androidx.compose.ui.unit.LayoutDirection.Rtl
                                         val day =
                                             presentation[key]
                                                 ?: NeoDayPresentation(emptyList(), 0, 0)
@@ -440,7 +445,18 @@ fun NeoCalendarArea(
                                                 YearMonth.from(cellDate) != shownMonth,
                                                 Modifier.weight(1f)
                                                     .fillMaxHeight()
-                                                    .padding(vertical = 1.5.dp),
+                                                    .drawWithContent {
+                                                        drawContent()
+                                                        if (shownView == NeoCalendarView.MONTH) {
+                                                            val stroke = 1.5.dp.toPx()
+                                                            val inset = stroke / 2
+                                                            fun edge(x1: Float,y1: Float,x2: Float,y2: Float) = drawLine(monthInk, androidx.compose.ui.geometry.Offset(x1,y1), androidx.compose.ui.geometry.Offset(x2,y2), stroke)
+                                                            if (monthEdges.top) edge(0f,inset,size.width,inset)
+                                                            if (monthEdges.bottom) edge(0f,size.height-inset,size.width,size.height-inset)
+                                                            if (if(gridRtl) monthEdges.end else monthEdges.start) edge(inset,0f,inset,size.height)
+                                                            if (if(gridRtl) monthEdges.start else monthEdges.end) edge(size.width-inset,0f,size.width-inset,size.height)
+                                                        }
+                                                    },
                                                 metrics = cellMetrics,
                                                 onLongClick = {
                                                     if (!paintMode) {
@@ -610,6 +626,11 @@ internal fun NeoCalendarCell(
     val today = date == LocalDate.now() && p.todayStyle != NeoTodayStyle.NONE
     val segments = remember(entries) { entries.flatMap { it.segments } }
     val names = segments.map { neoShiftLabel(it.kind) }.distinct().joinToString(" / ")
+    val fillColor = segments.firstOrNull()?.let { segment ->
+        val custom = p.shiftPaints[segment.kind]?.takeIf { p.showShiftPaint && it.mode != NeoPaintMode.INHERIT }?.first
+        neoHexColor(custom ?: workplaces.firstOrNull { it.id == segment.workplaceId }?.colorHex ?: "#8BBACB")
+    }
+    val dateInk = fillColor?.let { if(it.luminance() > .179f) Color.Black else Color.White } ?: c.onSurface
     val description =
         date.toString() +
             neoLabel(
@@ -622,14 +643,15 @@ internal fun NeoCalendarCell(
             notes.joinToString { it.title }
     Surface(
         modifier
-            .clip(RoundedCornerShape((p.cornerRadius / 2).dp))
+            .alpha(if (muted) .20f else 1f)
+            .clip(RoundedCornerShape(1.dp))
             .semantics {
                 contentDescription = description
                 selected = chosen
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         color = (if (muted) c.surfaceContainerLowest else c.surface).copy(alpha = p.cardOpacity),
-        shape = RoundedCornerShape((p.cornerRadius / 2).dp),
+        shape = RoundedCornerShape(1.dp),
         border =
             BorderStroke(
                 if (today || chosen || painting) 2.dp else 0.5.dp,
@@ -645,7 +667,7 @@ internal fun NeoCalendarCell(
             Neo4ShiftFill(
                 segments,
                 workplaces,
-                Modifier.fillMaxSize().then(if (muted) Modifier.alpha(0.35f) else Modifier),
+                Modifier.fillMaxSize(),
                 appearance = if (p.showShiftPaint) p else p.copy(shiftPaints = emptyMap()),
             )
             NeoTodayDecoration(today, date == LocalDate.now().plusDays(1), p)
@@ -654,12 +676,11 @@ internal fun NeoCalendarCell(
                 modifier =
                     Modifier.align(Alignment.TopStart)
                         .padding(2.dp)
-                        .background(c.surface.copy(alpha = 0.90f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 2.dp, vertical = 1.dp),
                 style = MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp),
                 fontWeight = FontWeight.Bold,
                 color =
-                    (if (today) c.primary else c.onSurface).copy(alpha = if (muted) 0.6f else 1f),
+                    dateInk,
             )
             val marker =
                 if (p.showNoteIcons)

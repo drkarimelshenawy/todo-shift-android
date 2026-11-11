@@ -67,6 +67,7 @@ fun V11Home(
     val activeCalendarStore = remember { V11ActiveCalendarStore(context.applicationContext) }
 
     val writeScope = rememberCoroutineScope()
+    var effectsRefreshJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var writeBusy by remember { mutableStateOf(false) }
     var reloadBusy by remember { mutableStateOf(false) }
     val reloadSlot = remember { NeoReloadSlot() }
@@ -108,7 +109,7 @@ fun V11Home(
                 (context as? android.app.Activity)?.recreate()
             },
         )
-    if (writeBusy || writeFailure != null)
+    if (writeFailure != null)
         androidx.compose.ui.window.Dialog(
             onDismissRequest = {},
             properties =
@@ -124,13 +125,6 @@ fun V11Home(
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (writeFailure == null) {
-                        CircularProgressIndicator()
-                        Text(
-                            if (reloadBusy) "جارٍ التحقق من التخزين / Checking storage"
-                            else "جارٍ الحفظ… / Saving…"
-                        )
-                    } else {
                         Text(
                             "حالة الحفظ / Save status",
                             style = MaterialTheme.typography.titleMedium,
@@ -152,10 +146,17 @@ fun V11Home(
                         TextButton(onClick = { writeFailure = null }) {
                             Text("العودة للمحرر / Return to editor")
                         }
-                    }
                 }
             }
         }
+    var showWriteProgress by remember { mutableStateOf(false) }
+    LaunchedEffect(writeBusy) {
+        showWriteProgress = false
+        if (writeBusy) {
+            kotlinx.coroutines.delay(400)
+            showWriteProgress = true
+        }
+    }
     val loaded = boot
     if (loaded == null) {
         Surface(Modifier.fillMaxSize()) {
@@ -408,13 +409,7 @@ fun V11Home(
                     if (undoHistory.size > 20) undoHistory.removeAt(0)
                 } else if (undoHistory.isNotEmpty()) undoHistory.removeAt(undoHistory.lastIndex)
                 db = value
-                withContext(Dispatchers.IO) {
-                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
-                        .onFailure {
-                            writeFailure =
-                                "Data saved; reminder/widget refresh is pending and will retry on reopening."
-                        }
-                }
+
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
@@ -422,6 +417,16 @@ fun V11Home(
             } finally {
                 writeBusy = false
                 completed(committed)
+                if (committed) {
+                    effectsRefreshJob?.cancel()
+                    effectsRefreshJob = writeScope.launch {
+                        // Coalesce rapid strokes. The durable journal also schedules OS retries.
+                        kotlinx.coroutines.delay(350)
+                        withContext(Dispatchers.IO) {
+                            runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                        }
+                    }
+                }
             }
         }
     }
@@ -750,6 +755,8 @@ fun V11Home(
                         }
                     },
                     bottomBar = {
+                        Column {
+                            if (showWriteProgress) LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp))
                         if (uiSettings.experience == V11Experience.PREMIUM) {
                             V11PremiumBottomBar(
                                 selectedTab = navigation.tab,
@@ -774,6 +781,7 @@ fun V11Home(
                                     }
                                 },
                             )
+                        }
                         }
                     },
                 ) { padding ->
@@ -1378,3 +1386,4 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         }
     }
 }
+

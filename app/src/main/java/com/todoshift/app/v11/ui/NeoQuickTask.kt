@@ -6,6 +6,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
@@ -24,6 +26,7 @@ fun TaskEditorDialogV11(
     db: V11Database,
     workplaces: List<Workplace>,
     onDismiss: () -> Unit,
+    externalQuick: Boolean = false,
     onSave: (TaskV11) -> Unit,
 ) {
     var title by rememberSaveable(existing?.id) { mutableStateOf(existing?.title.orEmpty()) }
@@ -39,6 +42,10 @@ fun TaskEditorDialogV11(
     LaunchedEffect(write.error) { if (write.error != null) submitted = false }
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val titleFocus = remember { FocusRequester() }
+    LaunchedEffect(externalQuick) {
+        if (externalQuick) { kotlinx.coroutines.delay(150); titleFocus.requestFocus(); keyboard?.show() }
+    }
     val validDate = runCatching { LocalDate.parse(date) }.getOrNull()
     if (advanced) {
         FullTaskEditorDialogV11(
@@ -63,9 +70,9 @@ fun TaskEditorDialogV11(
                     { title = it.take(300) },
                     label = { Text(neoLabel("العنوان", "Title")) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().focusRequester(titleFocus),
                 )
-                OutlinedButton(
+                if (!externalQuick) OutlinedButton(
                     onClick = {
                         val d = validDate ?: LocalDate.now()
                         DatePickerDialog(
@@ -81,7 +88,7 @@ fun TaskEditorDialogV11(
                 ) {
                     Text(date)
                 }
-                TextButton(onClick = { advanced = true }) {
+                if (!externalQuick) TextButton(onClick = { advanced = true }) {
                     Text(
                         neoLabel(
                             "المزيد: ملاحظات ووقت وتذكير وروابط",

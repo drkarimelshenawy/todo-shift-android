@@ -68,6 +68,40 @@ object Neo4WidgetPainter {
         return bitmap
     }
 
+    fun calendarCell(segments: List<ShiftSegmentV11>, colors: Map<String,Int>, appearance: NeoAppearance,
+        date: java.time.LocalDate, month: java.time.YearMonth, rtl: Boolean, accent: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(128,128,Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val muted = java.time.YearMonth.from(date) != month
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { alpha = if(muted) 35 else 255 }
+        canvas.drawBitmap(render(segments,colors,appearance),null,Rect(0,0,128,128),paint)
+        paint.alpha = 255; paint.shader = null; paint.style = Paint.Style.STROKE
+        paint.color = (accent and 0x00ffffff) or (35 shl 24); paint.strokeWidth=1f
+        canvas.drawRect(.5f,.5f,127.5f,127.5f,paint)
+        val e = NeoMonthGrid.edges(date,month,appearance.firstWeekday)
+        paint.color=accent; paint.strokeWidth=3f
+        if(e.top) canvas.drawLine(0f,1.5f,128f,1.5f,paint)
+        if(e.bottom) canvas.drawLine(0f,126.5f,128f,126.5f,paint)
+        if(if(rtl)e.end else e.start) canvas.drawLine(1.5f,0f,1.5f,128f,paint)
+        if(if(rtl)e.start else e.end) canvas.drawLine(126.5f,0f,126.5f,128f,paint)
+        if(date==java.time.LocalDate.now()) {
+            paint.color=accent; paint.strokeWidth=3f
+            canvas.drawRoundRect(5f,5f,123f,123f,8f,8f,paint)
+        }
+        return bitmap
+    }
+
+    fun panel(background: Int, outline: Int): Bitmap {
+        val bitmap=Bitmap.createBitmap(256,256,Bitmap.Config.ARGB_8888)
+        val canvas=Canvas(bitmap)
+        val paint=Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color=if(background==Color.TRANSPARENT) Color.TRANSPARENT else (background and 0x00ffffff) or (185 shl 24)
+        canvas.drawRoundRect(2f,2f,254f,254f,14f,14f,paint)
+        paint.color=(outline and 0x00ffffff) or (130 shl 24);paint.style=Paint.Style.STROKE;paint.strokeWidth=2f
+        canvas.drawRoundRect(2f,2f,254f,254f,14f,14f,paint)
+        return bitmap
+    }
+
     private fun color(hex: String) = runCatching { Color.parseColor(hex) }.getOrDefault(Color.GRAY)
 
     private fun blend(a: Int, b: Int, f: Float): Int =

@@ -289,7 +289,7 @@ class Neo4LocalBackup(context: Context) :
                         it.eveningRate,
                     )
                 }
-        validateMoneyRange(legacyAmounts)
+        FinancialDataValidation.validateMoneyRange(legacyAmounts)
         uiPreferences.forEach { name ->
             all["prefs/$name.json"]?.let { validateUiPreferences(name, json(it)) }
         }
@@ -389,60 +389,8 @@ class Neo4LocalBackup(context: Context) :
             }
         }
         database.tasks.forEach { LocalDate.parse(it.date) }
-        val amounts =
-            database.rates.map { it.amount } +
-                database.payments.map { it.amount } +
-                database.settlements.map { it.amount } +
-                database.obligationPayments.map { it.amount } +
-                database.obligations.flatMap {
-                    listOfNotNull(it.totalAmount, it.installmentAmount)
-                } +
-                database.days.flatMap { it.segments }.mapNotNull { it.exceptionalAmount } +
-                database.payments.flatMap { it.allocations }.map { it.amount } +
-                database.incomeSources.mapNotNull { it.fixedMonthlyAmount } +
-                database.monthSnapshots.flatMap {
-                    listOf(
-                        it.expectedAmount,
-                        it.receivedAmount,
-                        it.settlementAmount,
-                        it.finalDifference,
-                    )
-                }
-        validateMoneyRange(amounts)
-        database.payments.forEach { payment ->
-            require(payment.amount >= 0.0) { "Negative payment: ${payment.id}" }
-            val ids = mutableSetOf<String>()
-            var allocated = 0L
-            payment.allocations.forEach { allocation ->
-                require(allocation.id.isNotBlank() && ids.add(allocation.id)) {
-                    "Invalid or duplicate allocation ID: ${payment.id}"
-                }
-                java.time.YearMonth.parse(allocation.accrualMonth)
-                require(allocation.amount >= 0.0) { "Negative allocation: ${payment.id}" }
-                allocated = Math.addExact(allocated, LocalizedNumbers.cents(allocation.amount))
-            }
-            require(payment.allocations.isEmpty() || allocated == LocalizedNumbers.cents(payment.amount)) {
-                "Allocation total differs from payment: ${payment.id}"
-            }
-        }
+        FinancialDataValidation.validate(database)
         return database
-    }
-
-    /** Apply the input field's magnitude limit before any exact Long conversion.
-     * Signed historical adjustments and snapshot differences remain supported.
-     * A conservative absolute-total budget also protects later subset sums.
-     */
-    private fun validateMoneyRange(amounts: List<Double>) {
-        var total = java.math.BigInteger.ZERO
-        amounts.forEach { amount ->
-            require(amount.isFinite() && kotlin.math.abs(amount) <= 9_000_000_000_000.0) {
-                "Financial amount is outside the supported range"
-            }
-            total = total.add(java.math.BigInteger.valueOf(LocalizedNumbers.cents(amount)).abs())
-            require(total <= java.math.BigInteger.valueOf(Long.MAX_VALUE)) {
-                "Financial totals exceed the supported range"
-            }
-        }
     }
 
     override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
@@ -611,6 +559,7 @@ class Neo4LocalBackup(context: Context) :
                 workplaces.filter { place -> expectedLegacy.workplaces.none { it.id == place.id } }
             val updated =
                 NeoWorkplaceSources.ensure(NeoRatePolicy.reconcile(expected, workplaces), newPlaces)
+            FinancialDataValidation.validate(updated)
             val previous =
                 JSONObject()
                     .put("todo_shift_data", capture(prefs("todo_shift_data")))
@@ -655,6 +604,7 @@ class Neo4LocalBackup(context: Context) :
             NeoNewReferenceGuard.validate(expected, next) {
                 legacy.load().workplaces.map { it.id }.toSet()
             }
+            FinancialDataValidation.validate(next)
             val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
             previous.put(
                 NeoCommittedEffects.STORE_NAME,

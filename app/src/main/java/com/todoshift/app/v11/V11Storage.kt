@@ -48,6 +48,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
             StorageRead.Missing -> error("Cannot save before explicit initialization or migration")
             is StorageRead.Loaded -> Unit
         }
+        FinancialDataValidation.validate(db)
         val raw = toJson(db).toString()
         fromJson(JSONObject(raw))
         check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { "Unable to persist database" }

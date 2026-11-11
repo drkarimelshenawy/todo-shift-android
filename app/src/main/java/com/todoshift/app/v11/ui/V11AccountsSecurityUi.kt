@@ -29,6 +29,7 @@ fun V11AccountsUnlockScreen(
     securityStore: V11SecurityStore,
     onUnlocked: () -> Unit
 ) {
+    val verifier = rememberNeoSecurityVerifier()
     val context =
         LocalContext.current
 
@@ -243,25 +244,23 @@ fun V11AccountsUnlockScreen(
 
                         Button(
                             onClick = {
-                                if (
-                                    securityStore
-                                        .verifyPin(
-                                            pin
-                                        )
-                                ) {
+                                val submittedSecret = pin
+                                verifier.submit({ securityStore.verifyPin(submittedSecret) }) { verified ->
+                                if (verified) {
                                     pin = ""
                                     error = null
                                     onUnlocked()
                                 } else {
                                     error =
-                                        neoLiteral("الرقم السري غير صحيح", "Incorrect PIN")
+                                        neoSecurityFailure(securityStore, neoLiteral("الرقم السري غير صحيح", "Incorrect PIN"))
+                                }
                                 }
                             },
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                         ) {
-                            Text(neoLiteral("فتح", "Open"))
+                            Text(if (verifier.busy) neoLiteral("جارٍ التحقق…", "Verifying…") else neoLiteral("فتح", "Open"))
                         }
                     }
 
@@ -287,17 +286,15 @@ fun V11AccountsUnlockScreen(
                                             260.dp
                                     ),
                             onPatternComplete = {
-                                if (
-                                    securityStore
-                                        .verifyPattern(
-                                            it
-                                        )
-                                ) {
+                                val submittedSecret = it.toList()
+                                verifier.submit({ securityStore.verifyPattern(submittedSecret) }) { verified ->
+                                if (verified) {
                                     error = null
                                     onUnlocked()
                                 } else {
                                     error =
-                                        neoLiteral("النمط غير صحيح", "Incorrect pattern")
+                                        neoSecurityFailure(securityStore, neoLiteral("النمط غير صحيح", "Incorrect pattern"))
+                                }
                                 }
                             }
                         )
@@ -534,6 +531,7 @@ fun V11FinancialVerificationDialog(
     onDismiss: () -> Unit,
     onVerified: () -> Unit
 ) {
+    val verifier = rememberNeoSecurityVerifier()
     var pin by remember {
         mutableStateOf("")
     }
@@ -614,21 +612,22 @@ fun V11FinancialVerificationDialog(
 
                     Button(
                         onClick = {
-                            if (
-                                store.verifyPin(pin)
-                            ) {
+                            val submittedSecret = pin
+                                verifier.submit({ store.verifyPin(submittedSecret) }) { verified ->
+                                if (verified) {
                                 onVerified()
                             } else {
                                 errorText =
-                                    neoLiteral("PIN غير صحيح", "Incorrect PIN")
+                                    neoSecurityFailure(store, neoLiteral("PIN غير صحيح", "Incorrect PIN"))
                             }
+                                }
                         },
                         enabled =
                             pin.isNotBlank(),
                         modifier =
                             Modifier.fillMaxWidth()
                     ) {
-                        Text(neoLiteral("تحقق وحفظ", "Verify and save"))
+                        Text(if (verifier.busy) neoLiteral("جارٍ التحقق…", "Verifying…") else neoLiteral("تحقق وحفظ", "Verify and save"))
                     }
                 }
 
@@ -653,16 +652,15 @@ fun V11FinancialVerificationDialog(
                                         max = 240.dp
                                     ),
                             onPatternComplete = {
-                                if (
-                                    store.verifyPattern(
-                                        it
-                                    )
-                                ) {
+                                val submittedSecret = it.toList()
+                                verifier.submit({ store.verifyPattern(submittedSecret) }) { verified ->
+                                if (verified) {
                                     onVerified()
                                 } else {
                                     errorText =
-                                        neoLiteral("النمط غير صحيح", "Incorrect pattern")
+                                        neoSecurityFailure(store, neoLiteral("النمط غير صحيح", "Incorrect pattern"))
                                     patternGeneration++
+                                }
                                 }
                             }
                         )

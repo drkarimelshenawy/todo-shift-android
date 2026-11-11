@@ -681,7 +681,7 @@ private fun PinSetupDialogV3(
                                 currentPin
                             ) -> {
                             message =
-                                neoLiteral("PIN الحالي غير صحيح", "Incorrect current PIN")
+                                neoSecurityFailure(store, neoLiteral("PIN الحالي غير صحيح", "Incorrect current PIN"))
                         }
 
                         newPin.length !in 4..12 ||
@@ -810,7 +810,7 @@ private fun PatternSetupDialogV3(
                                         inputGeneration++
                                     } else {
                                         message =
-                                            neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern")
+                                            neoSecurityFailure(store, neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern"))
                                         inputGeneration++
                                     }
                                 }
@@ -879,6 +879,7 @@ private fun VerifyPinDialogV3(
     onDismiss: () -> Unit,
     onVerified: () -> Unit
 ) {
+    val verifier = rememberNeoSecurityVerifier()
     var pin by remember {
         mutableStateOf("")
     }
@@ -906,7 +907,7 @@ private fun VerifyPinDialogV3(
                 if (error) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        neoLiteral("PIN الحالي غير صحيح", "Incorrect current PIN"),
+                        neoSecurityFailure(store, neoLiteral("PIN الحالي غير صحيح", "Incorrect current PIN")),
                         color =
                             MaterialTheme.colorScheme.error
                     )
@@ -916,14 +917,17 @@ private fun VerifyPinDialogV3(
         confirmButton = {
             Button(
                 onClick = {
-                    if (store.verifyPin(pin)) {
+                    val submittedSecret = pin
+                                verifier.submit({ store.verifyPin(submittedSecret) }) { verified ->
+                                if (verified) {
                         onVerified()
                     } else {
                         error = true
                     }
+                                }
                 }
             ) {
-                Text(neoLiteral("تحقق", "Verify"))
+                Text(if (verifier.busy) neoLiteral("جارٍ التحقق…", "Verifying…") else neoLiteral("تحقق", "Verify"))
             }
         },
         dismissButton = {
@@ -940,6 +944,7 @@ private fun VerifyPatternDialogV3(
     onDismiss: () -> Unit,
     onVerified: () -> Unit
 ) {
+    val verifier = rememberNeoSecurityVerifier()
     var generation by remember {
         mutableIntStateOf(0)
     }
@@ -968,21 +973,22 @@ private fun VerifyPatternDialogV3(
                                     max = 240.dp
                                 ),
                         onPatternComplete = {
-                            if (
-                                store.verifyPattern(it)
-                            ) {
+                            val submittedSecret = it.toList()
+                                verifier.submit({ store.verifyPattern(submittedSecret) }) { verified ->
+                                if (verified) {
                                 onVerified()
                             } else {
                                 error = true
                                 generation++
                             }
+                                }
                         }
                     )
                 }
 
                 if (error) {
                     Text(
-                        neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern"),
+                        neoSecurityFailure(store, neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern")),
                         color =
                             MaterialTheme.colorScheme.error
                     )

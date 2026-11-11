@@ -22,11 +22,17 @@ val LocalNeoEditorWriteState = staticCompositionLocalOf { NeoEditorWriteState() 
 
 @Composable
 fun TaskEditorDialogV11(
+    existing: TaskV11?, db: V11Database, workplaces: List<Workplace>,
+    onDismiss: () -> Unit, onSave: (TaskV11) -> Unit,
+) = TaskEditorDialogV11(existing, db, workplaces, onDismiss, externalQuick = false, onSave = onSave)
+
+@Composable
+fun TaskEditorDialogV11(
     existing: TaskV11?,
     db: V11Database,
     workplaces: List<Workplace>,
     onDismiss: () -> Unit,
-    externalQuick: Boolean = false,
+    externalQuick: Boolean,
     onSave: (TaskV11) -> Unit,
 ) {
     var title by rememberSaveable(existing?.id) { mutableStateOf(existing?.title.orEmpty()) }

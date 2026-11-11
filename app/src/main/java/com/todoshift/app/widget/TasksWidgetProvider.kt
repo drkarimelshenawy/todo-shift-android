@@ -125,6 +125,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
                     context,
                     id * 100 + 3,
                     Intent(context, com.todoshift.app.QuickTaskActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         .setData(Uri.parse("todoshift://quick-add/$id")),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )

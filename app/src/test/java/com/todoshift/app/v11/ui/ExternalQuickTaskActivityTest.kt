@@ -29,10 +29,11 @@ class ExternalQuickTaskActivityTest {
         ui.await("Title")
         assertFalse(ui.has("More: notes, time, reminder and links"))
         ui.input("Title","Quick home screen task")
+        val activity=compose.activity
         ui.click("Save")
         val runtime=V11Runtime(RuntimeEnvironment.getApplication())
         ui.until { runtime.start().tasks.any { it.title=="Quick home screen task" } }
-        ui.until { compose.activity.isFinishing }
+        ui.until { activity.isFinishing }
         assertEquals(1,runtime.start().tasks.count { it.title=="Quick home screen task" })
     }
 }

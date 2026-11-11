@@ -55,7 +55,7 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
                     it.date == date && it.type == DayItemTypeV11.NOTE && (it.calendarId == null || it.calendarId in visible)
                 }.map { it.title } }
             dates = NeoMonthGrid.dates(month,appearance.firstWeekday)
-            val size = android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId)
+            val size = runCatching { android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId) }.getOrDefault(android.os.Bundle())
             val available = size.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,350)
             height = ((available-86)/(dates.size/7)).coerceIn(28,100)
         } catch (_: Exception) {
@@ -71,6 +71,7 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
         v.setInt(R.id.day_container,"setMinimumHeight",(height * context.resources.displayMetrics.density).toInt())
         v.setInt(R.id.day_root,"setMinimumHeight",(height * context.resources.displayMetrics.density).toInt())
         if (failed) {
+            v.setViewVisibility(R.id.day_paint,View.GONE)
             v.setTextViewText(R.id.day_number,if(position==0) "!" else "")
             v.setContentDescription(R.id.day_root,"Unable to read data; open ToDo Shift to recover safely")
             return v

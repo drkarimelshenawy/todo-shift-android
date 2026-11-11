@@ -52,6 +52,7 @@ class NeoWidgetIntegrationTest {
             )
         assertTrue(main.metaData.getInt("android.app.shortcuts") != 0)
         assertTrue(quick.exported)
+        assertNotEquals(main.taskAffinity, quick.taskAffinity)
     }
 
     @Test

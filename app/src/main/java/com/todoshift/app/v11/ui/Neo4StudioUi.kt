@@ -494,9 +494,39 @@ fun Neo4PaintStudio(p: NeoAppearance, update: (NeoAppearance) -> Unit) {
 fun Neo4ProfilesStudio(draft: NeoAppearance, update: (NeoAppearance) -> Unit) {
     val context = LocalContext.current
     val store = remember { Neo4Profiles(context.applicationContext) }
-    var profiles by remember { mutableStateOf(store.list()) }
+    val scope = rememberCoroutineScope()
+    var profiles by remember { mutableStateOf(emptyList<Neo4LayoutProfile>()) }
     var name by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(true) }
+    LaunchedEffect(store) {
+        try {
+            profiles = withContext(Dispatchers.IO) {
+                synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) { store.list() }
+            }
+        } finally { busy = false }
+    }
+    fun write(action: () -> Unit, completed: () -> Unit = {}) {
+        if (busy) return
+        busy = true
+        error = null
+        scope.launch {
+            try {
+                profiles = withContext(Dispatchers.IO) {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        action()
+                        store.list()
+                    }
+                }
+                completed()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                error = failure.message ?: "Profile save failed"
+            } finally { busy = false }
+        }
+    }
+    if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
     OutlinedTextField(
         name,
         { name = it.take(60) },
@@ -504,14 +534,13 @@ fun Neo4ProfilesStudio(draft: NeoAppearance, update: (NeoAppearance) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     )
     Button(
-        enabled = name.isNotBlank() && profiles.size < 12,
+        enabled = !busy && name.isNotBlank() && profiles.size < 12,
         onClick = {
-            runCatching { store.save(name, draft) }
-                .onSuccess {
-                    profiles = store.list()
-                    name = ""
-                }
-                .onFailure { error = it.message }
+            val submittedName = name
+            val submittedDraft = draft
+            write({ store.save(submittedName, submittedDraft) }) {
+                if (name == submittedName) name = ""
+            }
         },
     ) {
         Text(neoLabel("حفظ المعاينة كتخطيط", "Save preview as profile"))
@@ -520,16 +549,16 @@ fun Neo4ProfilesStudio(draft: NeoAppearance, update: (NeoAppearance) -> Unit) {
     profiles.forEach { profile ->
         Row(Modifier.fillMaxWidth()) {
             OutlinedButton(
+                enabled = !busy,
                 onClick = { update(profile.appearance.preservingLocaleOf(draft)) },
                 modifier = Modifier.weight(1f),
             ) {
                 Text(profile.name)
             }
             TextButton(
+                enabled = !busy,
                 onClick = {
-                    runCatching { store.delete(profile.id) }
-                        .onSuccess { profiles = store.list() }
-                        .onFailure { error = it.message }
+                    write({ store.delete(profile.id) })
                 }
             ) {
                 Text(neoLabel("حذف", "Delete"))

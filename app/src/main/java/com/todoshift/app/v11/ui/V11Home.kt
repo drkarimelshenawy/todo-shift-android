@@ -552,14 +552,30 @@ fun V11Home(
     }
 
     fun saveUi(value: V11UiSettings) {
-        try {
-            uiStore.save(value)
-            uiSettings = value
-        } catch (failure: Exception) {
-            writeFailure = failure.message ?: "Settings save failed"
+        if (writeBusy || writeFailure != null) return
+        val expected = uiSettings
+        writeBusy = true
+        writeScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        check(uiStore.load() == expected) { "Settings changed; reopen before editing" }
+                        NeoCommittedEffects(context).prepareWidgets()
+                        uiStore.save(value)
+                    }
+                }
+                uiSettings = value
+                withContext(Dispatchers.IO) {
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                writeFailure = failure.message ?: "Settings save failed"
+            } finally {
+                writeBusy = false
+            }
         }
-
-        com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext)
     }
 
     BackHandler(enabled = navigation.canBack) { go { navigation.back() } }

@@ -187,13 +187,8 @@ fun V11Home(
         )
     }
 
-    DisposableEffect(securitySettings.protectAccounts) {
-        val window = (context as? android.app.Activity)?.window
-        if (securitySettings.protectAccounts)
-            window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
-    }
+    // Account authentication controls access to finance, not screen capture.
+    // Do not apply FLAG_SECURE to the shared window: it also hosts calendar and tasks.
 
     var backgroundAt by remember { mutableLongStateOf(0L) }
 

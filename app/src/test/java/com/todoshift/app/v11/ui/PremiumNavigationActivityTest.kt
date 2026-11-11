@@ -53,6 +53,16 @@ class PremiumNavigationActivityTest {
         }
     }
 
+    private fun assertScreenCaptureAllowed() {
+        compose.activityRule.scenario.onActivity { activity ->
+            assertEquals(
+                "Finance protection must not block screenshots of the shared Activity",
+                0,
+                activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            )
+        }
+    }
+
     private fun back() =
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             compose.activity.onBackPressedDispatcher.onBackPressed()
@@ -188,10 +198,18 @@ class PremiumNavigationActivityTest {
         compose.activityRule.scenario.recreate()
         ui.await("Manage calendars")
         assertTrue(ui.selected("Calendar"))
+        assertScreenCaptureAllowed()
         assertFalse(ui.has("Private fixture secret"))
         warm(Intent("com.todoshift.app.OPEN_FINANCE"))
         ui.until { ui.selected("Finance") }
         ui.await("PIN")
+        assertScreenCaptureAllowed()
         assertFalse(ui.has("Private fixture secret"))
+        ui.click("Settings")
+        ui.await("Appearance & Design")
+        assertScreenCaptureAllowed()
+        ui.click("Calendar")
+        ui.await("Manage calendars")
+        assertScreenCaptureAllowed()
     }
 }

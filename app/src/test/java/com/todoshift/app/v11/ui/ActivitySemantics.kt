@@ -36,7 +36,7 @@ class ActivitySemantics(
             }
         fun view(v: View) {
             val host = activity(v.context)
-            if (expectedHost != null && host != expectedHost) return
+            if (expectedHost != null && host != null && host != expectedHost) return
             if (resumed.isNotEmpty() && host != null && host !in resumed) return
             if (v.javaClass.simpleName == "AndroidComposeView") {
                 val owner = v.javaClass.getMethod("getSemanticsOwner").invoke(v) as SemanticsOwner

@@ -33,8 +33,10 @@ class PainterQueueUiTest {
                 }
             }
         }
+        compose.onNodeWithContentDescription("Eraser").assertExists()
         compose.runOnIdle { request++ }
-        compose.waitUntil(5000) { calls.size==1 }
+        compose.waitForIdle()
+        assertEquals(compose.onRoot(useUnmergedTree=true).printToString(),1,calls.size)
         compose.runOnIdle { clicked=date.plusDays(1);request++ }
         compose.waitUntil(5000) { preview?.days?.size==2 }
         compose.onNodeWithText("جارٍ الحفظ… / Saving…").assertDoesNotExist()
@@ -57,7 +59,8 @@ class PainterQueueUiTest {
                 }
             }
         }
-        compose.runOnIdle { request++ };compose.waitUntil(5000) { calls.size==1 }
+        compose.runOnIdle { request++ };compose.waitForIdle()
+        assertEquals(compose.onRoot(useUnmergedTree=true).printToString(),1,calls.size)
         compose.runOnIdle { calls[0].second(false) }
         compose.onNodeWithText("Retry").performClick()
         compose.waitUntil(5000) { calls.size==2 }

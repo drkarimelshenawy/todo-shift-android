@@ -293,13 +293,6 @@ fun NeoPainterBar(
                 ) {
                     Icon(Icons.AutoMirrored.Rounded.Backspace, neoLabel("ممحاة", "Eraser"))
                 }
-                    if (workplaces.isEmpty())
-                        TextButton(onClick = { navigator.open("WORKPLACES") }) {
-                            Text(
-                                neoLabel("أضف مكان عمل من الإعدادات", "Add a workplace in Settings")
-                            )
-                        }
-                }
                 Box {
                     IconButton(onClick = { toolsOpen = true }) {
                         Icon(Icons.Rounded.MoreVert, neoLabel("أدوات الرسم", "Painting tools"))
@@ -324,6 +317,13 @@ fun NeoPainterBar(
                             },
                         )
                     }
+                }
+                    if (workplaces.isEmpty())
+                        TextButton(onClick = { navigator.open("WORKPLACES") }) {
+                            Text(
+                                neoLabel("أضف مكان عمل من الإعدادات", "Add a workplace in Settings")
+                            )
+                        }
                 }
                 IconButton(onClick = { requestExit {} }) {
                     Icon(Icons.Rounded.Check, neoLabel("تم", "Done"))

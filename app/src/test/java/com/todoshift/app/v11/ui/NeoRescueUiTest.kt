@@ -239,7 +239,7 @@ class NeoRescueUiTest {
             )
         }
         compose.onNodeWithContentDescription("Eraser").assertExists()
-        compose.onNodeWithText("✓ Done").assertExists().performClick()
+        compose.onNodeWithContentDescription("Done").assertExists().performClick()
         compose.onNodeWithContentDescription("Eraser").assertDoesNotExist()
     }
 

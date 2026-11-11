@@ -861,6 +861,9 @@ class Neo4LocalBackup(context: Context) :
                     "Invalid preference type in $name/$key"
                 }
         }
+        if (name == "todo_shift_neo4_profiles" && o.has("profiles")) {
+            Neo4Profiles.decode(o.getJSONObject("profiles").getString("value"))
+        }
     }
 
     private fun validatePreferences(o: JSONObject) {

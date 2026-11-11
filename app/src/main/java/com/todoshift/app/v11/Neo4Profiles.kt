@@ -12,15 +12,21 @@ class Neo4Profiles(context: Context) {
     /** Corruption is reported, never converted to an empty or partial successful read. */
     fun list(): List<Neo4LayoutProfile> = synchronized(Neo4DataGate.monitor) {
         try {
-            val root = JSONObject(prefs.getString("profiles", "{}") ?: "{}")
-            root.keys().asSequence().map { id ->
+            decode(prefs.getString("profiles", "{}") ?: "{}")
+        } catch (failure: Exception) {
+            throw IllegalStateException("Unable to read layout profiles; stored data was preserved", failure)
+        }
+    }
+
+    companion object {
+        internal fun decode(raw: String): List<Neo4LayoutProfile> {
+            val root = JSONObject(raw)
+            return root.keys().asSequence().map { id ->
                 val item = root.getJSONObject(id)
                 val name = item.getString("name")
                 require(id.isNotBlank() && name.isNotBlank())
                 Neo4LayoutProfile(id, name, Neo4AppearanceCodec.decode(item.getJSONObject("appearance")))
             }.toList()
-        } catch (failure: Exception) {
-            throw IllegalStateException("Unable to read layout profiles; stored data was preserved", failure)
         }
     }
 

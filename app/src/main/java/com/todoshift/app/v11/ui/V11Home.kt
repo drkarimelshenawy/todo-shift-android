@@ -1240,7 +1240,7 @@ private fun V11GlobalHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             androidx.compose.foundation.Image(
-                painter = painterResource(R.drawable.todo_shift_icon_source),
+                painter = painterResource(R.drawable.neo41_brand_emblem),
                 contentDescription = "ToDo Shift",
                 modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.medium),
             )

@@ -729,7 +729,7 @@ private fun V11CompactHeader(activeCalendarName: String, onManageCalendars: () -
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.todo_shift_icon_source),
+            painter = painterResource(R.drawable.neo41_brand_emblem),
             contentDescription = "ToDo Shift",
             modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
         )

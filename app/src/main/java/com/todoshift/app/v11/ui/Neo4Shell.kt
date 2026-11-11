@@ -54,7 +54,7 @@ fun Neo4CompactHeader(
             if (p.showBrand) {
                 androidx.compose.foundation.Image(
                     androidx.compose.ui.res.painterResource(
-                        com.todoshift.app.R.drawable.todo_shift_icon_source
+                        com.todoshift.app.R.drawable.neo41_brand_emblem
                     ),
                     null,
                     Modifier.size(if (constrained) 20.dp else 28.dp),

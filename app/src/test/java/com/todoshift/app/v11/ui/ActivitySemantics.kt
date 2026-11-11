@@ -13,9 +13,13 @@ import org.robolectric.util.ReflectionHelpers
  * Direct semantics driver for actual Activity windows, including Compose dialogs. Avoids Espresso's
  * Robolectric modal-window idling loop; no production replacement/content stub.
  */
-class ActivitySemantics(private val frame: () -> Unit) {
+class ActivitySemantics(
+    private val host: (() -> android.app.Activity)? = null,
+    private val frame: () -> Unit,
+) {
     private fun nodes(actions: Boolean = false): List<SemanticsNode> {
         val all = mutableListOf<SemanticsNode>()
+        val expectedHost = host?.invoke()
         fun visit(n: SemanticsNode) {
             all.add(n)
             n.children.forEach(::visit)
@@ -32,6 +36,7 @@ class ActivitySemantics(private val frame: () -> Unit) {
             }
         fun view(v: View) {
             val host = activity(v.context)
+            if (expectedHost != null && host != expectedHost) return
             if (resumed.isNotEmpty() && host != null && host !in resumed) return
             if (v.javaClass.simpleName == "AndroidComposeView") {
                 val owner = v.javaClass.getMethod("getSemanticsOwner").invoke(v) as SemanticsOwner
@@ -45,7 +50,7 @@ class ActivitySemantics(private val frame: () -> Unit) {
             )
         val modal =
             org.robolectric.shadows.ShadowDialog.getShownDialogs().lastOrNull {
-                it.isShowing && (resumed.isEmpty() || activity(it.context) in resumed)
+                it.isShowing && (expectedHost == null || activity(it.context) == expectedHost) && (resumed.isEmpty() || activity(it.context) in resumed)
             }
         if (actions && modal != null) view(modal.window!!.decorView)
         else ReflectionHelpers.getField<List<View>>(global, "mViews").forEach(::view)

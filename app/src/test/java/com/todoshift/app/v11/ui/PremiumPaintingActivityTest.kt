@@ -39,7 +39,7 @@ class PremiumPaintingActivityTest {
             }
         }
     @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
-    private val ui by lazy { ActivitySemantics { compose.mainClock.advanceTimeBy(32) } }
+    private val ui by lazy { ActivitySemantics(host = { compose.activity }) { compose.mainClock.advanceTimeBy(32) } }
 
     private fun back() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {

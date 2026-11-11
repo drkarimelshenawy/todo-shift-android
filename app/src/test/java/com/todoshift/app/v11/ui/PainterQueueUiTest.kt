@@ -38,12 +38,15 @@ class PainterQueueUiTest {
         compose.waitForIdle()
         assertEquals(compose.onRoot(useUnmergedTree=true).printToString(),1,calls.size)
         compose.runOnIdle { clicked=date.plusDays(1);request++ }
-        compose.waitUntil(5000) { preview?.days?.size==2 }
+        compose.waitForIdle()
+        assertEquals(compose.onRoot(useUnmergedTree=true).printToString(),2,preview?.days?.size)
         compose.onNodeWithText("جارٍ الحفظ… / Saving…").assertDoesNotExist()
         compose.runOnIdle { db=calls[0].first;calls[0].second(true) }
-        compose.waitUntil(5000) { calls.size==2 }
+        compose.waitForIdle()
+        assertEquals(compose.onRoot(useUnmergedTree=true).printToString(),2,calls.size)
         compose.runOnIdle { db=calls[1].first;calls[1].second(true) }
-        compose.waitUntil(5000) { preview==null }
+        compose.waitForIdle()
+        assertNull(preview)
         assertEquals(2,db.days.size)
         assertEquals(2,db.days.flatMap { it.segments }.size)
     }
@@ -63,7 +66,8 @@ class PainterQueueUiTest {
         assertEquals(compose.onRoot(useUnmergedTree=true).printToString(),1,calls.size)
         compose.runOnIdle { calls[0].second(false) }
         compose.onNodeWithText("Retry").performClick()
-        compose.waitUntil(5000) { calls.size==2 }
+        compose.waitForIdle()
+        assertEquals(compose.onRoot(useUnmergedTree=true).printToString(),2,calls.size)
         assertEquals(calls[0].first,calls[1].first)
         assertTrue(db.days.isEmpty())
         compose.runOnIdle { db=calls[1].first;calls[1].second(true) }

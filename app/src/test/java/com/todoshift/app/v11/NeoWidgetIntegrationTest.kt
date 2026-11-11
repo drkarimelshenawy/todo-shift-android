@@ -24,12 +24,20 @@ class NeoWidgetIntegrationTest {
         val before = V11Runtime(c).start()
         val shadow = Shadows.shadowOf(AppWidgetManager.getInstance(c))
         val id = shadow.createWidget(TasksWidgetProvider::class.java, R.layout.widget_tasks)
-        assertTrue(
-            shadow
-                .getViewFor(id)
-                .findViewById<android.view.View>(R.id.tasks_widget_add)
-                .performClick()
-        )
+        // Widget rendering now executes off main; wait for its real click target,
+        // rather than assuming the provider performed disk IO synchronously.
+        val deadline = System.currentTimeMillis() + 5000L
+        var clicked = false
+        while (System.currentTimeMillis() < deadline && !clicked) {
+            val add = runCatching { shadow.getViewFor(id) }.getOrNull()
+                ?.findViewById<android.view.View>(R.id.tasks_widget_add)
+            if (add?.hasOnClickListeners() == true) {
+                clicked = add.performClick()
+            } else {
+                Thread.sleep(20)
+            }
+        }
+        assertTrue("Async task widget must expose a functional quick-add button", clicked)
         val intent = Shadows.shadowOf(c).nextStartedActivity
         assertEquals(QuickTaskActivity::class.java.name, intent.component!!.className)
         assertNotEquals(MainActivity::class.java.name, intent.component!!.className)

@@ -499,21 +499,29 @@ fun Neo4ProfilesStudio(draft: NeoAppearance, update: (NeoAppearance) -> Unit) {
     var name by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(true) }
+    var loadFailed by remember { mutableStateOf(false) }
     LaunchedEffect(store) {
         try {
             profiles = withContext(Dispatchers.IO) {
                 synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) { store.list() }
             }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            loadFailed = true
+            error = failure.message ?: "Unable to read layout profiles; stored data was preserved"
         } finally { busy = false }
     }
     fun write(action: () -> Unit, completed: () -> Unit = {}) {
-        if (busy) return
+        if (busy || loadFailed) return
+        val expectedProfiles = profiles
         busy = true
         error = null
         scope.launch {
             try {
                 profiles = withContext(Dispatchers.IO) {
                     synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        check(store.list() == expectedProfiles) { "Profiles changed; reopen before editing" }
                         action()
                         store.list()
                     }
@@ -534,7 +542,7 @@ fun Neo4ProfilesStudio(draft: NeoAppearance, update: (NeoAppearance) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     )
     Button(
-        enabled = !busy && name.isNotBlank() && profiles.size < 12,
+        enabled = !busy && !loadFailed && name.isNotBlank() && profiles.size < 12,
         onClick = {
             val submittedName = name
             val submittedDraft = draft

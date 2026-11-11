@@ -104,21 +104,53 @@ fun NeoModernHub(
         }
     var owner by rememberSaveable { mutableStateOf(initialOwner ?: owners.firstOrNull()?.first) }
     val attachments = remember { NeoAttachmentStore(context.applicationContext) }
-    var attachmentList by remember { mutableStateOf(attachments.list()) }
-    val importer =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null && owner != null) {
-                busy = true
-                scope.launch {
-                    try {
-                        withContext(Dispatchers.IO) { attachments.import(owner!!, uri) }
-                        attachmentList = attachments.list()
-                    } catch (e: Exception) {
-                        error = e.message
-                    } finally {
-                        busy = false
+    var attachmentList by remember { mutableStateOf(emptyList<NeoAttachmentStore.Attachment>()) }
+    var storageInventory by remember { mutableStateOf<Pair<Set<String>, Long>?>(null) }
+    LaunchedEffect(section, storageRevision) {
+        if (section == "ATTACHMENTS" || section == "STORAGE") {
+            busy = true
+            try {
+                val inventory = withContext(Dispatchers.IO) {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        Triple(attachments.list(), attachments.detachedNames(), attachments.storedBytes())
                     }
                 }
+                attachmentList = inventory.first
+                storageInventory = inventory.second to inventory.third
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                error = failure.message ?: "Unable to read attachment inventory"
+            } finally { busy = false }
+        }
+    }
+    fun attachmentWrite(action: () -> Unit, completed: () -> Unit = {}) {
+        if (busy) return
+        busy = true
+        error = null
+        scope.launch {
+            try {
+                attachmentList = withContext(Dispatchers.IO) {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        action()
+                        attachments.list()
+                    }
+                }
+                storageInventory = null
+                storageRevision++
+                completed()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                error = failure.message ?: "Attachment operation failed"
+            } finally { busy = false }
+        }
+    }
+    val importer =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            val submittedOwner = owner
+            if (uri != null && submittedOwner != null) {
+                attachmentWrite({ attachments.import(submittedOwner, uri) })
             }
         }
     fun attempt(action: () -> Unit) {
@@ -154,9 +186,7 @@ fun NeoModernHub(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        attempt {
-                            attachments.removeDetached(names)
-                            storageRevision++
+                        attachmentWrite({ attachments.removeDetached(names) }) {
                             detachedReview = null
                         }
                     }
@@ -895,10 +925,7 @@ fun NeoModernHub(
                             }
                             TextButton(
                                 onClick = {
-                                    attempt {
-                                        attachments.detach(a.name)
-                                        attachmentList = attachments.list()
-                                    }
+                                    attachmentWrite({ attachments.detach(a.name) })
                                 }
                             ) {
                                 Text(neoLabel("فك الارتباط", "Detach"))
@@ -907,10 +934,10 @@ fun NeoModernHub(
                     }
             }
             "STORAGE" -> {
-                val unused = remember(storageRevision) { attachments.detachedNames() }
+                val unused = storageInventory?.first.orEmpty()
                 Text(
                     neoLabel("مساحة الملفات الخاصة: ", "Private attachment bytes: ") +
-                        attachments.storedBytes()
+                        (storageInventory?.second ?: 0L)
                 )
                 Text(neoLabel("ملفات غير مرتبطة: ", "Detached files: ") + unused.size)
                 Text(
@@ -921,7 +948,7 @@ fun NeoModernHub(
                     style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedButton(
-                    enabled = unused.isNotEmpty(),
+                    enabled = !busy && storageInventory != null && unused.isNotEmpty(),
                     onClick = { detachedReview = unused },
                 ) {
                     Text(

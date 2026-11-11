@@ -2,6 +2,9 @@
 allprojects {
     tasks.withType(Test).configureEach {
         maxHeapSize = '1536m'
+        // Isolate static Compose/Robolectric state across test classes; retain every test.
+        forkEvery = 1
+        maxParallelForks = 1
         systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
     }
 }

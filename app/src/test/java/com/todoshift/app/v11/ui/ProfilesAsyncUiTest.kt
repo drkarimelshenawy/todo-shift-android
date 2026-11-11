@@ -57,14 +57,10 @@ class ProfilesAsyncUiTest {
         show()
         compose.onNodeWithText("Profile name").performTextInput("Retained draft")
         compose.waitUntil(10_000L) {
-            compose.onAllNodes(hasText("Save preview as profile") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithText("Unable to read layout profiles; stored data was preserved").fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithText("Save preview as profile").performClick()
-        compose.waitUntil(10_000L) {
-            compose.onAllNodes(hasText("Save preview as profile") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
-        }
+        compose.onNodeWithText("Save preview as profile").assertIsNotEnabled()
         assertEquals("{broken-original", prefs.getString("profiles", null))
         compose.onNodeWithText("Retained draft").assertExists()
     }
 }
-

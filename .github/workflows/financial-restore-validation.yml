@@ -69,6 +69,7 @@ jobs:
           test -n "$TODOSHIFT_SIGNING_PASSWORD"
           gradle --no-daemon assembleDebug --stacktrace
       - name: Verify package, version, source, certificate and alignment
+        id: identity
         run: |
           python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk \
             --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
@@ -76,11 +77,22 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch fix/premium-financial-restore \
             --output delivery/identity
-          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-4.3.3-premium-test-vc35.apk
+          python3 - <<'PY'
+          import json, os, re, shutil
+          from pathlib import Path
+          identity = json.loads(Path("delivery/identity/BUILD-IDENTITY.json").read_text())
+          version = identity["versionName"]
+          code = int(identity["versionCode"])
+          assert re.fullmatch(r"[A-Za-z0-9._-]+", version), "Invalid APK filename version"
+          filename = f"ToDoShift-{version}-vc{code}.apk"
+          shutil.copyfile("app/build/outputs/apk/debug/app-debug.apk", Path("delivery") / filename)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"artifact_name=Premium-Repair-PERSISTENT-SIGNED-vc{code}\n")
+          PY
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: Premium-Repair-PERSISTENT-SIGNED-vc35
+          name: ${{ steps.identity.outputs.artifact_name }}
           path: delivery/
           if-no-files-found: error
           retention-days: 30

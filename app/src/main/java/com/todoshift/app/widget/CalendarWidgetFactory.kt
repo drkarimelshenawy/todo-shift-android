@@ -91,9 +91,9 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
         v.setTextColor(R.id.day_shift,faded(ink))
         v.setTextViewText(R.id.day_note,if(note.isBlank()) "" else "• $note")
         v.setTextColor(R.id.day_note,faded(ink))
-        val showDetails = currentOptions.showDetails && !currentOptions.hideContent && height>=36
+        val showDetails = currentOptions.showDetails && !currentOptions.hideContent && height>=32
         v.setViewVisibility(R.id.day_shift,if(showDetails) View.VISIBLE else View.GONE)
-        v.setViewVisibility(R.id.day_note,if(showDetails && height>=42) View.VISIBLE else View.GONE)
+        v.setViewVisibility(R.id.day_note,if(showDetails && height>=44) View.VISIBLE else View.GONE)
         v.setImageViewBitmap(R.id.day_paint,Neo4WidgetPainter.calendarCell(segments,colors,appearance,date,month,rtl,skin.accent))
         if (currentOptions.hideContent) v.setViewVisibility(R.id.day_paint,View.GONE)
         v.setContentDescription(R.id.day_root,"$date • $shift • $note")

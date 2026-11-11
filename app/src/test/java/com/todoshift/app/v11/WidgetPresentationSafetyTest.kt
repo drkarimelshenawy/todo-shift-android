@@ -171,6 +171,7 @@ class WidgetPresentationSafetyTest {
         prefs.edit().putString("CALENDAR", "{\"hideContent\":false,\"showDetails\":true}").commit()
         val factory = CalendarWidgetFactory(c, android.content.Intent())
         factory.onCreate()
+        factory.onDataSetChanged()
         prefs.edit().putString("CALENDAR", "{\"hideContent\":true}").commit()
         val view = factory.getViewAt(15).apply(c, android.widget.FrameLayout(c))
         assertEquals(

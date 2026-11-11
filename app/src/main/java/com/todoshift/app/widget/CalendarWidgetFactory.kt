@@ -15,7 +15,7 @@ import java.time.YearMonth
 class CalendarWidgetFactory(private val context: Context, intent: Intent) : RemoteViewsService.RemoteViewsFactory {
     private val widgetId = intent.getIntExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID,-1)
     private var month = CalendarWidgetState.month(context,widgetId)
-    private var dates = emptyList<LocalDate>()
+    private var dates = NeoMonthGrid.dates(month, 1)
     private var db = V11Database()
     private var colors = emptyMap<String,Int>()
     private var names = emptyMap<String,String>()
@@ -28,7 +28,9 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
     private var rtl = false
     private var height = 54
 
-    override fun onCreate() = reload()
+    // Service factory creation can run on the application's main thread. Never read
+    // storage here; onDataSetChanged is the worker-thread refresh callback.
+    override fun onCreate() = Unit
     override fun onDataSetChanged() = reload()
     private fun reload() {
         failed = false
@@ -47,11 +49,12 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
             val visible = db.calendars.filter { it.visible }.map { it.id }.toSet()
             val dayNotes = db.days.filter { it.calendarId in visible && it.note.isNotBlank() }.groupBy { it.date }
                 .mapValues { (_,v) -> v.map { it.note } }
-            notes = (db.dayItems.filter { it.type == DayItemTypeV11.NOTE && (it.calendarId == null || it.calendarId in visible) }
-                .groupBy { it.date }.mapValues { (_,v) -> v.map { it.title } }.keys + dayNotes.keys)
-                .associateWith { date -> dayNotes[date].orEmpty() + db.dayItems.filter {
-                    it.date == date && it.type == DayItemTypeV11.NOTE && (it.calendarId == null || it.calendarId in visible)
-                }.map { it.title } }
+            val independentNotes = db.dayItems.filter {
+                it.type == DayItemTypeV11.NOTE && (it.calendarId == null || it.calendarId in visible)
+            }.groupBy { it.date }.mapValues { (_, entries) -> entries.map { it.title } }
+            notes = (independentNotes.keys + dayNotes.keys).associateWith { date ->
+                dayNotes[date].orEmpty() + independentNotes[date].orEmpty()
+            }
             dates = NeoMonthGrid.dates(month,appearance.firstWeekday)
             val size = runCatching { android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId) }.getOrDefault(android.os.Bundle())
             val available = size.getInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,350)

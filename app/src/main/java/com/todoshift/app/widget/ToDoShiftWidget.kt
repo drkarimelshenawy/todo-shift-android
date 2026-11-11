@@ -16,6 +16,10 @@ import com.todoshift.app.MainActivity
 import com.todoshift.app.R
 import com.todoshift.app.v11.V11Runtime
 import java.time.YearMonth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class ToDoShiftWidget :
     AppWidgetProvider() {
@@ -427,22 +431,25 @@ class ToDoShiftWidget :
         }
     }
 
-    override fun onUpdate(
-        context: Context,
-        manager: AppWidgetManager,
-        ids: IntArray
-    ) {
-        ids.forEach {
-            updateWidget(
-                context,
-                manager,
-                it
-            )
+    // Broadcast receivers execute on the app main thread. Reading the database or
+    // rendering RemoteViews here can freeze the launcher's host and our splash screen.
+    private fun updateOffMain(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        val result = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                ids.forEach { id -> runCatching { updateWidget(context.applicationContext, manager, id) } }
+            } finally {
+                result.finish()
+            }
         }
     }
 
+    override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        updateOffMain(context, manager, ids)
+    }
+
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: android.os.Bundle) {
-        updateWidget(context,manager,appWidgetId)
+        updateOffMain(context, manager, intArrayOf(appWidgetId))
     }
 
     override fun onReceive(
@@ -499,12 +506,7 @@ class ToDoShiftWidget :
             target
         )
 
-        updateWidget(
-            context,
-            AppWidgetManager
-                .getInstance(context),
-            widgetId
-        )
+        updateOffMain(context, AppWidgetManager.getInstance(context), intArrayOf(widgetId))
     }
 
     override fun onDeleted(

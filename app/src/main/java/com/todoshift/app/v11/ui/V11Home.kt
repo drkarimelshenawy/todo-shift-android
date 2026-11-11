@@ -84,7 +84,7 @@ fun V11Home(
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     NeoSmartStore(context.applicationContext).snapshot()
                     val confirmed = runtime.start()
-                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                    // Never block initial screen rendering on reminders or widget Binder calls.
                     com.todoshift.app.backup.Neo4BootState(
                         confirmed,
                         oldStorage.load(),
@@ -94,6 +94,13 @@ fun V11Home(
                         activeCalendarStore.load(),
                     )
                 }
+            // Journal remains durable; retry side effects only after the UI has loaded.
+            writeScope.launch {
+                kotlinx.coroutines.delay(1500)
+                withContext(Dispatchers.IO) {
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                }
+            }
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (_: Exception) {

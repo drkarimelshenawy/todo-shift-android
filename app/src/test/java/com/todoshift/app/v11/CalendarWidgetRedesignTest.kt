@@ -40,7 +40,7 @@ class CalendarWidgetRedesignTest {
         android.appwidget.AppWidgetManager.getInstance(c).updateAppWidgetOptions(42,android.os.Bundle().apply {
             putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,430)
         })
-        val factory=CalendarWidgetFactory(c,Intent().putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID,42));factory.onCreate()
+        val factory=CalendarWidgetFactory(c,Intent().putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID,42));factory.onCreate(); factory.onDataSetChanged()
         assertEquals(dates.size,factory.getCount())
         val parent=FrameLayout(c)
         val view=factory.getViewAt(dates.indexOf(inside)).apply(c,parent)

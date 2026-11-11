@@ -289,7 +289,7 @@ class Neo4LocalBackup(context: Context) :
                         it.eveningRate,
                     )
                 }
-        require(legacyAmounts.all { it.isFinite() }) { "Non-finite legacy financial value" }
+        validateMoneyRange(legacyAmounts)
         uiPreferences.forEach { name ->
             all["prefs/$name.json"]?.let { validateUiPreferences(name, json(it)) }
         }
@@ -408,8 +408,41 @@ class Neo4LocalBackup(context: Context) :
                         it.finalDifference,
                     )
                 }
-        require(amounts.all { it.isFinite() }) { "Non-finite financial value" }
+        validateMoneyRange(amounts)
+        database.payments.forEach { payment ->
+            require(payment.amount >= 0.0) { "Negative payment: ${payment.id}" }
+            val ids = mutableSetOf<String>()
+            var allocated = 0L
+            payment.allocations.forEach { allocation ->
+                require(allocation.id.isNotBlank() && ids.add(allocation.id)) {
+                    "Invalid or duplicate allocation ID: ${payment.id}"
+                }
+                java.time.YearMonth.parse(allocation.accrualMonth)
+                require(allocation.amount >= 0.0) { "Negative allocation: ${payment.id}" }
+                allocated = Math.addExact(allocated, LocalizedNumbers.cents(allocation.amount))
+            }
+            require(payment.allocations.isEmpty() || allocated == LocalizedNumbers.cents(payment.amount)) {
+                "Allocation total differs from payment: ${payment.id}"
+            }
+        }
         return database
+    }
+
+    /** Apply the input field's magnitude limit before any exact Long conversion.
+     * Signed historical adjustments and snapshot differences remain supported.
+     * A conservative absolute-total budget also protects later subset sums.
+     */
+    private fun validateMoneyRange(amounts: List<Double>) {
+        var total = java.math.BigInteger.ZERO
+        amounts.forEach { amount ->
+            require(amount.isFinite() && kotlin.math.abs(amount) <= 9_000_000_000_000.0) {
+                "Financial amount is outside the supported range"
+            }
+            total = total.add(java.math.BigInteger.valueOf(LocalizedNumbers.cents(amount)).abs())
+            require(total <= java.math.BigInteger.valueOf(Long.MAX_VALUE)) {
+                "Financial totals exceed the supported range"
+            }
+        }
     }
 
     override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =

@@ -154,6 +154,7 @@ class WidgetPresentationSafetyTest {
         )
         val factory = TasksWidgetFactory(c, android.content.Intent())
         factory.onCreate()
+        factory.onDataSetChanged()
         assertEquals(1, factory.getCount())
         c.getSharedPreferences("todo_shift_neo4_widgets", 0)
             .edit()
@@ -183,4 +184,29 @@ class WidgetPresentationSafetyTest {
             view.findViewById<android.view.View>(com.todoshift.app.R.id.day_paint).visibility,
         )
     }
+    @Test
+    fun tasksFactoryOnCreateNeverWaitsForDatabaseLockHeldByAnotherThread() {
+        val c = RuntimeEnvironment.getApplication()
+        V11Runtime(c).start()
+        val locked = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val worker = Thread {
+            synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                locked.countDown()
+                release.await(4, java.util.concurrent.TimeUnit.SECONDS)
+            }
+        }
+        worker.start()
+        try {
+            assertTrue(locked.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            val began = System.nanoTime()
+            TasksWidgetFactory(c, android.content.Intent()).onCreate()
+            val elapsedMs = (System.nanoTime() - began) / 1_000_000L
+            assertTrue("Widget factory initialization must not block on data gate", elapsedMs < 1000L)
+        } finally {
+            release.countDown()
+            worker.join(5000)
+        }
+    }
+
 }

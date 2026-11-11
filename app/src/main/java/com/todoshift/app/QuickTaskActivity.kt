@@ -105,13 +105,10 @@ class QuickTaskActivity : FragmentActivity() {
                                                                         )
                                                                 },
                                                                 {
-                                                                    com.todoshift.app.reminders
-                                                                        .ToDoShiftReminder
-                                                                        .schedule(
-                                                                            applicationContext,
-                                                                            it,
-                                                                        )
-                                                                    com.todoshift.app.widget.TasksWidgetProvider.refreshAll(applicationContext)
+                                                                    // CommitDatabase already journals all alarm side effects.
+                                                                    // Widget delivery is coalesced on a dedicated IO scope.
+                                                                    // Never hold the Save dialog for RemoteViews Binder IPC.
+                                                                    com.todoshift.app.widget.Neo4WidgetRefresh.schedule(applicationContext)
                                                                 },
                                                             )
                                                             .submit(task)

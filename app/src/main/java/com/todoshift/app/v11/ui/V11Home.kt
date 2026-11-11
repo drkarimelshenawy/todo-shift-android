@@ -258,7 +258,7 @@ fun V11Home(
             val fallback = db.calendars.sortedBy { it.order }.firstOrNull()?.id
 
             try {
-                activeCalendarStore.save(fallback)
+                withContext(Dispatchers.IO) { activeCalendarStore.save(fallback) }
                 activeCalendarId = fallback
             } catch (failure: Exception) {
                 writeFailure = failure.message ?: "Unable to save primary calendar"
@@ -270,7 +270,9 @@ fun V11Home(
     // the boot error screen above and never create editable state or run this effect.
     // Repair RC7 workplace UUID mismatch and keep the V11 finance rate table aligned.
     LaunchedEffect(Unit) {
-        val repaired = NeoRatePolicy.reconcile(db, oldData.workplaces)
+        val repaired = withContext(Dispatchers.Default) {
+            NeoRatePolicy.reconcile(db, oldData.workplaces)
+        }
 
         if (repaired != db) {
             writeBusy = true
@@ -381,10 +383,13 @@ fun V11Home(
     var moneyVisible by remember { mutableStateOf(!securitySettings.hideAmounts) }
 
     LaunchedEffect(moneyVisible, securitySettings.protectAccounts, securitySettings.hideAmounts) {
-        com.todoshift.app.widget.Neo4WidgetPrivacy.update(
-            context.applicationContext,
-            !moneyVisible || securitySettings.protectAccounts || securitySettings.hideAmounts,
-        )
+        // Finance privacy is persisted and widget IPC delivered off the Compose main thread.
+        withContext(Dispatchers.IO) {
+            com.todoshift.app.widget.Neo4WidgetPrivacy.update(
+                context.applicationContext,
+                !moneyVisible || securitySettings.protectAccounts || securitySettings.hideAmounts,
+            )
+        }
     }
 
     val undoHistory = remember { mutableStateListOf<V11Database>() }
@@ -521,10 +526,16 @@ fun V11Home(
         }
     }
     DisposableEffect(lifecycleOwner) {
+        // Initial boot already loads the current committed database. Android delivers
+        // the first ON_RESUME when we register this observer, even on initial launch.
+        // Avoid immediately repeating the expensive recovery and full DB parse.
+        var initialResumeObserved = false
         val observer =
             androidx.lifecycle.LifecycleEventObserver { _, event ->
                 if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                    if (!writeBusy && writeFailure == null) {
+                    if (!initialResumeObserved) {
+                        initialResumeObserved = true
+                    } else if (!writeBusy && writeFailure == null) {
                         resumeRefreshPending = false
                         reloadEditorData()
                     } else resumeRefreshPending = true

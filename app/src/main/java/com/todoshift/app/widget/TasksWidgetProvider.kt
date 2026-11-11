@@ -183,7 +183,20 @@ class TasksWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        ids.forEach { updateWidget(context, manager, it) }
+        // BroadcastReceiver.onReceive executes on the app main thread. Doing DB
+        // recovery and RemoteViews Binder IPC here can trigger an app-wide ANR.
+        val result = goAsync()
+        kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
+        ).launch {
+            try {
+                ids.forEach { id ->
+                    runCatching { updateWidget(context.applicationContext, manager, id) }
+                }
+            } finally {
+                result?.finish()
+            }
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -250,10 +263,10 @@ class TasksWidgetProvider : AppWidgetProvider() {
                 )
 
             com.todoshift.app.backup.Neo4LocalBackup(context).commitDatabase(db, updated)
-            runCatching { com.todoshift.app.v11.NeoCommittedEffects(context).reconcileCurrent() }
-            ToDoShiftReminder.cancel(context, taskId)
-            refreshAll(context)
         }
+        // Journaled work is retried by JobScheduler; no platform IPC under the data gate.
+        runCatching { ToDoShiftReminder.cancel(context, taskId) }
+        Neo4WidgetRefresh.schedule(context)
     }
 }
 

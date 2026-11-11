@@ -105,4 +105,27 @@ class NeoTaskCommitTest {
         assertEquals(NeoTaskCommit.Result.Committed(false), commit.submit(task))
         assertEquals(listOf(task), durable.tasks)
     }
+    @Test
+    fun platformSideEffectsCannotExecuteWhileDatabaseGateIsOwned() {
+        var db = V11Database()
+        var gateWasAvailable = false
+        val commit = NeoTaskCommit(
+            { db }, { _, next -> db = next },
+            {
+                val latch = java.util.concurrent.CountDownLatch(1)
+                val worker = Thread {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        latch.countDown()
+                    }
+                }
+                worker.start()
+                gateWasAvailable = latch.await(2, java.util.concurrent.TimeUnit.SECONDS)
+                worker.join(2500)
+            },
+        )
+        assertEquals(NeoTaskCommit.Result.Committed(false), commit.submit(task))
+        assertTrue("Widget/AlarmManager callbacks must run without the storage gate", gateWasAvailable)
+        assertEquals(listOf(task), db.tasks)
+    }
+
 }

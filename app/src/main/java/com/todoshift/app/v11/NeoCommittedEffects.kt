@@ -43,11 +43,11 @@ class NeoCommittedEffects(context: Context) {
                     .putBoolean("pending", true)
                     .putBoolean("widgetsOnly", false)
                     .putStringSet("cancelIds", ids)
+                    .putLong("generation", prefs.getLong("generation", 0L) + 1L)
                     .commit()
             ) {
                 "Cannot record pending refresh; data was not written"
             }
-            prefs.edit().putLong("generation", prefs.getLong("generation", 0L) + 1L).commit().also { check(it) }
             queueRetry()
             Unit
         }
@@ -55,17 +55,11 @@ class NeoCommittedEffects(context: Context) {
     /** Appearance/widgets never change alarm state; a pending business replay takes precedence. */
     fun prepareWidgets() =
         synchronized(Neo4DataGate.monitor) {
-            if (!prefs.getBoolean("pending", false))
-                check(
-                    prefs
-                        .edit()
-                        .putBoolean("pending", true)
-                        .putBoolean("widgetsOnly", true)
-                        .commit()
-                ) {
-                    "Cannot record widget refresh"
-                }
-            prefs.edit().putLong("generation", prefs.getLong("generation", 0L) + 1L).commit().also { check(it) }
+            val editor = prefs.edit().putLong("generation", prefs.getLong("generation", 0L) + 1L)
+            if (!prefs.getBoolean("pending", false)) {
+                editor.putBoolean("pending", true).putBoolean("widgetsOnly", true)
+            }
+            check(editor.commit()) { "Cannot record widget refresh" }
             queueRetry()
         }
 
@@ -97,10 +91,11 @@ class NeoCommittedEffects(context: Context) {
         )
 
     fun reconcileCurrent() {
+        // No pending work: do not re-read/migrate the entire database on every launch.
         val (confirmed, queued) = synchronized(Neo4DataGate.monitor) {
-            V11Runtime(app).start() to ticket()
+            val queued = ticket() ?: return
+            V11Runtime(app).start() to queued
         }
-        queued ?: return
         replay(
             confirmed,
             queued,

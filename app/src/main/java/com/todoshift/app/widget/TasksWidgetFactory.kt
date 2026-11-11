@@ -14,9 +14,9 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
 
     private var tasks: List<TaskV11> = emptyList()
 
-    override fun onCreate() {
-        reload()
-    }
+    // RemoteViewsFactory construction may execute on the app main thread.
+    // Move all storage access to the worker-thread onDataSetChanged callback.
+    override fun onCreate() = Unit
 
     override fun onDataSetChanged() {
         reload()

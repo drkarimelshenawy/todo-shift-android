@@ -44,7 +44,10 @@ class ProfilesAsyncUiTest {
         assertEquals("Night layout", store.list().single().name)
         compose.onNodeWithText("Delete").performClick()
         compose.waitUntil(10_000L) { store.list().isEmpty() }
-        compose.waitForIdle()
+        // The IO commit can finish before the coroutine publishes the refreshed UI list.
+        compose.waitUntil(10_000L) {
+            compose.onAllNodesWithText("Night layout").fetchSemanticsNodes().isEmpty()
+        }
         compose.onNodeWithText("Night layout").assertDoesNotExist()
     }
 
@@ -64,3 +67,4 @@ class ProfilesAsyncUiTest {
         compose.onNodeWithText("Retained draft").assertExists()
     }
 }
+

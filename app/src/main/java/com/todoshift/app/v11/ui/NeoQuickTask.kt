@@ -116,6 +116,6 @@ fun TaskEditorDialogV11(
                 Text(neoLabel("حفظ", "Save"))
             }
         },
-        dismissButton = { TextButton(onClick = { leave() }) { Text(neoLabel("إلغاء", "Cancel")) } },
+        dismissButton = { TextButton(enabled = !write.pending, onClick = { leave() }) { Text(neoLabel("إلغاء", "Cancel")) } },
     )
 }

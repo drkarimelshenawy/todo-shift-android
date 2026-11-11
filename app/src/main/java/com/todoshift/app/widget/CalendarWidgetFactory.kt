@@ -22,7 +22,6 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
     private var indexed = emptyMap<String,List<ShiftSegmentV11>>()
     private var notes = emptyMap<String,List<String>>()
     private var appearance = NeoAppearance()
-    private var options = Neo4WidgetOptions()
     private var skin = Neo4WidgetSkin(Color.WHITE,Color.BLACK,Color.GRAY,Color.BLUE)
     private var failed = false
     private var english = false
@@ -40,7 +39,6 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
             colors = workplaces.associate { it.id to runCatching { Color.parseColor(it.colorHex) }.getOrDefault(Color.GRAY) }
             names = workplaces.associate { it.id to it.name }
             val settings = Neo4WidgetSettings(context)
-            options = settings.load(Neo4WidgetKind.CALENDAR)
             skin = settings.skin(Neo4WidgetKind.CALENDAR)
             appearance = NeoAppearanceStore(context).load()
             english = settings.english()

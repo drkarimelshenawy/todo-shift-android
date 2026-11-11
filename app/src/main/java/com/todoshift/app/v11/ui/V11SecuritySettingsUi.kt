@@ -42,6 +42,7 @@ fun V11SecuritySettingsDialog(
     onDismiss: () -> Unit,
     onChanged: (V11SecuritySettings) -> Unit
 ) {
+    val saveRunner = rememberNeoSecurityVerifier()
     val context = LocalContext.current
 
     var settings by remember(current) {
@@ -384,6 +385,7 @@ fun V11SecuritySettingsDialog(
 
         confirmButton = {
             Button(
+                enabled = !saveRunner.busy,
                 onClick = {
                     var finalSettings = settings
 
@@ -430,12 +432,14 @@ fun V11SecuritySettingsDialog(
                         return@Button
                     }
 
-                    try {
-                        store.save(finalSettings)
-                        onChanged(finalSettings)
-                        onDismiss()
-                    } catch (failure: Exception) {
-                        message = neoLiteral("تعذر حفظ الحماية؛ أغلق التطبيق وأعد فتحه للتحقق", "Security save could not be confirmed; close and reopen to verify")
+                    val submitted = finalSettings
+                    saveRunner.execute({ store.save(submitted) }) { result ->
+                        result.onSuccess {
+                            onChanged(submitted)
+                            onDismiss()
+                        }.onFailure { failure ->
+                            message = failure.message ?: neoLiteral("تعذر حفظ إعدادات الحماية", "Cannot save security settings")
+                        }
                     }
                 }
             ) {
@@ -596,12 +600,13 @@ fun V11SecuritySettingsDialog(
 }
 
 @Composable
-private fun PinSetupDialogV3(
+internal fun PinSetupDialogV3(
     store: V11SecurityStore,
     changingExisting: Boolean,
     onDismiss: () -> Unit,
     onSaved: () -> Unit
 ) {
+    val verifier = rememberNeoSecurityVerifier()
     var currentPin by remember {
         mutableStateOf("")
     }
@@ -674,39 +679,28 @@ private fun PinSetupDialogV3(
         },
         confirmButton = {
             Button(
+                enabled = !verifier.busy,
                 onClick = {
-                    when {
-                        changingExisting &&
-                            !store.verifyPin(
-                                currentPin
-                            ) -> {
-                            message =
+                    if (newPin.length !in 4..12 || !newPin.all(Char::isDigit)) {
+                        message = neoLiteral("PIN يجب أن يكون من 4 إلى 12 رقماً", "PIN must contain 4 to 12 digits")
+                    } else if (newPin != confirmPin) {
+                        message = neoLiteral("تأكيد PIN غير مطابق", "PINs do not match")
+                    } else {
+                        val old = currentPin
+                        val next = newPin
+                        verifier.execute({
+                            if (changingExisting && !store.verifyPin(old))
                                 neoSecurityFailure(store, neoLiteral("PIN الحالي غير صحيح", "Incorrect current PIN"))
+                            else if (!store.setPin(next)) neoLiteral("تعذر حفظ PIN", "Cannot save PIN")
+                            else null
+                        }) { result ->
+                            message = result.getOrElse { it.message ?: neoLiteral("تعذر حفظ PIN", "Cannot save PIN") }
+                            if (result.isSuccess && message == null) onSaved()
                         }
-
-                        newPin.length !in 4..12 ||
-                            !newPin.all(
-                                Char::isDigit
-                            ) -> {
-                            message =
-                                neoLiteral("PIN يجب أن يكون من 4 إلى 12 رقماً", "PIN must contain 4 to 12 digits")
-                        }
-
-                        newPin != confirmPin -> {
-                            message =
-                                neoLiteral("تأكيد PIN غير مطابق", "PINs do not match")
-                        }
-
-                        !store.setPin(newPin) -> {
-                            message =
-                                neoLiteral("تعذر حفظ PIN", "Cannot save PIN")
-                        }
-
-                        else -> onSaved()
                     }
                 }
             ) {
-                Text(neoLiteral("حفظ", "Save"))
+                Text(if (verifier.busy) neoLiteral("جارٍ الحفظ…", "Saving…") else neoLiteral("حفظ", "Save"))
             }
         },
         dismissButton = {
@@ -718,12 +712,13 @@ private fun PinSetupDialogV3(
 }
 
 @Composable
-private fun PatternSetupDialogV3(
+internal fun PatternSetupDialogV3(
     store: V11SecurityStore,
     changingExisting: Boolean,
     onDismiss: () -> Unit,
     onSaved: () -> Unit
 ) {
+    val verifier = rememberNeoSecurityVerifier()
     var step by remember {
         mutableStateOf(
             if (changingExisting)
@@ -797,20 +792,16 @@ private fun PatternSetupDialogV3(
                                     max = 240.dp
                                 ),
                         onPatternComplete = { pattern ->
-                            when (step) {
+                            if (!verifier.busy) when (step) {
                                 PatternSetupStep.VERIFY_CURRENT -> {
-                                    if (
-                                        store.verifyPattern(
-                                            pattern
-                                        )
-                                    ) {
-                                        message = null
-                                        step =
-                                            PatternSetupStep.DRAW_NEW
-                                        inputGeneration++
-                                    } else {
-                                        message =
-                                            neoSecurityFailure(store, neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern"))
+                                    val submitted = pattern.toList()
+                                    verifier.submit({ store.verifyPattern(submitted) }) { verified ->
+                                        if (verified) {
+                                            message = null
+                                            step = PatternSetupStep.DRAW_NEW
+                                        } else {
+                                            message = neoSecurityFailure(store, neoLiteral("النمط الحالي غير صحيح", "Incorrect current pattern"))
+                                        }
                                         inputGeneration++
                                     }
                                 }
@@ -836,16 +827,15 @@ private fun PatternSetupDialogV3(
                                         message =
                                             neoLiteral("النمط غير مطابق، أعد التأكيد", "Patterns do not match. Try again.")
                                         inputGeneration++
-                                    } else if (
-                                        !store.setPattern(
-                                            pattern
-                                        )
-                                    ) {
-                                        message =
-                                            neoLiteral("تعذر حفظ النمط", "Cannot save pattern")
-                                        inputGeneration++
                                     } else {
-                                        onSaved()
+                                        val submitted = pattern.toList()
+                                        verifier.submit({ store.setPattern(submitted) }) { saved ->
+                                            if (saved) onSaved()
+                                            else {
+                                                message = neoLiteral("تعذر حفظ النمط", "Cannot save pattern")
+                                                inputGeneration++
+                                            }
+                                        }
                                     }
                                 }
                             }

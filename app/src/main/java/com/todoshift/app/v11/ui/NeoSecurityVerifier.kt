@@ -8,17 +8,20 @@ internal class NeoSecurityVerifier(private val scope: CoroutineScope) {
     var busy by mutableStateOf(false)
         private set
 
-    fun submit(check: () -> Boolean, result: (Boolean) -> Unit) {
+    fun submit(check: () -> Boolean, result: (Boolean) -> Unit) =
+        execute(check) { result(it.getOrDefault(false)) }
+
+    fun <T> execute(action: () -> T, result: (Result<T>) -> Unit) {
         if (busy) return
         busy = true
         scope.launch {
             try {
-                val verified = withContext(Dispatchers.Default) {
-                    try { check() }
+                val outcome = withContext(Dispatchers.Default) {
+                    try { Result.success(action()) }
                     catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) { false }
+                    catch (failure: Exception) { Result.failure<T>(failure) }
                 }
-                result(verified)
+                result(outcome)
             } finally { busy = false }
         }
     }

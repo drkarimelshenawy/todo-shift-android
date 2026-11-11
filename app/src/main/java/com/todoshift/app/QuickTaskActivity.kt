@@ -48,6 +48,14 @@ class QuickTaskActivity : FragmentActivity() {
             }
             var failure by remember { mutableStateOf<String?>(null) }
             var busy by remember { mutableStateOf(false) }
+            var showSaveProgress by remember { mutableStateOf(false) }
+            LaunchedEffect(busy) {
+                showSaveProgress = false
+                if (busy) {
+                    kotlinx.coroutines.delay(400)
+                    showSaveProgress = true
+                }
+            }
             androidx.activity.compose.BackHandler(enabled = busy) {}
             val appearance = remember {
                 runCatching { NeoAppearanceStore(applicationContext).load() }
@@ -80,7 +88,7 @@ class QuickTaskActivity : FragmentActivity() {
                         )
                     else if (state != null)
                         CompositionLocalProvider(
-                            LocalNeoEditorWriteState provides NeoEditorWriteState(busy, failure)
+                            LocalNeoEditorWriteState provides NeoEditorWriteState(busy, failure, showSaveProgress)
                         ) {
                             TaskEditorDialogV11(null, state!!, workplaces, { finish() }, onSave = { task ->
                                 if (!busy) {

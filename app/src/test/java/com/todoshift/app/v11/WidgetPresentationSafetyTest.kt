@@ -209,4 +209,32 @@ class WidgetPresentationSafetyTest {
         }
     }
 
+    @Test
+    fun tasksWidgetBroadcastUpdateDoesNotWaitForStorageGateOnMain() {
+        val c = RuntimeEnvironment.getApplication()
+        val manager = android.appwidget.AppWidgetManager.getInstance(c)
+        val widget = org.robolectric.Shadows.shadowOf(manager).createWidget(
+            TasksWidgetProvider::class.java, com.todoshift.app.R.layout.widget_tasks
+        )
+        val locked = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val worker = Thread {
+            synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                locked.countDown()
+                release.await(4, java.util.concurrent.TimeUnit.SECONDS)
+            }
+        }
+        worker.start()
+        try {
+            assertTrue(locked.await(2, java.util.concurrent.TimeUnit.SECONDS))
+            val began = System.nanoTime()
+            TasksWidgetProvider().onUpdate(c, manager, intArrayOf(widget))
+            val elapsedMs = (System.nanoTime() - began) / 1_000_000L
+            assertTrue("Broadcast main thread must never read the locked DB", elapsedMs < 1000L)
+        } finally {
+            release.countDown()
+            worker.join(5000)
+        }
+    }
+
 }

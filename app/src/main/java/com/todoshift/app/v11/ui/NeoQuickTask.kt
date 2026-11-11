@@ -16,7 +16,12 @@ import com.todoshift.app.v11.*
 import java.time.LocalDate
 import java.util.UUID
 
-data class NeoEditorWriteState(val pending: Boolean = false, val error: String? = null)
+data class NeoEditorWriteState(
+    val pending: Boolean = false,
+    val error: String? = null,
+    // Actual pending state disables actions immediately; short writes should not flash Saving.
+    val showProgress: Boolean = pending,
+)
 
 val LocalNeoEditorWriteState = staticCompositionLocalOf { NeoEditorWriteState() }
 
@@ -70,7 +75,7 @@ fun TaskEditorDialogV11(
         text = {
             Column(Modifier.imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 write.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                if (write.pending) Text(neoLabel("جارٍ الحفظ", "Saving"))
+                if (write.showProgress) Text(neoLabel("جارٍ الحفظ", "Saving"))
                 OutlinedTextField(
                     title,
                     { title = it.take(300) },

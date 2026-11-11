@@ -742,7 +742,7 @@ fun FullTaskEditorDialogV11(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 write.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                if (write.pending) Text(neoLabel("جارٍ الحفظ", "Saving"))
+                if (write.showProgress) Text(neoLabel("جارٍ الحفظ", "Saving"))
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },

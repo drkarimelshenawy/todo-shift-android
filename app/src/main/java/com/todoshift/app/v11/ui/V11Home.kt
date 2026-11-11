@@ -653,7 +653,7 @@ fun V11Home(
                     { next, completed ->
                         saveDb(next, completed = completed)
                     },
-                LocalNeoEditorWriteState provides NeoEditorWriteState(writeBusy, writeFailure),
+                LocalNeoEditorWriteState provides NeoEditorWriteState(writeBusy, writeFailure, showWriteProgress),
                 LocalV11NeoEnabled provides (uiSettings.experience == V11Experience.PREMIUM),
                 LocalNeoFeatures provides
                     NeoFeatureNavigator { id, owner ->

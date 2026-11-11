@@ -9,12 +9,14 @@ class V11Runtime internal constructor(
     private val oldStorage: AppStorage,
     private val storage: V11Storage,
     private val recover: () -> Unit,
-    private val refreshWidgets: () -> Unit
+    private val refreshWidgets: () -> Unit,
+    private val migrateLegacy: ((com.todoshift.app.data.AppData, String) -> V11Database)? = null,
 ) {
     constructor(context: Context) : this(
         AppStorage(context.applicationContext), V11Storage(context.applicationContext),
         { com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).recoverIfNeeded() },
-        { com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext) }
+        { com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext) },
+        { old, date -> com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).migrateLegacy(old, date) },
     )
 
     fun start(): V11Database {
@@ -54,10 +56,8 @@ class V11Runtime internal constructor(
                     ?.toString()
                     ?: LocalDate.now().toString()
 
-            storage.migrateIfNeeded(
-                oldData = oldData,
-                effectiveFrom = effectiveFrom
-            )
+            migrateLegacy?.invoke(oldData, effectiveFrom)
+                ?: storage.migrateIfNeeded(oldData = oldData, effectiveFrom = effectiveFrom)
         }
     }
 

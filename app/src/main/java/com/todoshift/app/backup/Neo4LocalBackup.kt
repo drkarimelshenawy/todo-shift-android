@@ -593,6 +593,33 @@ class Neo4LocalBackup(context: Context) :
         }
 
     /** Journaled single-store save: failure cannot be mistaken for a durable cache-only update. */
+    /** Legacy data remains untouched; a failed migration cannot become a confirmed memory-only DB. */
+    internal fun migrateLegacy(
+        oldData: com.todoshift.app.data.AppData,
+        effectiveFrom: String,
+        checkpoint: (String) -> Unit = {},
+    ): V11Database = synchronized(Neo4DataGate.monitor) {
+        recoverIfNeeded()
+        if (storage.hasDatabase()) return@synchronized storage.load()
+        check(!storage.wasMigrated()) { "Previously migrated database is missing" }
+        val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+        val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+        require(snapshot.size <= 48 * 1024 * 1024)
+        writeAtomic(journal, snapshot)
+        try {
+            checkpoint("journal")
+            val migrated = storage.migrateIfNeeded(oldData, effectiveFrom)
+            checkpoint("database")
+            journal.delete()
+            check(!journal.baseFile.exists()) { "Unable to finalize migration" }
+            migrated
+        } catch (failure: Exception) {
+            try { recoverIfNeeded() }
+            catch (rollback: Exception) { failure.addSuppressed(rollback) }
+            throw failure
+        }
+    }
+
     internal fun commitDatabase(
         expected: V11Database,
         next: V11Database,

@@ -30,6 +30,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
             effectiveFrom = effectiveFrom
         )
 
+        FinancialDataValidation.validate(migrated)
         val raw = toJson(migrated).toString()
         fromJson(JSONObject(raw))
         check(prefs.edit().putString(KEY_DATABASE, raw).putBoolean(KEY_MIGRATED, true).commit()) {

@@ -12,8 +12,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 32
-        versionName = "4.3.0-premium-dev"
+        versionCode = 33
+        versionName = "4.3.1-premium-test"
     }
 
 

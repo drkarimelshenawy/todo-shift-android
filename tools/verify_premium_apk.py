@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--build-tools', type=Path, required=True)
     parser.add_argument('--expected-certificate', required=True, help='Public SHA-256 fingerprint')
     parser.add_argument('--expected-sha', required=True)
+    parser.add_argument('--expected-branch', help='Explicit reviewed build branch; defaults to candidate target branch')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     expected = json.loads((ROOT / 'tools/PREMIUM_CANDIDATE.json').read_text())
@@ -27,7 +28,7 @@ def main():
     branch = run('git', '-C', ROOT, 'branch', '--show-current').strip()
     if run('git', '-C', ROOT, 'status', '--porcelain').strip():
         raise SystemExit('STOP: dirty source tree cannot identify an exact committed candidate')
-    if sha != args.expected_sha or branch != expected['branch']:
+    if sha != args.expected_sha or branch != (args.expected_branch or expected['branch']):
         raise SystemExit('STOP: candidate source commit or branch mismatch')
     if not re.fullmatch('[a-fA-F0-9]{64}', args.expected_certificate):
         raise SystemExit('STOP: invalid expected certificate fingerprint')

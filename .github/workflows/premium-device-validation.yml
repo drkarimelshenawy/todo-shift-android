@@ -1,0 +1,118 @@
+
+name: Premium UX device validation
+on:
+  push:
+    branches: [fix/premium-financial-restore]
+    paths:
+      - tools/premium_device_smoke.py
+      - .github/workflows/premium-device-validation.yml
+permissions:
+  contents: read
+  actions: read
+env:
+  CANDIDATE_SOURCE: 66453702296db1a650fb2de94ed3250be69d20f5
+  CANDIDATE_RUN: '43137185661'
+jobs:
+  previous-smoke-diagnostic:
+    if: contains(github.event.head_commit.message, '[inspect-baseline]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Android-35-update-startup-smoke
+          run-id: 43137185661
+          github-token: ${{ github.token }}
+          path: previous-smoke
+      - run: cat previous-smoke/failure.xml
+  validate-exact-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify unchanged application and successful source gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git diff --exit-code "$CANDIDATE_SOURCE" -- app build.gradle.kts settings.gradle.kts tools/PREMIUM_CANDIDATE.json tools/verify_premium_apk.py tools/premium_qa.init.gradle
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN/jobs" > source-jobs.json
+          python3 - <<'PY'
+          import json, os
+          jobs = json.load(open("source-jobs.json"))["jobs"]
+          for name in ["verify", "signed-test-apk"]:
+              assert any(j["name"] == name and j["conclusion"] == "success" for j in jobs), name
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: Premium-Repair-PERSISTENT-SIGNED-vc38
+          path: candidate-apk
+          run-id: 43137185661
+          github-token: ${{ github.token }}
+      - name: Verify exact candidate identity and checksum
+        run: |
+          (cd candidate-apk && sha256sum -c SHA256SUMS)
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          identity=json.loads(Path("candidate-apk/identity/BUILD-IDENTITY.json").read_text())
+          assert identity["sourceCommit"] == os.environ["CANDIDATE_SOURCE"]
+          assert int(identity["versionCode"]) == 38
+          assert identity["versionName"] == "4.4.0-premium-ux-test"
+          assert identity["certificateSHA256"] == "aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9"
+          assert identity["signatureVerification"] == identity["zipalign"] == "PASS"
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: Premium-Repair-PERSISTENT-SIGNED-vc37
+          path: baseline-apk
+          run-id: 43122329155
+          github-token: ${{ github.token }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/cache/restore@v4
+        id: emulator-cache
+        with:
+          path: /usr/local/lib/android/sdk/system-images/android-35/google_apis/x86_64
+          key: premium-android35-google-x86_64-v1
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          ram-size: 2048M
+          disable-animations: true
+          script: python3 tools/premium_device_smoke.py baseline-apk/*.apk candidate-apk/*.apk
+      - uses: actions/cache/save@v4
+        if: always() && steps.emulator-cache.outputs.cache-hit != 'true'
+        with:
+          path: /usr/local/lib/android/sdk/system-images/android-35/google_apis/x86_64
+          key: premium-android35-google-x86_64-v1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-35-update-startup-smoke
+          path: device-smoke/
+          if-no-files-found: warn
+      - name: Include traceable validation source
+        run: |
+          cp source-jobs.json device-smoke/
+          printf '%s\n' "$GITHUB_SHA" > device-smoke/TEST-SCRIPT-COMMIT.txt
+          printf '%s\n' "$CANDIDATE_SOURCE" > device-smoke/APK-SOURCE-COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Premium-UX-vc38-VALIDATED
+          path: |
+            candidate-apk/
+            device-smoke/
+          if-no-files-found: error
+          retention-days: 30

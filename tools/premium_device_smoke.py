@@ -49,7 +49,8 @@ def run():
     launch("QuickTaskActivity")
     tap(wait(lambda: find(dump(), cls="android.widget.EditText")))
     shell("input", "text", "UpgradeFixture")
-    shell("input", "keyevent", "KEYCODE_BACK")
+    wait(lambda: any("UpgradeFixture" in n.get("text", "") for n in dump().iter("node") if n.get("class") == "android.widget.EditText"))
+    snapshot("37-task-draft")
     click("Save", "حفظ")
     wait(lambda: task("UpgradeFixture"))
     shell("am", "force-stop", APP)
@@ -62,13 +63,15 @@ def run():
         assert before[key] == after[key], "Upgrade changed " + key
     assert task("UpgradeFixture")["id"] == fixture_id
     snapshot("38-after-update")
-    click("Tasks", "المهام"); click("UpgradeFixture")
-    wait(lambda: find(dump(), ("Title", "العنوان"))); snapshot("38-task-editor")
+    click("Tasks", "المهام")
+    tap(wait(lambda: next((n for n in dump().iter("node") if "UpgradeFixture" in n.get("text", "")), None)))
+    wait(lambda: next((n for n in dump().iter("node") if n.get("class") == "android.widget.EditText" and "UpgradeFixture" in n.get("text", "")), None))
+    snapshot("38-task-editor")
     click("Cancel", "إلغاء")
     def task_checkbox():
         root = dump()
         for n in root.iter("node"):
-            if any(c.get("text") == "UpgradeFixture" for c in n.iter("node")):
+            if any("UpgradeFixture" in c.get("text", "") for c in n.iter("node")):
                 boxes = [c for c in n.iter("node") if c.get("class") == "android.widget.CheckBox"]
                 if len(boxes) == 1: return boxes[0]
         return None
@@ -86,7 +89,9 @@ def run():
     print((OUT / "RESULT.txt").read_text())
 try: run()
 except Exception:
-    try: snapshot("failure")
+    try:
+        snapshot("failure")
+        print((OUT / "failure.xml").read_text(), flush=True)
     except Exception: pass
     try: (OUT / "logcat.txt").write_text(adb("logcat", "-d", "-v", "threadtime"))
     except Exception: pass

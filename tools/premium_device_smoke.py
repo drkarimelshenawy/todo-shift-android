@@ -73,7 +73,7 @@ def run():
                 boxes = [c for c in n.iter("node") if c.get("class") == "android.widget.CheckBox"]
                 if len(boxes) == 1: return boxes[0]
         return None
-    tap(wait(task_checkbox)); wait(lambda: task("UpgradeFixture")["status"] == "DONE")
+    tap(wait(task_checkbox)); wait(lambda: task("UpgradeFixture")["status"] == "COMPLETED")
     snapshot("38-completed-task")
     tap(wait(task_checkbox)); wait(lambda: task("UpgradeFixture")["status"] == "TODO")
     for i in range(3):

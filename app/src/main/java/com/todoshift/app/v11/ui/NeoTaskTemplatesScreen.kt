@@ -72,13 +72,15 @@ fun NeoTaskTemplatesScreen(db: V11Database, workplaces: List<Workplace>, onChang
         val leave=rememberNeoEditorExit(listOf(name,titles,workplace,calendar,kind),{editing=false},busy)
         AlertDialog(onDismissRequest={leave()},title={Text(neoLabel("تحرير القالب","Template editor"))},text={
             Column(Modifier.heightIn(max=430.dp).verticalScroll(rememberScrollState()).imePadding(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(name,{name=it.take(100)},label={Text(neoLabel("اسم القائمة","List name"))})
-                OutlinedTextField(titles,{titles=it},label={Text(neoLabel("مهمة في كل سطر","One task per line"))},minLines=2,maxLines=5)
+                OutlinedTextField(name,{name=it.take(100)},enabled=!busy,label={Text(neoLabel("اسم القائمة","List name"))})
+                OutlinedTextField(titles,{titles=it},enabled=!busy,label={Text(neoLabel("مهمة في كل سطر","One task per line"))},minLines=2,maxLines=5)
                 TemplateLinks(db,workplaces,workplace,{workplace=it},calendar,{calendar=it},kind,{kind=it})
             }
         },confirmButton={leave.SaveButton(enabled=ready&&!busy&&name.isNotBlank()&&titles.lines().any {it.isNotBlank()},onClick={
             val exit=leaveGate?.takeSavedExit()
-            mutate({store.saveTemplate(name,titles.lines().map {it.trim()}.filter {it.isNotEmpty()},workplace,calendar,kind,editingId)}) {editing=false;exit?.invoke()}
+            val savedName=name;val savedTitles=titles.lines().map {it.trim()}.filter {it.isNotEmpty()}
+            val savedWorkplace=workplace;val savedCalendar=calendar;val savedKind=kind;val savedId=editingId
+            mutate({store.saveTemplate(savedName,savedTitles,savedWorkplace,savedCalendar,savedKind,savedId)}) {editing=false;exit?.invoke()}
         }) {Text(neoLabel("حفظ القالب","Save template"))}},dismissButton={TextButton(enabled=!busy,onClick={leave()}) {Text(neoLabel("إلغاء","Cancel"))}})
     }
     usingId?.let { id -> templates.firstOrNull {it.id==id}?.let { template ->

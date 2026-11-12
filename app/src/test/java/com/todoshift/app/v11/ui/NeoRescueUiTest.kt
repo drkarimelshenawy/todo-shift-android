@@ -97,7 +97,9 @@ class NeoRescueUiTest {
         }
         compose.onNodeWithContentDescription("Paint shifts").performClick()
         compose.onNodeWithContentDescription("Eraser").assertExists()
-        compose.onNodeWithContentDescription("2026-11-10", substring = true).performClick()
+        // Fixed content-independent rows can scroll on a short test window.
+        compose.onNodeWithContentDescription("2026-11-10", substring = true)
+            .performScrollTo().assertIsDisplayed().performClick()
         compose.waitForIdle()
         compose.waitUntil(10000) {
             compose.onAllNodesWithContentDescription("Eraser").fetchSemanticsNodes()

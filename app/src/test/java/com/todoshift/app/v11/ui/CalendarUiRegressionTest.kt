@@ -137,7 +137,7 @@ class CalendarUiRegressionTest {
             androidx.compose.ui.unit.LayoutDirection.Rtl,
             month.fetchSemanticsNode().layoutInfo.layoutDirection,
         )
-        compose.onNodeWithContentDescription(date.toString() + ", 1 shifts", substring = true).assertExists()
+        compose.onNodeWithContentDescription(date.toString() + "، 1 شيفت", substring = true).assertExists()
     }
 
     @Test

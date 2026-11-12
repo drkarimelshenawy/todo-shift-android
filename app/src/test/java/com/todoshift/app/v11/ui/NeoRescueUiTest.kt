@@ -193,7 +193,7 @@ class NeoRescueUiTest {
                 {},
             )
         }
-        compose.onNode(hasSetTextAction()).performTextInput("weekday direction")
+        compose.onNodeWithText("Title").performTextInput("weekday direction")
         compose.onNodeWithText("Weekday direction").performClick()
         compose.runOnIdle { assertEquals("WEEKDAY_DIRECTION", route) }
     }
@@ -282,7 +282,7 @@ class NeoRescueUiTest {
                 }
             }
         }
-        compose.onNode(hasSetTextAction()).performTextInput("Synthetic restored draft")
+        compose.onNodeWithText("Title").performTextInput("Synthetic restored draft")
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Synthetic restored draft").assertExists()
         compose.runOnIdle { assertNull(saved) }
@@ -290,3 +290,4 @@ class NeoRescueUiTest {
         compose.runOnIdle { assertEquals("Synthetic restored draft", saved!!.title) }
     }
 }
+

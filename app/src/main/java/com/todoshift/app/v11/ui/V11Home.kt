@@ -84,10 +84,18 @@ fun V11Home(
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     NeoSmartStore(context.applicationContext).snapshot()
                     val confirmed = runtime.start()
+                    val legacy = oldStorage.load()
+                    // Complete essential rate reconciliation before exposing editable state.
+                    // Doing this after rendering lets the first paint race a background DB write.
+                    val reconciled = NeoRatePolicy.reconcile(confirmed, legacy.workplaces)
+                    if (reconciled != confirmed) {
+                        com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext)
+                            .commitDatabase(confirmed, reconciled)
+                    }
                     // Never block initial screen rendering on reminders or widget Binder calls.
                     com.todoshift.app.backup.Neo4BootState(
-                        confirmed,
-                        oldStorage.load(),
+                        reconciled,
+                        legacy,
                         uiStore.load(),
                         NeoAppearanceStore(context.applicationContext).load(),
                         securityStore.load(),
@@ -262,31 +270,6 @@ fun V11Home(
                 activeCalendarId = fallback
             } catch (failure: Exception) {
                 writeFailure = failure.message ?: "Unable to save primary calendar"
-            }
-        }
-    }
-
-    // Reachable only after BOTH stores loaded successfully. Failed reads throw into
-    // the boot error screen above and never create editable state or run this effect.
-    // Repair RC7 workplace UUID mismatch and keep the V11 finance rate table aligned.
-    LaunchedEffect(Unit) {
-        val repaired = withContext(Dispatchers.Default) {
-            NeoRatePolicy.reconcile(db, oldData.workplaces)
-        }
-
-        if (repaired != db) {
-            writeBusy = true
-            try {
-                withContext(Dispatchers.IO) {
-                    com.todoshift.app.backup
-                        .Neo4LocalBackup(context.applicationContext)
-                        .commitDatabase(db, repaired)
-                }
-                db = repaired
-            } catch (failure: Exception) {
-                writeFailure = failure.message ?: "Storage failure"
-            } finally {
-                writeBusy = false
             }
         }
     }
@@ -1404,4 +1387,5 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         }
     }
 }
+
 

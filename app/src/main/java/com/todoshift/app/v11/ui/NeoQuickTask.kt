@@ -84,6 +84,7 @@ fun TaskEditorDialogV11(
                     title,
                     { title = it.take(300) },
                     label = { Text(neoLabel("العنوان", "Title")) },
+                    enabled = !write.pending && !submitted,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().focusRequester(titleFocus),
                 )

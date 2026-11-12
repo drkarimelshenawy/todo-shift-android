@@ -517,6 +517,7 @@ internal fun TaskCardV11(
             if (LocalV11NeoEnabled.current) {
                 Checkbox(
                     checked = task.status == TaskStatusV11.COMPLETED,
+                    enabled = !LocalNeoEditorWriteState.current.pending,
                     onCheckedChange = { onToggleComplete() },
                     modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                 )
@@ -773,6 +774,7 @@ fun FullTaskEditorDialogV11(
                 write.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (write.showProgress) Text(neoLabel("جارٍ الحفظ", "Saving"))
                 OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -781,6 +783,7 @@ fun FullTaskEditorDialogV11(
                 )
 
                 OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                     value = date,
                     onValueChange = { date = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -797,6 +800,7 @@ fun FullTaskEditorDialogV11(
                     TaskPriorityV11.entries.forEach {
                         FilterChip(
                             selected = priority == it,
+                            enabled = !write.pending && !submitted,
                             onClick = { priority = it },
                             label = {
                                 Text(
@@ -818,6 +822,7 @@ fun FullTaskEditorDialogV11(
                 ) {
                     Switch(
                         checked = reminderEnabled,
+                        enabled = !write.pending && !submitted,
                         onCheckedChange = {
                             reminderEnabled = it
 
@@ -835,6 +840,7 @@ fun FullTaskEditorDialogV11(
 
                 if (reminderEnabled) {
                     OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                         value = reminderTime,
                         onValueChange = { reminderTime = it },
                         modifier = Modifier.fillMaxWidth(),
@@ -851,9 +857,10 @@ fun FullTaskEditorDialogV11(
                     )
                 }
 
-                TextButton(onClick={expanded=!expanded}) { Text(neoLiteral("خيارات إضافية", "More options")) }
+                TextButton(enabled=!write.pending && !submitted,onClick={expanded=!expanded}) { Text(neoLiteral("خيارات إضافية", "More options")) }
                 if(expanded) {
                 OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                     value = details,
                     onValueChange = { details = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -881,6 +888,7 @@ fun FullTaskEditorDialogV11(
                     Text(neoLiteral("اختيار الوقت", "Choose time"))
                 }
                 OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                     value = time,
                     onValueChange = { time = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -961,7 +969,7 @@ fun FullTaskEditorDialogV11(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = dayShifts.isNotEmpty(),
+                        enabled = dayShifts.isNotEmpty() && !write.pending && !submitted,
                         onClick = { shiftMenu = true },
                     ) {
                         val selected = dayShifts.firstOrNull { it.first == linkedShiftId }
@@ -1065,6 +1073,7 @@ fun FullTaskEditorDialogV11(
                     TaskRepeatV11.entries.forEach {
                         FilterChip(
                             selected = repeat == it,
+                            enabled = !write.pending && !submitted,
                             onClick = { repeat = it },
                             label = {
                                 Text(

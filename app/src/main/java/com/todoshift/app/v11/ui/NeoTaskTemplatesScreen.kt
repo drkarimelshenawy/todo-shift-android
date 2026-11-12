@@ -21,6 +21,7 @@ import java.time.LocalDate
 fun NeoTaskTemplatesScreen(db: V11Database, workplaces: List<Workplace>, onChange: (V11Database)->Unit, onBack: ()->Unit) {
     val context=LocalContext.current;val scope=rememberCoroutineScope();val store=remember { NeoSmartStore(context.applicationContext) }
     val request=LocalNeoCommitRequest.current;val write=LocalNeoEditorWriteState.current
+    val leaveGate=LocalNeoLeaveGate.current
     var templates by remember { mutableStateOf(emptyList<NeoSmartStore.TaskTemplate>()) }
     var ready by remember { mutableStateOf(false) };var busy by remember { mutableStateOf(false) };var error by remember { mutableStateOf<String?>(null) }
     var editing by rememberSaveable { mutableStateOf(false) };var editingId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -76,7 +77,8 @@ fun NeoTaskTemplatesScreen(db: V11Database, workplaces: List<Workplace>, onChang
                 TemplateLinks(db,workplaces,workplace,{workplace=it},calendar,{calendar=it},kind,{kind=it})
             }
         },confirmButton={leave.SaveButton(enabled=ready&&!busy&&name.isNotBlank()&&titles.lines().any {it.isNotBlank()},onClick={
-            mutate({store.saveTemplate(name,titles.lines().map {it.trim()}.filter {it.isNotEmpty()},workplace,calendar,kind,editingId)}) {editing=false}
+            val exit=leaveGate?.takeSavedExit()
+            mutate({store.saveTemplate(name,titles.lines().map {it.trim()}.filter {it.isNotEmpty()},workplace,calendar,kind,editingId)}) {editing=false;exit?.invoke()}
         }) {Text(neoLabel("حفظ القالب","Save template"))}},dismissButton={TextButton(enabled=!busy,onClick={leave()}) {Text(neoLabel("إلغاء","Cancel"))}})
     }
     usingId?.let { id -> templates.firstOrNull {it.id==id}?.let { template ->

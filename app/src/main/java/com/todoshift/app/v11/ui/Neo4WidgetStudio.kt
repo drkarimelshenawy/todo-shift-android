@@ -35,7 +35,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
     var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
     var discard by remember { mutableStateOf(false) }
     fun request(next: () -> Unit) {
-        if (accent != value.accent) {
+        if (accent != value.accent || opacity != value.backgroundOpacity) {
             pending = next
             discard = true
         } else next()
@@ -48,11 +48,12 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
                 discard = false
                 pending = null
             },
-            title = { Text(neoLabel("تجاهل اللون غير المحفوظ؟", "Discard unsaved color?")) },
+            title = { Text(neoLabel("تجاهل تعديلات الويدجت؟", "Discard unsaved widget changes?")) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         accent = value.accent
+                        opacity = value.backgroundOpacity
                         discard = false
                         pending?.invoke()
                         pending = null
@@ -132,7 +133,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
         )
         Column(
             Modifier.fillMaxWidth()
-                .background(Color(skin.background), MaterialTheme.shapes.medium)
+                .background(if(kind==Neo4WidgetKind.CALENDAR) Color(skin.background).copy(alpha=opacity) else Color(skin.background), MaterialTheme.shapes.medium)
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {

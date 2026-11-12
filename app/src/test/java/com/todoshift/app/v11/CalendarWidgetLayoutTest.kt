@@ -26,7 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CalendarWidgetLayoutTest {
     @Test fun productionRemoteViewsFillHeightWithEqualRowsAcrossSizesMonthsAndLanguages() {
-        val c=RuntimeEnvironment.getApplication();val old=AppStorage(c);old.save(old.load().copy(workplaces=listOf(Workplace("w","الشاملة المطامير","#22A466"))))
+        val c=RuntimeEnvironment.getApplication();V11Runtime(c).start();val old=AppStorage(c);old.save(old.load().copy(workplaces=listOf(Workplace("w","الشاملة المطامير","#22A466"))))
         val months=listOf(YearMonth.of(2021,2),YearMonth.of(2026,4),YearMonth.of(2026,8))
         for(language in listOf(NeoLanguage.ENGLISH,NeoLanguage.ARABIC)) for(month in months) for(size in listOf(220 to 240,400 to 520)) {
             NeoAppearanceStore(c).save(NeoAppearance(language=language,firstWeekday=1,gridDirection=if(language==NeoLanguage.ARABIC) NeoDirection.RTL else NeoDirection.LTR))

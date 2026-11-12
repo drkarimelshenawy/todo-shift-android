@@ -67,6 +67,7 @@ fun V11Home(
     val activeCalendarStore = remember { V11ActiveCalendarStore(context.applicationContext) }
 
     val writeScope = rememberCoroutineScope()
+    var effectsRefreshJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var writeBusy by remember { mutableStateOf(false) }
     var reloadBusy by remember { mutableStateOf(false) }
     val reloadSlot = remember { NeoReloadSlot() }
@@ -83,16 +84,31 @@ fun V11Home(
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     NeoSmartStore(context.applicationContext).snapshot()
                     val confirmed = runtime.start()
-                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                    val legacy = oldStorage.load()
+                    // Complete essential rate reconciliation before exposing editable state.
+                    // Doing this after rendering lets the first paint race a background DB write.
+                    val reconciled = NeoRatePolicy.reconcile(confirmed, legacy.workplaces)
+                    if (reconciled != confirmed) {
+                        com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext)
+                            .commitDatabase(confirmed, reconciled)
+                    }
+                    // Never block initial screen rendering on reminders or widget Binder calls.
                     com.todoshift.app.backup.Neo4BootState(
-                        confirmed,
-                        oldStorage.load(),
+                        reconciled,
+                        legacy,
                         uiStore.load(),
                         NeoAppearanceStore(context.applicationContext).load(),
                         securityStore.load(),
                         activeCalendarStore.load(),
                     )
                 }
+            // Journal remains durable; retry side effects only after the UI has loaded.
+            writeScope.launch {
+                kotlinx.coroutines.delay(1500)
+                withContext(Dispatchers.IO) {
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                }
+            }
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (_: Exception) {
@@ -108,7 +124,7 @@ fun V11Home(
                 (context as? android.app.Activity)?.recreate()
             },
         )
-    if (writeBusy || writeFailure != null)
+    if (writeFailure != null)
         androidx.compose.ui.window.Dialog(
             onDismissRequest = {},
             properties =
@@ -124,13 +140,6 @@ fun V11Home(
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (writeFailure == null) {
-                        CircularProgressIndicator()
-                        Text(
-                            if (reloadBusy) "جارٍ التحقق من التخزين / Checking storage"
-                            else "جارٍ الحفظ… / Saving…"
-                        )
-                    } else {
                         Text(
                             "حالة الحفظ / Save status",
                             style = MaterialTheme.typography.titleMedium,
@@ -152,10 +161,17 @@ fun V11Home(
                         TextButton(onClick = { writeFailure = null }) {
                             Text("العودة للمحرر / Return to editor")
                         }
-                    }
                 }
             }
         }
+    var showWriteProgress by remember { mutableStateOf(false) }
+    LaunchedEffect(writeBusy) {
+        showWriteProgress = false
+        if (writeBusy) {
+            kotlinx.coroutines.delay(400)
+            showWriteProgress = true
+        }
+    }
     val loaded = boot
     if (loaded == null) {
         Surface(Modifier.fillMaxSize()) {
@@ -187,13 +203,8 @@ fun V11Home(
         )
     }
 
-    DisposableEffect(securitySettings.protectAccounts) {
-        val window = (context as? android.app.Activity)?.window
-        if (securitySettings.protectAccounts)
-            window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
-    }
+    // Account authentication controls access to finance, not screen capture.
+    // Do not apply FLAG_SECURE to the shared window: it also hosts calendar and tasks.
 
     var backgroundAt by remember { mutableLongStateOf(0L) }
 
@@ -255,33 +266,10 @@ fun V11Home(
             val fallback = db.calendars.sortedBy { it.order }.firstOrNull()?.id
 
             try {
-                activeCalendarStore.save(fallback)
+                withContext(Dispatchers.IO) { activeCalendarStore.save(fallback) }
                 activeCalendarId = fallback
             } catch (failure: Exception) {
                 writeFailure = failure.message ?: "Unable to save primary calendar"
-            }
-        }
-    }
-
-    // Reachable only after BOTH stores loaded successfully. Failed reads throw into
-    // the boot error screen above and never create editable state or run this effect.
-    // Repair RC7 workplace UUID mismatch and keep the V11 finance rate table aligned.
-    LaunchedEffect(Unit) {
-        val repaired = NeoRatePolicy.reconcile(db, oldData.workplaces)
-
-        if (repaired != db) {
-            writeBusy = true
-            try {
-                withContext(Dispatchers.IO) {
-                    com.todoshift.app.backup
-                        .Neo4LocalBackup(context.applicationContext)
-                        .commitDatabase(db, repaired)
-                }
-                db = repaired
-            } catch (failure: Exception) {
-                writeFailure = failure.message ?: "Storage failure"
-            } finally {
-                writeBusy = false
             }
         }
     }
@@ -378,10 +366,13 @@ fun V11Home(
     var moneyVisible by remember { mutableStateOf(!securitySettings.hideAmounts) }
 
     LaunchedEffect(moneyVisible, securitySettings.protectAccounts, securitySettings.hideAmounts) {
-        com.todoshift.app.widget.Neo4WidgetPrivacy.update(
-            context.applicationContext,
-            !moneyVisible || securitySettings.protectAccounts || securitySettings.hideAmounts,
-        )
+        // Finance privacy is persisted and widget IPC delivered off the Compose main thread.
+        withContext(Dispatchers.IO) {
+            com.todoshift.app.widget.Neo4WidgetPrivacy.update(
+                context.applicationContext,
+                !moneyVisible || securitySettings.protectAccounts || securitySettings.hideAmounts,
+            )
+        }
     }
 
     val undoHistory = remember { mutableStateListOf<V11Database>() }
@@ -413,13 +404,7 @@ fun V11Home(
                     if (undoHistory.size > 20) undoHistory.removeAt(0)
                 } else if (undoHistory.isNotEmpty()) undoHistory.removeAt(undoHistory.lastIndex)
                 db = value
-                withContext(Dispatchers.IO) {
-                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
-                        .onFailure {
-                            writeFailure =
-                                "Data saved; reminder/widget refresh is pending and will retry on reopening."
-                        }
-                }
+
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
@@ -427,6 +412,16 @@ fun V11Home(
             } finally {
                 writeBusy = false
                 completed(committed)
+                if (committed) {
+                    effectsRefreshJob?.cancel()
+                    effectsRefreshJob = writeScope.launch {
+                        // Coalesce rapid strokes. The durable journal also schedules OS retries.
+                        kotlinx.coroutines.delay(350)
+                        withContext(Dispatchers.IO) {
+                            runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                        }
+                    }
+                }
             }
         }
     }
@@ -514,10 +509,16 @@ fun V11Home(
         }
     }
     DisposableEffect(lifecycleOwner) {
+        // Initial boot already loads the current committed database. Android delivers
+        // the first ON_RESUME when we register this observer, even on initial launch.
+        // Avoid immediately repeating the expensive recovery and full DB parse.
+        var initialResumeObserved = false
         val observer =
             androidx.lifecycle.LifecycleEventObserver { _, event ->
                 if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                    if (!writeBusy && writeFailure == null) {
+                    if (!initialResumeObserved) {
+                        initialResumeObserved = true
+                    } else if (!writeBusy && writeFailure == null) {
                         resumeRefreshPending = false
                         reloadEditorData()
                     } else resumeRefreshPending = true
@@ -552,14 +553,30 @@ fun V11Home(
     }
 
     fun saveUi(value: V11UiSettings) {
-        try {
-            uiStore.save(value)
-            uiSettings = value
-        } catch (failure: Exception) {
-            writeFailure = failure.message ?: "Settings save failed"
+        if (writeBusy || writeFailure != null) return
+        val expected = uiSettings
+        writeBusy = true
+        writeScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        check(uiStore.load() == expected) { "Settings changed; reopen before editing" }
+                        NeoCommittedEffects(context).prepareWidgets()
+                        uiStore.save(value)
+                    }
+                }
+                uiSettings = value
+                withContext(Dispatchers.IO) {
+                    runCatching { NeoCommittedEffects(context).reconcileCurrent() }
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                writeFailure = failure.message ?: "Settings save failed"
+            } finally {
+                writeBusy = false
+            }
         }
-
-        com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext)
     }
 
     BackHandler(enabled = navigation.canBack) { go { navigation.back() } }
@@ -619,7 +636,7 @@ fun V11Home(
                     { next, completed ->
                         saveDb(next, completed = completed)
                     },
-                LocalNeoEditorWriteState provides NeoEditorWriteState(writeBusy, writeFailure),
+                LocalNeoEditorWriteState provides NeoEditorWriteState(writeBusy, writeFailure, showWriteProgress),
                 LocalV11NeoEnabled provides (uiSettings.experience == V11Experience.PREMIUM),
                 LocalNeoFeatures provides
                     NeoFeatureNavigator { id, owner ->
@@ -739,6 +756,8 @@ fun V11Home(
                         }
                     },
                     bottomBar = {
+                        Column {
+                            if (showWriteProgress) LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp))
                         if (uiSettings.experience == V11Experience.PREMIUM) {
                             V11PremiumBottomBar(
                                 selectedTab = navigation.tab,
@@ -763,6 +782,7 @@ fun V11Home(
                                     }
                                 },
                             )
+                        }
                         }
                     },
                 ) { padding ->
@@ -1224,7 +1244,7 @@ private fun V11GlobalHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             androidx.compose.foundation.Image(
-                painter = painterResource(R.drawable.todo_shift_icon_source),
+                painter = painterResource(R.drawable.neo41_brand_emblem),
                 contentDescription = "ToDo Shift",
                 modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.medium),
             )
@@ -1367,3 +1387,5 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         }
     }
 }
+
+

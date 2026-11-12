@@ -101,7 +101,7 @@ class CalendarUiRegressionTest {
     @Test
     fun singleShiftRemainsVisibleWithBothDecorativeOptionsDisabled() {
         render(ShiftKind.MORNING, false)
-        compose.onNodeWithText("×1").assertExists()
+        compose.onNodeWithContentDescription(date.toString() + ", 1 shifts", substring = true).assertExists()
         compose.onNodeWithText("November 2026").assertExists()
         compose
             .onNodeWithContentDescription(
@@ -121,11 +121,11 @@ class CalendarUiRegressionTest {
     fun visibilityChangesInvalidateCellsWithoutChangingRecords() {
         val visible = mutableStateOf(setOf("a"))
         render(ShiftKind.NIGHT, false, visible)
-        compose.onNodeWithText("×1").assertExists()
+        compose.onNodeWithContentDescription(date.toString() + ", 1 shifts", substring = true).assertExists()
         compose.runOnIdle { visible.value = emptySet() }
-        compose.onNodeWithText("×1").assertDoesNotExist()
+        compose.onNodeWithContentDescription(date.toString() + ", 1 shifts", substring = true).assertDoesNotExist()
         compose.runOnIdle { visible.value = setOf("a") }
-        compose.onNodeWithText("×1").assertExists()
+        compose.onNodeWithContentDescription(date.toString() + ", 1 shifts", substring = true).assertExists()
     }
 
     @Test
@@ -137,18 +137,18 @@ class CalendarUiRegressionTest {
             androidx.compose.ui.unit.LayoutDirection.Rtl,
             month.fetchSemanticsNode().layoutInfo.layoutDirection,
         )
-        compose.onNodeWithText("×1").assertExists()
+        compose.onNodeWithContentDescription(date.toString() + "، 1 شيفت", substring = true).assertExists()
     }
 
     @Test
     fun largeTextRetainsReadableMonthAndShiftMarker() {
         render(ShiftKind.MORNING, false, fontScale = 1.8f)
         compose.onNodeWithText("November 2026").assertExists()
-        compose.onNodeWithText("×1").assertExists()
+        compose.onNodeWithContentDescription(date.toString() + ", 1 shifts", substring = true).assertExists()
     }
 
     @Test
-    fun largeTextDateShiftLabelAndIndependentCountDoNotOverlap() {
+    fun largeTextDateAndShiftLabelDoNotOverlapWithoutCounts() {
         render(ShiftKind.MORNING, false, fontScale = 1.8f, showNames = true)
         val dateBounds =
             compose.onNodeWithText("9", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
@@ -157,16 +157,9 @@ class CalendarUiRegressionTest {
                 .onNodeWithText("Morning", useUnmergedTree = true)
                 .fetchSemanticsNode()
                 .boundsInRoot
-        val countBounds =
-            compose.onNodeWithText("×1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        org.junit.Assert.assertTrue(
-            "Date must have its own line: date=$dateBounds name=$nameBounds count=$countBounds",
-            nameBounds.top >= dateBounds.bottom,
-        )
-        org.junit.Assert.assertTrue(
-            "Shift label must not collide with its count: date=$dateBounds name=$nameBounds count=$countBounds",
-            countBounds.top >= nameBounds.bottom,
-        )
+        org.junit.Assert.assertTrue("Date and shift name need separate lines",nameBounds.top >= dateBounds.bottom)
+        compose.onNodeWithText("×1").assertDoesNotExist()
+
     }
 
     @Test
@@ -190,8 +183,6 @@ class CalendarUiRegressionTest {
         compose.onNodeWithContentDescription(date.toString(), substring = true).performScrollTo()
         val task =
             compose.onNodeWithText("☑1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        val shifts =
-            compose.onNodeWithText("×1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         val name =
             compose
                 .onNodeWithText("Morning", useUnmergedTree = true)
@@ -218,10 +209,7 @@ class CalendarUiRegressionTest {
             "Shift must not obscure note: $noteBounds $name",
             name.top >= noteBounds.bottom,
         )
-        org.junit.Assert.assertTrue(
-            "Independent counts need separate rows: $task $shifts",
-            task.bottom <= shifts.top,
-        )
+        compose.onNodeWithText("×1").assertDoesNotExist()
         org.junit.Assert.assertTrue(
             "Labels and counts must not overlap: $name $task",
             name.bottom <= task.top,

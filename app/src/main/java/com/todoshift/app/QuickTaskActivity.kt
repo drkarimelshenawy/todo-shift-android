@@ -48,6 +48,14 @@ class QuickTaskActivity : FragmentActivity() {
             }
             var failure by remember { mutableStateOf<String?>(null) }
             var busy by remember { mutableStateOf(false) }
+            var showSaveProgress by remember { mutableStateOf(false) }
+            LaunchedEffect(busy) {
+                showSaveProgress = false
+                if (busy) {
+                    kotlinx.coroutines.delay(400)
+                    showSaveProgress = true
+                }
+            }
             androidx.activity.compose.BackHandler(enabled = busy) {}
             val appearance = remember {
                 runCatching { NeoAppearanceStore(applicationContext).load() }
@@ -57,9 +65,6 @@ class QuickTaskActivity : FragmentActivity() {
                 try {
                     withContext(Dispatchers.IO) {
                             val confirmed = V11Runtime(applicationContext).start()
-                            runCatching {
-                                NeoCommittedEffects(applicationContext).reconcileCurrent()
-                            }
                             confirmed to AppStorage(applicationContext).load().workplaces
                         }
                         .let {
@@ -83,9 +88,9 @@ class QuickTaskActivity : FragmentActivity() {
                         )
                     else if (state != null)
                         CompositionLocalProvider(
-                            LocalNeoEditorWriteState provides NeoEditorWriteState(busy, failure)
+                            LocalNeoEditorWriteState provides NeoEditorWriteState(busy, failure, showSaveProgress)
                         ) {
-                            TaskEditorDialogV11(null, state!!, workplaces, { finish() }) { task ->
+                            TaskEditorDialogV11(null, state!!, workplaces, { finish() }, onSave = { task ->
                                 if (!busy) {
                                     busy = true
                                     failure = null
@@ -108,12 +113,10 @@ class QuickTaskActivity : FragmentActivity() {
                                                                         )
                                                                 },
                                                                 {
-                                                                    com.todoshift.app.reminders
-                                                                        .ToDoShiftReminder
-                                                                        .schedule(
-                                                                            applicationContext,
-                                                                            it,
-                                                                        )
+                                                                    // CommitDatabase already journals all alarm side effects.
+                                                                    // Widget delivery is coalesced on a dedicated IO scope.
+                                                                    // Never hold the Save dialog for RemoteViews Binder IPC.
+                                                                    com.todoshift.app.widget.Neo4WidgetRefresh.schedule(applicationContext)
                                                                 },
                                                             )
                                                             .submit(task)
@@ -140,7 +143,7 @@ class QuickTaskActivity : FragmentActivity() {
                                         }
                                     }
                                 }
-                            }
+                            }, externalQuick = true)
                         }
                     else Surface { Box(Modifier.padding(24.dp)) { CircularProgressIndicator() } }
                 }

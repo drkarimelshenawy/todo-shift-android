@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="10dp"
-    android:background="@drawable/widget_background">
+    android:background="@android:color/transparent">
+    <ImageView android:id="@+id/widget_panel" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -57,16 +57,26 @@
         android:textSize="11sp"
         android:maxLines="1" />
 
+    <LinearLayout android:id="@+id/widget_weekdays" android:layout_width="match_parent" android:layout_height="22dp" android:orientation="horizontal">
+        <TextView android:id="@+id/widget_weekday_0" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false" />
+        <TextView android:id="@+id/widget_weekday_1" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false" />
+        <TextView android:id="@+id/widget_weekday_2" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false" />
+        <TextView android:id="@+id/widget_weekday_3" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false" />
+        <TextView android:id="@+id/widget_weekday_4" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false" />
+        <TextView android:id="@+id/widget_weekday_5" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false" />
+        <TextView android:id="@+id/widget_weekday_6" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false" />
+    </LinearLayout>
     <GridView
         android:id="@+id/widget_grid"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:numColumns="7"
-        android:verticalSpacing="2dp"
-        android:horizontalSpacing="2dp"
+        android:verticalSpacing="0dp"
+        android:horizontalSpacing="0dp"
         android:gravity="center"
         android:stretchMode="columnWidth"
         android:scrollbars="none" />
 
 </LinearLayout>
+</FrameLayout>

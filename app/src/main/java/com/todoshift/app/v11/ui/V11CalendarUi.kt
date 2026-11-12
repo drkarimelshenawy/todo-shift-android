@@ -106,6 +106,7 @@ fun V11CalendarScreen(
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by rememberSaveable { mutableStateOf(false) }
     var modernPaintRequest by remember { mutableIntStateOf(0) }
+    var paintPreview by remember { mutableStateOf<V11Database?>(null) }
     var bulkPaint by rememberSaveable { mutableStateOf(false) }
     var paintDates by
         rememberSaveable(
@@ -356,23 +357,9 @@ fun V11CalendarScreen(
                 }
             }
             if (uiSettings.experience == V11Experience.PREMIUM) {
-                if (activeCalendar != null)
-                    Text(
-                        neoLabel("الإضافة إلى: ", "New entries: ") +
-                            activeCalendar.name +
-                            if (!activeCalendar.visible)
-                                neoLabel(
-                                    " • مخفي — أظهره من إدارة التقاويم",
-                                    " • hidden — show it in Manage calendars",
-                                )
-                            else "",
-                        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 NeoCalendarArea(
                     month = month,
-                    db = db,
+                    db = paintPreview ?: db,
                     workplaces = workplaces,
                     visibleCalendarIds = visibleCalendarIds,
                     selectedDate = selectedDate,
@@ -450,7 +437,9 @@ fun V11CalendarScreen(
                         paintDates = emptySet()
                         modernPaintRequest = 0
                         bulkPaint = false
+                        paintPreview = null
                     },
+                    onPreview = { paintPreview = it },
                 )
             } else if (paintMode) {
                 V11PaintStatusBar(
@@ -729,7 +718,7 @@ private fun V11CompactHeader(activeCalendarName: String, onManageCalendars: () -
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.todo_shift_icon_source),
+            painter = painterResource(R.drawable.neo41_brand_emblem),
             contentDescription = "ToDo Shift",
             modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
         )
@@ -1738,3 +1727,5 @@ private fun V11CalendarManagerSheet(
         }
     }
 }
+
+

@@ -1,0 +1,105 @@
+name: Financial restore validation
+on:
+  push:
+    branches: [fix/premium-financial-restore]
+    paths-ignore:
+      - tools/premium_device_smoke.py
+      - .github/workflows/premium-device-validation.yml
+  pull_request:
+    branches: [premium/stable-candidate]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: gradle --no-daemon -I tools/premium_qa.init.gradle testDebugUnitTest lintDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Financial-restore-QA
+          path: |
+            app/build/test-results/testDebugUnitTest/*.xml
+            app/build/reports/lint-results-debug.*
+            app/build/reports/widget-preview/*.png
+  signed-test-apk:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/fix/premium-financial-restore'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - run: git checkout -B fix/premium-financial-restore "$GITHUB_SHA"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore existing persistent signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Build signed repair test APK
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          gradle --no-daemon assembleDebug --stacktrace
+      - name: Verify package, version, source, certificate and alignment
+        id: identity
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk \
+            --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
+            --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
+            --expected-sha "$GITHUB_SHA" \
+            --expected-branch fix/premium-financial-restore \
+            --output delivery/identity
+          python3 - <<'PY'
+          import json, os, re, shutil
+          from pathlib import Path
+          identity = json.loads(Path("delivery/identity/BUILD-IDENTITY.json").read_text())
+          version = identity["versionName"]
+          code = int(identity["versionCode"])
+          assert re.fullmatch(r"[A-Za-z0-9._-]+", version), "Invalid APK filename version"
+          filename = f"ToDoShift-{version}-vc{code}.apk"
+          shutil.copyfile("app/build/outputs/apk/debug/app-debug.apk", Path("delivery") / filename)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"artifact_name=Premium-Repair-PERSISTENT-SIGNED-vc{code}\n")
+          PY
+          (cd delivery && sha256sum *.apk > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.identity.outputs.artifact_name }}
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove private signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"
+

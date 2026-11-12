@@ -54,6 +54,10 @@ fun V11TasksScreen(
     onQuickAction: (NeoQuickAction) -> Unit = {},
     onInitialActionHandled: () -> Unit = {},
 ) {
+    if (LocalV11NeoEnabled.current) {
+        NeoPremiumTasksScreen(db, workplaces, onDatabaseChange, initialAction, initialTaskId, onInitialActionHandled)
+        return
+    }
     val commit = rememberNeoCommit(onDatabaseChange)
     val context = LocalContext.current
 
@@ -496,16 +500,24 @@ internal fun TaskCardV11(
     onDelete: () -> Unit,
 ) {
     val navigator = LocalNeoFeatures.current
-    Card(modifier = Modifier.fillMaxWidth()) {
+    val contentDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val completed = task.status == TaskStatusV11.COMPLETED
+    val compact = LocalNeoTaskCompact.current
+    val move = LocalNeoTaskMove.current
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
+        containerColor = if(completed) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainer,
+    )) {
+        CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
         Row(
             modifier =
                 Modifier.fillMaxWidth()
-                    .padding(if (LocalV11NeoEnabled.current) neoSpacing() else 12.dp),
+                    .padding(if (LocalV11NeoEnabled.current && compact) 6.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (LocalV11NeoEnabled.current) {
                 Checkbox(
                     checked = task.status == TaskStatusV11.COMPLETED,
+                    enabled = !LocalNeoEditorWriteState.current.pending,
                     onCheckedChange = { onToggleComplete() },
                     modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                 )
@@ -527,7 +539,8 @@ internal fun TaskCardV11(
             }
             Spacer(Modifier.width(10.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides contentDirection) {
+            Column(modifier = Modifier.weight(1f).clickable(onClick = onEdit)) {
                 if (
                     LocalV11NeoEnabled.current &&
                         task.priority in listOf(TaskPriorityV11.HIGH, TaskPriorityV11.URGENT)
@@ -547,10 +560,13 @@ internal fun TaskCardV11(
                 Text(
                     text = task.title,
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = if(compact) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleMedium,
+                    textDecoration = if(completed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                    color = if(completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
 
-                if (task.details.isNotBlank()) {
+                if (!compact && task.details.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
                     Text(
                         task.details,
@@ -590,11 +606,17 @@ internal fun TaskCardV11(
                 )
             }
 
+            }
             if (LocalV11NeoEnabled.current) {
                 var menu by remember { mutableStateOf(false) }
                 Box {
                     TextButton(onClick = { menu = true }) { Text("⋮") }
                     DropdownMenu(menu, { menu = false }) {
+                        if(move!=null) {
+                            DropdownMenuItem(text={Text(neoLabel("تحريك لأعلى","Move up"))},onClick={menu=false;move(task.id,-1)})
+                            DropdownMenuItem(text={Text(neoLabel("تحريك لأسفل","Move down"))},onClick={menu=false;move(task.id,1)})
+                        }
+
                         DropdownMenuItem(
                             text = { Text(neoLabel("تعديل", "Edit")) },
                             onClick = {
@@ -629,6 +651,7 @@ internal fun TaskCardV11(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -641,6 +664,12 @@ fun FullTaskEditorDialogV11(
 ) {
     val write = LocalNeoEditorWriteState.current
     val editorContext = LocalContext.current
+    val navigator = LocalNeoFeatures.current
+    val draftId = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
+    var submitted by remember { mutableStateOf(false) }
+    LaunchedEffect(write.error) { if(write.error!=null) submitted=false }
+    var expanded by rememberSaveable(existing?.id) { mutableStateOf(existing?.let { it.details.isNotBlank() || it.time!=null || it.repeat!=TaskRepeatV11.NONE || it.workplaceId!=null || it.calendarId!=null || it.linkedShiftId!=null } == true) }
+
     var title by rememberSaveable(existing?.id) { mutableStateOf(existing?.title ?: "") }
 
     var details by rememberSaveable(existing?.id) { mutableStateOf(existing?.details ?: "") }
@@ -725,6 +754,7 @@ fun FullTaskEditorDialogV11(
         }
     }
 
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
     AlertDialog(
         onDismissRequest = { leaveEditor() },
         title = {
@@ -738,34 +768,105 @@ fun FullTaskEditorDialogV11(
                 modifier =
                     Modifier.fillMaxWidth()
                         .heightIn(max = 500.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(rememberScrollState()).imePadding(),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 write.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                if (write.pending) Text(neoLabel("جارٍ الحفظ", "Saving"))
+                if (write.showProgress) Text(neoLabel("جارٍ الحفظ", "Saving"))
                 OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                     value = title,
                     onValueChange = { title = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(neoLiteral("عنوان المهمة", "Task title")) },
+                    label = { Text(neoLiteral("العنوان", "Title")) },
                     singleLine = true,
                 )
 
                 OutlinedTextField(
+                    enabled = !write.pending && !submitted,
+                    value = date,
+                    onValueChange = { date = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(neoLiteral("التاريخ YYYY-MM-DD", "Date YYYY-MM-DD")) },
+                    singleLine = true,
+                )
+
+                Text(neoLiteral("الأولوية", "Priority"), fontWeight = FontWeight.Bold)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    TaskPriorityV11.entries.forEach {
+                        FilterChip(
+                            selected = priority == it,
+                            enabled = !write.pending && !submitted,
+                            onClick = { priority = it },
+                            label = {
+                                Text(
+                                    when (it) {
+                                        TaskPriorityV11.LOW -> neoLiteral("منخفضة", "Low")
+                                        TaskPriorityV11.NORMAL -> neoLiteral("عادية", "Normal")
+                                        TaskPriorityV11.HIGH -> neoLiteral("عالية", "High")
+                                        TaskPriorityV11.URGENT -> neoLiteral("عاجلة", "Urgent")
+                                    }
+                                )
+                            },
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Switch(
+                        checked = reminderEnabled,
+                        enabled = !write.pending && !submitted,
+                        onCheckedChange = {
+                            reminderEnabled = it
+
+                            if (it && reminderTime.isBlank()) {
+                                reminderTime =
+                                    time.takeIf { value -> value.isNotBlank() } ?: "09:00"
+                            }
+                        },
+                    )
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Text(neoLiteral("تذكير بالمهمة", "Task reminder"), fontWeight = FontWeight.Bold)
+                }
+
+                if (reminderEnabled) {
+                    OutlinedTextField(
+                    enabled = !write.pending && !submitted,
+                        value = reminderTime,
+                        onValueChange = { reminderTime = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(neoLiteral("وقت التذكير HH:MM", "Reminder time HH:MM")) },
+                        supportingText = {
+                            Text(
+                                neoLiteral(
+                                    "سيتم التنبيه في تاريخ المهمة",
+                                    "Reminder will trigger on task date",
+                                )
+                            )
+                        },
+                        singleLine = true,
+                    )
+                }
+
+                TextButton(enabled=!write.pending && !submitted,onClick={expanded=!expanded}) { Text(neoLiteral("خيارات إضافية", "More options")) }
+                if(expanded) {
+                OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                     value = details,
                     onValueChange = { details = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(neoLiteral("ملاحظات", "Notes")) },
                     minLines = 2,
                     maxLines = 4,
-                )
-
-                OutlinedTextField(
-                    value = date,
-                    onValueChange = { date = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(neoLiteral("التاريخ YYYY-MM-DD", "Date YYYY-MM-DD")) },
-                    singleLine = true,
                 )
 
                 TextButton(
@@ -787,6 +888,7 @@ fun FullTaskEditorDialogV11(
                     Text(neoLiteral("اختيار الوقت", "Choose time"))
                 }
                 OutlinedTextField(
+                    enabled = !write.pending && !submitted,
                     value = time,
                     onValueChange = { time = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -867,7 +969,7 @@ fun FullTaskEditorDialogV11(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = dayShifts.isNotEmpty(),
+                        enabled = dayShifts.isNotEmpty() && !write.pending && !submitted,
                         onClick = { shiftMenu = true },
                     ) {
                         val selected = dayShifts.firstOrNull { it.first == linkedShiftId }
@@ -962,69 +1064,6 @@ fun FullTaskEditorDialogV11(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Switch(
-                        checked = reminderEnabled,
-                        onCheckedChange = {
-                            reminderEnabled = it
-
-                            if (it && reminderTime.isBlank()) {
-                                reminderTime =
-                                    time.takeIf { value -> value.isNotBlank() } ?: "09:00"
-                            }
-                        },
-                    )
-
-                    Spacer(Modifier.width(10.dp))
-
-                    Text(neoLiteral("تذكير بالمهمة", "Task reminder"), fontWeight = FontWeight.Bold)
-                }
-
-                if (reminderEnabled) {
-                    OutlinedTextField(
-                        value = reminderTime,
-                        onValueChange = { reminderTime = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(neoLiteral("وقت التذكير HH:MM", "Reminder time HH:MM")) },
-                        supportingText = {
-                            Text(
-                                neoLiteral(
-                                    "سيتم التنبيه في تاريخ المهمة",
-                                    "Reminder will trigger on task date",
-                                )
-                            )
-                        },
-                        singleLine = true,
-                    )
-                }
-
-                Text(neoLiteral("الأولوية", "Priority"), fontWeight = FontWeight.Bold)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    TaskPriorityV11.entries.forEach {
-                        FilterChip(
-                            selected = priority == it,
-                            onClick = { priority = it },
-                            label = {
-                                Text(
-                                    when (it) {
-                                        TaskPriorityV11.LOW -> neoLiteral("منخفضة", "Low")
-                                        TaskPriorityV11.NORMAL -> neoLiteral("عادية", "Normal")
-                                        TaskPriorityV11.HIGH -> neoLiteral("عالية", "High")
-                                        TaskPriorityV11.URGENT -> neoLiteral("عاجلة", "Urgent")
-                                    }
-                                )
-                            },
-                        )
-                    }
-                }
-
                 Text(neoLiteral("التكرار", "Repeat"), fontWeight = FontWeight.Bold)
 
                 Row(
@@ -1034,6 +1073,7 @@ fun FullTaskEditorDialogV11(
                     TaskRepeatV11.entries.forEach {
                         FilterChip(
                             selected = repeat == it,
+                            enabled = !write.pending && !submitted,
                             onClick = { repeat = it },
                             label = {
                                 Text(
@@ -1048,14 +1088,19 @@ fun FullTaskEditorDialogV11(
                         )
                     }
                 }
+                    if(existing!=null) TextButton(onClick={navigator.open("ATTACHMENTS",existing.id)}) {Text(neoLiteral("المرفقات","Attachments"))}
+                    else Text(neoLiteral("احفظ المهمة لإضافة مرفقات", "Save the task to add attachments"),style=MaterialTheme.typography.labelSmall)
+                }
+
             }
         },
         confirmButton = {
             leaveEditor.SaveButton(
                 enabled =
-                    !write.pending &&
+                    !write.pending && !submitted &&
                         title.isNotBlank() &&
                         runCatching { LocalDate.parse(date) }.isSuccess &&
+                        (time.isBlank() || runCatching { java.time.LocalTime.parse(time) }.isSuccess) &&
                         (!reminderEnabled ||
                             runCatching {
                                     val parts = reminderTime.trim().split(":")
@@ -1069,6 +1114,7 @@ fun FullTaskEditorDialogV11(
                                 }
                                 .isSuccess),
                 onClick = {
+                    submitted=true
                     val now = System.currentTimeMillis()
 
                     val calculatedReminderAt =
@@ -1101,7 +1147,7 @@ fun FullTaskEditorDialogV11(
 
                     onSave(
                         TaskV11(
-                            id = existing?.id ?: UUID.randomUUID().toString(),
+                            id = draftId,
                             title = title.trim(),
                             details = details.trim(),
                             date = date,
@@ -1124,7 +1170,9 @@ fun FullTaskEditorDialogV11(
             }
         },
         dismissButton = {
-            TextButton(onClick = { leaveEditor() }) { Text(neoLiteral("إلغاء", "Cancel")) }
+            TextButton(enabled = !write.pending, onClick = { leaveEditor() }) { Text(neoLiteral("إلغاء", "Cancel")) }
         },
     )
+    }
 }
+

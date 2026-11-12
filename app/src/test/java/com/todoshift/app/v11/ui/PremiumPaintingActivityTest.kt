@@ -39,7 +39,7 @@ class PremiumPaintingActivityTest {
             }
         }
     @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
-    private val ui by lazy { ActivitySemantics { compose.mainClock.advanceTimeBy(32) } }
+    private val ui by lazy { ActivitySemantics(host = { compose.activity }) { compose.mainClock.advanceTimeBy(32) } }
 
     private fun back() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
@@ -72,11 +72,11 @@ class PremiumPaintingActivityTest {
         ui.await("Review 1")
         compose.activityRule.scenario.recreate()
         ui.await("Review 1")
-        ui.click("✓ Done")
+        ui.click("Done")
         ui.await("Discard selected dates?")
         ui.click("Keep editing")
         ui.await("Review 1")
-        ui.click("✓ Done")
+        ui.click("Done")
         ui.await("Discard selected dates?")
         ui.click("Discard")
         ui.until { !ui.has("Eraser") }
@@ -93,7 +93,7 @@ class PremiumPaintingActivityTest {
         ui.until { runtime.start().days.any { it.segments.isNotEmpty() } }
         val first = runtime.start()
         assertEquals(first.calendars.first().id, first.days.single().calendarId)
-        ui.click("✓ Done")
+        ui.click("Done")
         ui.until { !ui.has("Eraser") }
         ui.clickDay(LocalDate.now().toString())
         assertEquals(first.days, runtime.start().days)

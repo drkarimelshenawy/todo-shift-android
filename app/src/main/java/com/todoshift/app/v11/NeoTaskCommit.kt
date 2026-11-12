@@ -16,8 +16,8 @@ internal class NeoTaskCommit(
         data object Retry : Result
     }
 
-    fun submit(task: TaskV11): Result =
-        synchronized(Neo4DataGate.monitor) {
+    fun submit(task: TaskV11): Result {
+        val persisted: Result = synchronized(Neo4DataGate.monitor) {
             fun same(stored: TaskV11) =
                 stored.copy(createdAt = task.createdAt, updatedAt = task.updatedAt) == task
             try {
@@ -42,9 +42,14 @@ internal class NeoTaskCommit(
                 } else {
                     write(current, current)
                 }
-                Result.Committed(runCatching { synchronizeServices(task) }.isFailure)
+                Result.Committed(false)
             } catch (failure: Exception) {
                 Result.Retry
             }
         }
+        if (persisted !is Result.Committed) return persisted
+        // Widget/AlarmManager Binder calls must never hold the database transaction gate.
+        // The durable data commit is already acknowledged independently of service delivery.
+        return Result.Committed(runCatching { synchronizeServices(task) }.isFailure)
+    }
 }

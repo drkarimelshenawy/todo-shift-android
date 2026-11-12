@@ -27,6 +27,8 @@ data class Neo4WidgetOptions(
     val showDetails: Boolean = false,
     val hideContent: Boolean = false,
     val showAmounts: Boolean = false,
+    val backgroundOpacity: Float = .85f,
+    val showCompleted: Boolean = true,
 )
 
 class Neo4WidgetSettings(private val context: Context) {
@@ -55,9 +57,11 @@ class Neo4WidgetSettings(private val context: Context) {
                     o.optString("accent", "")
                         .takeIf { it.isEmpty() || it.matches(Regex("#[0-9a-fA-F]{6}")) }
                         .orEmpty(),
-                    o.optBoolean("showDetails", false),
+                    o.optBoolean("showDetails", kind == Neo4WidgetKind.CALENDAR),
                     o.optBoolean("hideContent", false),
                     o.optBoolean("showAmounts", false),
+                    o.optDouble("backgroundOpacity", if(o.optString("theme", defaultTheme.name) == Neo4WidgetTheme.TRANSPARENT.name) 0.0 else .85).toFloat().let { require(it.isFinite() && it in 0f..1f); it },
+                    o.optBoolean("showCompleted", true),
                 )
             }
             .getOrDefault(Neo4WidgetOptions(hideContent = true))
@@ -76,6 +80,8 @@ class Neo4WidgetSettings(private val context: Context) {
                             .put("showDetails", value.showDetails)
                             .put("hideContent", value.hideContent)
                             .put("showAmounts", value.showAmounts)
+                            .put("backgroundOpacity", value.backgroundOpacity.toDouble())
+                            .put("showCompleted", value.showCompleted)
                             .toString(),
                     )
             check(editor.commit()) { "Unable to save widget settings" }
@@ -142,6 +148,16 @@ class Neo4WidgetSettings(private val context: Context) {
     fun modern(kind: Neo4WidgetKind) =
         explicit(kind) || V11UiSettingsStore(context).load().experience == V11Experience.PREMIUM
 
+    fun calendarRtl(appearance: NeoAppearance): Boolean = when(appearance.gridDirection) {
+        NeoDirection.RTL -> true
+        NeoDirection.LTR -> false
+        else -> when(appearance.uiDirection) {
+            NeoDirection.RTL -> true
+            NeoDirection.LTR -> false
+            else -> !english()
+        }
+    }
+
     fun english(): Boolean =
         when (NeoAppearanceStore(context).load().language) {
             NeoLanguage.ARABIC -> false
@@ -151,6 +167,9 @@ class Neo4WidgetSettings(private val context: Context) {
 }
 
 data class Neo4WidgetSkin(val background: Int, val text: Int, val secondary: Int, val accent: Int) {
+    // Calendar opacity belongs to the panel, independently of text and transparent theme.
+    val panelColor: Int get() = if(Color.alpha(background) == 0)
+        Color.parseColor(if(Color.luminance(text) > .5f) "#111D29" else "#EDF5F2") else background
     fun apply(views: RemoteViews, root: Int, vararg textIds: Int) {
         views.setInt(root, "setBackgroundColor", background)
         textIds.forEach { views.setTextColor(it, text) }
@@ -193,3 +212,4 @@ object Neo4WidgetPrivacy {
         Neo4WidgetRefresh.schedule(context)
     }
 }
+

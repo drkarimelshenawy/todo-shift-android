@@ -82,6 +82,9 @@ class NeoRescueUiTest {
         val context = RuntimeEnvironment.getApplication()
         val runtime = V11Runtime(context)
         val before = runtime.start()
+        // Working shifts require an existing workplace, as on the Activity fixture.
+        val oldStorage = com.todoshift.app.data.AppStorage(context)
+        oldStorage.save(oldStorage.load().copy(workplaces = listOf(Workplace("clinic", "Clinic", "#00A4B8"))))
         NeoAppearanceStore(context)
             .save(NeoAppearance(language = NeoLanguage.ENGLISH, reduceMotion = true))
         V11UiSettingsStore(context).save(V11UiSettings(experience = V11Experience.PREMIUM))
@@ -94,7 +97,10 @@ class NeoRescueUiTest {
         }
         compose.onNodeWithContentDescription("Paint shifts").performClick()
         compose.onNodeWithContentDescription("Eraser").assertExists()
-        compose.onNodeWithContentDescription("2026-11-10", substring = true).performClick()
+        // Fixed content-independent rows can scroll on a short test window.
+        compose.onNodeWithContentDescription("2026-11-10", substring = true)
+            .performScrollTo().assertIsDisplayed().performClick()
+        compose.waitForIdle()
         compose.waitUntil(10000) {
             compose.onAllNodesWithContentDescription("Eraser").fetchSemanticsNodes()
             V11Storage(context).load().days.any {
@@ -239,7 +245,7 @@ class NeoRescueUiTest {
             )
         }
         compose.onNodeWithContentDescription("Eraser").assertExists()
-        compose.onNodeWithText("✓ Done").assertExists().performClick()
+        compose.onNodeWithContentDescription("Done").assertExists().performClick()
         compose.onNodeWithContentDescription("Eraser").assertDoesNotExist()
     }
 
@@ -282,7 +288,7 @@ class NeoRescueUiTest {
                 }
             }
         }
-        compose.onNode(hasSetTextAction()).performTextInput("Synthetic restored draft")
+        compose.onNodeWithText("Title").performTextInput("Synthetic restored draft")
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Synthetic restored draft").assertExists()
         compose.runOnIdle { assertNull(saved) }
@@ -290,3 +296,4 @@ class NeoRescueUiTest {
         compose.runOnIdle { assertEquals("Synthetic restored draft", saved!!.title) }
     }
 }
+

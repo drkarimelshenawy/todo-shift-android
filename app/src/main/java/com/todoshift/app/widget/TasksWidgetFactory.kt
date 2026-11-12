@@ -14,9 +14,9 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
 
     private var tasks: List<TaskV11> = emptyList()
 
-    override fun onCreate() {
-        reload()
-    }
+    // RemoteViewsFactory construction may execute on the app main thread.
+    // Move all storage access to the worker-thread onDataSetChanged callback.
+    override fun onCreate() = Unit
 
     override fun onDataSetChanged() {
         reload()
@@ -32,7 +32,11 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
         tasks =
             runCatching {
                     val db = V11Runtime(context).start()
-                    NeoWidgetContentModel.tasks(db, LocalDate.now())
+                    NeoWidgetContentModel.tasks(db, LocalDate.now()) +
+                        if(Neo4WidgetSettings(context).load(Neo4WidgetKind.TASKS).showCompleted) {
+                            val visible=db.calendars.filter {it.visible}.map {it.id}.toSet()
+                            db.tasks.filter {it.status==com.todoshift.app.v11.TaskStatusV11.COMPLETED && (it.calendarId==null || it.calendarId in visible)}.sortedByDescending {it.completedAt}
+                        } else emptyList()
                 }
                 .getOrDefault(emptyList())
     }
@@ -68,6 +72,7 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
             Intent().apply {
                 action = TasksWidgetProvider.ACTION_COMPLETE
                 putExtra(TasksWidgetProvider.EXTRA_TASK_ID, task.id)
+                putExtra("todo_shift_widget_target_completed", task.status != com.todoshift.app.v11.TaskStatusV11.COMPLETED)
             }
 
         views.setOnClickFillInIntent(R.id.task_widget_check, completeIntent)
@@ -112,6 +117,10 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
             if (!neoSettings.load(Neo4WidgetKind.TASKS).showDetails)
                 views.setViewVisibility(R.id.task_widget_meta, android.view.View.GONE)
         }
+        val completed=task.status==com.todoshift.app.v11.TaskStatusV11.COMPLETED
+        views.setInt(R.id.task_widget_name,"setPaintFlags",android.graphics.Paint.ANTI_ALIAS_FLAG or if(completed) android.graphics.Paint.STRIKE_THRU_TEXT_FLAG else 0)
+        views.setTextViewText(R.id.task_widget_check,if(completed) "✓" else "□")
+        if(completed) views.setTextColor(R.id.task_widget_name,neoSettings.skin(Neo4WidgetKind.TASKS).secondary)
         return views
     }
 
@@ -128,3 +137,4 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
         tasks = emptyList()
     }
 }
+

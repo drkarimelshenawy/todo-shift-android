@@ -241,6 +241,7 @@ data class NeoAppearance(
     val showNotes: Boolean = true,
     val showNoteIcons: Boolean = true,
     val showShiftNames: Boolean = false,
+    val showWorkplaceNames: Boolean = true,
     val showTaskIndicators: Boolean = true,
     val todayStyle: NeoTodayStyle = NeoTodayStyle.CIRCLE,
     val todayColor: String = "#D8AD55",

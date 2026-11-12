@@ -23,6 +23,7 @@ object Neo4AppearanceCodec {
         put("showNotes", p.showNotes)
         put("showNoteIcons", p.showNoteIcons)
         put("showShiftNames", p.showShiftNames)
+        put("showWorkplaceNames", p.showWorkplaceNames)
         put("showTaskIndicators", p.showTaskIndicators)
         put("showOutsideDates", p.showOutsideDates)
         put("showTomorrow", p.showTomorrow)
@@ -95,6 +96,7 @@ object Neo4AppearanceCodec {
             showNotes = o.optBoolean("showNotes", defaults.showNotes),
             showNoteIcons = o.optBoolean("showNoteIcons", defaults.showNoteIcons),
             showShiftNames = o.optBoolean("showShiftNames", defaults.showShiftNames),
+            showWorkplaceNames = o.optBoolean("showWorkplaceNames", defaults.showWorkplaceNames),
             showTaskIndicators = o.optBoolean("showTaskIndicators", o.optBoolean("showSecondaryIndicators", defaults.showTaskIndicators)),
             showOutsideDates = o.optBoolean("showOutsideDates", defaults.showOutsideDates),
             showTomorrow = o.optBoolean("showTomorrow", defaults.showTomorrow),

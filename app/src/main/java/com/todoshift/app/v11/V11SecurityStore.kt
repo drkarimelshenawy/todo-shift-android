@@ -20,16 +20,21 @@ data class V11SecuritySettings(
     val autoLockMinutes: Int = 0
 )
 
-class V11SecurityStore(
-    context: Context
+class V11SecurityStore internal constructor(
+    private val prefs: android.content.SharedPreferences,
+    private val now: () -> Long,
 ) {
-    private val prefs =
-        context.getSharedPreferences(
-            "todo_shift_security_v11",
-            Context.MODE_PRIVATE
-        )
+    constructor(context: Context) : this(
+        context.getSharedPreferences("todo_shift_security_v11", Context.MODE_PRIVATE),
+        { System.currentTimeMillis() },
+    )
 
     companion object {
+        private val verificationGate = Any()
+        private const val FAILED_ATTEMPTS = "verification_failures"
+        private const val BLOCKED_UNTIL = "verification_blocked_until"
+        private const val MAX_DELAY = 300_000L
+
         private const val KEY_MODE =
             "mode"
 
@@ -230,10 +235,6 @@ class V11SecurityStore(
     fun verifyPattern(
         pattern: List<Int>
     ): Boolean {
-        if (!validPattern(pattern)) {
-            return false
-        }
-
         return verifySecret(
             value = serializePattern(pattern),
             saltKey = KEY_PATTERN_SALT,
@@ -271,7 +272,7 @@ class V11SecurityStore(
         value: String,
         saltKey: String,
         hashKey: String
-    ): Boolean {
+    ): Boolean = synchronized(verificationGate) {
         val salt =
             ByteArray(16).also {
                 SecureRandom()
@@ -284,7 +285,7 @@ class V11SecurityStore(
                 salt = salt
             )
 
-        return prefs.edit()
+        prefs.edit()
             .putString(
                 saltKey,
                 Base64.encodeToString(
@@ -303,7 +304,39 @@ class V11SecurityStore(
 
     }
 
-    private fun verifySecret(
+    /** Shared across PIN/pattern and store instances; survives screen/process recreation. */
+    fun verificationDelayMillis(): Long = synchronized(verificationGate) {
+        val current = now()
+        val until = prefs.getLong(BLOCKED_UNTIL, 0L)
+        if (until <= current) return@synchronized 0L
+        // A backwards wall-clock jump must not produce an unbounded lockout.
+        val remaining = until - current
+        if (remaining > MAX_DELAY) {
+            prefs.edit().putLong(BLOCKED_UNTIL, current + MAX_DELAY).commit()
+            MAX_DELAY
+        } else remaining
+    }
+
+    private fun verifySecret(value: String, saltKey: String, hashKey: String): Boolean =
+        synchronized(verificationGate) {
+            if (verificationDelayMillis() > 0L) return@synchronized false
+            val matched = matchesSecret(value, saltKey, hashKey)
+            val editor = prefs.edit()
+            if (matched) {
+                editor.remove(FAILED_ATTEMPTS).remove(BLOCKED_UNTIL)
+            } else {
+                val failures = (prefs.getInt(FAILED_ATTEMPTS, 0).coerceIn(0, 20) + 1)
+                editor.putInt(FAILED_ATTEMPTS, failures)
+                if (failures >= 5) {
+                    val delay = (30_000L shl (failures - 5).coerceAtMost(4)).coerceAtMost(MAX_DELAY)
+                    editor.putLong(BLOCKED_UNTIL, now() + delay)
+                }
+            }
+            // A failed durable acknowledgement never grants access.
+            editor.commit() && matched
+        }
+
+    private fun matchesSecret(
         value: String,
         saltKey: String,
         hashKey: String

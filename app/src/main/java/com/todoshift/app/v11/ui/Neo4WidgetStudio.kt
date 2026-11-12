@@ -15,6 +15,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 import com.todoshift.app.widget.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -24,12 +27,15 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
     val store = remember { Neo4WidgetSettings(context.applicationContext) }
     var kind by rememberSaveable { mutableStateOf(Neo4WidgetKind.CALENDAR) }
     var value by remember(kind) { mutableStateOf(store.load(kind)) }
+    val scope=rememberCoroutineScope()
+    var saving by remember { mutableStateOf(false) }
+    var opacity by remember(kind,value.backgroundOpacity) { mutableStateOf(value.backgroundOpacity) }
     var saveError by remember { mutableStateOf<String?>(null) }
     var accent by rememberSaveable(kind, value.accent) { mutableStateOf(value.accent) }
     var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
     var discard by remember { mutableStateOf(false) }
     fun request(next: () -> Unit) {
-        if (accent != value.accent) {
+        if (accent != value.accent || opacity != value.backgroundOpacity) {
             pending = next
             discard = true
         } else next()
@@ -42,11 +48,12 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
                 discard = false
                 pending = null
             },
-            title = { Text(neoLabel("تجاهل اللون غير المحفوظ؟", "Discard unsaved color?")) },
+            title = { Text(neoLabel("تجاهل تعديلات الويدجت؟", "Discard unsaved widget changes?")) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         accent = value.accent
+                        opacity = value.backgroundOpacity
                         discard = false
                         pending?.invoke()
                         pending = null
@@ -67,12 +74,12 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             },
         )
     fun save(next: Neo4WidgetOptions) {
-        try {
-            store.save(kind, next)
-            value = next
-            saveError = null
-        } catch (failure: Exception) {
-            saveError = failure.message ?: "Widget settings could not be saved"
+        if(saving) return
+        val target=kind;saving=true
+        scope.launch {
+            try { withContext(Dispatchers.IO) { store.save(target,next) };if(kind==target) value=next;saveError=null }
+            catch(failure: Exception) { saveError=failure.message ?: "Widget settings could not be saved" }
+            finally {saving=false}
         }
     }
     val fixture = remember {
@@ -126,7 +133,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
         )
         Column(
             Modifier.fillMaxWidth()
-                .background(Color(skin.background), MaterialTheme.shapes.medium)
+                .background(if(kind==Neo4WidgetKind.CALENDAR) Color(skin.panelColor).copy(alpha=opacity) else Color(skin.background), MaterialTheme.shapes.medium)
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -170,7 +177,9 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             Neo4WidgetTheme.entries,
             value.theme,
             { neo4Label(it) },
-            { save(value.copy(theme = it)) },
+            { theme -> save(value.copy(theme = theme, backgroundOpacity =
+                if(theme == Neo4WidgetTheme.TRANSPARENT) 0f
+                else if(value.backgroundOpacity == 0f) .85f else value.backgroundOpacity)) },
         )
         val valid = accent.isEmpty() || accent.matches(Regex("#[0-9a-fA-F]{6}"))
         OutlinedTextField(
@@ -184,6 +193,12 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             label = { Text("Accent #RRGGBB") },
             modifier = Modifier.fillMaxWidth(),
         )
+        if(kind==Neo4WidgetKind.CALENDAR) {
+            Text(neoLabel("وضوح خلفية الويدجت", "Background opacity"))
+            Slider(value=opacity,onValueChange={opacity=it},valueRange=0f..1f,enabled=!saving,
+                onValueChangeFinished={save(value.copy(backgroundOpacity=opacity))})
+        }
+        if(kind==Neo4WidgetKind.TASKS) NeoSwitch(neoLabel("إظهار المهام المكتملة", "Show completed tasks"),value.showCompleted) {save(value.copy(showCompleted=it))}
         NeoSwitch(neoLabel("تفاصيل إضافية", "Extra details"), value.showDetails) {
             save(value.copy(showDetails = it))
         }

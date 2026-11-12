@@ -1,8 +1,10 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 32,
-  "versionName": "4.3.0-premium-dev",
+  "versionCode": 38,
+  "versionName": "4.4.0-premium-ux-test",
   "branch": "premium/stable-candidate",
   "baseline": "e178b134658afad04d645b044f24d236594cbe33",
-  "classification": "ISOLATED TEST ONLY — release HOLD; installed certificate unverified"
+  "classification": "PERSISTENT-SIGNED REPAIR TEST \u2014 release HOLD; device acceptance pending"
 }
+
+

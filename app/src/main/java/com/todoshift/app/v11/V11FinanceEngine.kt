@@ -27,6 +27,11 @@ object V11FinanceEngine {
     ): MonthFinanceV11 {
 
         val monthText = month.toString()
+        // Unattributed money remains in the overall total, not in a selected calendar.
+        val sources = db.incomeSources.associateBy { it.id }
+        fun included(calendarId: String?): Boolean =
+            calendarIds == null || (calendarId != null && calendarId in calendarIds)
+
 
         val days =
             db.days.filter { day ->
@@ -56,17 +61,14 @@ object V11FinanceEngine {
             LocalizedNumbers.amount(
                 db.payments.sumOf { payment ->
                     if (payment.allocations.isEmpty()) {
-                        if (payment.accrualMonth == monthText)
+                        if (payment.accrualMonth == monthText && included(sources[payment.sourceId]?.calendarId))
                             LocalizedNumbers.cents(payment.amount)
                         else 0L
                     } else
                         payment.allocations
                             .filter { allocation ->
                                 allocation.accrualMonth == monthText &&
-                                    (calendarIds == null ||
-                                        db.incomeSources
-                                            .firstOrNull { it.id == allocation.sourceId }
-                                            ?.calendarId in calendarIds)
+                                    included(sources[allocation.sourceId]?.calendarId)
                             }
                             .sumOf { LocalizedNumbers.cents(it.amount) }
                 }
@@ -76,6 +78,7 @@ object V11FinanceEngine {
             LocalizedNumbers.amount(
                 db.settlements
                     .filter { it.accrualMonth == monthText }
+                    .filter { included(it.calendarId ?: sources[it.sourceId]?.calendarId) }
                     .filter {
                         it.action == SettlementActionV11.WRITE_OFF ||
                             it.action == SettlementActionV11.CANCEL_ENTITLEMENT ||

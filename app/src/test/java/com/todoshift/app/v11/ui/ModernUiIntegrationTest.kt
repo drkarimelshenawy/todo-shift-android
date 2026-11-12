@@ -48,7 +48,7 @@ class ModernUiIntegrationTest {
         var saved: TaskV11? = null
         content { TaskEditorDialogV11(null, V11Database(), emptyList(), {}, { saved = it }) }
         compose.onNodeWithText("Save").assertIsNotEnabled()
-        compose.onNode(hasSetTextAction()).performTextInput("Synthetic quick task")
+        compose.onNodeWithText("Title").performTextInput("Synthetic quick task")
         compose.onNodeWithText("Save").performClick()
         compose.runOnIdle {
             assertEquals("Synthetic quick task", saved!!.title)

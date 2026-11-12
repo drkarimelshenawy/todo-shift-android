@@ -141,4 +141,45 @@ class CommittedEffectsTest {
             c.getSharedPreferences(NeoCommittedEffects.STORE_NAME, 0).getBoolean("pending", false)
         )
     }
+
+    @Test
+    fun widgetRefreshNeverRunsWithTheDatabaseGateHeld() {
+        val c = RuntimeEnvironment.getApplication()
+        val q = NeoCommittedEffects(c)
+        q.prepareWidgets()
+        var gateWasAvailable = false
+        q.reconcile(
+            V11Database(), {}, {},
+            {
+                val entered = java.util.concurrent.CountDownLatch(1)
+                val reader = Thread {
+                    synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+                        entered.countDown()
+                    }
+                }
+                reader.start()
+                gateWasAvailable = entered.await(2, java.util.concurrent.TimeUnit.SECONDS)
+                reader.join(2500)
+            },
+        )
+        assertTrue("Widget Binder callbacks must not wait on the held storage lock", gateWasAvailable)
+    }
+
+    @Test
+    fun overlappingRefreshDoesNotClearANewerPendingJournal() {
+        val c = RuntimeEnvironment.getApplication()
+        val q = NeoCommittedEffects(c)
+        q.prepareWidgets()
+        val prefs = c.getSharedPreferences(NeoCommittedEffects.STORE_NAME, 0)
+        val first = prefs.getLong("generation", 0L)
+        q.reconcile(
+            V11Database(), {}, {},
+            { q.prepare(V11Database(), V11Database()) },
+        )
+        assertTrue(prefs.getLong("generation", 0L) > first)
+        assertTrue("A newer edit must remain queued for retry", prefs.getBoolean("pending", false))
+        q.reconcile(V11Database(), {}, {}, {})
+        assertFalse(prefs.getBoolean("pending", false))
+    }
+
 }

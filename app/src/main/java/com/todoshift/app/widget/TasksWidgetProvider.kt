@@ -125,6 +125,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
                     context,
                     id * 100 + 3,
                     Intent(context, com.todoshift.app.QuickTaskActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         .setData(Uri.parse("todoshift://quick-add/$id")),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
@@ -182,7 +183,20 @@ class TasksWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        ids.forEach { updateWidget(context, manager, it) }
+        // BroadcastReceiver.onReceive executes on the app main thread. Doing DB
+        // recovery and RemoteViews Binder IPC here can trigger an app-wide ANR.
+        val result = goAsync()
+        kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
+        ).launch {
+            try {
+                ids.forEach { id ->
+                    runCatching { updateWidget(context.applicationContext, manager, id) }
+                }
+            } finally {
+                result?.finish()
+            }
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -214,21 +228,21 @@ class TasksWidgetProvider : AppWidgetProvider() {
             .CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
             .launch {
                 try {
-                    runCatching { completeTaskOnIo(context.applicationContext, taskId) }
+                    runCatching { completeTaskOnIo(context.applicationContext, taskId, intent.getBooleanExtra("todo_shift_widget_target_completed", true)) }
                 } finally {
                     pending.finish()
                 }
             }
     }
 
-    private fun completeTaskOnIo(context: Context, taskId: String) {
+    private fun completeTaskOnIo(context: Context, taskId: String, completed: Boolean = true) {
         synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
             val runtime = V11Runtime(context)
             val db = runCatching { runtime.start() }.getOrNull() ?: return
 
             val task = db.tasks.firstOrNull { it.id == taskId } ?: return
 
-            if (task.status == TaskStatusV11.COMPLETED) {
+            if ((task.status == TaskStatusV11.COMPLETED) == completed) {
                 return
             }
 
@@ -240,8 +254,8 @@ class TasksWidgetProvider : AppWidgetProvider() {
                         db.tasks.map {
                             if (it.id == taskId) {
                                 it.copy(
-                                    status = TaskStatusV11.COMPLETED,
-                                    completedAt = now,
+                                    status = if(completed) TaskStatusV11.COMPLETED else TaskStatusV11.TODO,
+                                    completedAt = if(completed) now else null,
                                     updatedAt = now,
                                 )
                             } else it
@@ -249,10 +263,10 @@ class TasksWidgetProvider : AppWidgetProvider() {
                 )
 
             com.todoshift.app.backup.Neo4LocalBackup(context).commitDatabase(db, updated)
-            runCatching { com.todoshift.app.v11.NeoCommittedEffects(context).reconcileCurrent() }
-            ToDoShiftReminder.cancel(context, taskId)
-            refreshAll(context)
         }
+        // Journaled work is retried by JobScheduler; no platform IPC under the data gate.
+        runCatching { com.todoshift.app.v11.NeoCommittedEffects(context).reconcileCurrent() }
+        Neo4WidgetRefresh.schedule(context)
     }
 }
 
@@ -266,3 +280,4 @@ internal fun tasksWidgetEntry(context: Context, action: String, taskId: String? 
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
                 Intent.FLAG_ACTIVITY_SINGLE_TOP
     }
+

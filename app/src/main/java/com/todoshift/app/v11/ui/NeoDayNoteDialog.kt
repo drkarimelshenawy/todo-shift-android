@@ -32,6 +32,7 @@ fun NeoDayNoteDialog(
     val committed = LocalNeoNoteCommitted.current
     val scope = rememberCoroutineScope()
     var pending by remember { mutableStateOf(false) }
+    val rootWritePending = LocalNeoEditorWriteState.current.pending
     val id = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
     val intendedCalendarId by rememberSaveable(id) { mutableStateOf(calendarId) }
     val noteUnchanged =
@@ -72,7 +73,7 @@ fun NeoDayNoteDialog(
     val leave =
         rememberNeoEditorExit(listOf(text, details, color, marker, border), onDismiss, pending)
     AlertDialog(
-        onDismissRequest = { if (!pending) leave() },
+        onDismissRequest = { if (!pending && !rootWritePending) leave() },
         title = { Text(neoLabel("ملاحظة مستقلة", "Independent note") + " • $date") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -110,7 +111,7 @@ fun NeoDayNoteDialog(
         },
         confirmButton = {
             leave.SaveButton(
-                enabled = !pending && text.isNotBlank() && color.matches(Regex("#[0-9a-fA-F]{6}")),
+                enabled = !pending && !rootWritePending && text.isNotBlank() && color.matches(Regex("#[0-9a-fA-F]{6}")),
                 onClick = {
                     if (!noteUnchanged || !styleUnchanged) {
                         error =
@@ -156,7 +157,7 @@ fun NeoDayNoteDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = { if (!pending) leave() }) { Text(neoLabel("إلغاء", "Cancel")) }
+            TextButton(enabled = !pending && !rootWritePending, onClick = { leave() }) { Text(neoLabel("إلغاء", "Cancel")) }
         },
     )
 }

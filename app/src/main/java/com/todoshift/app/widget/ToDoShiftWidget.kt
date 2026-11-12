@@ -16,6 +16,10 @@ import com.todoshift.app.MainActivity
 import com.todoshift.app.R
 import com.todoshift.app.v11.V11Runtime
 import java.time.YearMonth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class ToDoShiftWidget :
     AppWidgetProvider() {
@@ -56,372 +60,42 @@ class ToDoShiftWidget :
                 )
             }
 
-            manager.notifyAppWidgetViewDataChanged(
-                ids,
-                R.id.widget_grid
-            )
+
         }
 
-        private fun updateWidget(
-            context: Context,
-            manager: AppWidgetManager,
-            widgetId: Int
-        ) {
-            val month =
-                CalendarWidgetState.month(
-                    context,
-                    widgetId
-                )
-
-            val db =
-                runCatching {
-                    V11Runtime(context)
-                        .start()
-                }.getOrNull()
-
-            val count =
-                db?.days
-                    ?.filter { entry ->
-                        entry.date.startsWith(
-                            month.toString()
-                        ) &&
-                        db.calendars
-                            .firstOrNull { calendar ->
-                                calendar.id ==
-                                    entry.calendarId
-                            }
-                            ?.visible != false
-                    }
-                    ?.flatMap {
-                        it.segments
-                    }
-                    ?.count {
-                        it.kind.name != "OFF"
-                    }
-                    ?: 0
-
-            val views =
-                RemoteViews(
-                    context.packageName,
-                    R.layout.widget_calendar
-                )
-
-            applyWidgetTheme(
-                context = context,
-                views = views
-            )
-
-            views.setTextViewText(
-                R.id.widget_title,
-                arabicMonth(month)
-            )
-
-            views.setTextViewText(
-                R.id.widget_summary,
-                if (count == 0)
-                    "لا توجد شيفتات"
-                else
-                    "$count شيفت"
-            )
-
-            val serviceIntent =
-                Intent(
-                    context,
-                    CalendarWidgetService::
-                        class.java
-                ).apply {
-                    putExtra(
-                        AppWidgetManager
-                            .EXTRA_APPWIDGET_ID,
-                        widgetId
-                    )
-
-                    data = Uri.parse(
-                        "todoshift://widget/" +
-                            widgetId +
-                            "/" +
-                            month
-                    )
-                }
-
-            views.setRemoteAdapter(
-                R.id.widget_grid,
-                serviceIntent
-            )
-
-            val prevIntent =
-                Intent(
-                    context,
-                    ToDoShiftWidget::
-                        class.java
-                ).apply {
-                    action = ACTION_PREV
-                    putExtra(
-                        AppWidgetManager
-                            .EXTRA_APPWIDGET_ID,
-                        widgetId
-                    )
-                }
-
-            val nextIntent =
-                Intent(
-                    context,
-                    ToDoShiftWidget::
-                        class.java
-                ).apply {
-                    action = ACTION_NEXT
-                    putExtra(
-                        AppWidgetManager
-                            .EXTRA_APPWIDGET_ID,
-                        widgetId
-                    )
-                }
-
-            views.setOnClickPendingIntent(
-                R.id.widget_prev,
-                PendingIntent.getBroadcast(
-                    context,
-                    widgetId * 10 + 1,
-                    prevIntent,
-                    PendingIntent
-                        .FLAG_UPDATE_CURRENT or
-                        PendingIntent
-                            .FLAG_IMMUTABLE
-                )
-            )
-
-            views.setOnClickPendingIntent(
-                R.id.widget_next,
-                PendingIntent.getBroadcast(
-                    context,
-                    widgetId * 10 + 2,
-                    nextIntent,
-                    PendingIntent
-                        .FLAG_UPDATE_CURRENT or
-                        PendingIntent
-                            .FLAG_IMMUTABLE
-                )
-            )
-
-            val openApp =
-                Intent(
-                    context,
-                    MainActivity::class.java
-                )
-
-            views.setOnClickPendingIntent(
-                R.id.widget_title,
-                PendingIntent.getActivity(
-                    context,
-                    widgetId * 10 + 3,
-                    openApp,
-                    PendingIntent
-                        .FLAG_UPDATE_CURRENT or
-                        PendingIntent
-                            .FLAG_IMMUTABLE
-                )
-            )
-
-            val templateIntent =
-                Intent(
-                    context,
-                    MainActivity::class.java
-                ).apply {
-                    action =
-                        "com.todoshift.app.OPEN_DATE"
-                }
-
-            val template =
-                PendingIntent.getActivity(
-                    context,
-                    widgetId * 10 + 4,
-                    templateIntent,
-                    PendingIntent
-                        .FLAG_UPDATE_CURRENT or
-                        PendingIntent
-                            .FLAG_MUTABLE
-                )
-
-            views.setPendingIntentTemplate(
-                R.id.widget_grid,
-                template
-            )
-
-            val neoSettings = Neo4WidgetSettings(context)
-            if (neoSettings.modern(Neo4WidgetKind.CALENDAR)) {
-                val options = neoSettings.load(Neo4WidgetKind.CALENDAR)
-                neoSettings.skin(Neo4WidgetKind.CALENDAR).apply(views, R.id.widget_root, R.id.widget_title, R.id.widget_summary, R.id.widget_prev, R.id.widget_next)
-                views.setViewVisibility(R.id.widget_grid, if (options.hideContent) android.view.View.GONE else android.view.View.VISIBLE)
-                views.setViewVisibility(R.id.widget_summary, if (options.showDetails && !options.hideContent) android.view.View.VISIBLE else android.view.View.GONE)
-                views.setTextViewText(R.id.widget_title, month.atDay(1).format(java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", if (neoSettings.english()) java.util.Locale.ENGLISH else java.util.Locale.forLanguageTag("ar"))))
-            }
-
-            manager.updateAppWidget(
-                widgetId,
-                views
-            )
-
-            manager
-                .notifyAppWidgetViewDataChanged(
-                    widgetId,
-                    R.id.widget_grid
-                )
-        }
-
-        private fun applyWidgetTheme(
-            context: Context,
-            views: RemoteViews
-        ) {
-            val settings =
-                V11UiSettingsStore(
-                    context.applicationContext
-                ).load()
-
-            val resolved =
-                when (
-                    settings.widgetTheme
-                ) {
-                    V11WidgetTheme.FOLLOW_APP ->
-                        when (
-                            settings.appTheme
-                        ) {
-                            V11AppTheme.MIDNIGHT ->
-                                V11WidgetTheme.DARK
-
-                            else ->
-                                V11WidgetTheme.LIGHT
-                        }
-
-                    else ->
-                        settings.widgetTheme
-                }
-
-            val background: Int
-            val primaryText: Int
-            val secondaryText: Int
-
-            when (resolved) {
-                V11WidgetTheme.DARK -> {
-                    background =
-                        Color.rgb(
-                            22,
-                            27,
-                            34
-                        )
-                    primaryText =
-                        Color.rgb(
-                            230,
-                            237,
-                            243
-                        )
-                    secondaryText =
-                        Color.rgb(
-                            170,
-                            183,
-                            196
-                        )
-                }
-
-                V11WidgetTheme.TRANSPARENT -> {
-                    background =
-                        Color.TRANSPARENT
-                    primaryText =
-                        Color.rgb(
-                            23,
-                            32,
-                            51
-                        )
-                    secondaryText =
-                        Color.rgb(
-                            71,
-                            85,
-                            105
-                        )
-                }
-
-                else -> {
-                    background =
-                        Color.rgb(
-                            248,
-                            250,
-                            252
-                        )
-                    primaryText =
-                        Color.rgb(
-                            13,
-                            35,
-                            68
-                        )
-                    secondaryText =
-                        Color.rgb(
-                            100,
-                            116,
-                            139
-                        )
-                }
-            }
-
-            views.setInt(
-                R.id.widget_root,
-                "setBackgroundColor",
-                background
-            )
-
-            listOf(
-                R.id.widget_prev,
-                R.id.widget_title,
-                R.id.widget_next
-            ).forEach {
-                views.setTextColor(
-                    it,
-                    primaryText
-                )
-            }
-
-            views.setTextColor(
-                R.id.widget_summary,
-                secondaryText
-            )
-        }
-
-        private fun arabicMonth(
-            month: YearMonth
-        ): String {
-            val names = listOf(
-                "يناير",
-                "فبراير",
-                "مارس",
-                "أبريل",
-                "مايو",
-                "يونيو",
-                "يوليو",
-                "أغسطس",
-                "سبتمبر",
-                "أكتوبر",
-                "نوفمبر",
-                "ديسمبر"
-            )
-
-            return "${
-                names[
-                    month.monthValue - 1
-                ]
-            } ${month.year}"
+        private fun updateWidget(context: Context, manager: AppWidgetManager, widgetId: Int) {
+            val month=CalendarWidgetState.month(context,widgetId)
+            val db=runCatching { V11Runtime(context).start() }.getOrNull()
+            val options=manager.getAppWidgetOptions(widgetId)
+            val minWidth=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,300).coerceAtLeast(160)
+            val minHeight=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,300).coerceAtLeast(140)
+            val maxWidth=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,minWidth).coerceAtLeast(minWidth)
+            val maxHeight=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,minHeight).coerceAtLeast(minHeight)
+            val portrait=NeoCalendarWidgetRenderer.build(context,widgetId,month,db,minWidth,maxHeight)
+            val landscape=NeoCalendarWidgetRenderer.build(context,widgetId,month,db,maxWidth,minHeight)
+            manager.updateAppWidget(widgetId,RemoteViews(landscape,portrait))
         }
     }
 
-    override fun onUpdate(
-        context: Context,
-        manager: AppWidgetManager,
-        ids: IntArray
-    ) {
-        ids.forEach {
-            updateWidget(
-                context,
-                manager,
-                it
-            )
+    // Broadcast receivers execute on the app main thread. Reading the database or
+    // rendering RemoteViews here can freeze the launcher's host and our splash screen.
+    private fun updateOffMain(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        val result = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                ids.forEach { id -> runCatching { updateWidget(context.applicationContext, manager, id) } }
+            } finally {
+                result.finish()
+            }
         }
+    }
+
+    override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        updateOffMain(context, manager, ids)
+    }
+
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: android.os.Bundle) {
+        updateOffMain(context, manager, intArrayOf(appWidgetId))
     }
 
     override fun onReceive(
@@ -478,12 +152,7 @@ class ToDoShiftWidget :
             target
         )
 
-        updateWidget(
-            context,
-            AppWidgetManager
-                .getInstance(context),
-            widgetId
-        )
+        updateOffMain(context, AppWidgetManager.getInstance(context), intArrayOf(widgetId))
     }
 
     override fun onDeleted(
@@ -503,3 +172,4 @@ class ToDoShiftWidget :
         )
     }
 }
+

@@ -289,7 +289,7 @@ class Neo4LocalBackup(context: Context) :
                         it.eveningRate,
                     )
                 }
-        require(legacyAmounts.all { it.isFinite() }) { "Non-finite legacy financial value" }
+        FinancialDataValidation.validateMoneyRange(legacyAmounts)
         uiPreferences.forEach { name ->
             all["prefs/$name.json"]?.let { validateUiPreferences(name, json(it)) }
         }
@@ -389,26 +389,7 @@ class Neo4LocalBackup(context: Context) :
             }
         }
         database.tasks.forEach { LocalDate.parse(it.date) }
-        val amounts =
-            database.rates.map { it.amount } +
-                database.payments.map { it.amount } +
-                database.settlements.map { it.amount } +
-                database.obligationPayments.map { it.amount } +
-                database.obligations.flatMap {
-                    listOfNotNull(it.totalAmount, it.installmentAmount)
-                } +
-                database.days.flatMap { it.segments }.mapNotNull { it.exceptionalAmount } +
-                database.payments.flatMap { it.allocations }.map { it.amount } +
-                database.incomeSources.mapNotNull { it.fixedMonthlyAmount } +
-                database.monthSnapshots.flatMap {
-                    listOf(
-                        it.expectedAmount,
-                        it.receivedAmount,
-                        it.settlementAmount,
-                        it.finalDifference,
-                    )
-                }
-        require(amounts.all { it.isFinite() }) { "Non-finite financial value" }
+        FinancialDataValidation.validate(database)
         return database
     }
 
@@ -578,6 +559,7 @@ class Neo4LocalBackup(context: Context) :
                 workplaces.filter { place -> expectedLegacy.workplaces.none { it.id == place.id } }
             val updated =
                 NeoWorkplaceSources.ensure(NeoRatePolicy.reconcile(expected, workplaces), newPlaces)
+            FinancialDataValidation.validate(updated)
             val previous =
                 JSONObject()
                     .put("todo_shift_data", capture(prefs("todo_shift_data")))
@@ -611,6 +593,33 @@ class Neo4LocalBackup(context: Context) :
         }
 
     /** Journaled single-store save: failure cannot be mistaken for a durable cache-only update. */
+    /** Legacy data remains untouched; a failed migration cannot become a confirmed memory-only DB. */
+    internal fun migrateLegacy(
+        oldData: com.todoshift.app.data.AppData,
+        effectiveFrom: String,
+        checkpoint: (String) -> Unit = {},
+    ): V11Database = synchronized(Neo4DataGate.monitor) {
+        recoverIfNeeded()
+        if (storage.hasDatabase()) return@synchronized storage.load()
+        check(!storage.wasMigrated()) { "Previously migrated database is missing" }
+        val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+        val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+        require(snapshot.size <= 48 * 1024 * 1024)
+        writeAtomic(journal, snapshot)
+        try {
+            checkpoint("journal")
+            val migrated = storage.migrateIfNeeded(oldData, effectiveFrom)
+            checkpoint("database")
+            journal.delete()
+            check(!journal.baseFile.exists()) { "Unable to finalize migration" }
+            migrated
+        } catch (failure: Exception) {
+            try { recoverIfNeeded() }
+            catch (rollback: Exception) { failure.addSuppressed(rollback) }
+            throw failure
+        }
+    }
+
     internal fun commitDatabase(
         expected: V11Database,
         next: V11Database,
@@ -622,6 +631,7 @@ class Neo4LocalBackup(context: Context) :
             NeoNewReferenceGuard.validate(expected, next) {
                 legacy.load().workplaces.map { it.id }.toSet()
             }
+            FinancialDataValidation.validate(next)
             val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
             previous.put(
                 NeoCommittedEffects.STORE_NAME,
@@ -877,6 +887,9 @@ class Neo4LocalBackup(context: Context) :
                 require(o.getJSONObject(key).getString("type") == type) {
                     "Invalid preference type in $name/$key"
                 }
+        }
+        if (name == "todo_shift_neo4_profiles" && o.has("profiles")) {
+            Neo4Profiles.decode(o.getJSONObject("profiles").getString("value"))
         }
     }
 

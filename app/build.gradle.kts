@@ -12,8 +12,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 32
-        versionName = "4.3.0-premium-dev"
+        versionCode = 38
+        versionName = "4.4.0-premium-ux-test"
     }
 
 
@@ -69,3 +69,5 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
+
+

@@ -19,7 +19,7 @@ def wait(fn, seconds=45):
     while time.monotonic() < end:
         try:
             value = fn()
-            if value: return value
+            if value is not None and value is not False: return value
         except (subprocess.SubprocessError, ET.ParseError, AssertionError) as exc: last = exc
         time.sleep(.4)
     raise AssertionError("Timed out: " + str(last))
@@ -64,7 +64,6 @@ def run():
     snapshot("38-after-update")
     click("Tasks", "المهام"); click("UpgradeFixture")
     wait(lambda: find(dump(), ("Title", "العنوان"))); snapshot("38-task-editor")
-    shell("input", "keyevent", "KEYCODE_BACK")
     click("Cancel", "إلغاء")
     def task_checkbox():
         root = dump()

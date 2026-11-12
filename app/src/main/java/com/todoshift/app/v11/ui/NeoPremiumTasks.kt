@@ -140,7 +140,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             NeoChoice(neoLiteral("الأولوية","Priority"),listOf<TaskPriorityV11?>(null)+TaskPriorityV11.entries,priority,{it?.let { neoPriorityLabel(it) } ?: neoLiteral("أي أولوية","Any priority")},{priority=it})
             NeoChoice(neoLiteral("التقويم","Calendar"),listOf<String?>(null)+db.calendars.map {it.id},calendar,{id-> db.calendars.firstOrNull {it.id==id}?.name ?: neoLiteral("كل التقاويم","All calendars")},{calendar=it})
             NeoChoice(neoLiteral("الترتيب","Sort"),NeoTaskSort.entries,options.sort,{when(it){NeoTaskSort.DATE->neoLiteral("التاريخ","Date");NeoTaskSort.PRIORITY->neoLiteral("الأولوية","Priority");NeoTaskSort.MANUAL->neoLiteral("يدوي","Manual")}},{saveOptions(options.copy(sort=it))})
-            NeoSwitch(neoLiteral("بطاقات مضغوطة","Compact cards"),options.compact) {saveOptions(options.copy(compact=it))}
+            NeoChoice(neoLabel("كثافة البطاقات","Card density"),listOf(true,false),options.compact,
+                { if(it) neoLabel("مضغوط","Compact") else neoLabel("مريح","Comfortable") },
+                {saveOptions(options.copy(compact=it))})
             NeoSwitch(neoLiteral("إخفاء المكتمل تلقائيًا","Hide completed automatically"),options.hideCompleted) {saveOptions(options.copy(hideCompleted=it))}
             TextButton(onClick={period=NeoTaskPeriod.TODAY;status=NeoTaskStatus.ALL;priority=null;calendar=null;search=""}) {Text(neoLiteral("إعادة ضبط الفلاتر","Reset filters"))}
         }

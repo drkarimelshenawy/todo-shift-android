@@ -133,7 +133,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
         )
         Column(
             Modifier.fillMaxWidth()
-                .background(if(kind==Neo4WidgetKind.CALENDAR) Color(skin.background).copy(alpha=opacity) else Color(skin.background), MaterialTheme.shapes.medium)
+                .background(if(kind==Neo4WidgetKind.CALENDAR) Color(skin.panelColor).copy(alpha=opacity) else Color(skin.background), MaterialTheme.shapes.medium)
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -177,7 +177,9 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             Neo4WidgetTheme.entries,
             value.theme,
             { neo4Label(it) },
-            { save(value.copy(theme = it)) },
+            { theme -> save(value.copy(theme = theme, backgroundOpacity =
+                if(theme == Neo4WidgetTheme.TRANSPARENT) 0f
+                else if(value.backgroundOpacity == 0f) .85f else value.backgroundOpacity)) },
         )
         val valid = accent.isEmpty() || accent.matches(Regex("#[0-9a-fA-F]{6}"))
         OutlinedTextField(

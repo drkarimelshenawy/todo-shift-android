@@ -100,3 +100,49 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"
 
+
+  emulator-smoke:
+    needs: signed-test-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: Premium-Repair-PERSISTENT-SIGNED-vc38
+          path: candidate-apk
+      - uses: actions/download-artifact@v4
+        with:
+          name: Premium-Repair-PERSISTENT-SIGNED-vc37
+          path: baseline-apk
+          run-id: 43122329155
+          github-token: ${{ github.token }}
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          ram-size: 2048M
+          disable-animations: true
+          script: python3 tools/premium_device_smoke.py baseline-apk/*.apk candidate-apk/*.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-35-update-startup-smoke
+          path: device-smoke/
+          if-no-files-found: warn

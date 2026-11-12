@@ -47,12 +47,12 @@ fun NeoTaskTemplatesScreen(db: V11Database, workplaces: List<Workplace>, onChang
         }
     }
     fun start(template: NeoSmartStore.TaskTemplate?=null) {
-        editingId=template?.id;name=template?.name.orEmpty();titles=template?.titles?.joinToString("\n").orEmpty()
+        error=null;editingId=template?.id;name=template?.name.orEmpty();titles=template?.titles?.joinToString("\n").orEmpty()
         workplace=template?.workplaceId;calendar=template?.calendarId;kind=template?.shiftKind;editing=true
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         NeoPageHeader(neoLabel("قوالب المهام","Task templates"),onBack)
-        error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
+        if(usingId == null) error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
         Button(enabled=ready&&!busy,onClick={start()}) {Text(neoLabel("قالب جديد","New template"))}
         if(ready&&templates.isEmpty()) Text(neoLabel("لا توجد قوالب محفوظة","No saved templates"))
         templates.forEach { template -> Card(Modifier.fillMaxWidth()) {
@@ -64,7 +64,7 @@ fun NeoTaskTemplatesScreen(db: V11Database, workplaces: List<Workplace>, onChang
                     TextButton(enabled=!busy,onClick={mutate({store.saveTemplate(template.name+" • "+neoLiteral("نسخة","Copy"),template.titles,template.workplaceId,template.calendarId,template.shiftKind)})}) {Text(neoLabel("نسخ","Duplicate"))}
                     TextButton(enabled=!busy,onClick={deleting=template.id}) {Text(neoLabel("حذف","Delete"))}
                 }
-                OutlinedButton(enabled=!busy&&!write.pending,onClick={usingId=template.id;workplace=template.workplaceId;calendar=template.calendarId;kind=template.shiftKind}) {Text(neoLabel("استخدام القالب","Use template"))}
+                OutlinedButton(enabled=!busy&&!write.pending,onClick={error=null;usingId=template.id;workplace=template.workplaceId;calendar=template.calendarId;kind=template.shiftKind}) {Text(neoLabel("استخدام القالب","Use template"))}
             }
         } }
     }

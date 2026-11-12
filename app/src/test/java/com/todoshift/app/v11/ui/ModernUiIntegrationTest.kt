@@ -127,7 +127,7 @@ class ModernUiIntegrationTest {
                     )
             )
         content { NeoModernHub(db, emptyList(), false, false, {}, {}, {}) }
-        compose.onNodeWithText("Title").performTextInput("Private")
+        compose.onNode(hasSetTextAction()).performTextInput("Private")
         compose.onNodeWithText("Private payment", substring = true).assertDoesNotExist()
     }
 }

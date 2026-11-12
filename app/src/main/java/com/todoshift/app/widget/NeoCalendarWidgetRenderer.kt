@@ -25,7 +25,7 @@ object NeoCalendarWidgetRenderer {
         val english=settings.english();val locale=if(english) Locale.ENGLISH else Locale.forLanguageTag("ar")
         val rtl=settings.calendarRtl(p);val direction=if(rtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         val views=RemoteViews(context.packageName,R.layout.widget_calendar_v2)
-        views.setImageViewBitmap(R.id.widget_panel,Neo4WidgetPainter.panel(skin.background,skin.accent,options.backgroundOpacity,(width*2).coerceIn(280,640),(height*2).coerceIn(280,900)))
+        views.setImageViewBitmap(R.id.widget_panel,Neo4WidgetPainter.panel(skin.panelColor,skin.accent,options.backgroundOpacity,(width*2).coerceIn(280,640),(height*2).coerceIn(280,900)))
         views.setTextViewText(R.id.widget_title,month.atDay(1).format(DateTimeFormatter.ofPattern("MMMM yyyy",locale)))
         listOf(R.id.widget_title,R.id.widget_prev,R.id.widget_next).forEach { views.setTextColor(it,skin.text) }
         views.setViewVisibility(R.id.widget_summary,if(db==null) View.VISIBLE else View.GONE)

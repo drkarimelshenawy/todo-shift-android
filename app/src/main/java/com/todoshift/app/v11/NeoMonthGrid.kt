@@ -12,7 +12,7 @@ object NeoMonthGrid {
     fun dates(month: YearMonth, firstWeekday: Int): List<LocalDate> {
         val start = start(month, firstWeekday)
         val offset = java.time.temporal.ChronoUnit.DAYS.between(start,month.atDay(1)).toInt()
-        val rows = maxOf(5,(offset + month.lengthOfMonth() + 6)/7)
+        val rows = (offset + month.lengthOfMonth() + 6)/7
         return List(rows*7) { start.plusDays(it.toLong()) }
     }
     fun edges(date: LocalDate, month: YearMonth, firstWeekday: Int): Edges {
@@ -23,3 +23,4 @@ object NeoMonthGrid {
             col==0 || date.dayOfMonth==1, col==6 || date.dayOfMonth==month.lengthOfMonth())
     }
 }
+

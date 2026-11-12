@@ -68,7 +68,10 @@ class ModernToolScreensTest {
 
     @Test
     fun taskTemplateScreen() {
-        open("Task templates", "One task per line")
+        open("Task templates", "New template")
+        compose.waitForIdle()
+        compose.onNodeWithText("New template").performClick()
+        compose.onNodeWithText("One task per line").assertExists()
     }
 
     @Test

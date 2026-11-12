@@ -60,6 +60,9 @@ fun NeoCalendarPreferences(p: NeoAppearance, update: (NeoAppearance) -> Unit) {
     NeoSwitch(neoLabel("رموز الملاحظات", "Note icons"), p.showNoteIcons) {
         update(p.copy(showNoteIcons = it))
     }
+    NeoSwitch(neoLabel("إظهار اسم مكان العمل", "Show workplace name"), p.showWorkplaceNames) {
+        update(p.copy(showWorkplaceNames = it))
+    }
     NeoSwitch(neoLabel("أسماء الشيفتات", "Shift names"), p.showShiftNames) {
         update(p.copy(showShiftNames = it))
     }

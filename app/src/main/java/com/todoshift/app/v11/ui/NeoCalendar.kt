@@ -153,7 +153,9 @@ fun NeoCalendarArea(
     }
     var sheetDate by rememberSaveable { mutableStateOf<String?>(null) }
     val view = if (paintMode) NeoCalendarView.MONTH else p.calendarView
+    var tappedDate by rememberSaveable(month.toString(), view) { mutableStateOf<String?>(null) }
     fun move(step: Long) {
+        tappedDate = null
         val date =
             when (view) {
                 NeoCalendarView.MONTH -> neoMoveMonth(month, selectedDate, step)
@@ -303,48 +305,16 @@ fun NeoCalendarArea(
                 else if (shownView == NeoCalendarView.WEEK) neoWeekStart(date, p.firstWeekday)
                 else date
             val columns = if (shownView == NeoCalendarView.DAY) 1 else 7
-            val rows =
-                if (shownView != NeoCalendarView.MONTH) 1
-                else
-                    maxOf(
-                        5,
-                        (((shownMonth.atDay(1).dayOfWeek.value - p.firstWeekday + 7) % 7 +
-                            shownMonth.lengthOfMonth() +
-                            6) / 7),
-                    )
+            val rows = if(shownView == NeoCalendarView.MONTH) NeoMonthGrid.dates(shownMonth,p.firstWeekday).size/7 else 1
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val fontScale =
                     androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
                 val headerHeight = (24 * fontScale).dp
-                val detailLines =
-                    when {
-                        p.showNotes && presentation.values.any { it.notes.isNotEmpty() } -> 2
-                        p.showShiftNames && presentation.values.any { it.segments.isNotEmpty() } ->
-                            1
-                        else -> 0
-                    }
-                val badgeRows =
-                    if (fontScale > 1.3f)
-                        presentation.values
-                            .maxOfOrNull { day ->
-                                (if (p.showTaskIndicators && day.tasks > 0) 1 else 0) +
-                                    (if (p.showTaskIndicators && day.events > 0) 1 else 0) +
-                                    (if (day.segments.isNotEmpty()) 1 else 0)
-                            }
-                            ?.coerceAtLeast(1) ?: 1
-                    else 1
-                val iconLines =
-                    if (
-                        fontScale > 1.3f &&
-                            p.showNoteIcons &&
-                            presentation.values.any { day ->
-                                day.notes.firstOrNull()?.title?.let { title ->
-                                    listOf("📌", "★", "⚠").any { title.startsWith(it) }
-                                } == true
-                            }
-                    )
-                        1
-                    else 0
+                // Reserve stable slots, independent of visible calendars or day content.
+                val detailLines = (if (p.showNotes) 2 else 0) +
+                    (if (p.showShiftNames) 1 else 0) + (if (p.showWorkplaceNames) 1 else 0)
+                val badgeRows = if (p.showTaskIndicators) 1 else 0
+                val iconLines = if (fontScale > 1.3f && p.showNoteIcons) 1 else 0
                 val contentMinimum =
                     cellMetrics.dateHeight +
                         cellMetrics.captionHeight * (detailLines + badgeRows + iconLines) +
@@ -358,11 +328,7 @@ fun NeoCalendarArea(
                             NeoCellSize.LARGE -> 88.dp
                         } * fontScale,
                     )
-                val rowHeight =
-                    ((maxHeight - headerHeight) / rows).coerceIn(
-                        minimumHeight,
-                        minimumHeight + 12.dp,
-                    )
+                val rowHeight = maxOf(minimumHeight, (maxHeight - headerHeight) / rows)
                 // Keep the complete week visible; grow rows vertically for large type.
                 val contentWidth = maxWidth
                 Column(Modifier.fillMaxSize()) {
@@ -465,11 +431,14 @@ fun NeoCalendarArea(
                                                     }
                                                 },
                                             ) {
+                                                val open = !paintMode && tappedDate == key && cellDate == selectedDate && YearMonth.from(cellDate) == month
                                                 onSelectedDate(cellDate)
                                                 if (!paintMode) {
-                                                    if (YearMonth.from(cellDate) != month)
+                                                    tappedDate = key
+                                                    if (YearMonth.from(cellDate) != month) {
+                                                        tappedDate = null
                                                         onMonthChange(YearMonth.from(cellDate))
-                                                    onOpenDay()
+                                                    } else if (open) onOpenDay()
                                                 }
                                             }
                                     }
@@ -700,7 +669,7 @@ internal fun NeoCalendarCell(
                         else Modifier.align(Alignment.TopEnd).padding(2.dp),
                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                 )
-            if ((p.showNotes && notes.isNotEmpty()) || (p.showShiftNames && segments.isNotEmpty()))
+            if ((p.showNotes && notes.isNotEmpty()) || ((p.showShiftNames || p.showWorkplaceNames) && segments.isNotEmpty()))
                 Column(
                     Modifier.align(Alignment.TopStart)
                         .fillMaxWidth()
@@ -714,7 +683,7 @@ internal fun NeoCalendarCell(
                         )
                 ) {
                     if (p.showNotes)
-                        notes.take(if (segments.isEmpty()) 2 else 1).forEach { note ->
+                        notes.take(2).forEach { note ->
                             val noteColor =
                                 neoHexColor(
                                     noteMetadata
@@ -759,6 +728,12 @@ internal fun NeoCalendarCell(
                                 )
                             }
                         }
+                    if (p.showWorkplaceNames && segments.isNotEmpty()) {
+                        val placeNames = segments.mapNotNull { segment -> workplaces.firstOrNull { it.id == segment.workplaceId }?.name }.distinct().joinToString(" / ").ifEmpty { if(segments.all {it.kind==ShiftKind.OFF}) neoLabel("راحة","Off") else "" }
+                        if (placeNames.isNotEmpty()) Text(placeNames, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp), color = c.onSurface,
+                            modifier = Modifier.background(c.surface.copy(alpha = .85f), RoundedCornerShape(3.dp)))
+                    }
                     if (p.showShiftNames && segments.any { it.kind != ShiftKind.OFF })
                         Text(
                             names,
@@ -773,7 +748,7 @@ internal fun NeoCalendarCell(
                                 ),
                         )
                 }
-            if (segments.isNotEmpty() || (p.showTaskIndicators && (tasks > 0 || events > 0)))
+            if (p.showTaskIndicators && (tasks > 0 || events > 0))
                 FlowRow(
                     Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(2.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -807,18 +782,7 @@ internal fun NeoCalendarCell(
                                     RoundedCornerShape(3.dp),
                                 ),
                         )
-                    if (segments.isNotEmpty())
-                        Text(
-                            if (segments.all { it.kind == ShiftKind.OFF }) neoLabel("راحة", "Off")
-                            else "×${segments.size}",
-                            color = c.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
-                            modifier =
-                                Modifier.background(c.surface, RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 2.dp),
-                        )
+
                 }
         }
     }
@@ -826,3 +790,4 @@ internal fun NeoCalendarCell(
 
 fun neoHexColor(hex: String): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(Color(0xFF80BFFF))
+

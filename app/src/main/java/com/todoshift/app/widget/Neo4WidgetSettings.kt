@@ -27,6 +27,8 @@ data class Neo4WidgetOptions(
     val showDetails: Boolean = false,
     val hideContent: Boolean = false,
     val showAmounts: Boolean = false,
+    val backgroundOpacity: Float = .85f,
+    val showCompleted: Boolean = true,
 )
 
 class Neo4WidgetSettings(private val context: Context) {
@@ -58,6 +60,8 @@ class Neo4WidgetSettings(private val context: Context) {
                     o.optBoolean("showDetails", kind == Neo4WidgetKind.CALENDAR),
                     o.optBoolean("hideContent", false),
                     o.optBoolean("showAmounts", false),
+                    o.optDouble("backgroundOpacity", .85).toFloat().let { require(it.isFinite() && it in 0f..1f); it },
+                    o.optBoolean("showCompleted", true),
                 )
             }
             .getOrDefault(Neo4WidgetOptions(hideContent = true))
@@ -76,6 +80,8 @@ class Neo4WidgetSettings(private val context: Context) {
                             .put("showDetails", value.showDetails)
                             .put("hideContent", value.hideContent)
                             .put("showAmounts", value.showAmounts)
+                            .put("backgroundOpacity", value.backgroundOpacity.toDouble())
+                            .put("showCompleted", value.showCompleted)
                             .toString(),
                     )
             check(editor.commit()) { "Unable to save widget settings" }
@@ -203,3 +209,4 @@ object Neo4WidgetPrivacy {
         Neo4WidgetRefresh.schedule(context)
     }
 }
+

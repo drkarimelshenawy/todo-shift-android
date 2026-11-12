@@ -40,6 +40,10 @@ fun TaskEditorDialogV11(
     externalQuick: Boolean,
     onSave: (TaskV11) -> Unit,
 ) {
+    if(!externalQuick) {
+        FullTaskEditorDialogV11(existing,db,workplaces,onDismiss,onSave)
+        return
+    }
     var title by rememberSaveable(existing?.id) { mutableStateOf(existing?.title.orEmpty()) }
     var date by
         rememberSaveable(existing?.id) {
@@ -124,3 +128,4 @@ fun TaskEditorDialogV11(
         dismissButton = { TextButton(enabled = !write.pending, onClick = { leave() }) { Text(neoLabel("إلغاء", "Cancel")) } },
     )
 }
+

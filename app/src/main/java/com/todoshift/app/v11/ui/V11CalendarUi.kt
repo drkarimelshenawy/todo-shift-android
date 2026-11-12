@@ -357,20 +357,6 @@ fun V11CalendarScreen(
                 }
             }
             if (uiSettings.experience == V11Experience.PREMIUM) {
-                if (activeCalendar != null)
-                    Text(
-                        neoLabel("الإضافة إلى: ", "New entries: ") +
-                            activeCalendar.name +
-                            if (!activeCalendar.visible)
-                                neoLabel(
-                                    " • مخفي — أظهره من إدارة التقاويم",
-                                    " • hidden — show it in Manage calendars",
-                                )
-                            else "",
-                        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 NeoCalendarArea(
                     month = month,
                     db = paintPreview ?: db,
@@ -1741,4 +1727,5 @@ private fun V11CalendarManagerSheet(
         }
     }
 }
+
 

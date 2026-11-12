@@ -35,7 +35,8 @@ class ScreenUiSmokeTest {
     }
     @Test fun tasksAndTodayAreIntegratedAndScrollable() {
         render { V11TasksScreen(V11Database(), emptyList(), {}) }
-        compose.onNodeWithContentDescription("Expand or collapse today's dashboard").assertExists()
+        compose.onNodeWithContentDescription("Expand or collapse today's dashboard").assertDoesNotExist()
+        compose.onNodeWithText("Search tasks").assertExists()
         compose.onNodeWithContentDescription("Add task").assertExists()
         assertTrue(compose.onAllNodes(hasScrollAction()).fetchSemanticsNodes().isNotEmpty())
     }
@@ -43,7 +44,8 @@ class ScreenUiSmokeTest {
         render(NeoAppearance(language = NeoLanguage.ENGLISH, reduceMotion = true, dashboardExpanded = true, showFinanceSummary = true)) {
             V11TasksScreen(V11Database(), emptyList(), {}, financeAuthorized = false)
         }
-        compose.onNodeWithText("Unlock Finance before viewing protected amounts").assertExists()
+        compose.onNodeWithText("Unlock Finance before viewing protected amounts").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Add task").assertExists()
     }
     @Test fun studioPreviewAndDiscardDoNotPersist() {
         val context = RuntimeEnvironment.getApplication()

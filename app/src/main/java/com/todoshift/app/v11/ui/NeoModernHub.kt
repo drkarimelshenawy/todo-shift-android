@@ -39,6 +39,11 @@ fun NeoModernHub(
     val scope = rememberCoroutineScope()
     val store = remember { NeoSmartStore(context.applicationContext) }
     var section by remember { mutableStateOf(initialSection) }
+    if(section == "TASK_TEMPLATES") {
+        NeoTaskTemplatesScreen(db, workplaces, onChange, { if(focused) onBack() else section="SEARCH" })
+        return
+    }
+
     var error by remember { mutableStateOf<String?>(null) }
     var confirmationBase by remember { mutableStateOf(db) }
     var confirmation by remember { mutableStateOf<Pair<String, V11Database>?>(null) }
@@ -439,129 +444,6 @@ fun NeoModernHub(
                         Text(neoLabel("حفظ كمفضل للرسم", "Save paint favorite"))
                     }
                 }
-            }
-            "TASK_TEMPLATES" -> {
-                OutlinedTextField(
-                    name,
-                    { name = it },
-                    label = { Text(neoLabel("اسم القائمة", "List name")) },
-                )
-                OutlinedTextField(
-                    titles,
-                    { titles = it },
-                    label = { Text(neoLabel("مهمة في كل سطر", "One task per line")) },
-                    minLines = 2,
-                    maxLines = 5,
-                )
-                NeoChoice(
-                    neoLabel("مكان عمل اختياري", "Optional workplace"),
-                    listOf<String?>(null) + workplaces.map { it.id },
-                    workplace,
-                    { id ->
-                        workplaces.firstOrNull { it.id == id }?.name ?: neoLabel("بدون", "None")
-                    },
-                    { workplace = it },
-                )
-                Button(
-                    onClick = {
-                        attempt {
-                            store.saveTemplate(
-                                name,
-                                titles.lines().map { it.trim() }.filter { it.isNotEmpty() },
-                                workplace,
-                                templateCalendar,
-                                templateKind,
-                                editingTemplate,
-                            )
-                            templates = store.templates()
-                            name = ""
-                            titles = ""
-                            editingTemplate = null
-                        }
-                    }
-                ) {
-                    Text(neoLabel("حفظ القائمة", "Save template"))
-                }
-                NeoChoice(
-                    neoLabel("تقويم اختياري", "Optional calendar"),
-                    listOf<String?>(null) + db.calendars.map { it.id },
-                    templateCalendar,
-                    { id ->
-                        db.calendars.firstOrNull { it.id == id }?.name ?: neoLabel("بدون", "None")
-                    },
-                    { templateCalendar = it },
-                )
-                NeoChoice(
-                    neoLabel(
-                        "ربط بنوع شيفت إن وُجد في اليوم",
-                        "Link shift type if present on that date",
-                    ),
-                    listOf<ShiftKind?>(null) + ShiftKind.entries,
-                    templateKind,
-                    { kind -> kind?.name ?: neoLabel("بدون", "None") },
-                    { templateKind = it },
-                )
-                templates.forEach { template ->
-                    Row {
-                        TextButton(
-                            onClick = {
-                                editingTemplate = template.id
-                                name = template.name
-                                titles = template.titles.joinToString("\n")
-                                templateKind = template.shiftKind
-                                templateCalendar = template.calendarId
-                                workplace = template.workplaceId
-                            }
-                        ) {
-                            Text(neoLabel("تعديل ", "Edit ") + template.name)
-                        }
-                        TextButton(
-                            onClick = {
-                                attempt {
-                                    store.deleteTemplate(template.id)
-                                    templates = store.templates()
-                                }
-                            }
-                        ) {
-                            Text(neoLabel("حذف القالب فقط", "Delete template only"))
-                        }
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            attempt {
-                                val day = LocalDate.parse(destination)
-                                val next = store.instantiate(template, day, db)
-                                if (next == db)
-                                    error =
-                                        neoLiteral(
-                                            "القائمة موجودة بالفعل لهذا اليوم",
-                                            "Already created for this date",
-                                        )
-                                else if (!busy) {
-                                    busy = true
-                                    scope.launch {
-                                        try {
-                                            withContext(Dispatchers.IO) {
-                                                com.todoshift.app.backup.createNeoSafetyCopy(
-                                                    context,
-                                                    db,
-                                                )
-                                            }
-                                            onChange(next)
-                                        } catch (e: Exception) {
-                                            error = e.message
-                                        } finally {
-                                            busy = false
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    ) {
-                        Text(template.name)
-                    }
-                }
-                NeoDateInput(neoLabel("إنشاء في", "Create on"), destination) { destination = it }
             }
             "RATES" ->
                 if (financial) {
@@ -1099,3 +981,4 @@ fun neoToolLabel(s: String): String =
         "FOCUS" -> neoLabel("التركيز", "Focus")
         else -> neoLabel("إحصاءات محلية", "Local counts")
     }
+

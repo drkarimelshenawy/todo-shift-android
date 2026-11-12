@@ -15,6 +15,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 import com.todoshift.app.widget.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -24,6 +27,9 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
     val store = remember { Neo4WidgetSettings(context.applicationContext) }
     var kind by rememberSaveable { mutableStateOf(Neo4WidgetKind.CALENDAR) }
     var value by remember(kind) { mutableStateOf(store.load(kind)) }
+    val scope=rememberCoroutineScope()
+    var saving by remember { mutableStateOf(false) }
+    var opacity by remember(kind,value.backgroundOpacity) { mutableStateOf(value.backgroundOpacity) }
     var saveError by remember { mutableStateOf<String?>(null) }
     var accent by rememberSaveable(kind, value.accent) { mutableStateOf(value.accent) }
     var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -67,12 +73,12 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             },
         )
     fun save(next: Neo4WidgetOptions) {
-        try {
-            store.save(kind, next)
-            value = next
-            saveError = null
-        } catch (failure: Exception) {
-            saveError = failure.message ?: "Widget settings could not be saved"
+        if(saving) return
+        val target=kind;saving=true
+        scope.launch {
+            try { withContext(Dispatchers.IO) { store.save(target,next) };if(kind==target) value=next;saveError=null }
+            catch(failure: Exception) { saveError=failure.message ?: "Widget settings could not be saved" }
+            finally {saving=false}
         }
     }
     val fixture = remember {
@@ -184,6 +190,12 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             label = { Text("Accent #RRGGBB") },
             modifier = Modifier.fillMaxWidth(),
         )
+        if(kind==Neo4WidgetKind.CALENDAR) {
+            Text(neoLabel("وضوح خلفية الويدجت", "Background opacity"))
+            Slider(value=opacity,onValueChange={opacity=it},valueRange=0f..1f,enabled=!saving,
+                onValueChangeFinished={save(value.copy(backgroundOpacity=opacity))})
+        }
+        if(kind==Neo4WidgetKind.TASKS) NeoSwitch(neoLabel("إظهار المهام المكتملة", "Show completed tasks"),value.showCompleted) {save(value.copy(showCompleted=it))}
         NeoSwitch(neoLabel("تفاصيل إضافية", "Extra details"), value.showDetails) {
             save(value.copy(showDetails = it))
         }

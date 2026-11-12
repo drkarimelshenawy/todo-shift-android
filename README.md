@@ -2,11 +2,12 @@
 
 Current repair candidate: **4.4.0-premium-ux-test / versionCode 38**, package **com.todoshift.app**, on `fix/premium-financial-restore`.
 
-- [Builds and APK downloads](https://github.com/drkarimelshenawy/todo-shift-android/actions/workflows/financial-restore-validation.yml?query=branch%3Afix%2Fpremium-financial-restore): choose the latest successful **push** run. Download **Premium-Repair-PERSISTENT-SIGNED-vc38**, extract it, then open **ToDoShift-4.4.0-premium-ux-test-vc38.apk**.
+- [Validated APK and Android update evidence](https://github.com/drkarimelshenawy/todo-shift-android/actions/workflows/premium-device-validation.yml): choose the latest successful run, download **Premium-UX-vc38-VALIDATED**, extract it, then open **candidate-apk/ToDoShift-4.4.0-premium-ux-test-vc38.apk**.
+- [Source tests, lint and signed builds](https://github.com/drkarimelshenawy/todo-shift-android/actions/workflows/financial-restore-validation.yml?query=branch%3Afix%2Fpremium-financial-restore)
 - [Changes and phone test checklist](docs/premium/UX_4_4_ACCEPTANCE.md)
 - [Installation and identity](docs/premium/INSTALL.md)
 
-The workflow checks tests and Android lint before building the APK, verifies its actual package/version/certificate/source and alignment, and runs an Android 35 update/startup smoke against candidate 37. Its artifacts include the APK, identity/checksums, QA output and device-smoke evidence. Check all jobs on the chosen run; an uploaded APK alone does not mean every later gate passed.
+Financial restore validation checks tests and Android lint before building the APK and verifying its actual package/version/certificate/source and alignment. Premium UX device validation then tests the exact immutable vc38 APK against vc37 on Android 35. It checks the earlier source gates, the APK checksum/identity and application-tree equality before testing, so automation-only changes can be checked without replacing the tested binary. Its validated artifact is uploaded only after the smoke passes and includes the same APK, identity/checksums, screenshots/logs and both source commits. An uploaded signing artifact alone does not imply device validation passed.
 
 Calendar cell sizing and day taps, calendar widget layout/opacity, completed-task styling, task filters/order/density, shared task editing, and template management/use are covered by this candidate. Existing Classic/Neo preference is retained; select **Neo Luxury** in Appearance & Design if Classic is selected. Today lives in Tasks; calendar Today navigates to the date. Cash Book remains separate.
 

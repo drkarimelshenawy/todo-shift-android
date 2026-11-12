@@ -32,3 +32,7 @@ Task ordering is changed with Move up / Move down in each task's menu after sele
 - [ ] العربية والإنجليزية: مواضع أزرار الإنجاز والحفظ والإلغاء ثابتة، والنصوص مقروءة ولا تخرج من حدودها.
 
 Automated tests and native RemoteViews renders do not replace launcher/device timing, notification/Doze, keyboard, backup/restore and non-destructive installer-update acceptance. Protected branches remain unchanged; no merge or release publication is included.
+
+## Current automated delivery gate
+
+The push workflow runs the complete unit/Compose/Robolectric suite plus lint, builds with the existing persistent CI key, verifies APK package/version/source/certificate/alignment, then runs `tools/premium_device_smoke.py` on Android 35. The smoke exercises a vc37-to-vc38 in-place update, UI-created task preservation, editing, completion/reopen and three cold launches. Use the matching run's job conclusions and attached evidence for results, rather than treating this checklist as a pass certificate.

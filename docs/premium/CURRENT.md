@@ -1,3 +1,7 @@
-# Current recovery checkpoint
+# Current repair candidate
 
-Use [recovery/REPORT.md](recovery/REPORT.md), [DEVELOPMENT_GATES.json](DEVELOPMENT_GATES.json) and [recovery/REMAINING.md](recovery/REMAINING.md). P01–P06 independent Development Gates PASS; Device/Release HOLD. Original QA/handoff/remaining/GATES/ACCEPTANCE describe the earlier checkpoint and are intentionally unchanged, not new release passes. Final delivery commit and artifact identity are in the external delivery/CHECKPOINT.json.
+**4.4.0-premium-ux-test / versionCode 38**, branch `fix/premium-financial-restore`.
+
+Use [UX_4_4_ACCEPTANCE.md](UX_4_4_ACCEPTANCE.md) for the implementation map and phone checklist, and [INSTALL.md](INSTALL.md) for the current APK retrieval and identity instructions. CI evidence is attached to the matching commit's Financial restore validation run.
+
+Earlier P01/recovery reports and Development Gates are historical checkpoints; they do not certify this candidate. Tests, lint, signed APK inspection and Android emulator smoke are reported by the current workflow. Physical Android/Honor launcher, notifications/Doze and phone UX acceptance remain separate. No merge or release is included.

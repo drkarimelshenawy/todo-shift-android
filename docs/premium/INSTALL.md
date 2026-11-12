@@ -1,29 +1,19 @@
-# Experimental P01 checkpoint — not an installed-app upgrade
+# Install the current repair candidate
 
-Package remains com.todoshift.app; version remains baseline 4.2.0 / versionCode31. No release version increment was made because P01 is not accepted and P02–P06 are not implemented. No application was installed, uninstalled or cleared in this session.
+Candidate **4.4.0-premium-ux-test**, Android versionCode **38**, package **com.todoshift.app**.
 
-The local debug APK is signed only with an isolated test certificate, SHA256:
+1. Open [Financial restore validation](https://github.com/drkarimelshenawy/todo-shift-android/actions/workflows/financial-restore-validation.yml?query=branch%3Afix%2Fpremium-financial-restore).
+2. Choose the latest successful **push** run on `fix/premium-financial-restore`; check verify, signed-test-apk and emulator-smoke.
+3. In Artifacts, download **Premium-Repair-PERSISTENT-SIGNED-vc38**. GitHub may require sign-in.
+4. Extract the ZIP and install **ToDoShift-4.4.0-premium-ux-test-vc38.apk** as an update, retaining app data. Keep an exported backup before phone testing.
+5. Confirm the installed version is **4.4.0-premium-ux-test (38)**. Use [the checklist](UX_4_4_ACCEPTANCE.md) for the changed screens.
 
-`3a969f25d41d3f07a1f5ea352005ecd02a3afe1e186e82b5f631c227418214d4`
+The workflow derives the APK filename and artifact name from the **verified APK**, rather than a static old label. The archive includes `SHA256SUMS` and `identity/BUILD-IDENTITY.json` with the exact source SHA and Android package/version. Select vc38 rather than an older vc35 artifact.
 
-The Blueprint's documented prior CI certificate is:
+Persistent CI certificate SHA-256:
 
 `aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9`
 
-These differ. The certificate of the user's installed app is unknown. Do **not** install this checkpoint over the current app or suggest uninstall/clear/downgrade as a workaround. Its versionCode31 is also not a higher upgrade candidate over baseline31. A separate user/work profile on the same phone does not bypass Android's package signing checks.
+The signing verification fails before upload if that certificate, package, version or source identity differs. Android still checks compatibility with the installed APK: if it rejects the update, retain the existing installation/data and report the installer message; do not uninstall or clear storage.
 
-For isolated diagnostics, use an authorized emulator or physically separate test device that has never held the package. Populate synthetic fixtures only. This does not establish user-data upgrade compatibility. No connected target is available in this session.
-
-Before any future upgrade candidate:
-
-1. Export and validate a backup without modifying the current app's storage. Keep existing app and data intact.
-2. Obtain the public installed base APK or the actual installed4.1.0/4.2.0 delivery APK; use `adb shell pm path com.todoshift.app`, pull the returned base APK with authorized device access, then `apksigner verify --verbose --print-certs <base.apk>`. No private key is needed to compare certificates.
-3. Compare certificate SHA256 and any explicit signing lineage with the authorized candidate. Same package and a production-labelled key do not establish equivalence. Stop on mismatch.
-4. Use the matching protected signing job, a versionCode greater than every supported installed version and passing gates. Test updates on synthetic baseline and oldest-supported fixtures without uninstall/clear; verify counts, IDs, cents, calendar ownership, notes, settings, attachments and reminders after reopening.
-5. Only after that evidence exists, provide normal in-place Android installation instructions for the accepted candidate. Never expose signing credentials in chat/source/artifacts.
-
-## Retrieval
-
-Local artifacts and reports are under `/workspace/output/premium-p01-resume/`; source is a Git archive of the final local checkpoint. Exact names/checksums are in the external delivery manifest and SHA256SUMS.txt. These are actual workspace paths, **not public URLs**. No GitHub Actions run, uploaded artifact, release or download URL was created.
-
-This session has no verified Android-phone workspace browser/download interface. If the client renders the supplied local-file links as downloads, save the ZIP/APK through that control. If it does not, use the client's documented export/download support or transfer the named files through an explicitly available authorized channel. No port-forwarding UI or public file server is assumed. Do not upload keys/private signing config; they are deliberately excluded from the source and evidence archives.
+The Android 35 smoke installs vc37, creates a real task through the UI, updates in place to vc38, checks fixture data/IDs, opens the editor, completes/reopens the task and restarts three times. Its screenshots, XML, result and logcat are in **Android-35-update-startup-smoke**. This is emulator evidence; the user's actual phone and launcher still need the checklist.

@@ -1078,7 +1078,8 @@ fun FullTaskEditorDialogV11(
                             },
                         )
                     }
-                }                    if(existing!=null) TextButton(onClick={navigator.open("ATTACHMENTS",existing.id)}) {Text(neoLiteral("المرفقات","Attachments"))}
+                }
+                    if(existing!=null) TextButton(onClick={navigator.open("ATTACHMENTS",existing.id)}) {Text(neoLiteral("المرفقات","Attachments"))}
                     else Text(neoLiteral("احفظ المهمة لإضافة مرفقات", "Save the task to add attachments"),style=MaterialTheme.typography.labelSmall)
                 }
 

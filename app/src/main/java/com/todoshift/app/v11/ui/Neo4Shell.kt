@@ -82,7 +82,7 @@ fun Neo4CompactHeader(
                 IconButton(onClick = onOverview) {
                     Icon(Icons.Rounded.Search, neoLabel("بحث", "Search"))
                 }
-            if (destination.isNotEmpty() && destination != "Settings")
+            if (destination.isNotEmpty() && destination !in listOf("Settings", "Tasks"))
                 NeoContextActions(destination)
             if (showMoney)
                 IconButton(onClick = onMoney) {
@@ -94,3 +94,4 @@ fun Neo4CompactHeader(
         }
     }
 }
+

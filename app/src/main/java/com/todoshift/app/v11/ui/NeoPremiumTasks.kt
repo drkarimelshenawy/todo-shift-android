@@ -86,7 +86,6 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     Column(Modifier.weight(1f).padding(vertical=6.dp)) {
-                        Text(neoLiteral("المهام","Tasks"),style=MaterialTheme.typography.titleLarge)
                         Text(today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM",if(LocalNeoEnglish.current) Locale.ENGLISH else Locale.forLanguageTag("ar"))),style=MaterialTheme.typography.labelMedium)
                     }
                     IconButton(onClick={menu=true}) { Icon(Icons.Rounded.MoreVert,neoLiteral("خيارات المهام","Task options")) }

@@ -1,6 +1,7 @@
 package com.todoshift.app.v11.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -8,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 
 val neoSettingsGroups =
@@ -102,12 +104,36 @@ fun NeoRescueSettings(
                         if (id == "APPEARANCE") nav.open("APPEARANCE") else page = id + "_GROUP"
                     }
                 }
-            else
-                NeoFeatureCatalog.search(query)
-                    .filter { it.group.isNotEmpty() }
-                    .forEach { feature ->
-                        NeoSettingsRow(neoLabel(feature.ar, feature.en)) { nav.open(feature.id) }
+            else {
+                val results = remember(query) { NeoSettingsSearch.search(query) }
+                if (results.isEmpty()) {
+                    Text(
+                        neoLabel("لا توجد إعدادات مطابقة", "No matching settings"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                results.forEach { result ->
+                    val group = neoSettingsGroups.firstOrNull { it.first == result.group }
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .clickable { nav.open(result.destination) }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            neoLabel(result.ar, result.en),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            group?.let { neoLabel(it.second, it.third) }.orEmpty(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
+                    HorizontalDivider()
+                }
+            }
         } else {
             val groupId = page.removeSuffix("_GROUP")
             val group = neoSettingsGroups.firstOrNull { it.first == groupId }

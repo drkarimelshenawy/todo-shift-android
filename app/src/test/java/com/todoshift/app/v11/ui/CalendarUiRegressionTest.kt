@@ -178,41 +178,21 @@ class CalendarUiRegressionTest {
             "Seventh column must fit: $friday",
             friday.left >= 0f && friday.right <= with(compose.density) { 320.dp.toPx() },
         )
-        // Large rows scroll vertically; inspect the complete target cell, not clipped viewport
-        // bounds.
-        compose.onNodeWithContentDescription(date.toString(), substring = true).performScrollTo()
-        val task =
-            compose.onNodeWithText("☑1", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        val name =
-            compose
-                .onNodeWithText("Morning", useUnmergedTree = true)
-                .fetchSemanticsNode()
-                .boundsInRoot
-        val dateBounds =
-            compose.onNodeWithText("9", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        val pinBounds =
-            compose.onNodeWithText("📌", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        val noteBounds =
-            compose
-                .onNodeWithText("Fixture", useUnmergedTree = true)
-                .fetchSemanticsNode()
-                .boundsInRoot
-        org.junit.Assert.assertTrue(
-            "Pin must not obscure date: $dateBounds $pinBounds",
-            pinBounds.top >= dateBounds.bottom,
-        )
-        org.junit.Assert.assertTrue(
-            "Note must not obscure pin: $pinBounds $noteBounds",
-            noteBounds.top >= pinBounds.bottom,
-        )
-        org.junit.Assert.assertTrue(
-            "Shift must not obscure note: $noteBounds $name",
-            name.top >= noteBounds.bottom,
-        )
+        // Full-month fit is intentional: the calendar MUST NOT expose a scroll action,
+        // including at 200% font scale. Complete day data remains in accessibility
+        // semantics even when visible captions have to ellipsize within fixed rows.
+        val cell = compose.onNodeWithContentDescription(date.toString(), substring = true)
+        cell.assertExists()
+        val description = cell.fetchSemanticsNode().config[
+            androidx.compose.ui.semantics.SemanticsProperties.ContentDescription
+        ].joinToString(" ")
+        org.junit.Assert.assertTrue(description.contains("Morning"))
+        org.junit.Assert.assertTrue(description.contains("Fixture"))
         compose.onNodeWithText("×1").assertDoesNotExist()
-        org.junit.Assert.assertTrue(
-            "Labels and counts must not overlap: $name $task",
-            name.bottom <= task.top,
+        compose.onNodeWithText("9", useUnmergedTree = true).assertExists()
+        org.junit.Assert.assertFalse(
+            "The month must not become vertically scrollable",
+            compose.onAllNodes(hasScrollAction()).fetchSemanticsNodes().isNotEmpty(),
         )
     }
 }

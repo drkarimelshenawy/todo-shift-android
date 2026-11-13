@@ -43,12 +43,17 @@ fun NeoCalendarManagerDialog(
         title = { Text(neoLabel("التقاويم", "Calendars")) },
         text = {
             Column(
-                Modifier.fillMaxWidth()
-                    .heightIn(max = 420.dp)
-                    .verticalScroll(rememberScrollState())
-                    .imePadding(),
+                Modifier.fillMaxWidth().imePadding(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                // Only the calendar list scrolls when long; the dialog itself
+                // wraps its content, with actions immediately below the rows.
+                Column(
+                    Modifier.fillMaxWidth()
+                        .heightIn(max = 264.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                 db.calendars
                     .sortedBy { it.order }
                     .forEach { calendar ->
@@ -110,6 +115,7 @@ fun NeoCalendarManagerDialog(
                             }
                         }
                     }
+                }
                 Text(
                     neoLabel(
                         "العين للعرض؛ العلامة لوجهة الإضافة",

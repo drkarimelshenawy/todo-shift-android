@@ -1,0 +1,76 @@
+name: VC39 UI candidate (signed test, no release)
+
+on:
+  push:
+    branches:
+      - feat/vc39-cashbook-ui-calendar-settings
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-candidate:
+    if: github.ref == 'refs/heads/feat/vc39-cashbook-ui-calendar-settings'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Pin exact source branch
+        run: |
+          git checkout -B feat/vc39-cashbook-ui-calendar-settings "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore persistent signing key securely
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Unit tests, lint and assemble
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          gradle --no-daemon -I tools/premium_qa.init.gradle testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - name: Validate exact APK identity, signature and alignment
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk \
+            --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
+            --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
+            --expected-sha "$GITHUB_SHA" \
+            --expected-branch feat/vc39-cashbook-ui-calendar-settings \
+            --output delivery/identity
+          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-4.4.1-cashbook-ui-test-vc39.apk
+          (cd delivery && sha256sum *.apk > SHA256SUMS)
+      - name: Copy QA evidence
+        if: always()
+        run: |
+          mkdir -p delivery/qa
+          cp -R app/build/test-results/testDebugUnitTest delivery/qa/junit 2>/dev/null || true
+          cp app/build/reports/lint-results-debug.* delivery/qa/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ToDoShift-vc39-PERSISTENT-SIGNED-TEST
+          path: delivery/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Wipe signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

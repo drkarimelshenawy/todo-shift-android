@@ -415,12 +415,17 @@ fun V11CalendarScreen(
                     modifier = Modifier.weight(1f),
                 )
 
-            if (uiSettings.experience == V11Experience.PREMIUM && (paintMode || paletteOpen)) {
-                LaunchedEffect(Unit) {
-                    paintMode = true
-                    paletteOpen = false
-                }
-                NeoPainterBar(
+            // This slot is ALWAYS reserved, even while the workplace painter is closed.
+            // Opening the bar cannot resize the calendar or cover its final week.
+            if (uiSettings.experience == V11Experience.PREMIUM) {
+                Box(Modifier.fillMaxWidth().height(112.dp)) {
+                    if (paintMode || paletteOpen) {
+                        LaunchedEffect(Unit) {
+                            paintMode = true
+                            paletteOpen = false
+                        }
+                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                            NeoPainterBar(
                     db,
                     workplaces,
                     activeCalendar?.id,
@@ -440,7 +445,10 @@ fun V11CalendarScreen(
                         paintPreview = null
                     },
                     onPreview = { paintPreview = it },
-                )
+                            )
+                        }
+                    }
+                }
             } else if (paintMode) {
                 V11PaintStatusBar(
                     workplace = selectedWorkplace,

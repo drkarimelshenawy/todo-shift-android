@@ -1,10 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 38,
-  "versionName": "4.4.0-premium-ux-test",
-  "branch": "premium/stable-candidate",
+  "versionCode": 39,
+  "versionName": "4.4.1-cashbook-ui-test",
+  "branch": "feat/vc39-cashbook-ui-calendar-settings",
   "baseline": "e178b134658afad04d645b044f24d236594cbe33",
-  "classification": "PERSISTENT-SIGNED REPAIR TEST \u2014 release HOLD; device acceptance pending"
+  "classification": "PERSISTENT-SIGNED UI TEST CANDIDATE — not a release; device acceptance pending"
 }
-
-

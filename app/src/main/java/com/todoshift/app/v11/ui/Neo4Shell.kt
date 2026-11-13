@@ -32,7 +32,10 @@ fun Neo4CompactHeader(
     onBack: (() -> Unit)? = null,
 ) {
     val p = LocalNeoAppearance.current
-    Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = p.cardOpacity)) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface.copy(alpha = p.cardOpacity),
+        shadowElevation = if (p.palette == NeoPalette.CASHBOOK_BLUE) 1.dp else 0.dp,
+    ) {
         Row(
             Modifier.fillMaxWidth()
                 .statusBarsPadding()

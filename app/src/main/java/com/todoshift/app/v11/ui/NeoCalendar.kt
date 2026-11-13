@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -310,29 +311,12 @@ fun NeoCalendarArea(
                 val fontScale =
                     androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
                 val headerHeight = (24 * fontScale).dp
-                // Reserve stable slots, independent of visible calendars or day content.
-                val detailLines = (if (p.showNotes) 2 else 0) +
-                    (if (p.showShiftNames) 1 else 0) + (if (p.showWorkplaceNames) 1 else 0)
-                val badgeRows = if (p.showTaskIndicators) 1 else 0
-                val iconLines = if (fontScale > 1.3f && p.showNoteIcons) 1 else 0
-                val contentMinimum =
-                    cellMetrics.dateHeight +
-                        cellMetrics.captionHeight * (detailLines + badgeRows + iconLines) +
-                        12.dp
-                val minimumHeight =
-                    maxOf(
-                        contentMinimum,
-                        when (p.cellSize) {
-                            NeoCellSize.COMPACT -> 48.dp
-                            NeoCellSize.COMFORTABLE -> 64.dp
-                            NeoCellSize.LARGE -> 88.dp
-                        } * fontScale,
-                    )
-                val rowHeight = maxOf(minimumHeight, (maxHeight - headerHeight) / rows)
-                // Keep the complete week visible; grow rows vertically for large type.
-                val contentWidth = maxWidth
-                Column(Modifier.fillMaxSize()) {
-                    Column(Modifier.width(contentWidth).verticalScroll(rememberScrollState())) {
+                // Month fit is a hard layout constraint: labels and text preferences must
+                // never enlarge the month grid or introduce calendar scrolling.
+                // Text is ellipsized/clipped inside a cell; full details remain tappable.
+                val rowHeight = fittedCalendarRowHeight(maxHeight, headerHeight, rows)
+                Column(Modifier.fillMaxSize().clipToBounds()) {
+                    Column(Modifier.fillMaxSize()) {
                         CompositionLocalProvider(
                             androidx.compose.ui.platform.LocalLayoutDirection provides
                                 neoDirection(p.weekdayDirection, gridDirection)
@@ -592,6 +576,10 @@ internal fun NeoCalendarCell(
     val p = LocalNeoAppearance.current
     val c = MaterialTheme.colorScheme
     val measured = metrics ?: neoCellMetrics()
+    // neoCellMetrics already measures text with the scaled LocalDensity.
+    // Multiplying by fontScale again incorrectly pushes captions outside a
+    // fixed-height calendar cell (and outside the appearance preview).
+    val scaledDateHeight = measured.dateHeight + 6.dp
     val today = date == LocalDate.now() && p.todayStyle != NeoTodayStyle.NONE
     val segments = remember(entries) { entries.flatMap { it.segments } }
     val names = segments.map { neoShiftLabel(it.kind) }.distinct().joinToString(" / ")
@@ -665,7 +653,7 @@ internal fun NeoCalendarCell(
                     modifier =
                         if (markerLine)
                             Modifier.align(Alignment.TopStart)
-                                .padding(start = 2.dp, top = measured.dateHeight)
+                                .padding(start = 2.dp, top = scaledDateHeight)
                         else Modifier.align(Alignment.TopEnd).padding(2.dp),
                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                 )
@@ -677,9 +665,12 @@ internal fun NeoCalendarCell(
                             start = 2.dp,
                             end = 2.dp,
                             top =
-                                measured.dateHeight +
+                                scaledDateHeight +
                                     if (markerLine) measured.captionHeight else 0.dp,
-                            bottom = measured.captionHeight + 10.dp,
+                            bottom =
+                                if (p.showTaskIndicators && (tasks > 0 || events > 0))
+                                    measured.captionHeight + 8.dp
+                                else 2.dp,
                         )
                 ) {
                     if (p.showNotes)

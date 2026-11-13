@@ -26,7 +26,7 @@ class NeoAppearanceStore(context: Context) {
                 "FOREST" -> NeoPalette.EMERALD_LUXURY
                 "SAND" -> NeoPalette.CHAMPAGNE_GOLD
                 "MONO" -> NeoPalette.MONOCHROME
-                else -> NeoPalette.CHAMPAGNE_GOLD
+                else -> NeoPalette.CASHBOOK_BLUE
             }
         val order =
             prefs
@@ -55,7 +55,7 @@ class NeoAppearanceStore(context: Context) {
                     prefs.getFloat("intensity", 0.65f).takeIf { it.isFinite() }?.coerceIn(0f, 1f)
                         ?: 0.65f,
                 cardStyle = readEnum("cardStyle", NeoCardStyle.FLAT),
-                cornerRadius = prefs.getInt("cornerRadius", 12).coerceIn(8, 32),
+                cornerRadius = prefs.getInt("cornerRadius", 16).coerceIn(8, 32),
                 glass = prefs.getBoolean("glass", false),
                 glow = prefs.getBoolean("glow", false),
                 motion = prefs.getInt("motion", 1).coerceIn(0, 2),

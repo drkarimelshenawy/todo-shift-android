@@ -11,8 +11,9 @@ def dump():
     shell("uiautomator", "dump", "/sdcard/smoke.xml")
     return ET.fromstring(adb("exec-out", "cat", "/sdcard/smoke.xml"))
 def snapshot(name):
+    root = dump()  # Wait for accessibility traversal before capturing the rendered frame.
     (OUT / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p", binary=True))
-    (OUT / (name + ".xml")).write_text(ET.tostring(dump(), encoding="unicode"))
+    (OUT / (name + ".xml")).write_text(ET.tostring(root, encoding="unicode"))
 def wait(fn, seconds=45):
     end = time.monotonic() + seconds
     last = None
@@ -88,7 +89,8 @@ def run():
         snapshot("43-screen-" + label.lower())
     shell("am", "force-stop", APP)
     prefs_path = "shared_prefs/todo_shift_neo3_appearance.xml"
-    appearance_xml = ET.fromstring(adb("exec-out", "run-as", APP, "cat", prefs_path))
+    appearance_raw = adb("exec-out", "run-as", APP, "cat", prefs_path)
+    appearance_xml = ET.fromstring(appearance_raw) if appearance_raw.lstrip().startswith("<") else ET.Element("map")
     appearance_node = next((n for n in appearance_xml if n.get("name") == "neo4Appearance"), None)
     if appearance_node is None:
         appearance_node = ET.SubElement(appearance_xml, "string", {"name": "neo4Appearance"})

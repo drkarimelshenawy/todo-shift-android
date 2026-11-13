@@ -24,4 +24,5 @@ fun neo4AccentArgb(palette: NeoPalette): Long = when (palette) {
     NeoPalette.ARCTIC_WHITE -> 0xFF91D3F5
     NeoPalette.SUNSET_COPPER -> 0xFFEAA27E
     NeoPalette.MONOCHROME -> 0xFFE9EDF4
+    NeoPalette.CASHBOOK_BLUE -> 0xFF17639A
 }

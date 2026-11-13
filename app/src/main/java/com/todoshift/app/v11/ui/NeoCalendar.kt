@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
@@ -183,7 +184,19 @@ fun NeoCalendarArea(
     }
     val inheritedDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
     val gridDirection = neoDirection(p.gridDirection, inheritedDirection)
-    Column(modifier.fillMaxSize()) {
+    val premiumCashBook = p.palette == NeoPalette.CASHBOOK_BLUE
+    Column(
+        modifier.fillMaxSize()
+            .then(
+                if (premiumCashBook) Modifier.background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFFFAFCFF), Color(0xFFF0F4FB))
+                    ),
+                    RoundedCornerShape(22.dp),
+                ) else Modifier
+            )
+            .padding(if (premiumCashBook) 6.dp else 0.dp)
+    ) {
         Column(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 52.dp),
@@ -601,21 +614,21 @@ internal fun NeoCalendarCell(
     Surface(
         modifier
             .alpha(if (muted) .20f else 1f)
-            .clip(RoundedCornerShape(1.dp))
+            .clip(RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 1.dp))
             .semantics {
                 contentDescription = description
                 selected = chosen
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         color = (if (muted) c.surfaceContainerLowest else c.surface).copy(alpha = p.cardOpacity),
-        shape = RoundedCornerShape(1.dp),
+        shape = RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 1.dp),
         border =
             BorderStroke(
-                if (today || chosen || painting) 2.dp else 0.5.dp,
+                if (today || chosen || painting) 2.dp else if (p.palette == NeoPalette.CASHBOOK_BLUE) 0.75.dp else 0.5.dp,
                 when {
                     painting -> c.tertiary
                     chosen -> c.secondary
-                    today -> c.primary
+                    today -> if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFD8AD55) else c.primary
                     else -> c.outlineVariant
                 },
             ),

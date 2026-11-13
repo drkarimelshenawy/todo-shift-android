@@ -418,7 +418,10 @@ fun V11CalendarScreen(
             // This slot is ALWAYS reserved, even while the workplace painter is closed.
             // Opening the bar cannot resize the calendar or cover its final week.
             if (uiSettings.experience == V11Experience.PREMIUM) {
-                Box(Modifier.fillMaxWidth().height(112.dp)) {
+                Box(
+                    Modifier.fillMaxWidth().height(112.dp)
+                        .padding(top = 4.dp, bottom = 4.dp)
+                ) {
                     if (paintMode || paletteOpen) {
                         LaunchedEffect(Unit) {
                             paintMode = true

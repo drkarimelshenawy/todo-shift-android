@@ -13,11 +13,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28], qualifiers="ar-rEG-w320dp-h640dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class PremiumCompleteLayoutTest {
     @get:Rule val compose=createComposeRule()
@@ -77,3 +79,4 @@ class PremiumCompleteLayoutTest {
     }
 
 }
+

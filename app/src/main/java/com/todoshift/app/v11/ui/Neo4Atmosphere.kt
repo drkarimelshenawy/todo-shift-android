@@ -54,6 +54,9 @@ fun Neo4Atmosphere(modifier: Modifier = Modifier, appearance: NeoAppearance = Lo
         }
     }
     Box(modifier.fillMaxSize().background(c.background)) {
+        if (!dark && appearance.background == NeoBackground.CLASSIC) {
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFF2F5FA), Color(0xFFDDE6F1)))))
+        }
         if (appearance.brightness != NeoBrightness.AMOLED && appearance.background != NeoBackground.CLASSIC) {
             Box(Modifier.fillMaxSize().background(Brush.linearGradient(neo4GradientColors(appearance.palette, dark))))
             if (appearance.showEffects) Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(c.primary.copy(alpha = if (dark) 0.08f else 0.09f), Color.Transparent))))
@@ -112,3 +115,4 @@ fun Neo4ShiftFill(segments: List<ShiftSegmentV11>, workplaces: List<com.todoshif
         }
     }
 }
+

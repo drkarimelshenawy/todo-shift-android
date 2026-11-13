@@ -58,7 +58,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val accent = neoContrastAccent(raw, dark)
     val bg =
         when {
-            !dark -> Color(0xFFF3EDE3)
+            !dark -> Color(0xFFE4EAF3)
             p.brightness == NeoBrightness.AMOLED -> Color.Black
             p.palette == NeoPalette.EMERALD_LUXURY -> Color(0xFF071310)
             p.palette == NeoPalette.SUNSET_COPPER -> Color(0xFF12100F)
@@ -67,7 +67,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
                 Color(0xFF101216)
             else -> Color(0xFF08233D)
         }
-    val surface = if (dark) lerp(bg, Color.White, 0.045f) else NeoPremium.Cream
+    val surface = if (dark) lerp(bg, Color.White, 0.045f) else Color(0xFFF4F6FB)
     val variant = lerp(surface, accent, if (dark) 0.10f else 0.05f)
     val container = lerp(surface, accent, 0.12f + p.intensity * 0.12f)
     val ink = if (dark) Color(0xFFF2F5FC) else Color(0xFF08233D)
@@ -102,7 +102,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         surfaceContainerHigh = variant,
         surfaceContainerHighest = lerp(variant, accent, 0.025f),
         outline = if (dark) Color(0xFF59687D) else Color(0xFF8A9BA9),
-        outlineVariant = lerp(surface, ink, if (dark) 0.18f else 0.14f),
+        outlineVariant = lerp(surface, ink, if (dark) 0.18f else 0.09f),
         error = if (dark) Color(0xFFFFABB1) else Color(0xFFAA2039),
         onError = if (dark) Color(0xFF450015) else Color.White,
         errorContainer = if (dark) Color(0xFF451724) else Color(0xFFFFDCE2),
@@ -336,3 +336,4 @@ fun NeoEnvironment(
         content()
     }
 }
+

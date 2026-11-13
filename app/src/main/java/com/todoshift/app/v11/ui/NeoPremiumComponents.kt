@@ -22,10 +22,10 @@ import androidx.compose.ui.unit.dp
 
 /** The shell's identity is independent of the selected accent palette. */
 object NeoPremium {
-    val Navy = Color(0xFF0B2949)
-    val NavyLight = Color(0xFF224E79)
+    val Navy = Color(0xFF10365C)
+    val NavyLight = Color(0xFF2C5D8D)
     val Gold = Color(0xFFD8AD55)
-    val Cream = Color(0xFFFFFAF1)
+    val Cream = Color(0xFFF4F6FB)
     val Green = Color(0xFF237344)
 }
 
@@ -89,3 +89,4 @@ fun NeoPremiumSettingTile(title: String, subtitle: String, icon: ImageVector, on
         }
     }
 }
+

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -205,7 +206,7 @@ fun NeoPainterBar(
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(24.dp),
-        shadowElevation = 2.dp,
+        shadowElevation = 5.dp,
     ) {
         Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
             // Shift types are a transient overlay ABOVE the calendar's lower edge.
@@ -224,7 +225,7 @@ fun NeoPainterBar(
                         shadowElevation = 12.dp,
                         border = BorderStroke(1.dp, Color(0xFFD9B46A)),
                     ) {
-                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(Modifier.background(Brush.linearGradient(listOf(NeoPremium.NavyLight, NeoPremium.Navy))).padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Text(neoLabel("اختر نوع الشيفت", "Choose shift type"),Modifier.weight(1f),style=MaterialTheme.typography.labelMedium,color=Color.White)
                                 IconButton(onClick={typesOpen=false}) {Icon(androidx.compose.material.icons.Icons.Rounded.Close,neoLabel("إغلاق أنواع الشيفتات","Close shift types"))}
@@ -235,6 +236,9 @@ fun NeoPainterBar(
                             ) {
                     ShiftKind.entries.forEach { type ->
                         FilterChip(
+                            modifier = Modifier.shadow(3.dp, RoundedCornerShape(14.dp)),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, if (kind == type && !erase) NeoPremium.Gold else Color.White.copy(alpha = .8f)),
                             selected = kind == type && !erase,
                             onClick = {
                                 kind = type
@@ -264,9 +268,9 @@ fun NeoPainterBar(
                             },
                             label = { Text(premiumShiftLabel(type)) },
                             colors = FilterChipDefaults.filterChipColors(
-                                containerColor = Color(0xFFF4F7FC),
+                                containerColor = premiumShiftTint(type),
                                 labelColor = Color(0xFF143455),
-                                selectedContainerColor = Color(0xFFEBD8AE),
+                                selectedContainerColor = premiumShiftTint(type),
                                 selectedLabelColor = Color(0xFF102D4B),
                             ),
                         )
@@ -322,9 +326,9 @@ fun NeoPainterBar(
                             colors =
                                 FilterChipDefaults.filterChipColors(
                                     containerColor = color.copy(alpha = .12f),
-                                    selectedContainerColor = color,
-                                    selectedLabelColor = ink,
-                                    selectedLeadingIconColor = ink,
+                                    selectedContainerColor = NeoPremium.Navy,
+                                    selectedLabelColor = Color.White,
+                                    selectedLeadingIconColor = NeoPremium.Gold,
                                 ),
                             label = { Text(place.name, maxLines = 1) },
                         )
@@ -506,4 +510,14 @@ private fun premiumShiftLabel(kind: ShiftKind): String = when (kind) {
     ShiftKind.MORNING -> neoLabel("مورننج", "Morning")
     ShiftKind.EVENING -> neoLabel("إيفننج", "Evening")
     ShiftKind.OFF -> neoLabel("إجازة", "Off")
+}
+
+
+private fun premiumShiftTint(kind: ShiftKind): Color = when (kind) {
+    ShiftKind.FULL_DAY -> Color(0xFFD6E9F9)
+    ShiftKind.LONG -> Color(0xFFE4D4F4)
+    ShiftKind.NIGHT -> Color(0xFFDCD8FA)
+    ShiftKind.MORNING -> Color(0xFFFFF0C4)
+    ShiftKind.EVENING -> Color(0xFFFFDFC5)
+    ShiftKind.OFF -> Color(0xFFE2E8F0)
 }

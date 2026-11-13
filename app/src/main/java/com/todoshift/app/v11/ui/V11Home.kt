@@ -1296,13 +1296,14 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
     ) {
         Surface(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surface),
             color = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             shadowElevation = 4.dp,
         ) {
             NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
-                val outlined = p.iconStyle == NeoIconStyle.OUTLINED
+                val outlined = true
                 listOf(
                         Triple(
                             1,
@@ -1312,7 +1313,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         Triple(
                             4,
                             neoLabel(neoLiteral("المهام", "Tasks"), "Tasks"),
-                            if (outlined) Icons.Outlined.CheckCircle else Icons.Rounded.CheckCircle,
+                            Icons.Outlined.CheckBox,
                         ),
                         Triple(
                             0,
@@ -1323,7 +1324,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         Triple(
                             2,
                             neoLabel(neoLiteral("الحسابات", "Finance"), "Finance"),
-                            if (outlined) Icons.Outlined.Payments else Icons.Rounded.Payments,
+                            Icons.Outlined.Storage,
                         ),
                         Triple(
                             3,
@@ -1380,9 +1381,9 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                                 NavigationBarItemDefaults.colors(
                                     selectedIconColor = NeoPremium.Navy,
                                     selectedTextColor = if (MaterialTheme.colorScheme.surface.luminance() < .3f) NeoPremium.Gold else Color(0xFF795518),
-                                    indicatorColor = Color(0xFFFFE4A3),
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    indicatorColor = Color(0xFFF8EDD7),
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface,
                                 ),
                         )
                     }
@@ -1390,5 +1391,6 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         }
     }
 }
+
 
 

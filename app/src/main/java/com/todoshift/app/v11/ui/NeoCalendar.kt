@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.luminance
@@ -190,15 +191,17 @@ fun NeoCalendarArea(
     val premiumCashBook = true
     Column(
         modifier.fillMaxSize()
+            .shadow(8.dp, RoundedCornerShape(28.dp), clip = false)
+            .border(1.dp, MaterialTheme.colorScheme.surface.copy(alpha = .9f), RoundedCornerShape(28.dp))
             .then(
                 if (premiumCashBook) Modifier.background(
                     Brush.verticalGradient(
-                        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.background)
+                        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceContainerLow)
                     ),
                     RoundedCornerShape(24.dp),
                 ) else Modifier
             )
-            .padding(if (premiumCashBook) 6.dp else 0.dp)
+            .padding(if (premiumCashBook) 5.dp else 0.dp)
     ) {
         Column(Modifier.fillMaxWidth()) {
             Row(
@@ -207,7 +210,7 @@ fun NeoCalendarArea(
                     .padding(horizontal = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                FilledTonalIconButton(onClick = { move(-1) }) {
+                FilledTonalIconButton(onClick = { move(-1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(
                         Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
                         neoLabel("السابق", "Previous"),
@@ -216,18 +219,18 @@ fun NeoCalendarArea(
                 Text(
                     neoMonthTitle(month, LocalNeoEnglish.current),
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
-                FilledTonalIconButton(onClick = { move(1) }) {
+                FilledTonalIconButton(onClick = { move(1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next"))
                 }
             }
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 val constrained =
                     androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 340 ||
@@ -248,20 +251,20 @@ fun NeoCalendarArea(
                             selected = view == item,
                             enabled = !paintMode,
                             onClick = { update(p.copy(calendarView = item)) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).shadow(3.dp, RoundedCornerShape(24.dp)),
                             shape = RoundedCornerShape(24.dp),
-                            border = if (premiumCashBook && view == item) BorderStroke(1.5.dp, Color(0xFFD5AD60)) else null,
+                            border = BorderStroke(if (view == item) 1.5.dp else 1.dp, if (view == item) NeoPremium.Gold else MaterialTheme.colorScheme.surface),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(0xFF173B65),
                                 selectedLabelColor = Color.White,
                                 containerColor = MaterialTheme.colorScheme.surface,
                             ),
                             label = {
-                                Text(
+                                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text(
                                     neoEnumLabel(item),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                )
+                                ) }
                             },
                         )
                     }
@@ -389,7 +392,7 @@ fun NeoCalendarArea(
                             repeat(rows) { row ->
                                 Row(
                                     Modifier.fillMaxWidth().height(rowHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 4.dp else 0.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 1.dp else 0.dp),
                                 ) {
                                     repeat(columns) { col ->
                                         val cellDate =
@@ -421,7 +424,7 @@ fun NeoCalendarArea(
                                                 YearMonth.from(cellDate) != shownMonth,
                                                 Modifier.weight(1f)
                                                     .fillMaxHeight()
-                                                    .padding(if (premiumCashBook) 1.5.dp else 0.dp)
+                                                    .padding(if (premiumCashBook) 1.dp else 0.dp)
                                                     .drawWithContent {
                                                         drawContent()
                                                         if (shownView == NeoCalendarView.MONTH && !premiumCashBook) {
@@ -627,15 +630,16 @@ internal fun NeoCalendarCell(
             notes.joinToString { it.title }
     Surface(
         modifier
-            .alpha(if (muted) .20f else 1f)
-            .clip(RoundedCornerShape(12.dp))
+            .alpha(if (muted) .38f else 1f)
+            .shadow(if (today || chosen) 3.dp else 1.dp, RoundedCornerShape(9.dp), clip = false)
+            .clip(RoundedCornerShape(9.dp))
             .semantics {
                 contentDescription = description
                 selected = chosen
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         color = (if (muted) c.surfaceContainerLowest else c.surface).copy(alpha = p.cardOpacity),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(9.dp),
         border =
             BorderStroke(
                 if (today || chosen || painting) 2.dp else if (true) 0.5.dp else 0.5.dp,
@@ -643,7 +647,7 @@ internal fun NeoCalendarCell(
                     painting -> c.tertiary
                     chosen -> c.secondary
                     today -> if (true) Color(0xFFD8AD55) else c.primary
-                    else -> c.outlineVariant
+                    else -> c.surface.copy(alpha = .95f)
                 },
             ),
     ) {
@@ -827,4 +831,5 @@ internal fun NeoCalendarCell(
 
 fun neoHexColor(hex: String): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(Color(0xFF80BFFF))
+
 

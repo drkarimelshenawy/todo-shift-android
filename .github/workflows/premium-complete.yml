@@ -66,7 +66,7 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch feat/premium-complete-ui-vc43 \
             --output delivery/identity
-          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-4.6.0-premium-complete-vc43.apk
+          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-4.6.1-reference-calendar-vc44.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - name: Copy QA evidence
         if: always()
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ToDoShift-vc43-PERSISTENT-SIGNED-TEST
+          name: ToDoShift-vc44-PERSISTENT-SIGNED-TEST
           path: |
             delivery/
             app/build/ux-visual-evidence/
@@ -91,7 +91,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/todoshift.jks"
 
   emulator-acceptance:
-    if: always() && needs.signed-candidate.result != 'cancelled'
+    if: needs.signed-candidate.result == 'success'
     needs: signed-candidate
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -106,7 +106,7 @@ jobs:
           java-version: '17'
       - uses: actions/download-artifact@v4
         with:
-          name: ToDoShift-vc43-PERSISTENT-SIGNED-TEST
+          name: ToDoShift-vc44-PERSISTENT-SIGNED-TEST
           path: candidate
       - uses: actions/download-artifact@v4
         with:
@@ -131,7 +131,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ToDoShift-vc43-Android35-acceptance
+          name: ToDoShift-vc44-Android35-acceptance
           path: device-smoke/
           if-no-files-found: error
           retention-days: 30
@@ -166,3 +166,4 @@ jobs:
             app/build/test-results/testDebugUnitTest/
           if-no-files-found: warn
           retention-days: 30
+

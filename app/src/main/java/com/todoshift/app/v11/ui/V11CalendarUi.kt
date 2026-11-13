@@ -322,7 +322,7 @@ fun V11CalendarScreen(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = if (LocalV11NeoEnabled.current) neoSpacing() else 10.dp)
+                    .padding(horizontal = if (LocalV11NeoEnabled.current) 6.dp else 10.dp)
         ) {
             if (uiSettings.experience == V11Experience.CLASSIC) {
                 Row(
@@ -444,13 +444,17 @@ fun V11CalendarScreen(
                         }
                     } else {
                         Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+                            shadowElevation = 5.dp, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surface)) {
                             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(neoLabel("أماكن العمل", "Workplaces"),style=MaterialTheme.typography.labelMedium)
+                                Text(neoLabel("أماكن العمل", "Workplaces"),style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold)
                                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
                                     workplaces.forEach { place ->
-                                        AssistChip(onClick = { painterRequestedWorkplace = place.id; paintMode = true }, label = { Text(place.name) }, leadingIcon = {
+                                        AssistChip(onClick = { painterRequestedWorkplace = place.id; paintMode = true },
+                                            shape = RoundedCornerShape(18.dp),
+                                            colors = AssistChipDefaults.assistChipColors(containerColor = neoHexColor(place.colorHex).copy(alpha = .16f)),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, neoHexColor(place.colorHex).copy(alpha = .35f)),
+                                            label = { Text(place.name, maxLines = 1) }, leadingIcon = {
                                             Box(Modifier.size(10.dp).background(neoHexColor(place.colorHex), androidx.compose.foundation.shape.CircleShape))
                                         })
                                     }
@@ -1750,5 +1754,6 @@ private fun V11CalendarManagerSheet(
         }
     }
 }
+
 
 

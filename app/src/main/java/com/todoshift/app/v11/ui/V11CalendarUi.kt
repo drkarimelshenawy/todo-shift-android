@@ -180,20 +180,7 @@ fun V11CalendarScreen(
         floatingActionButtonPosition =
             if (uiSettings.fabSide == FabSide.LEFT) FabPosition.Start else FabPosition.End,
         floatingActionButton = {
-            if (uiSettings.experience == V11Experience.PREMIUM && !paintMode) {
-                SmallFloatingActionButton(
-                    onClick = {
-                        paintDates = emptySet()
-                        bulkPaint = false
-                        paintMode = true
-                        paletteOpen = false
-                    },
-                    modifier = Modifier.size(48.dp).testTag("calendar-paint-fab"),
-                    shape = CircleShape,
-                ) {
-                    Icon(Icons.Default.Add, neoLabel("رسم الورديات", "Paint shifts"))
-                }
-            } else if (uiSettings.experience == V11Experience.CLASSIC) {
+            if (uiSettings.experience == V11Experience.CLASSIC) {
                 Column(
                     horizontalAlignment =
                         if (uiSettings.fabSide == FabSide.LEFT) Alignment.Start else Alignment.End
@@ -458,15 +445,21 @@ fun V11CalendarScreen(
                     } else {
                         Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface,
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                TextButton(onClick = { paintMode = true }) { Text(neoLabel("أماكن العمل", "Workplaces")) }
-                                workplaces.forEach { place ->
-                                    AssistChip(onClick = { painterRequestedWorkplace = place.id; paintMode = true }, label = { Text(place.name) }, leadingIcon = {
-                                        Box(Modifier.size(10.dp).background(neoHexColor(place.colorHex), androidx.compose.foundation.shape.CircleShape))
-                                    })
+                                Text(neoLabel("أماكن العمل", "Workplaces"),style=MaterialTheme.typography.labelMedium)
+                                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
+                                    workplaces.forEach { place ->
+                                        AssistChip(onClick = { painterRequestedWorkplace = place.id; paintMode = true }, label = { Text(place.name) }, leadingIcon = {
+                                            Box(Modifier.size(10.dp).background(neoHexColor(place.colorHex), androidx.compose.foundation.shape.CircleShape))
+                                        })
+                                    }
+                                    if (workplaces.isEmpty()) TextButton(onClick = { showCalendarManager = true }) { Text(neoLabel("إدارة التقاويم", "Manage calendars")) }
                                 }
-                                if (workplaces.isEmpty()) TextButton(onClick = { showCalendarManager = true }) { Text(neoLabel("إدارة التقاويم", "Manage calendars")) }
+                                FilledTonalIconButton(onClick={paintDates=emptySet();bulkPaint=false;paintMode=true;paletteOpen=false},
+                                    modifier=Modifier.size(48.dp).testTag("calendar-paint-fab")) {
+                                    Icon(Icons.Default.Add,neoLabel("رسم الورديات","Paint shifts"))
+                                }
                             }
                         }
                     }

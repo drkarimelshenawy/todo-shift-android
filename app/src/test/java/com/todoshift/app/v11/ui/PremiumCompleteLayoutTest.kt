@@ -56,4 +56,19 @@ class PremiumCompleteLayoutTest {
         compose.onNodeWithContentDescription("Filters").performScrollTo().assertIsDisplayed().performClick()
         compose.onNodeWithText("Task filters and view").assertIsDisplayed()
     }
+    @Test fun narrowWorkplaceStripDoesNotPutPaintActionOverWorkplaceChips() {
+        val context=org.robolectric.RuntimeEnvironment.getApplication()
+        V11Runtime(context).start()
+        val legacy=com.todoshift.app.data.AppStorage(context)
+        legacy.save(legacy.load().copy(workplaces=listOf(com.todoshift.app.data.Workplace("clinic","Clinic long workplace name","#88BB99"))))
+        NeoAppearanceStore(context).save(NeoAppearance(language=NeoLanguage.ENGLISH,fontScale=1.3f,reduceMotion=true))
+        compose.setContent {Box(Modifier.width(320.dp).height(600.dp)) {V11Home()}}
+        compose.waitUntil(10_000) {compose.onAllNodesWithContentDescription("Paint shifts").fetchSemanticsNodes().isNotEmpty()}
+        val action=compose.onNodeWithContentDescription("Paint shifts").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val chip=compose.onNodeWithText("Clinic long workplace name").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        assertFalse("Paint control must not obscure the scrollable workplace selector",action.overlaps(chip))
+        compose.onNodeWithContentDescription("Paint shifts").performClick()
+        compose.onNodeWithContentDescription("Eraser").assertIsDisplayed()
+    }
+
 }

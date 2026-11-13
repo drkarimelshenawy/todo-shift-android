@@ -45,12 +45,12 @@ def install(path):
 def run():
     old, candidate = map(pathlib.Path, sys.argv[1:3])
     adb("logcat", "-c")
-    install(old); launch(); wait(loaded); snapshot("37-before-update")
+    install(old); launch(); wait(loaded); snapshot("42-before-update")
     launch("QuickTaskActivity")
     tap(wait(lambda: find(dump(), cls="android.widget.EditText")))
     shell("input", "text", "UpgradeFixture")
     wait(lambda: any("UpgradeFixture" in n.get("text", "") for n in dump().iter("node") if n.get("class") == "android.widget.EditText"))
-    snapshot("37-task-draft")
+    snapshot("42-task-draft")
     click("Save", "حفظ")
     wait(lambda: task("UpgradeFixture"))
     shell("am", "force-stop", APP)
@@ -62,11 +62,11 @@ def run():
     for key in ("calendars", "days", "dayItems", "tasks", "payments", "settlements"):
         assert before[key] == after[key], "Upgrade changed " + key
     assert task("UpgradeFixture")["id"] == fixture_id
-    snapshot("38-after-update")
+    snapshot("43-after-update")
     click("Tasks", "المهام")
     tap(wait(lambda: next((n for n in dump().iter("node") if "UpgradeFixture" in n.get("text", "")), None)))
     wait(lambda: next((n for n in dump().iter("node") if n.get("class") == "android.widget.EditText" and "UpgradeFixture" in n.get("text", "")), None))
-    snapshot("38-task-editor")
+    snapshot("43-task-editor")
     click("Cancel", "إلغاء")
     def task_checkbox():
         root = dump()
@@ -76,16 +76,16 @@ def run():
                 if len(boxes) == 1: return boxes[0]
         return None
     tap(wait(task_checkbox)); wait(lambda: task("UpgradeFixture")["status"] == "COMPLETED")
-    snapshot("38-completed-task")
+    snapshot("43-completed-task")
     tap(wait(task_checkbox)); wait(lambda: task("UpgradeFixture")["status"] == "TODO")
     for i in range(3):
         shell("am", "force-stop", APP); launch(); wait(loaded)
         assert task("UpgradeFixture")["status"] == "TODO"
-        snapshot("38-restart-" + str(i+1))
+        snapshot("43-restart-" + str(i+1))
     log = adb("logcat", "-d", "-v", "threadtime")
     (OUT / "logcat.txt").write_text(log)
     assert not re.search(r"(ANR in com\.todoshift\.app|Process: com\.todoshift\.app|am_anr.*com\.todoshift\.app)", log)
-    (OUT / "RESULT.txt").write_text("PASS: vc37 -> vc38 update; task save/edit/toggle/restart; fixture IDs/data retained; no observed app crash/ANR.\n")
+    (OUT / "RESULT.txt").write_text("PASS: vc42 -> vc43 update; task save/edit/toggle/restart; fixture IDs/data retained; no observed app crash/ANR.\n")
     print((OUT / "RESULT.txt").read_text())
 try: run()
 except Exception:

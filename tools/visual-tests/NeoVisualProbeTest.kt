@@ -213,8 +213,26 @@ class NeoVisualProbeTest {
         ready()
         compose
             .onNodeWithContentDescription(LocalDate.now().toString(), substring = true)
-            .performScrollTo()
+            .assertIsDisplayed()
         shot("13-calendar-en-narrow-filled-200")
+    }
+
+    @Test
+    fun captureArabicMonthRowsAndSections() {
+        val c = RuntimeEnvironment.getApplication()
+        NeoAppearanceStore(c).save(NeoAppearance(language=NeoLanguage.ARABIC,uiDirection=NeoDirection.RTL,
+            brightness=NeoBrightness.LIGHT,firstWeekday=7,reduceMotion=true,showFinanceChart=true))
+        for ((label, month) in listOf("4" to "2026-02", "5" to "2026-11", "6" to "2026-08")) {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                compose.activity.setContent { androidx.compose.runtime.key(month) {V11Home(initialDate=LocalDate.parse(month+"-01"))} }
+            }
+            compose.waitUntil(20000) {compose.onAllNodesWithContentDescription("رسم الورديات").fetchSemanticsNodes().isNotEmpty()}
+            shot("vc43-ar-calendar-"+label+"-rows")
+        }
+        for ((label, title) in listOf("schedules" to "جداولي", "tasks" to "المهام", "finance" to "الحسابات", "settings" to "الإعدادات")) {
+            compose.onNodeWithText(title).performClick()
+            shot("vc43-ar-"+label)
+        }
     }
 
     @Test
@@ -225,7 +243,7 @@ class NeoVisualProbeTest {
         shot("02-painter")
         compose.onNodeWithText("Clinic").performClick()
         shot("03-painter-types")
-        compose.onNodeWithText("✓ Done").performClick()
+        compose.onNodeWithContentDescription("Done").performClick()
         compose.onNodeWithText("Schedules").performClick()
         shot("04-schedules")
         compose.onNodeWithText("Summary").performClick()
@@ -247,7 +265,7 @@ class NeoVisualProbeTest {
                 "Privacy & Data",
                 "Advanced",
             )) {
-            compose.onNodeWithText(group).performClick()
+            compose.onNodeWithText(group).performScrollTo().performClick()
             shot("settings-" + group.replace(" & ", "-").replace(" ", "-"))
             compose.onNodeWithContentDescription("Back").performClick()
         }
@@ -261,8 +279,8 @@ class NeoVisualProbeTest {
                 "Privacy & Data" to "Attachment storage",
                 "Advanced" to "Performance mode",
             )) {
-            compose.onNodeWithText(group).performClick()
-            compose.onNodeWithText(option).performClick()
+            compose.onNodeWithText(group).performScrollTo().performClick()
+            compose.onNodeWithText(option).performScrollTo().performClick()
             shot("option-" + option.replace(",", "").replace(" ", "-"))
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 compose.activity.onBackPressedDispatcher.onBackPressed()

@@ -1,10 +1,18 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.FilterList
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Upcoming
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -190,45 +198,22 @@ fun NeoShiftTimeline(
                     onClick = { onOpenDay(item.start.toLocalDate(), item.entry.calendarId) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(
-                        Modifier.padding(neoSpacing()),
-                        verticalArrangement = Arrangement.spacedBy(5.dp),
-                    ) {
-                        val status =
-                            if (item.segment.startMinute == null || item.segment.endMinute == null)
-                                neoLabel("أوقات الساعة غير مسجلة", "Clock times not recorded")
-                            else
-                                when {
-                                    now >= item.start && now < item.end ->
-                                        neoLabel("جارٍ الآن", "In progress")
-                                    item.start > now -> neoLabel("قادم", "Upcoming")
-                                    else -> neoLabel("انتهى", "Finished")
-                                }
-                        Text(
-                            status,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        NeoShiftSummary(item, workplaces)
-                        Text(
-                            db.calendars
-                                .firstOrNull { it.id == item.entry.calendarId }
-                                ?.name
-                                .orEmpty(),
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                        if (neoHasConflict(item, all))
-                            Text(
-                                neoLabel(
-                                    "تعارض زمني • راجع التفاصيل",
-                                    "Time conflict • review details",
-                                ),
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        if (
-                            p.showDescriptions && p.showShiftNotes && item.segment.note.isNotBlank()
-                        )
-                            Text(item.segment.note, style = MaterialTheme.typography.bodySmall)
+                    val recorded = item.segment.startMinute != null && item.segment.endMinute != null
+                    val active = recorded && now >= item.start && now < item.end
+                    val future = item.start > now
+                    val status = if(!recorded) neoLabel("بلا وقت","No time") else if(active) neoLabel("جارٍ الآن","In progress") else if(future) neoLabel("قادم","Upcoming") else neoLabel("انتهى","Finished")
+                    val tint = if(active) MaterialTheme.colorScheme.primary else if(future) Color(0xFF8B641C) else NeoPremium.Green
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        Column(Modifier.widthIn(min=64.dp,max=90.dp).background(tint.copy(alpha=.13f)).padding(horizontal=10.dp,vertical=18.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+                            Icon(if(active) Icons.Rounded.Schedule else if(future) Icons.Rounded.Upcoming else Icons.Rounded.CheckCircle,null,tint=tint)
+                            Text(status,style=MaterialTheme.typography.labelSmall,color=tint)
+                        }
+                        Column(Modifier.weight(1f).padding(12.dp),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                            NeoShiftSummary(item,workplaces)
+                            Text(db.calendars.firstOrNull {it.id==item.entry.calendarId}?.name.orEmpty(),style=MaterialTheme.typography.labelSmall)
+                            if(neoHasConflict(item,all)) Text(neoLabel("تعارض زمني • راجع التفاصيل","Time conflict • review details"),color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)
+                            if(p.showShiftNotes && item.segment.note.isNotBlank()) Text(item.segment.note,style=MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
             }
@@ -269,52 +254,39 @@ fun NeoFinanceOverview(result: MonthFinanceV11, visible: Boolean) {
             neoLabel("المتبقي", "Remaining") to result.difference,
         )
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Card(Modifier.fillMaxWidth()) {
-            Row(
-                Modifier.fillMaxWidth().padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                metrics.forEach { metric ->
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            metric.first,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            amount(metric.second),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val stacked = maxWidth < 360.dp || androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.2f
+            @Composable fun Metric(index: Int, modifier: Modifier = Modifier) {
+                val metric = metrics[index]
+                val tint = if(index == 1) NeoPremium.Green else MaterialTheme.colorScheme.primary
+                Surface(modifier, shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if(index == 1) Color(0xFFB1CEAD) else MaterialTheme.colorScheme.outlineVariant), shadowElevation = 2.dp) {
+                    Column(Modifier.fillMaxWidth().padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text(metric.first,style=MaterialTheme.typography.labelLarge,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(amount(metric.second),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,color=tint)
                     }
                 }
             }
+            if(stacked) Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {metrics.indices.forEach {Metric(it,Modifier.fillMaxWidth())}}
+            else Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {metrics.indices.forEach {Metric(it,Modifier.weight(1f))}}
         }
         if (p.showFinanceChart && visible && result.expected > 0.0) {
+            val progress=(result.received/result.expected).coerceIn(0.0,1.0).toFloat()
+            val track=MaterialTheme.colorScheme.outlineVariant
             Card(Modifier.fillMaxWidth()) {
-                Column(
-                    Modifier.padding(neoSpacing()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        neoLabel("تقدم التحصيل", "Collection progress"),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    val progress = (result.received / result.expected).coerceIn(0.0, 1.0).toFloat()
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Text(
-                        neoLabel(
-                            "تم تحصيل ${(progress * 100).toInt()}% من المستحق",
-                            "${(progress * 100).toInt()}% of expected income collected",
-                        )
-                    )
-                    Text(
-                        neoLabel("التسويات: ", "Settlements: ") + amount(result.settlements),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                Row(Modifier.fillMaxWidth().padding(16.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)) {
+                    Box(Modifier.size(76.dp),contentAlignment=Alignment.Center) {
+                        Canvas(Modifier.fillMaxSize().padding(5.dp)) {
+                            drawArc(track,-90f,360f,false,style=Stroke(10.dp.toPx()))
+                            drawArc(NeoPremium.Green,-90f,360f*progress,false,style=Stroke(10.dp.toPx(),cap=androidx.compose.ui.graphics.StrokeCap.Round))
+                        }
+                        Text("${(progress*100).toInt()}%",style=MaterialTheme.typography.titleMedium)
+                    }
+                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                        Text(neoLabel("تقدم التحصيل","Collection progress"),style=MaterialTheme.typography.titleMedium)
+                        Text(neoLabel("المستلم من إجمالي المستحق","Received of expected income"),style=MaterialTheme.typography.bodySmall)
+                        Text(neoLabel("التسويات: ","Settlements: ")+amount(result.settlements),style=MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }

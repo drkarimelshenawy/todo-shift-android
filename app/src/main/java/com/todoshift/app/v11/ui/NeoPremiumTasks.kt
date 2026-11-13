@@ -91,7 +91,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start=12.dp,end=12.dp,top=8.dp,bottom=96.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 item(key="task-header") {
                     NeoPremiumBanner(neoLabel("المهام والملاحظات", "Tasks & notes"))
-                    NeoPremiumTabs(listOf(neoLabel("المهام", "Tasks"),neoLabel("الملاحظات", "Notes")),if(notesTab) 1 else 0,{notesTab=it==1})
+                    NeoPremiumTabs(listOf(neoLabel("قائمة المهام", "Task list"),neoLabel("الملاحظات", "Notes")),if(notesTab) 1 else 0,{notesTab=it==1})
                 }
                 if (!notesTab) {
                     item(key="task-filters") {
@@ -122,7 +122,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         }
                         error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
                     }
-                    if(tasks.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد مهام مطابقة","No matching tasks"),neoLabel("غيّر التاريخ أو الفلاتر، أو أضف مهمة","Change the date or filters, or add a task"))}
+                    if(tasks.isEmpty()) item {NeoEmptyState(if(search.isBlank() && priority==null && calendar==null && period==NeoTaskPeriod.TODAY && status==NeoTaskStatus.ALL) neoLabel("لا توجد مهام لليوم","No tasks for today") else neoLabel("لا توجد مهام مطابقة","No matching tasks"),neoLabel("غيّر التاريخ أو الفلاتر، أو أضف مهمة","Change the date or filters, or add a task"))}
                     tasks.groupBy {it.date}.forEach { (day,group) ->
                         item(key="heading-$day") {Text((if(day==date) neoLabel("مهام اليوم","Today") else day)+" · "+group.size,Modifier.padding(top=8.dp),style=MaterialTheme.typography.titleMedium)}
                         items(group,key={it.id}) {task ->

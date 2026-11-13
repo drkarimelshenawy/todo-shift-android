@@ -754,7 +754,7 @@ fun FullTaskEditorDialogV11(
         }
     }
 
-    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides contentDirection) {
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.platform.LocalLayoutDirection.current) {
     AlertDialog(
         onDismissRequest = { leaveEditor() },
         title = {

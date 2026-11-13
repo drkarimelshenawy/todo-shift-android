@@ -1294,11 +1294,11 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
             )
     ) {
         Surface(
-            modifier = Modifier.padding(horizontal = if (true) 8.dp else 0.dp, vertical = if (true) 4.dp else 0.dp),
-            shape = if (true) androidx.compose.foundation.shape.RoundedCornerShape(22.dp) else androidx.compose.foundation.shape.RoundedCornerShape(0.dp),
-            color = if (true) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerLow,
-            contentColor = if (true) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface,
-            shadowElevation = if (true) 6.dp else if (p.showEffects && p.glow) 4.dp else 0.dp,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            shadowElevation = 4.dp,
         ) {
             NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
                 val outlined = p.iconStyle == NeoIconStyle.OUTLINED
@@ -1377,11 +1377,11 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                             alwaysShowLabel = true,
                             colors =
                                 NavigationBarItemDefaults.colors(
-                                    selectedIconColor = if (true) Color(0xFF123457) else MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = if (true) Color(0xFF795518) else MaterialTheme.colorScheme.primary,
-                                    indicatorColor = if (true) Color(0xFFFFD68A) else MaterialTheme.colorScheme.primaryContainer,
-                                    unselectedIconColor = if (true) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = if (true) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    selectedIconColor = NeoPremium.Navy,
+                                    selectedTextColor = Color(0xFF795518),
+                                    indicatorColor = Color(0xFFFFE4A3),
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                         )
                     }

@@ -34,9 +34,9 @@ fun Neo4CompactHeader(
 ) {
     val p = LocalNeoAppearance.current
     Surface(
-        color = if (true) Color(0xFF122F53) else MaterialTheme.colorScheme.surface.copy(alpha = p.cardOpacity),
-        contentColor = if (true) Color(0xFFFFF4D9) else MaterialTheme.colorScheme.onSurface,
-        shadowElevation = if (true) 3.dp else 0.dp,
+        color = NeoPremium.Navy,
+        contentColor = NeoPremium.Cream,
+        shadowElevation = 3.dp,
     ) {
         Row(
             Modifier.fillMaxWidth()
@@ -71,7 +71,7 @@ fun Neo4CompactHeader(
                     title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (true) NeoPremium.Gold else MaterialTheme.colorScheme.onSurface,
+                    color = NeoPremium.Gold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

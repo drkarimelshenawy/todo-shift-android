@@ -75,6 +75,7 @@ enum class NeoPalette {
     ARCTIC_WHITE,
     SUNSET_COPPER,
     MONOCHROME,
+    CASHBOOK_BLUE,
 }
 
 enum class NeoCardStyle {
@@ -183,7 +184,7 @@ data class NeoShiftPaint(
 
 data class NeoAppearance(
     val brightness: NeoBrightness = NeoBrightness.SYSTEM,
-    val palette: NeoPalette = NeoPalette.CHAMPAGNE_GOLD,
+    val palette: NeoPalette = NeoPalette.CASHBOOK_BLUE,
     val accentHex: String = "",
     val intensity: Float = 0.65f,
     val cardStyle: NeoCardStyle = NeoCardStyle.FLAT,

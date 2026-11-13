@@ -60,7 +60,8 @@ internal fun neoCellMetrics(): NeoCellMetrics {
         MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp, fontWeight = FontWeight.Bold)
     val captionStyle = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp)
     return remember(measure, dateStyle, captionStyle, density) {
-        val date = measure.measure("88", dateStyle, maxLines = 1).size
+        val dateSizes = (1..31).map { measure.measure(it.toString(), dateStyle, maxLines = 1).size }
+        val date = dateSizes.maxBy { it.width }
         val caption =
             listOf("Morning", "صباحية", "×99", "☑99", "◷99", "📌").maxOf {
                 measure.measure(it, captionStyle, maxLines = 1).size.height
@@ -648,11 +649,12 @@ internal fun NeoCalendarCell(
             // Keep two-digit dates legible in a fixed seven-column month even at 200% text.
             // Full-size text remains available in day details; cells never grow the grid.
             val dateScale = minOf(
-                (maxWidth - 4.dp).coerceAtLeast(1.dp) / measured.dateWidth.coerceAtLeast(1.dp),
+                (maxWidth - 6.dp).coerceAtLeast(1.dp) / measured.dateWidth.coerceAtLeast(1.dp),
                 (maxHeight - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
                 1f,
             ).coerceAtLeast(.25f)
-            val compactCell = maxHeight < measured.dateHeight + measured.captionHeight + 12.dp
+            val compactCell = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 2f &&
+                maxWidth < 48.dp && maxHeight < measured.dateHeight + measured.captionHeight + 12.dp
             Neo4ShiftFill(
                 segments,
                 workplaces,

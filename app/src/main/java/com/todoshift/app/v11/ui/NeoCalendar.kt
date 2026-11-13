@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -310,29 +311,12 @@ fun NeoCalendarArea(
                 val fontScale =
                     androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
                 val headerHeight = (24 * fontScale).dp
-                // Reserve stable slots, independent of visible calendars or day content.
-                val detailLines = (if (p.showNotes) 2 else 0) +
-                    (if (p.showShiftNames) 1 else 0) + (if (p.showWorkplaceNames) 1 else 0)
-                val badgeRows = if (p.showTaskIndicators) 1 else 0
-                val iconLines = if (fontScale > 1.3f && p.showNoteIcons) 1 else 0
-                val contentMinimum =
-                    cellMetrics.dateHeight +
-                        cellMetrics.captionHeight * (detailLines + badgeRows + iconLines) +
-                        12.dp
-                val minimumHeight =
-                    maxOf(
-                        contentMinimum,
-                        when (p.cellSize) {
-                            NeoCellSize.COMPACT -> 48.dp
-                            NeoCellSize.COMFORTABLE -> 64.dp
-                            NeoCellSize.LARGE -> 88.dp
-                        } * fontScale,
-                    )
-                val rowHeight = maxOf(minimumHeight, (maxHeight - headerHeight) / rows)
-                // Keep the complete week visible; grow rows vertically for large type.
-                val contentWidth = maxWidth
-                Column(Modifier.fillMaxSize()) {
-                    Column(Modifier.width(contentWidth).verticalScroll(rememberScrollState())) {
+                // Month fit is a hard layout constraint: labels and text preferences must
+                // never enlarge the month grid or introduce calendar scrolling.
+                // Text is ellipsized/clipped inside a cell; full details remain tappable.
+                val rowHeight = ((maxHeight - headerHeight) / rows).coerceAtLeast(1.dp)
+                Column(Modifier.fillMaxSize().clipToBounds()) {
+                    Column(Modifier.fillMaxSize()) {
                         CompositionLocalProvider(
                             androidx.compose.ui.platform.LocalLayoutDirection provides
                                 neoDirection(p.weekdayDirection, gridDirection)

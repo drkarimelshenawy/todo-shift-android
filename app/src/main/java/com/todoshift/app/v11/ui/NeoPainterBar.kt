@@ -200,16 +200,16 @@ fun NeoPainterBar(
     Surface(
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
-        shape = RoundedCornerShape(20.dp),
-        shadowElevation = 3.dp,
+        shape = RoundedCornerShape(24.dp),
+        shadowElevation = 2.dp,
     ) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
             // Shift types are a transient overlay ABOVE the calendar's lower edge.
             // They do not consume height in the permanently reserved workplace slot.
             if (typesOpen)
                 Popup(
                     alignment = Alignment.TopCenter,
-                    offset = IntOffset(0, -with(LocalDensity.current) { 106.dp.roundToPx() }),
+                    offset = IntOffset(0, -with(LocalDensity.current) { 108.dp.roundToPx() }),
                     onDismissRequest = { typesOpen = false },
                 ) {
                     Surface(

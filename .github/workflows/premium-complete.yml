@@ -155,6 +155,7 @@ jobs:
       - name: Focused calendar regressions
         run: gradle --no-daemon -I tools/premium_qa.init.gradle testDebugUnitTest --tests '*CalendarUiRegressionTest' --tests '*PremiumCompleteLayoutTest' --tests '*ModernUiIntegrationTest' --stacktrace
       - name: Large-text native render
+        if: always()
         run: gradle --no-daemon -I tools/premium_qa.init.gradle -I tools/visual_capture.init.gradle testDebugUnitTest --tests '*NeoVisualProbeTest.captureNarrowEmptyCalendarWithLargeText' --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()

@@ -52,6 +52,8 @@ import java.util.Locale
 @Immutable
 internal data class NeoCellMetrics(val dateHeight: Dp, val captionHeight: Dp, val dateWidth: Dp = 1.dp)
 
+internal val NeoDateFitInfo = androidx.compose.ui.semantics.SemanticsPropertyKey<String>("CalendarDateFit")
+
 @Composable
 internal fun neoCellMetrics(): NeoCellMetrics {
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -667,7 +669,8 @@ internal fun NeoCalendarCell(
                 modifier =
                     Modifier.align(Alignment.TopStart)
                         .padding(2.dp)
-                        .padding(vertical = 1.dp),
+                        .padding(vertical = 1.dp)
+                        .semantics { this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight metric=${measured.dateWidth}/${measured.dateHeight} scale=$dateScale" },
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = MaterialTheme.typography.labelMedium.fontSize * dateScale,
                     lineHeight = 16.sp * dateScale,

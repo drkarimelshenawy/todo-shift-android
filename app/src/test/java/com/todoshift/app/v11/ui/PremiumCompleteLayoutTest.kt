@@ -39,9 +39,10 @@ class PremiumCompleteLayoutTest {
         compose.onNodeWithContentDescription("السابق").assertIsDisplayed()
         compose.onNodeWithContentDescription("التالي").assertIsDisplayed()
         val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-        compose.onNode(hasText("28") and hasAnyAncestor(hasContentDescription(month.atDay(28).toString(),substring=true)),useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) {it(layouts)}
+        val dateNode=compose.onNode(hasText("28") and hasAnyAncestor(hasContentDescription(month.atDay(28).toString(),substring=true)),useUnmergedTree=true)
+        dateNode.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) {it(layouts)}
         assertEquals(1,layouts.single().lineCount)
-        assertFalse("Two-digit date overflow: layout=${layouts.single().size}, paragraph=${layouts.single().multiParagraph.width}, font=${layouts.single().layoutInput.style.fontSize}",layouts.single().didOverflowWidth)
+        assertFalse("Two-digit date overflow: layout=${layouts.single().size}, paragraph=${layouts.single().multiParagraph.width}, font=${layouts.single().layoutInput.style.fontSize}, ${dateNode.fetchSemanticsNode().config[NeoDateFitInfo]}",layouts.single().didOverflowWidth)
     }
     @Test fun fourRowsRemainFullyVisible()=calendar(YearMonth.of(2026,2),4)
     @Test fun fiveRowsRemainFullyVisible()=calendar(YearMonth.of(2026,11),5)

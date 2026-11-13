@@ -39,7 +39,7 @@ class PremiumCompleteLayoutTest {
         compose.onNodeWithContentDescription("السابق").assertIsDisplayed()
         compose.onNodeWithContentDescription("التالي").assertIsDisplayed()
         val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-        compose.onNodeWithText("28",useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) {it(layouts)}
+        compose.onNode(hasText("28") and hasAnyAncestor(hasContentDescription(month.atDay(28).toString(),substring=true)),useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) {it(layouts)}
         assertEquals(1,layouts.single().lineCount)
         assertFalse("Two-digit dates must fit the cell width at 200% text",layouts.single().didOverflowWidth)
     }

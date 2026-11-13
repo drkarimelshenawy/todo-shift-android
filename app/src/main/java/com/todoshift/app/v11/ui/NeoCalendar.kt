@@ -198,7 +198,7 @@ fun NeoCalendarArea(
             .then(
                 if (premiumCashBook) Modifier.background(
                     Brush.verticalGradient(
-                        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceContainerLow)
+                        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.background)
                     ),
                     RoundedCornerShape(24.dp),
                 ) else Modifier
@@ -649,11 +649,13 @@ internal fun NeoCalendarCell(
                     painting -> c.tertiary
                     chosen -> c.secondary
                     today -> if (true) Color(0xFFD8AD55) else c.primary
-                    else -> c.surface.copy(alpha = .95f)
+                    else -> c.outlineVariant
                 },
             ),
     ) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(
+            Brush.verticalGradient(listOf(c.surface, androidx.compose.ui.graphics.lerp(c.surface, c.background, .4f)))
+        )) {
             // Keep two-digit dates legible in a fixed seven-column month even at 200% text.
             // Full-size text remains available in day details; cells never grow the grid.
             val dateScale = minOf(

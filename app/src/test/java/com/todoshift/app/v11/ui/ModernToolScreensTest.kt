@@ -69,8 +69,10 @@ class ModernToolScreensTest {
     @Test
     fun taskTemplateScreen() {
         open("Task templates", "New template")
-        compose.waitForIdle()
-        compose.onNodeWithText("New template").performClick()
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasText("New template") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("New template").assertIsEnabled().performClick()
         compose.onNodeWithText("One task per line").assertExists()
     }
 

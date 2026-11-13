@@ -7,7 +7,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -27,7 +27,7 @@ fun V11AppThemeProvider(
     } else {
         val p = LocalNeoAppearance.current
         val colors = neoColorScheme(p, isSystemInDarkTheme())
-        val activity = LocalContext.current as? android.app.Activity
+        val activity = LocalActivity.current
         DisposableEffect(activity, colors.surface) {
             val controller = activity?.window?.let { androidx.core.view.WindowCompat.getInsetsController(it, it.decorView) }
             val oldStatus = controller?.isAppearanceLightStatusBars

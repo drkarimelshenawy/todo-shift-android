@@ -51,6 +51,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
             NeoBrightness.LIGHT -> false
             else -> true
         }
+    val cashBook = p.palette == NeoPalette.CASHBOOK_BLUE
     val raw =
         runCatching { Color(android.graphics.Color.parseColor(p.accentHex)) }
             .getOrElse { neoAccent(p.palette) }
@@ -58,6 +59,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val accent = neoContrastAccent(raw, dark)
     val bg =
         when {
+            !dark && cashBook -> Color(0xFFF6F8FB)
             !dark -> Color(0xFFF3F6FA)
             p.brightness == NeoBrightness.AMOLED -> Color.Black
             p.palette == NeoPalette.EMERALD_LUXURY -> Color(0xFF071310)
@@ -70,8 +72,8 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val surface = if (dark) lerp(bg, Color.White, 0.045f) else Color.White
     val variant = lerp(surface, accent, if (dark) 0.10f else 0.05f)
     val container = lerp(surface, accent, 0.12f + p.intensity * 0.12f)
-    val ink = if (dark) Color(0xFFF2F5FC) else Color(0xFF172236)
-    val muted = if (dark) Color(0xFFB8C4D6) else Color(0xFF4B5D73)
+    val ink = if (dark) Color(0xFFF2F5FC) else if (cashBook) Color(0xFF08233D) else Color(0xFF172236)
+    val muted = if (dark) Color(0xFFB8C4D6) else if (cashBook) Color(0xFF526779) else Color(0xFF4B5D73)
     val onAccent = if (accent.luminance() > 0.18f) Color(0xFF07101A) else Color.White
     val base = if (dark) darkColorScheme() else lightColorScheme()
     return base.copy(
@@ -79,8 +81,8 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         onPrimary = onAccent,
         primaryContainer = container,
         onPrimaryContainer = ink,
-        secondary = if (dark) Color(0xFFBFA6D8) else Color(0xFF6C3A9B),
-        onSecondary = if (dark) Color(0xFF171025) else Color.White,
+        secondary = if (cashBook) Color(0xFFD8AD55) else if (dark) Color(0xFFBFA6D8) else Color(0xFF6C3A9B),
+        onSecondary = if (cashBook) Color(0xFF08233D) else if (dark) Color(0xFF171025) else Color.White,
         secondaryContainer = variant,
         onSecondaryContainer = ink,
         tertiary = accent,
@@ -101,7 +103,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         surfaceContainer = lerp(surface, accent, 0.025f),
         surfaceContainerHigh = variant,
         surfaceContainerHighest = lerp(variant, accent, 0.025f),
-        outline = if (dark) Color(0xFF59687D) else Color(0xFF748195),
+        outline = if (cashBook && !dark) Color(0xFF8A9BA9) else if (dark) Color(0xFF59687D) else Color(0xFF748195),
         outlineVariant = lerp(surface, ink, if (dark) 0.18f else 0.14f),
         error = if (dark) Color(0xFFFFABB1) else Color(0xFFAA2039),
         onError = if (dark) Color(0xFF450015) else Color.White,

@@ -576,6 +576,10 @@ internal fun NeoCalendarCell(
     val p = LocalNeoAppearance.current
     val c = MaterialTheme.colorScheme
     val measured = metrics ?: neoCellMetrics()
+    // At large accessibility font scales the date needs its own physical line.
+    // This changes only caption placement, never the fixed month row height.
+    val scaledDateHeight = measured.dateHeight *
+        androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
     val today = date == LocalDate.now() && p.todayStyle != NeoTodayStyle.NONE
     val segments = remember(entries) { entries.flatMap { it.segments } }
     val names = segments.map { neoShiftLabel(it.kind) }.distinct().joinToString(" / ")
@@ -649,7 +653,7 @@ internal fun NeoCalendarCell(
                     modifier =
                         if (markerLine)
                             Modifier.align(Alignment.TopStart)
-                                .padding(start = 2.dp, top = measured.dateHeight)
+                                .padding(start = 2.dp, top = scaledDateHeight)
                         else Modifier.align(Alignment.TopEnd).padding(2.dp),
                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                 )
@@ -661,7 +665,7 @@ internal fun NeoCalendarCell(
                             start = 2.dp,
                             end = 2.dp,
                             top =
-                                measured.dateHeight +
+                                scaledDateHeight +
                                     if (markerLine) measured.captionHeight else 0.dp,
                             bottom = measured.captionHeight + 10.dp,
                         )

@@ -58,14 +58,15 @@ jobs:
             --output delivery/identity
           cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-4.6.0-premium-complete-vc43.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
-      - name: Native Compose visual probes
-        run: gradle --no-daemon -I tools/premium_qa.init.gradle -I tools/visual_capture.init.gradle testDebugUnitTest --tests '*NeoVisualProbeTest' --stacktrace
       - name: Copy QA evidence
         if: always()
         run: |
           mkdir -p delivery/qa
           cp -R app/build/test-results/testDebugUnitTest delivery/qa/junit 2>/dev/null || true
           cp app/build/reports/lint-results-debug.* delivery/qa/ 2>/dev/null || true
+          python3 tools/premium_qa_summary.py
+      - name: Native Compose visual probes
+        run: gradle --no-daemon -I tools/premium_qa.init.gradle -I tools/visual_capture.init.gradle testDebugUnitTest --tests '*NeoVisualProbeTest' --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:

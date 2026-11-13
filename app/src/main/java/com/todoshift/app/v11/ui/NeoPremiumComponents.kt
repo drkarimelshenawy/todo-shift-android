@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +28,9 @@ object NeoPremium {
     val Cream = Color(0xFFFFFAF1)
     val Green = Color(0xFF237344)
 }
+
+@Composable
+fun neoPositiveColor(): Color = if (MaterialTheme.colorScheme.surface.luminance() < .3f) Color(0xFF99D9AC) else NeoPremium.Green
 
 @Composable
 fun NeoPremiumBanner(title: String, subtitle: String = "", modifier: Modifier = Modifier) {

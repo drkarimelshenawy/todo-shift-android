@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.Icons
@@ -34,6 +35,7 @@ fun NeoShiftTimeline(
     onMonthChange: (YearMonth) -> Unit,
     onOpenDay: (LocalDate, String) -> Unit,
 ) {
+    val positive = neoPositiveColor()
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
     val now = neoNow()
@@ -202,7 +204,7 @@ fun NeoShiftTimeline(
                     val active = recorded && now >= item.start && now < item.end
                     val future = item.start > now
                     val status = if(!recorded) neoLabel("بلا وقت","No time") else if(active) neoLabel("جارٍ الآن","In progress") else if(future) neoLabel("قادم","Upcoming") else neoLabel("انتهى","Finished")
-                    val tint = if(active) MaterialTheme.colorScheme.primary else if(future) Color(0xFF8B641C) else NeoPremium.Green
+                    val tint = if(active) MaterialTheme.colorScheme.primary else if(future) (if(MaterialTheme.colorScheme.surface.luminance()<.3f) NeoPremium.Gold else Color(0xFF8B641C)) else positive
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                         Column(Modifier.widthIn(min=64.dp,max=90.dp).background(tint.copy(alpha=.13f)).padding(horizontal=10.dp,vertical=18.dp),horizontalAlignment=Alignment.CenterHorizontally) {
                             Icon(if(active) Icons.Rounded.Schedule else if(future) Icons.Rounded.Upcoming else Icons.Rounded.CheckCircle,null,tint=tint)
@@ -239,6 +241,7 @@ fun NeoShiftTimeline(
 @Composable
 fun NeoFinanceOverview(result: MonthFinanceV11, visible: Boolean) {
     val en = LocalNeoEnglish.current
+    val positive = neoPositiveColor()
     val p = LocalNeoAppearance.current
     fun amount(value: Double): String =
         if (visible)
@@ -258,7 +261,7 @@ fun NeoFinanceOverview(result: MonthFinanceV11, visible: Boolean) {
             val stacked = maxWidth < 360.dp || androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.2f
             @Composable fun Metric(index: Int, modifier: Modifier = Modifier) {
                 val metric = metrics[index]
-                val tint = if(index == 1) NeoPremium.Green else MaterialTheme.colorScheme.primary
+                val tint = if(index == 1) positive else MaterialTheme.colorScheme.primary
                 Surface(modifier, shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface,
                     border = androidx.compose.foundation.BorderStroke(1.dp, if(index == 1) Color(0xFFB1CEAD) else MaterialTheme.colorScheme.outlineVariant), shadowElevation = 2.dp) {
                     Column(Modifier.fillMaxWidth().padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -278,7 +281,7 @@ fun NeoFinanceOverview(result: MonthFinanceV11, visible: Boolean) {
                     Box(Modifier.size(76.dp),contentAlignment=Alignment.Center) {
                         Canvas(Modifier.fillMaxSize().padding(5.dp)) {
                             drawArc(track,-90f,360f,false,style=Stroke(10.dp.toPx()))
-                            drawArc(NeoPremium.Green,-90f,360f*progress,false,style=Stroke(10.dp.toPx(),cap=androidx.compose.ui.graphics.StrokeCap.Round))
+                            drawArc(positive,-90f,360f*progress,false,style=Stroke(10.dp.toPx(),cap=androidx.compose.ui.graphics.StrokeCap.Round))
                         }
                         Text("${(progress*100).toInt()}%",style=MaterialTheme.typography.titleMedium)
                     }

@@ -63,13 +63,15 @@ internal fun neoCellMetrics(): NeoCellMetrics {
         MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp, fontWeight = FontWeight.Bold)
     val captionStyle = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp)
     return remember(measure, dateStyle, captionStyle, density) {
-        val dateSizes = (1..31).map { measure.measure(it.toString(), dateStyle, maxLines = 1).size }
-        val date = dateSizes.maxBy { it.width }
+        val dateLayouts = (1..31).map { measure.measure(it.toString(), dateStyle, maxLines = 1) }
+        // Include paragraph intrinsics: fallback fonts can be wider than the rounded layout size.
+        val dateHeight = dateLayouts.maxOf { it.size.height }
+        val dateWidth = dateLayouts.maxOf { maxOf(it.size.width.toFloat(), it.multiParagraph.maxIntrinsicWidth) }
         val caption =
             listOf("Morning", "صباحية", "×99", "☑99", "◷99", "📌").maxOf {
                 measure.measure(it, captionStyle, maxLines = 1).size.height
             }
-        with(density) { NeoCellMetrics(date.height.toDp() + 4.dp, caption.toDp(), date.width.toDp()) }
+        with(density) { NeoCellMetrics(dateHeight.toDp() + 4.dp, caption.toDp(), dateWidth.toDp()) }
     }
 }
 
@@ -672,6 +674,7 @@ internal fun NeoCalendarCell(
                 date.dayOfMonth.toString(),
                 modifier =
                     Modifier.align(Alignment.TopStart)
+                        .fillMaxWidth()
                         .padding(2.dp)
                         .padding(vertical = 1.dp)
                         .semantics { this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight metric=${measured.dateWidth}/${measured.dateHeight} scale=$dateScale" },

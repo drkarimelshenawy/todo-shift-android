@@ -68,7 +68,7 @@ fun Neo4CompactHeader(
             }
             Column(Modifier.weight(1f)) {
                 Text(
-                    title,
+                    if (p.showBrand && onBack == null) "ToDo Shift" else title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = NeoPremium.Gold,

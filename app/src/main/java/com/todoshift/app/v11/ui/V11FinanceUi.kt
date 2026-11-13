@@ -186,7 +186,7 @@ fun V11FinanceScreen(
                     if(result.byWorkplace.isEmpty()) NeoEmptyState(neoLabel("لا توجد مستحقات","No expected income"),neoLabel("تظهر هنا مستحقات الورديات المسجلة","Recorded shift income appears here"))
                     result.byWorkplace.forEach { summary ->
                         val place=workplaces.firstOrNull {it.id==summary.workplaceId}
-                        val count=db.days.filter {it.date.startsWith(month.toString())}.flatMap {it.segments}.count {it.workplaceId==summary.workplaceId && it.kind!=ShiftKind.OFF}
+                        val count=summary.count
                         Surface(onClick={workplaceDetailsId=summary.workplaceId},shape=MaterialTheme.shapes.medium,color=MaterialTheme.colorScheme.surfaceVariant) {
                             Column(Modifier.fillMaxWidth().padding(12.dp)) {
                                 Text(place?.name ?: neoLabel("غير محدد","Unspecified"),fontWeight=FontWeight.Bold)

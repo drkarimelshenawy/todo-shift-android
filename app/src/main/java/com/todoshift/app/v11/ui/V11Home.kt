@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -1378,7 +1379,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                             colors =
                                 NavigationBarItemDefaults.colors(
                                     selectedIconColor = NeoPremium.Navy,
-                                    selectedTextColor = Color(0xFF795518),
+                                    selectedTextColor = if (MaterialTheme.colorScheme.surface.luminance() < .3f) NeoPremium.Gold else Color(0xFF795518),
                                     indicatorColor = Color(0xFFFFE4A3),
                                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,

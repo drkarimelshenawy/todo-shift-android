@@ -51,7 +51,6 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
             NeoBrightness.LIGHT -> false
             else -> true
         }
-    val cashBook = true
     val raw =
         runCatching { Color(android.graphics.Color.parseColor(p.accentHex)) }
             .getOrElse { if (p.palette in listOf(NeoPalette.OCEAN_DEPTH, NeoPalette.CASHBOOK_BLUE)) NeoPremium.Navy else neoAccent(p.palette) }
@@ -59,8 +58,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val accent = neoContrastAccent(raw, dark)
     val bg =
         when {
-            !dark && cashBook -> Color(0xFFF3EDE3)
-            !dark -> Color(0xFFF3F6FA)
+            !dark -> Color(0xFFF3EDE3)
             p.brightness == NeoBrightness.AMOLED -> Color.Black
             p.palette == NeoPalette.EMERALD_LUXURY -> Color(0xFF071310)
             p.palette == NeoPalette.SUNSET_COPPER -> Color(0xFF12100F)
@@ -72,8 +70,8 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val surface = if (dark) lerp(bg, Color.White, 0.045f) else NeoPremium.Cream
     val variant = lerp(surface, accent, if (dark) 0.10f else 0.05f)
     val container = lerp(surface, accent, 0.12f + p.intensity * 0.12f)
-    val ink = if (dark) Color(0xFFF2F5FC) else if (cashBook) Color(0xFF08233D) else Color(0xFF172236)
-    val muted = if (dark) Color(0xFFB8C4D6) else if (cashBook) Color(0xFF526779) else Color(0xFF4B5D73)
+    val ink = if (dark) Color(0xFFF2F5FC) else Color(0xFF08233D)
+    val muted = if (dark) Color(0xFFB8C4D6) else Color(0xFF526779)
     val onAccent = if (accent.luminance() > 0.18f) Color(0xFF07101A) else Color.White
     val base = if (dark) darkColorScheme() else lightColorScheme()
     return base.copy(
@@ -81,8 +79,8 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         onPrimary = onAccent,
         primaryContainer = container,
         onPrimaryContainer = ink,
-        secondary = if (cashBook) Color(0xFFD8AD55) else if (dark) Color(0xFFBFA6D8) else Color(0xFF6C3A9B),
-        onSecondary = if (cashBook) Color(0xFF08233D) else if (dark) Color(0xFF171025) else Color.White,
+        secondary = NeoPremium.Gold,
+        onSecondary = NeoPremium.Navy,
         secondaryContainer = variant,
         onSecondaryContainer = ink,
         tertiary = accent,
@@ -103,7 +101,7 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         surfaceContainer = lerp(surface, accent, 0.025f),
         surfaceContainerHigh = variant,
         surfaceContainerHighest = lerp(variant, accent, 0.025f),
-        outline = if (cashBook && !dark) Color(0xFF8A9BA9) else if (dark) Color(0xFF59687D) else Color(0xFF748195),
+        outline = if (dark) Color(0xFF59687D) else Color(0xFF8A9BA9),
         outlineVariant = lerp(surface, ink, if (dark) 0.18f else 0.14f),
         error = if (dark) Color(0xFFFFABB1) else Color(0xFFAA2039),
         onError = if (dark) Color(0xFF450015) else Color.White,
@@ -170,7 +168,7 @@ private fun neoCardShape() = RoundedCornerShape(LocalNeoAppearance.current.corne
 fun Card(
     modifier: Modifier = Modifier,
     shape: Shape = CardDefaults.shape,
-    colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = if (LocalV11NeoEnabled.current) LocalNeoAppearance.current.cardOpacity else 1f)),
     elevation: CardElevation = CardDefaults.cardElevation(),
     border: BorderStroke? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -232,7 +230,7 @@ fun Card(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     shape: Shape = CardDefaults.shape,
-    colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = if (LocalV11NeoEnabled.current) LocalNeoAppearance.current.cardOpacity else 1f)),
     elevation: CardElevation = CardDefaults.cardElevation(),
     border: BorderStroke? = null,
     interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null,

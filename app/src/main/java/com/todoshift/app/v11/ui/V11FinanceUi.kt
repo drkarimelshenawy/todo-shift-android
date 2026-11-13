@@ -179,6 +179,24 @@ fun V11FinanceScreen(
                 }
             }
 
+        if (LocalV11NeoEnabled.current && financeSection == 0) {
+            Card(Modifier.fillMaxWidth().padding(top=12.dp)) {
+                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text(neoLabel("المستحق حسب مكان العمل","Expected by workplace"),style=MaterialTheme.typography.titleMedium)
+                    if(result.byWorkplace.isEmpty()) NeoEmptyState(neoLabel("لا توجد مستحقات","No expected income"),neoLabel("تظهر هنا مستحقات الورديات المسجلة","Recorded shift income appears here"))
+                    result.byWorkplace.forEach { summary ->
+                        val place=workplaces.firstOrNull {it.id==summary.workplaceId}
+                        val count=db.days.filter {it.date.startsWith(month.toString())}.flatMap {it.segments}.count {it.workplaceId==summary.workplaceId && it.kind!=ShiftKind.OFF}
+                        Surface(onClick={workplaceDetailsId=summary.workplaceId},shape=MaterialTheme.shapes.medium,color=MaterialTheme.colorScheme.surfaceVariant) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                                Text(place?.name ?: neoLabel("غير محدد","Unspecified"),fontWeight=FontWeight.Bold)
+                                Text(neoLabel("$count شيفت","$count shifts")+" · "+money(summary.amount,moneyVisible),style=MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(12.dp))
 
         Button(
@@ -190,7 +208,7 @@ fun V11FinanceScreen(
             Text(neoLiteral("تسجيل مبلغ مستلم", "Record received payment"))
         }
 
-        if (!LocalV11NeoEnabled.current || financeSection in 0..1) {
+        if (!LocalV11NeoEnabled.current || financeSection == 1) {
             Spacer(Modifier.height(8.dp))
 
             Row(

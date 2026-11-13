@@ -82,6 +82,29 @@ def run():
         shell("am", "force-stop", APP); launch(); wait(loaded)
         assert task("UpgradeFixture")["status"] == "TODO"
         snapshot("43-restart-" + str(i+1))
+    for label in ("Schedules", "Tasks", "Finance", "Settings", "Calendar"):
+        click(label)
+        snapshot("43-screen-" + label.lower())
+    shell("am", "force-stop", APP)
+    prefs_path = "shared_prefs/todo_shift_neo3_appearance.xml"
+    appearance_xml = ET.fromstring(adb("exec-out", "run-as", APP, "cat", prefs_path))
+    appearance_node = next((n for n in appearance_xml if n.get("name") == "neo4Appearance"), None)
+    if appearance_node is None:
+        appearance_node = ET.SubElement(appearance_xml, "string", {"name": "neo4Appearance"})
+    appearance = json.loads(appearance_node.text or "{}")
+    appearance.update(language="ARABIC", uiDirection="RTL", brightness="LIGHT")
+    appearance_node.text = json.dumps(appearance, ensure_ascii=False)
+    subprocess.run(["adb", "shell", "run-as", APP, "sh", "-c", "'cat > " + prefs_path + "'"],
+        input=ET.tostring(appearance_xml, encoding="unicode"), text=True, check=True, timeout=20)
+    shell("wm", "size", "320x640")
+    shell("wm", "density", "160")
+    launch(); wait(loaded); snapshot("43-ar-320-calendar")
+    for label, name in (("جداولي", "schedules"), ("المهام", "tasks"), ("الحسابات", "finance"), ("الإعدادات", "settings")):
+        click(label); snapshot("43-ar-320-"+name)
+    shell("settings", "put", "system", "font_scale", "1.5")
+    shell("am", "force-stop", APP); launch(); wait(loaded); snapshot("43-ar-320-large-font-calendar")
+    shell("settings", "put", "system", "font_scale", "1.0")
+    shell("wm", "size", "reset"); shell("wm", "density", "reset")
     log = adb("logcat", "-d", "-v", "threadtime")
     (OUT / "logcat.txt").write_text(log)
     assert not re.search(r"(ANR in com\.todoshift\.app|Process: com\.todoshift\.app|am_anr.*com\.todoshift\.app)", log)

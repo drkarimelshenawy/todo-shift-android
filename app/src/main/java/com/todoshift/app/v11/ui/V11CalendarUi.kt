@@ -106,6 +106,7 @@ fun V11CalendarScreen(
     var selectedWorkplace by remember { mutableStateOf<Workplace?>(null) }
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by rememberSaveable { mutableStateOf(false) }
+    var painterRequestedWorkplace by rememberSaveable { mutableStateOf<String?>(null) }
     var modernPaintRequest by remember { mutableIntStateOf(0) }
     var paintPreview by remember { mutableStateOf<V11Database?>(null) }
     var bulkPaint by rememberSaveable { mutableStateOf(false) }
@@ -448,8 +449,10 @@ fun V11CalendarScreen(
                         modernPaintRequest = 0
                         bulkPaint = false
                         paintPreview = null
+                        painterRequestedWorkplace = null
                     },
                     onPreview = { paintPreview = it },
+                    initialWorkplaceId = painterRequestedWorkplace,
                             )
                         }
                     } else {
@@ -459,7 +462,7 @@ fun V11CalendarScreen(
                                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 TextButton(onClick = { paintMode = true }) { Text(neoLabel("أماكن العمل", "Workplaces")) }
                                 workplaces.forEach { place ->
-                                    AssistChip(onClick = { paintMode = true }, label = { Text(place.name) }, leadingIcon = {
+                                    AssistChip(onClick = { painterRequestedWorkplace = place.id; paintMode = true }, label = { Text(place.name) }, leadingIcon = {
                                         Box(Modifier.size(10.dp).background(neoHexColor(place.colorHex), androidx.compose.foundation.shape.CircleShape))
                                     })
                                 }

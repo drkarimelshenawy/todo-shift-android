@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,6 +48,7 @@ fun NeoPainterBar(
     onCommit: (V11Database) -> Unit,
     onExit: () -> Unit,
     onPreview: (V11Database?) -> Unit = {},
+    initialWorkplaceId: String? = null,
 ) {
     val commit = rememberNeoCommit(onCommit)
     val context = LocalContext.current
@@ -57,7 +59,8 @@ fun NeoPainterBar(
     val saved = remember { store.snapshot() }
     var workplace by rememberSaveable {
         mutableStateOf(
-            saved.optString("paintWorkplace").takeIf { id -> workplaces.any { it.id == id } }
+            initialWorkplaceId?.takeIf { id -> workplaces.any { it.id == id } }
+                ?: saved.optString("paintWorkplace").takeIf { id -> workplaces.any { it.id == id } }
                 ?: workplaces.firstOrNull()?.id
         )
     }
@@ -68,7 +71,7 @@ fun NeoPainterBar(
         )
     }
     var erase by rememberSaveable { mutableStateOf(false) }
-    var typesOpen by rememberSaveable { mutableStateOf(false) }
+    var typesOpen by rememberSaveable { mutableStateOf(initialWorkplaceId != null) }
     var review by remember { mutableStateOf<NeoPaintReview?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val write = LocalNeoEditorWriteState.current
@@ -209,7 +212,7 @@ fun NeoPainterBar(
             if (typesOpen)
                 Popup(
                     alignment = Alignment.TopCenter,
-                    offset = IntOffset(0, -with(LocalDensity.current) { 108.dp.roundToPx() }),
+                    offset = IntOffset(0, -with(LocalDensity.current) { 148.dp.roundToPx() }),
                     onDismissRequest = { typesOpen = false },
                 ) {
                     Surface(
@@ -221,11 +224,10 @@ fun NeoPainterBar(
                         border = BorderStroke(1.dp, Color(0xFFD9B46A)),
                     ) {
                         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                neoLabel("اختر نوع الشيفت", "Choose shift type"),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
-                            )
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(neoLabel("اختر نوع الشيفت", "Choose shift type"),Modifier.weight(1f),style=MaterialTheme.typography.labelMedium,color=Color.White)
+                                IconButton(onClick={typesOpen=false}) {Icon(androidx.compose.material.icons.Icons.Rounded.Close,neoLabel("إغلاق أنواع الشيفتات","Close shift types"))}
+                            }
                             Row(
                                 Modifier.horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),

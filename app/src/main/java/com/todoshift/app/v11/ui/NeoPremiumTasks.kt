@@ -123,8 +123,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
                     }
                     if(tasks.isEmpty()) item {NeoEmptyState(if(search.isBlank() && priority==null && calendar==null && period==NeoTaskPeriod.TODAY && status==NeoTaskStatus.ALL) neoLabel("لا توجد مهام لليوم","No tasks for today") else neoLabel("لا توجد مهام مطابقة","No matching tasks"),neoLabel("غيّر التاريخ أو الفلاتر، أو أضف مهمة","Change the date or filters, or add a task"))}
-                    tasks.groupBy {it.date}.forEach { (day,group) ->
-                        item(key="heading-$day") {Text((if(day==date) neoLabel("مهام اليوم","Today") else day)+" · "+group.size,Modifier.padding(top=8.dp),style=MaterialTheme.typography.titleMedium)}
+                    (if(options.sort==NeoTaskSort.MANUAL) linkedMapOf("" to tasks) else tasks.groupBy {it.date}).forEach { (day,group) ->
+                        item(key="heading-$day") {Text((if(day.isEmpty()) neoLabel("ترتيب يدوي","Manual order") else if(day==date) neoLabel("مهام اليوم","Today") else day)+" · "+group.size,Modifier.padding(top=8.dp),style=MaterialTheme.typography.titleMedium)}
                         items(group,key={it.id}) {task ->
                             TaskCardV11(task,onToggleComplete={
                                 val complete=task.status!=TaskStatusV11.COMPLETED;val now=System.currentTimeMillis()

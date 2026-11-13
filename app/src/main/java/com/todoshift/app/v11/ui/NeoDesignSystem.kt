@@ -196,10 +196,10 @@ fun Card(
                             3.dp
                         else 1.dp
                 ),
-            border = border ?: 
+            border = border ?:
                 if (p.cardStyle == NeoCardStyle.FLAT)
                     BorderStroke(0.5.dp, c.outlineVariant.copy(alpha = 0.5f))
-                                else
+                else
                     BorderStroke(
                         1.dp,
                         if (p.showEffects && !LocalNeoRuntimeReduced.current && p.glow)

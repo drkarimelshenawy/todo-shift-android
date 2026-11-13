@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - feat/premium-complete-ui-vc43
+    paths:
+      - 'app/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'tools/PREMIUM_CANDIDATE.json'
+      - 'tools/verify_premium_apk.py'
+      - 'tools/premium_qa.init.gradle'
+      - 'tools/visual_capture.init.gradle'
+      - 'tools/visual-tests/**'
   workflow_dispatch:
 
 permissions:

@@ -7,14 +7,16 @@ on:
   workflow_call:
   workflow_dispatch:
   push:
-    branches: [premium/stable-candidate]
+    branches: [premium/stable-candidate, feat/vc41-premium-ui-rebuild]
     paths:
       - '.github/workflows/android.yml'
       - '.github/workflows/premium-qa.yml'
+      - 'app/**'
+      - 'tools/PREMIUM_CANDIDATE.json'
 
 jobs:
   build:
-    if: github.ref == 'refs/heads/premium/stable-candidate' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/vc40-premium-calendar-visual-redesign')
+    if: github.ref == 'refs/heads/premium/stable-candidate' || (github.ref == 'refs/heads/feat/vc41-premium-ui-rebuild')
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +30,7 @@ jobs:
           if [ "$GITHUB_REF" = refs/heads/premium/stable-candidate ]; then
             git diff --exit-code 2bc80943c90215cecea0db9c037f59ee9915f3cb HEAD -- app ':(exclude)app/src/test' ':(exclude)app/src/androidTest'
           else
-            test "$GITHUB_REF" = refs/heads/feat/vc40-premium-calendar-visual-redesign
+            test "$GITHUB_REF" = refs/heads/feat/vc41-premium-ui-rebuild
             test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           fi
 

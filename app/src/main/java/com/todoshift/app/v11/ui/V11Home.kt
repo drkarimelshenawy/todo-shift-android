@@ -1294,8 +1294,11 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
             )
     ) {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            shadowElevation = if (p.showEffects && p.glow) 4.dp else 0.dp,
+            modifier = Modifier.padding(horizontal = if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 0.dp, vertical = if (p.palette == NeoPalette.CASHBOOK_BLUE) 4.dp else 0.dp),
+            shape = if (p.palette == NeoPalette.CASHBOOK_BLUE) androidx.compose.foundation.shape.RoundedCornerShape(22.dp) else androidx.compose.foundation.shape.RoundedCornerShape(0.dp),
+            color = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFF123457) else MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFE8B5) else MaterialTheme.colorScheme.onSurface,
+            shadowElevation = if (p.palette == NeoPalette.CASHBOOK_BLUE) 6.dp else if (p.showEffects && p.glow) 4.dp else 0.dp,
         ) {
             NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
                 val outlined = p.iconStyle == NeoIconStyle.OUTLINED
@@ -1374,12 +1377,11 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                             alwaysShowLabel = true,
                             colors =
                                 NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                    unselectedIconColor =
-                                        MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    selectedIconColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFF123457) else MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFD68A) else MaterialTheme.colorScheme.primary,
+                                    indicatorColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFD68A) else MaterialTheme.colorScheme.primaryContainer,
+                                    unselectedIconColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFD9E4F2) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFD9E4F2) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),
                         )
                     }

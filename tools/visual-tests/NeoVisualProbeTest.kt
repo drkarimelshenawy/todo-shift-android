@@ -241,7 +241,7 @@ class NeoVisualProbeTest {
         shot("01-calendar-en-light")
         compose.onNodeWithContentDescription("Paint shifts").performClick()
         shot("02-painter")
-        compose.onNodeWithText("Clinic").performClick()
+        compose.onNodeWithTag("painter-workplace-clinic").performClick()
         shot("03-painter-types")
         compose.onNodeWithContentDescription("Close shift types").performClick()
         compose.onNodeWithContentDescription("Done").performClick()

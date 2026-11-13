@@ -81,6 +81,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/todoshift.jks"
 
   emulator-acceptance:
+    if: always() && needs.signed-candidate.result != 'cancelled'
     needs: signed-candidate
     runs-on: ubuntu-latest
     timeout-minutes: 25

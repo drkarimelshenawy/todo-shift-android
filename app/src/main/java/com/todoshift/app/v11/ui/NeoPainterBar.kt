@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
@@ -306,6 +307,7 @@ fun NeoPainterBar(
                         val color = neoHexColor(place.colorHex)
                         val ink = if (color.luminance() > .179f) Color.Black else Color.White
                         FilterChip(
+                            modifier = Modifier.testTag("painter-workplace-${place.id}"),
                             selected = workplace == place.id && !erase,
                             onClick = {
                                 workplace = place.id

@@ -36,8 +36,8 @@ fun V11AppThemeProvider(
             controller?.isAppearanceLightStatusBars = false
             controller?.isAppearanceLightNavigationBars = colors.surface.luminance() > .5f
             onDispose {
-                if (oldStatus != null) controller.isAppearanceLightStatusBars = oldStatus
-                if (oldNavigation != null) controller.isAppearanceLightNavigationBars = oldNavigation
+                if (oldStatus != null) controller?.isAppearanceLightStatusBars = oldStatus
+                if (oldNavigation != null) controller?.isAppearanceLightNavigationBars = oldNavigation
             }
         }
         MaterialTheme(

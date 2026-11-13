@@ -25,7 +25,7 @@ class PremiumCompleteLayoutTest {
         assertEquals(expectedRows, NeoMonthGrid.dates(month,7).size/7)
         compose.setContent {
             NeoEnvironment(NeoAppearance(language=NeoLanguage.ARABIC,uiDirection=NeoDirection.RTL,
-                palette=NeoPalette.FOREST_SAGE,firstWeekday=7,fontScale=1.5f,reduceMotion=true),true,{}) {
+                palette=NeoPalette.FOREST_SAGE,firstWeekday=7,fontScale=2f,reduceMotion=true),true,{}) {
                 V11AppThemeProvider(V11AppTheme.TODO_SHIFT,V11Experience.PREMIUM) {
                     CompositionLocalProvider(LocalV11NeoEnabled provides true) {
                         Box(Modifier.width(320.dp).height(430.dp)) {
@@ -38,6 +38,10 @@ class PremiumCompleteLayoutTest {
         for(day in 1..month.lengthOfMonth()) compose.onNodeWithContentDescription(month.atDay(day).toString(),substring=true).assertIsDisplayed()
         compose.onNodeWithContentDescription("السابق").assertIsDisplayed()
         compose.onNodeWithContentDescription("التالي").assertIsDisplayed()
+        val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        compose.onNodeWithText("28",useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) {it(layouts)}
+        assertEquals(1,layouts.single().lineCount)
+        assertFalse("Two-digit dates must fit the cell width at 200% text",layouts.single().didOverflowWidth)
     }
     @Test fun fourRowsRemainFullyVisible()=calendar(YearMonth.of(2026,2),4)
     @Test fun fiveRowsRemainFullyVisible()=calendar(YearMonth.of(2026,11),5)

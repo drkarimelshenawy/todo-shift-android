@@ -50,7 +50,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Immutable
-internal data class NeoCellMetrics(val dateHeight: Dp, val captionHeight: Dp)
+internal data class NeoCellMetrics(val dateHeight: Dp, val captionHeight: Dp, val dateWidth: Dp = 1.dp)
 
 @Composable
 internal fun neoCellMetrics(): NeoCellMetrics {
@@ -60,12 +60,12 @@ internal fun neoCellMetrics(): NeoCellMetrics {
         MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp, fontWeight = FontWeight.Bold)
     val captionStyle = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp)
     return remember(measure, dateStyle, captionStyle, density) {
-        val date = measure.measure("28", dateStyle, maxLines = 1).size.height
+        val date = measure.measure("88", dateStyle, maxLines = 1).size
         val caption =
             listOf("Morning", "صباحية", "×99", "☑99", "◷99", "📌").maxOf {
                 measure.measure(it, captionStyle, maxLines = 1).size.height
             }
-        with(density) { NeoCellMetrics(date.toDp() + 4.dp, caption.toDp()) }
+        with(density) { NeoCellMetrics(date.height.toDp() + 4.dp, caption.toDp(), date.width.toDp()) }
     }
 }
 
@@ -644,7 +644,14 @@ internal fun NeoCalendarCell(
                 },
             ),
     ) {
-        Box(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            // Keep two-digit dates legible in a fixed seven-column month even at 200% text.
+            // Full-size text remains available in day details; cells never grow the grid.
+            val dateScale = minOf(
+                (maxWidth - 4.dp).coerceAtLeast(1.dp) / measured.dateWidth.coerceAtLeast(1.dp),
+                (maxHeight - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
+                1f,
+            ).coerceAtLeast(.25f)
             Neo4ShiftFill(
                 segments,
                 workplaces,
@@ -657,8 +664,13 @@ internal fun NeoCalendarCell(
                 modifier =
                     Modifier.align(Alignment.TopStart)
                         .padding(2.dp)
-                        .padding(horizontal = 2.dp, vertical = 1.dp),
-                style = MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp),
+                        .padding(vertical = 1.dp),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = MaterialTheme.typography.labelMedium.fontSize * dateScale,
+                    lineHeight = 16.sp * dateScale,
+                ),
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = FontWeight.Bold,
                 color =
                     dateInk,

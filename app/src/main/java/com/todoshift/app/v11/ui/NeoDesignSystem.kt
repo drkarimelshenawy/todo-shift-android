@@ -199,10 +199,13 @@ fun Card(
                                 p.cardStyle == NeoCardStyle.LAYERED
                         )
                             3.dp
+                        else if (p.palette == NeoPalette.CASHBOOK_BLUE) 1.dp
                         else 0.dp
                 ),
             border =
-                if (p.cardStyle == NeoCardStyle.FLAT) null
+                if (p.cardStyle == NeoCardStyle.FLAT && p.palette == NeoPalette.CASHBOOK_BLUE)
+                    BorderStroke(0.5.dp, c.outlineVariant.copy(alpha = 0.5f))
+                else if (p.cardStyle == NeoCardStyle.FLAT) null
                 else
                     BorderStroke(
                         1.dp,

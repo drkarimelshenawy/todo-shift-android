@@ -76,6 +76,8 @@ fun V11FinanceScreen(
                 neoLabel("الحسابات والمدفوعات • $month", "Income and payments • $month"),
             )
         }
+        if (LocalV11NeoEnabled.current) NeoPremiumMonth(neoMonthTitle(month, LocalNeoEnglish.current), onPrevious, onNext)
+        else {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -88,6 +90,7 @@ fun V11FinanceScreen(
             FilledTonalButton(onClick = onNext) { Text("›", fontSize = 25.sp) }
         }
 
+        }
         Spacer(Modifier.height(12.dp))
 
         if (LocalV11NeoEnabled.current) {
@@ -125,28 +128,7 @@ fun V11FinanceScreen(
                 headlineContent = { Text(neoLabel("التزامات الشهر", "Upcoming obligations")) },
                 trailingContent = { Text(money(obligationDue, moneyVisible)) },
             )
-            Row(Modifier.fillMaxWidth()) {
-                listOf(
-                        neoLabel("الملخص", "Summary"),
-                        neoLabel("الدفعات", "Receipts"),
-                        neoLabel("الالتزامات", "Obligations"),
-                    )
-                    .forEachIndexed { index, title ->
-                        TextButton(
-                            onClick = neoWriteAction { financeSection = index },
-                            modifier = Modifier.weight(1f),
-                            colors =
-                                ButtonDefaults.textButtonColors(
-                                    contentColor =
-                                        if (financeSection == index)
-                                            MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                        ) {
-                            Text(title)
-                        }
-                    }
-            }
+            NeoPremiumTabs(listOf(neoLabel("الملخص", "Summary"), neoLabel("الدفعات", "Receipts"), neoLabel("الالتزامات", "Obligations")), financeSection, { financeSection = it })
             if (financeSection == 0) {
                 val nav = LocalNeoFeatures.current
                 NeoSettingsRow(neoLabel("أسعار الورديات", "Shift rates")) { nav.open("RATES") }
@@ -197,6 +179,24 @@ fun V11FinanceScreen(
                 }
             }
 
+        if (LocalV11NeoEnabled.current && financeSection == 0) {
+            Card(Modifier.fillMaxWidth().padding(top=12.dp)) {
+                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text(neoLabel("المستحق حسب مكان العمل","Expected by workplace"),style=MaterialTheme.typography.titleMedium)
+                    if(result.byWorkplace.isEmpty()) NeoEmptyState(neoLabel("لا توجد مستحقات","No expected income"),neoLabel("تظهر هنا مستحقات الورديات المسجلة","Recorded shift income appears here"))
+                    result.byWorkplace.forEach { summary ->
+                        val place=workplaces.firstOrNull {it.id==summary.workplaceId}
+                        val count=summary.count
+                        Surface(onClick={workplaceDetailsId=summary.workplaceId},shape=MaterialTheme.shapes.medium,color=MaterialTheme.colorScheme.surfaceVariant) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                                Text(place?.name ?: neoLabel("غير محدد","Unspecified"),fontWeight=FontWeight.Bold)
+                                Text(neoLabel("$count شيفت","$count shifts")+" · "+money(summary.amount,moneyVisible),style=MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(12.dp))
 
         Button(

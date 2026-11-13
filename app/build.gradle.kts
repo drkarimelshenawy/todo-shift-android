@@ -12,8 +12,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 42
-        versionName = "4.5.2-premium-calendar-vc42-test"
+        versionCode = 44
+        versionName = "4.6.1-reference-calendar-vc44-test"
     }
 
 
@@ -69,5 +69,6 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
+
 
 

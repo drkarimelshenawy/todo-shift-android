@@ -1,6 +1,8 @@
 package com.todoshift.app.v11.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -91,6 +93,7 @@ fun NeoRescueSettings(
         verticalArrangement = Arrangement.spacedBy(NeoSpace.gap),
     ) {
         if (page == "HOME") {
+            NeoPremiumBanner(neoLabel("الإعدادات والتخصيص", "Settings & customization"))
             OutlinedTextField(
                 query,
                 { query = it },
@@ -98,12 +101,24 @@ fun NeoRescueSettings(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (query.isBlank())
-                neoSettingsGroups.forEach { (id, ar, en) ->
-                    NeoSettingsRow(neoLabel(ar, en)) {
+            if (query.isBlank()) {
+                val icons = listOf(Icons.Rounded.Palette, Icons.Rounded.Language, Icons.Rounded.CalendarMonth,
+                    Icons.Rounded.Notifications, Icons.Rounded.Shield, Icons.Rounded.Tune)
+                val summaries = listOf(
+                    neoLabel("الألوان، الخطوط، كثافة العرض والحركة", "Colors, typography, density and motion"),
+                    neoLabel("لغة التطبيق واتجاه الواجهة والتقويم", "Language, layout and calendar direction"),
+                    neoLabel("أماكن العمل، الورديات وخلايا التقويم", "Workplaces, shifts and calendar cells"),
+                    neoLabel("التذكيرات والاختصارات والويدجت", "Reminders, shortcuts and widgets"),
+                    neoLabel("النسخ الاحتياطي، الاستعادة وقفل الحسابات", "Backup, restore and finance lock"),
+                    neoLabel("الأداء والتشخيص والخيارات المحفوظة", "Performance, diagnostics and saved preferences"))
+                NeoPremiumSettingTile(neoLabel("النسخ الاحتياطي والاستعادة", "Backup & restore"),
+                    neoLabel("حفظ بياناتك واستعادتها", "Save and restore your data"), Icons.Rounded.CloudUpload) { nav.open("BACKUP") }
+                neoSettingsGroups.forEachIndexed { index, (id, ar, en) ->
+                    NeoPremiumSettingTile(neoLabel(ar, en), summaries[index], icons[index]) {
                         if (id == "APPEARANCE") nav.open("APPEARANCE") else page = id + "_GROUP"
                     }
                 }
+            }
             else {
                 val results = remember(query) { NeoSettingsSearch.search(query) }
                 if (results.isEmpty()) {

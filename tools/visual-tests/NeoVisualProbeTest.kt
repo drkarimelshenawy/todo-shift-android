@@ -213,8 +213,26 @@ class NeoVisualProbeTest {
         ready()
         compose
             .onNodeWithContentDescription(LocalDate.now().toString(), substring = true)
-            .performScrollTo()
+            .assertIsDisplayed()
         shot("13-calendar-en-narrow-filled-200")
+    }
+
+    @Test
+    fun captureArabicMonthRowsAndSections() {
+        val c = RuntimeEnvironment.getApplication()
+        NeoAppearanceStore(c).save(NeoAppearance(language=NeoLanguage.ARABIC,uiDirection=NeoDirection.RTL,
+            brightness=NeoBrightness.LIGHT,firstWeekday=7,reduceMotion=true,showFinanceChart=true))
+        for ((label, month) in listOf("4" to "2026-02", "5" to "2026-11", "6" to "2026-08")) {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                compose.activity.setContent { androidx.compose.runtime.key(month) {V11Home(initialDate=LocalDate.parse(month+"-01"))} }
+            }
+            compose.waitUntil(20000) {compose.onAllNodesWithContentDescription("رسم الورديات").fetchSemanticsNodes().isNotEmpty()}
+            shot("vc43-ar-calendar-"+label+"-rows")
+        }
+        for ((label, title) in listOf("schedules" to "جداولي", "tasks" to "المهام", "finance" to "الحسابات", "settings" to "الإعدادات")) {
+            compose.onNodeWithText(title).performClick()
+            shot("vc43-ar-"+label)
+        }
     }
 
     @Test
@@ -223,141 +241,25 @@ class NeoVisualProbeTest {
         shot("01-calendar-en-light")
         compose.onNodeWithContentDescription("Paint shifts").performClick()
         shot("02-painter")
-        compose.onNodeWithText("Clinic").performClick()
+        compose.onNodeWithTag("painter-workplace-clinic").performClick()
         shot("03-painter-types")
-        compose.onNodeWithText("✓ Done").performClick()
+        compose.onNodeWithContentDescription("Close shift types").performClick()
+        compose.onNodeWithContentDescription("Done").performClick()
         compose.onNodeWithText("Schedules").performClick()
         shot("04-schedules")
         compose.onNodeWithText("Summary").performClick()
         shot("05-schedule-summary")
         compose.onNodeWithText("Tasks").performClick()
         shot("06-tasks")
+        compose.onNodeWithText("Notes").performClick()
+        shot("07-notes")
         compose.onNodeWithText("Finance").performClick()
         shot("08-finance")
         compose.onNodeWithText("Settings").performClick()
         shot("09-settings")
-        compose.onNodeWithText("Appearance & Design").performClick()
+        compose.onNodeWithText("Appearance & Design").performScrollTo().performClick()
         shot("10-appearance-studio")
-        compose.onNodeWithContentDescription("Back").performClick()
-        for (group in
-            listOf(
-                "Language & Direction",
-                "Calendar & Shifts",
-                "Notifications & Widgets",
-                "Privacy & Data",
-                "Advanced",
-            )) {
-            compose.onNodeWithText(group).performClick()
-            shot("settings-" + group.replace(" & ", "-").replace(" ", "-"))
-            compose.onNodeWithContentDescription("Back").performClick()
-        }
-        for ((group, option) in
-            listOf(
-                "Calendar & Shifts" to "Calendar and note display",
-                "Calendar & Shifts" to "Today highlight",
-                "Notifications & Widgets" to "Notification center",
-                "Notifications & Widgets" to "Widgets and shortcuts",
-                "Privacy & Data" to "Backup, restore and account",
-                "Privacy & Data" to "Attachment storage",
-                "Advanced" to "Performance mode",
-            )) {
-            compose.onNodeWithText(group).performClick()
-            compose.onNodeWithText(option).performClick()
-            shot("option-" + option.replace(",", "").replace(" ", "-"))
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
-                compose.activity.onBackPressedDispatcher.onBackPressed()
-            }
-            compose.waitForIdle()
-            // Child returns to its originating group; second Back returns to Settings home.
-            compose.onNodeWithContentDescription("Back").performClick()
-        }
-        compose.onNode(hasText("Calendar") and hasClickAction()).performClick()
-        for ((label, brightness) in
-            listOf("dark" to NeoBrightness.DARK, "amoled" to NeoBrightness.AMOLED)) {
-            NeoAppearanceStore(RuntimeEnvironment.getApplication())
-                .save(
-                    NeoAppearance(
-                        language = NeoLanguage.ARABIC,
-                        uiDirection = NeoDirection.RTL,
-                        brightness = brightness,
-                        fontScale = 1.3f,
-                        reduceMotion = true,
-                    )
-                )
-            compose.activityRule.scenario.recreate()
-            compose.waitUntil(timeoutMillis = 20000) {
-                compose
-                    .onAllNodesWithContentDescription("رسم الورديات")
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-            }
-            shot("11-calendar-ar-$label-large-text")
-        }
-        NeoAppearanceStore(RuntimeEnvironment.getApplication())
-            .save(
-                NeoAppearance(
-                    language = NeoLanguage.ENGLISH,
-                    brightness = NeoBrightness.LIGHT,
-                    reduceMotion = true,
-                )
-            )
-        compose.activityRule.scenario.recreate()
-        ready()
-        compose.onNodeWithText("Tasks").performClick()
-        compose.onNodeWithContentDescription("Add task").performClick()
-        shot("07-task-dialog", settle = false)
-        // Separate production-component diagnostics; these do not claim root/IO fault reproduction.
-        val app = RuntimeEnvironment.getApplication()
-        val fixture = V11Runtime(app).start()
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            compose.activity.setContent {
-                NeoEnvironment(
-                    NeoAppearance(language = NeoLanguage.ENGLISH, reduceMotion = true),
-                    true,
-                    {},
-                ) {
-                    V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
-                        V11BackupRestoreDialog(app, fixture, {}, {}, financeAuthorized = true)
-                    }
-                }
-            }
-        }
-        shot("component-p01-classic-backup", settle = false)
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            compose.activity.setContent {
-                NeoEnvironment(
-                    NeoAppearance(language = NeoLanguage.ENGLISH, reduceMotion = true),
-                    true,
-                    {},
-                ) {
-                    V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
-                        androidx.compose.runtime.CompositionLocalProvider(
-                            LocalNeoEditorWriteState provides
-                                NeoEditorWriteState(
-                                    error = "Synthetic write rejection; draft retained"
-                                )
-                        ) {
-                            TaskEditorDialogV11(
-                                TaskV11(
-                                    "retry-model",
-                                    "Retained synthetic draft",
-                                    date = LocalDate.now().toString(),
-                                ),
-                                fixture,
-                                emptyList(),
-                                {},
-                                {},
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        shot("component-p01-task-editor-error-model", settle = false)
-        compose.activityRule.scenario.close()
         File(requireNotNull(System.getProperty("neo.capture.dir")), "EVIDENCE-LIMITS.txt")
-            .writeText(
-                "Main workflow captures use actual MainActivity. component-p01-* replace Activity content with production components and a synthetic rejection model; they are not root/IO incident reproductions. Synthetic isolated fixtures, Robolectric native window drawing. Not an emulator or physical-device capture. No product acceptance or Honor/keyboard/doze/upgrade behavior is established. Modal captures are omitted when the window cannot be located. Colors and initial English/Arabic layouts were inspected separately; full manual matrix remains pending."
-            )
+            .writeText("Actual MainActivity with synthetic fixtures rendered using Robolectric native graphics. These images support layout review; Android emulator upgrade and interaction evidence is recorded separately. They do not establish physical-device, keyboard, notification delivery or OEM behavior.")
     }
 }

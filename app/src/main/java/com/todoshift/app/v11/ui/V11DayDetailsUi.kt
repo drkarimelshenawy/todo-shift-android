@@ -132,6 +132,21 @@ fun V11DayDetailsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(14.dp)
         ) {
+            if (LocalV11NeoEnabled.current) {
+                val locale = if (LocalNeoEnglish.current) java.util.Locale.ENGLISH else java.util.Locale.forLanguageTag("ar")
+                NeoPremiumBanner(date.format(java.time.format.DateTimeFormatter.ofPattern("EEEE، d MMMM yyyy",locale)),
+                    neoLabel("جدول اليوم","Daily schedule"))
+                val shiftCount=entries.sumOf {it.segments.count {s -> s.kind != ShiftKind.OFF}}
+                val taskCount=db.tasks.count {it.date==date.toString()}
+                Row(Modifier.fillMaxWidth().padding(vertical=12.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Surface(Modifier.weight(1f),shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surfaceVariant) {
+                        Text(neoLabel("$shiftCount شيفت","$shiftCount shifts"),Modifier.padding(12.dp),style=MaterialTheme.typography.labelLarge)
+                    }
+                    Surface(Modifier.weight(1f),shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surfaceVariant) {
+                        Text(neoLabel("$taskCount مهمة","$taskCount tasks"),Modifier.padding(12.dp),style=MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
             Text(
                 neoLiteral("الشيفتات", "Shifts"),
                 style = MaterialTheme.typography.titleLarge,

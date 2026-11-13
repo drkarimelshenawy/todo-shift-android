@@ -17,27 +17,5 @@ val LocalV11NeoEnabled = compositionLocalOf { false }
 /** Decorative premium layer only: no persistence, finance or scheduling changes. */
 @Composable
 fun V11NeoSectionHero(title: String, subtitle: String, modifier: Modifier = Modifier) {
-    if (LocalV11NeoEnabled.current && !LocalNeoAppearance.current.showDescriptions) return
-    val colors = MaterialTheme.colorScheme
-    Surface(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(24.dp),
-        color = colors.surface,
-        border = BorderStroke(1.dp, colors.outlineVariant)
-    ) {
-        Column(
-            modifier = Modifier.background(
-                Brush.horizontalGradient(listOf(colors.primaryContainer, colors.surface))
-            ).padding(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold, color = colors.onSurface)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(2.dp))
-            HorizontalDivider(color = colors.primary.copy(alpha = 0.65f), thickness = 2.dp,
-                modifier = Modifier.width(52.dp))
-        }
-    }
+    NeoPremiumBanner(title, if (LocalNeoAppearance.current.showDescriptions) subtitle else "", modifier.padding(vertical = 8.dp))
 }

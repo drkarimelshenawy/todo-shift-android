@@ -1,6 +1,15 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.withStyle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -33,13 +42,15 @@ fun Neo4CompactHeader(
     onBack: (() -> Unit)? = null,
 ) {
     val p = LocalNeoAppearance.current
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Surface(
-        color = if (calendar && p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFF122F53) else MaterialTheme.colorScheme.surface.copy(alpha = p.cardOpacity),
-        contentColor = if (calendar && p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFF4D9) else MaterialTheme.colorScheme.onSurface,
-        shadowElevation = if (p.palette == NeoPalette.CASHBOOK_BLUE) 3.dp else 0.dp,
+        color = NeoPremium.Navy,
+        contentColor = NeoPremium.Cream,
+        shadowElevation = 3.dp,
     ) {
         Row(
             Modifier.fillMaxWidth()
+                .background(Brush.linearGradient(listOf(NeoPremium.NavyLight, NeoPremium.Navy)))
                 .statusBarsPadding()
                 .heightIn(min = 48.dp)
                 .padding(horizontal = 10.dp),
@@ -57,27 +68,27 @@ fun Neo4CompactHeader(
                 configuration.screenWidthDp < 340 &&
                     androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
             if (p.showBrand) {
-                androidx.compose.foundation.Image(
-                    androidx.compose.ui.res.painterResource(
-                        com.todoshift.app.R.drawable.neo41_brand_emblem
-                    ),
-                    null,
-                    Modifier.size(if (constrained) 20.dp else 28.dp),
-                )
+                Icon(Icons.Rounded.CalendarMonth, null,
+                    Modifier.size(if (constrained) 24.dp else 30.dp), tint = NeoPremium.Gold)
                 Spacer(Modifier.width(8.dp))
             }
             Column(Modifier.weight(1f)) {
                 Text(
-                    title,
+                    buildAnnotatedString {
+                        if (p.showBrand && onBack == null) {
+                            withStyle(SpanStyle(color = Color.White)) { append("ToDo ") }
+                            withStyle(SpanStyle(color = NeoPremium.Gold)) { append("Shift") }
+                        } else append(title)
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (calendar && p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFE1A3) else MaterialTheme.colorScheme.onSurface,
+                    color = NeoPremium.Gold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
             if (calendar) {
-                IconButton(onClick = onManage) {
+                IconButton(onClick = onManage, modifier = Modifier.border(1.dp, Color(0xFF507DA6), CircleShape)) {
                     Icon(
                         Icons.Rounded.CalendarMonth,
                         neoLabel("إدارة التقاويم", "Manage calendars"),
@@ -85,7 +96,7 @@ fun Neo4CompactHeader(
                 }
             }
             if (overview)
-                IconButton(onClick = onOverview) {
+                IconButton(onClick = onOverview, modifier = Modifier.border(1.dp, Color(0xFF507DA6), CircleShape)) {
                     Icon(Icons.Rounded.Search, neoLabel("بحث", "Search"))
                 }
             if (destination.isNotEmpty() && destination !in listOf("Settings", "Tasks"))
@@ -100,4 +111,4 @@ fun Neo4CompactHeader(
         }
     }
 }
-
+}

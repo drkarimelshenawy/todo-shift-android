@@ -51,7 +51,7 @@ private fun workplaceColor(hex: String): Color {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun V11WorkplacesScreen(
     workplaces: List<Workplace>,
@@ -124,57 +124,26 @@ fun V11WorkplacesScreen(
                         },
                     shape = RoundedCornerShape(18.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier.size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(workplaceColor(workplace.colorHex))
-                        )
-
-                        Spacer(Modifier.width(12.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                workplace.name,
-                                fontWeight = FontWeight.Black,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-
-                            Spacer(Modifier.height(4.dp))
-
-                            Text(
-                                neoLiteral(
-                                    "24س ${workplace.fullDayRate.cleanMoney()}  •  ",
-                                    "24h ${workplace.fullDayRate.cleanMoney()}  •  ",
-                                ) +
-                                    "Long ${workplace.longRate.cleanMoney()}  •  " +
-                                    "Night ${workplace.nightRate.cleanMoney()}",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-
-                            Text(
-                                "Morning ${workplace.morningRate.cleanMoney()}  •  " +
-                                    "Evening ${workplace.eveningRate.cleanMoney()}",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
+                    Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                            Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(workplaceColor(workplace.colorHex)))
+                            Text(workplace.name,Modifier.weight(1f).padding(horizontal=10.dp),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+                            IconButton(onClick={editingId=workplace.id}) {Icon(Icons.Default.Edit,neoLiteral("تعديل","Edit"))}
+                            IconButton(onClick={deleting=workplace}) {Icon(Icons.Default.Delete,neoLiteral("حذف","Delete"))}
                         }
-
-                        IconButton(onClick = { editingId = workplace.id }) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = neoLiteral("تعديل", "Edit"),
-                            )
-                        }
-
-                        IconButton(onClick = { deleting = workplace }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = neoLiteral("حذف", "Delete"),
-                            )
+                        HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
+                        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                            listOf(
+                                neoLiteral("24س","24h") to workplace.fullDayRate,
+                                neoLiteral("طويلة","Long") to workplace.longRate,
+                                neoLiteral("ليلية","Night") to workplace.nightRate,
+                                neoLiteral("صباحية","Morning") to workplace.morningRate,
+                                neoLiteral("مسائية","Evening") to workplace.eveningRate
+                            ).forEach { (kind,rate) ->
+                                Surface(shape=RoundedCornerShape(12.dp),color=MaterialTheme.colorScheme.surfaceVariant) {
+                                    Text(kind+" · "+rate.cleanMoney(),Modifier.padding(horizontal=10.dp,vertical=6.dp),style=MaterialTheme.typography.labelMedium)
+                                }
+                            }
                         }
                     }
                 }

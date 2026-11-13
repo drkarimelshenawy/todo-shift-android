@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.luminance
@@ -50,7 +51,9 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Immutable
-internal data class NeoCellMetrics(val dateHeight: Dp, val captionHeight: Dp)
+internal data class NeoCellMetrics(val dateHeight: Dp, val captionHeight: Dp, val dateWidth: Dp = 1.dp)
+
+internal val NeoDateFitInfo = androidx.compose.ui.semantics.SemanticsPropertyKey<String>("CalendarDateFit")
 
 @Composable
 internal fun neoCellMetrics(): NeoCellMetrics {
@@ -60,12 +63,15 @@ internal fun neoCellMetrics(): NeoCellMetrics {
         MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp, fontWeight = FontWeight.Bold)
     val captionStyle = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp)
     return remember(measure, dateStyle, captionStyle, density) {
-        val date = measure.measure("28", dateStyle, maxLines = 1).size.height
+        val dateLayouts = (1..31).map { measure.measure(it.toString(), dateStyle, maxLines = 1) }
+        // Include paragraph intrinsics: fallback fonts can be wider than the rounded layout size.
+        val dateHeight = dateLayouts.maxOf { it.size.height }
+        val dateWidth = dateLayouts.maxOf { maxOf(it.size.width.toFloat(), it.multiParagraph.maxIntrinsicWidth) }
         val caption =
             listOf("Morning", "صباحية", "×99", "☑99", "◷99", "📌").maxOf {
                 measure.measure(it, captionStyle, maxLines = 1).size.height
             }
-        with(density) { NeoCellMetrics(date.toDp() + 4.dp, caption.toDp()) }
+        with(density) { NeoCellMetrics(dateHeight.toDp() + 4.dp, caption.toDp(), dateWidth.toDp()) }
     }
 }
 
@@ -184,27 +190,29 @@ fun NeoCalendarArea(
     }
     val inheritedDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
     val gridDirection = neoDirection(p.gridDirection, inheritedDirection)
-    val premiumCashBook = p.palette == NeoPalette.CASHBOOK_BLUE
+    val premiumCashBook = true
     Column(
         modifier.fillMaxSize()
+            .shadow(8.dp, RoundedCornerShape(28.dp), clip = false)
+            .border(1.dp, MaterialTheme.colorScheme.surface.copy(alpha = .9f), RoundedCornerShape(28.dp))
             .then(
                 if (premiumCashBook) Modifier.background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFFFFF9ED), Color(0xFFF5F0E7))
+                        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.background)
                     ),
                     RoundedCornerShape(24.dp),
                 ) else Modifier
             )
-            .padding(if (premiumCashBook) 6.dp else 0.dp)
+            .padding(if (premiumCashBook) 5.dp else 0.dp)
     ) {
         Column(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 52.dp)
-                    .background(if (premiumCashBook) Color(0xFFFFF5E6) else Color.Transparent, RoundedCornerShape(24.dp))
+                    .background(if (premiumCashBook) MaterialTheme.colorScheme.surface else Color.Transparent, RoundedCornerShape(24.dp))
                     .padding(horizontal = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                FilledTonalIconButton(onClick = { move(-1) }) {
+                FilledTonalIconButton(onClick = { move(-1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(
                         Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
                         neoLabel("السابق", "Previous"),
@@ -213,18 +221,18 @@ fun NeoCalendarArea(
                 Text(
                     neoMonthTitle(month, LocalNeoEnglish.current),
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
-                FilledTonalIconButton(onClick = { move(1) }) {
+                FilledTonalIconButton(onClick = { move(1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next"))
                 }
             }
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 val constrained =
                     androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 340 ||
@@ -245,20 +253,20 @@ fun NeoCalendarArea(
                             selected = view == item,
                             enabled = !paintMode,
                             onClick = { update(p.copy(calendarView = item)) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).shadow(3.dp, RoundedCornerShape(24.dp)),
                             shape = RoundedCornerShape(24.dp),
-                            border = if (premiumCashBook && view == item) BorderStroke(1.5.dp, Color(0xFFD5AD60)) else null,
+                            border = BorderStroke(if (view == item) 1.5.dp else 1.dp, if (view == item) NeoPremium.Gold else MaterialTheme.colorScheme.surface),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(0xFF173B65),
                                 selectedLabelColor = Color.White,
-                                containerColor = Color(0xFFF7F9FD),
+                                containerColor = MaterialTheme.colorScheme.surface,
                             ),
                             label = {
-                                Text(
+                                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text(
                                     neoEnumLabel(item),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
-                                )
+                                ) }
                             },
                         )
                     }
@@ -344,7 +352,7 @@ fun NeoCalendarArea(
                                 neoDirection(p.weekdayDirection, gridDirection)
                         ) {
                             Row(Modifier.fillMaxWidth().height(headerHeight)
-                                    .background(if (premiumCashBook) Color(0xFFF2E8D9) else Color.Transparent, RoundedCornerShape(12.dp))) {
+                                    .background(if (premiumCashBook) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent, RoundedCornerShape(12.dp))) {
                                 repeat(columns) { col ->
                                     val weekday = start.plusDays(col.toLong())
                                     val fullLabel =
@@ -386,7 +394,7 @@ fun NeoCalendarArea(
                             repeat(rows) { row ->
                                 Row(
                                     Modifier.fillMaxWidth().height(rowHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 4.dp else 0.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 1.dp else 0.dp),
                                 ) {
                                     repeat(columns) { col ->
                                         val cellDate =
@@ -418,7 +426,7 @@ fun NeoCalendarArea(
                                                 YearMonth.from(cellDate) != shownMonth,
                                                 Modifier.weight(1f)
                                                     .fillMaxHeight()
-                                                    .padding(if (premiumCashBook) 1.5.dp else 0.dp)
+                                                    .padding(if (premiumCashBook) 1.dp else 0.dp)
                                                     .drawWithContent {
                                                         drawContent()
                                                         if (shownView == NeoCalendarView.MONTH && !premiumCashBook) {
@@ -624,27 +632,39 @@ internal fun NeoCalendarCell(
             notes.joinToString { it.title }
     Surface(
         modifier
-            .alpha(if (muted) .20f else 1f)
-            .clip(RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 13.dp else 1.dp))
+            .alpha(if (muted) .38f else 1f)
+            .shadow(if (today || chosen) 3.dp else 1.dp, RoundedCornerShape(9.dp), clip = false)
+            .clip(RoundedCornerShape(9.dp))
             .semantics {
                 contentDescription = description
                 selected = chosen
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         color = (if (muted) c.surfaceContainerLowest else c.surface).copy(alpha = p.cardOpacity),
-        shape = RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 1.dp),
+        shape = RoundedCornerShape(9.dp),
         border =
             BorderStroke(
-                if (today || chosen || painting) 2.dp else if (p.palette == NeoPalette.CASHBOOK_BLUE) 0.5.dp else 0.5.dp,
+                if (today || chosen || painting) 2.dp else if (true) 0.5.dp else 0.5.dp,
                 when {
                     painting -> c.tertiary
                     chosen -> c.secondary
-                    today -> if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFD8AD55) else c.primary
+                    today -> if (true) Color(0xFFD8AD55) else c.primary
                     else -> c.outlineVariant
                 },
             ),
     ) {
-        Box(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(
+            Brush.verticalGradient(listOf(c.surface, androidx.compose.ui.graphics.lerp(c.surface, c.background, .4f)))
+        )) {
+            // Keep two-digit dates legible in a fixed seven-column month even at 200% text.
+            // Full-size text remains available in day details; cells never grow the grid.
+            val dateScale = minOf(
+                (maxWidth - 6.dp).coerceAtLeast(1.dp) / measured.dateWidth.coerceAtLeast(1.dp),
+                (maxHeight - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
+                1f,
+            ).coerceAtLeast(.25f)
+            val compactCell = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 2f &&
+                maxWidth < 48.dp && maxHeight < measured.dateHeight + measured.captionHeight + 12.dp
             Neo4ShiftFill(
                 segments,
                 workplaces,
@@ -656,9 +676,16 @@ internal fun NeoCalendarCell(
                 date.dayOfMonth.toString(),
                 modifier =
                     Modifier.align(Alignment.TopStart)
+                        .fillMaxWidth()
                         .padding(2.dp)
-                        .padding(horizontal = 2.dp, vertical = 1.dp),
-                style = MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp),
+                        .padding(vertical = 1.dp)
+                        .semantics { this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight metric=${measured.dateWidth}/${measured.dateHeight} scale=$dateScale" },
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = MaterialTheme.typography.labelMedium.fontSize * dateScale,
+                    lineHeight = 16.sp * dateScale,
+                ),
+                maxLines = 1,
+                softWrap = false,
                 fontWeight = FontWeight.Bold,
                 color =
                     dateInk,
@@ -671,7 +698,7 @@ internal fun NeoCalendarCell(
                 else null
             val markerLine =
                 marker != null && androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
-            if (marker != null)
+            if (marker != null && !compactCell)
                 Text(
                     marker,
                     modifier =
@@ -681,7 +708,7 @@ internal fun NeoCalendarCell(
                         else Modifier.align(Alignment.TopEnd).padding(2.dp),
                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                 )
-            if ((p.showNotes && notes.isNotEmpty()) || ((p.showShiftNames || p.showWorkplaceNames) && segments.isNotEmpty()))
+            if (!compactCell && ((p.showNotes && notes.isNotEmpty()) || ((p.showShiftNames || p.showWorkplaceNames) && segments.isNotEmpty())))
                 Column(
                     Modifier.align(Alignment.TopStart)
                         .fillMaxWidth()
@@ -763,7 +790,11 @@ internal fun NeoCalendarCell(
                                 ),
                         )
                 }
-            if (p.showTaskIndicators && (tasks > 0 || events > 0))
+            if (compactCell && notes.isNotEmpty() && (p.showNotes || p.showNoteIcons))
+                Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(4.dp).background(NeoPremium.Gold, CircleShape))
+            if (compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
+                Box(Modifier.align(Alignment.BottomStart).padding(3.dp).size(4.dp).background(c.primary, CircleShape))
+            if (!compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
                 FlowRow(
                     Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(2.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -805,4 +836,5 @@ internal fun NeoCalendarCell(
 
 fun neoHexColor(hex: String): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(Color(0xFF80BFFF))
+
 

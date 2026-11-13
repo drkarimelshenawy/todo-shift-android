@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -1294,14 +1295,15 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
             )
     ) {
         Surface(
-            modifier = Modifier.padding(horizontal = if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 0.dp, vertical = if (p.palette == NeoPalette.CASHBOOK_BLUE) 4.dp else 0.dp),
-            shape = if (p.palette == NeoPalette.CASHBOOK_BLUE) androidx.compose.foundation.shape.RoundedCornerShape(22.dp) else androidx.compose.foundation.shape.RoundedCornerShape(0.dp),
-            color = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFF123457) else MaterialTheme.colorScheme.surfaceContainerLow,
-            contentColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFE8B5) else MaterialTheme.colorScheme.onSurface,
-            shadowElevation = if (p.palette == NeoPalette.CASHBOOK_BLUE) 6.dp else if (p.showEffects && p.glow) 4.dp else 0.dp,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surface),
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            shadowElevation = 4.dp,
         ) {
             NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
-                val outlined = p.iconStyle == NeoIconStyle.OUTLINED
+                val outlined = true
                 listOf(
                         Triple(
                             1,
@@ -1311,7 +1313,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         Triple(
                             4,
                             neoLabel(neoLiteral("المهام", "Tasks"), "Tasks"),
-                            if (outlined) Icons.Outlined.CheckCircle else Icons.Rounded.CheckCircle,
+                            Icons.Outlined.CheckBox,
                         ),
                         Triple(
                             0,
@@ -1322,7 +1324,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         Triple(
                             2,
                             neoLabel(neoLiteral("الحسابات", "Finance"), "Finance"),
-                            if (outlined) Icons.Outlined.Payments else Icons.Rounded.Payments,
+                            Icons.Outlined.Storage,
                         ),
                         Triple(
                             3,
@@ -1361,7 +1363,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                                         1.3f
                                 Text(
                                     label,
-                                    modifier = Modifier.requiredWidth(width),
+                                    modifier = Modifier.widthIn(max = width),
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -1377,11 +1379,11 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                             alwaysShowLabel = true,
                             colors =
                                 NavigationBarItemDefaults.colors(
-                                    selectedIconColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFF123457) else MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFD68A) else MaterialTheme.colorScheme.primary,
-                                    indicatorColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFD68A) else MaterialTheme.colorScheme.primaryContainer,
-                                    unselectedIconColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFD9E4F2) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFD9E4F2) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    selectedIconColor = NeoPremium.Navy,
+                                    selectedTextColor = if (MaterialTheme.colorScheme.surface.luminance() < .3f) NeoPremium.Gold else Color(0xFF795518),
+                                    indicatorColor = Color(0xFFF8EDD7),
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface,
                                 ),
                         )
                     }
@@ -1389,5 +1391,6 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         }
     }
 }
+
 
 

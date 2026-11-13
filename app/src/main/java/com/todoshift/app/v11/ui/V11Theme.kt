@@ -6,6 +6,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.activity.compose.LocalActivity
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.V11AppTheme
@@ -24,6 +27,19 @@ fun V11AppThemeProvider(
     } else {
         val p = LocalNeoAppearance.current
         val colors = neoColorScheme(p, isSystemInDarkTheme())
+        val activity = LocalActivity.current
+        DisposableEffect(activity, colors.surface) {
+            val controller = activity?.window?.let { androidx.core.view.WindowCompat.getInsetsController(it, it.decorView) }
+            val oldStatus = controller?.isAppearanceLightStatusBars
+            val oldNavigation = controller?.isAppearanceLightNavigationBars
+            // The Premium header always extends behind the status bar in navy.
+            controller?.isAppearanceLightStatusBars = false
+            controller?.isAppearanceLightNavigationBars = colors.surface.luminance() > .5f
+            onDispose {
+                if (oldStatus != null) controller?.isAppearanceLightStatusBars = oldStatus
+                if (oldNavigation != null) controller?.isAppearanceLightNavigationBars = oldNavigation
+            }
+        }
         MaterialTheme(
             colorScheme = colors,
             typography = neoTypography(p),

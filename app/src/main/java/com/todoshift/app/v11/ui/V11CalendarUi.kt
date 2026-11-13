@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -105,6 +106,7 @@ fun V11CalendarScreen(
     var selectedWorkplace by remember { mutableStateOf<Workplace?>(null) }
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by rememberSaveable { mutableStateOf(false) }
+    var painterRequestedWorkplace by rememberSaveable { mutableStateOf<String?>(null) }
     var modernPaintRequest by remember { mutableIntStateOf(0) }
     var paintPreview by remember { mutableStateOf<V11Database?>(null) }
     var bulkPaint by rememberSaveable { mutableStateOf(false) }
@@ -178,20 +180,7 @@ fun V11CalendarScreen(
         floatingActionButtonPosition =
             if (uiSettings.fabSide == FabSide.LEFT) FabPosition.Start else FabPosition.End,
         floatingActionButton = {
-            if (uiSettings.experience == V11Experience.PREMIUM && !paintMode) {
-                SmallFloatingActionButton(
-                    onClick = {
-                        paintDates = emptySet()
-                        bulkPaint = false
-                        paintMode = true
-                        paletteOpen = false
-                    },
-                    modifier = Modifier.size(48.dp).testTag("calendar-paint-fab"),
-                    shape = CircleShape,
-                ) {
-                    Icon(Icons.Default.Add, neoLabel("رسم الورديات", "Paint shifts"))
-                }
-            } else if (uiSettings.experience == V11Experience.CLASSIC) {
+            if (uiSettings.experience == V11Experience.CLASSIC) {
                 Column(
                     horizontalAlignment =
                         if (uiSettings.fabSide == FabSide.LEFT) Alignment.Start else Alignment.End
@@ -333,7 +322,7 @@ fun V11CalendarScreen(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = if (LocalV11NeoEnabled.current) neoSpacing() else 10.dp)
+                    .padding(horizontal = if (LocalV11NeoEnabled.current) 6.dp else 10.dp)
         ) {
             if (uiSettings.experience == V11Experience.CLASSIC) {
                 Row(
@@ -419,7 +408,7 @@ fun V11CalendarScreen(
             // Opening the bar cannot resize the calendar or cover its final week.
             if (uiSettings.experience == V11Experience.PREMIUM) {
                 Box(
-                    Modifier.fillMaxWidth().height(68.dp)
+                    Modifier.fillMaxWidth().height(if (bulkPaint) 116.dp else 68.dp)
                         .padding(top = 2.dp, bottom = 2.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -447,9 +436,35 @@ fun V11CalendarScreen(
                         modernPaintRequest = 0
                         bulkPaint = false
                         paintPreview = null
+                        painterRequestedWorkplace = null
                     },
                     onPreview = { paintPreview = it },
+                    initialWorkplaceId = painterRequestedWorkplace,
                             )
+                        }
+                    } else {
+                        Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 5.dp, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surface)) {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(neoLabel("أماكن العمل", "Workplaces"),style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold)
+                                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
+                                    workplaces.forEach { place ->
+                                        AssistChip(onClick = { painterRequestedWorkplace = place.id; paintMode = true },
+                                            shape = RoundedCornerShape(18.dp),
+                                            colors = AssistChipDefaults.assistChipColors(containerColor = neoHexColor(place.colorHex).copy(alpha = .16f)),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, neoHexColor(place.colorHex).copy(alpha = .35f)),
+                                            label = { Text(place.name, maxLines = 1) }, leadingIcon = {
+                                            Box(Modifier.size(10.dp).background(neoHexColor(place.colorHex), androidx.compose.foundation.shape.CircleShape))
+                                        })
+                                    }
+                                    if (workplaces.isEmpty()) TextButton(onClick = { showCalendarManager = true }) { Text(neoLabel("إدارة التقاويم", "Manage calendars")) }
+                                }
+                                FilledTonalIconButton(onClick={paintDates=emptySet();bulkPaint=false;paintMode=true;paletteOpen=false},
+                                    modifier=Modifier.size(48.dp).testTag("calendar-paint-fab")) {
+                                    Icon(Icons.Default.Add,neoLabel("رسم الورديات","Paint shifts"))
+                                }
+                            }
                         }
                     }
                 }
@@ -1739,5 +1754,6 @@ private fun V11CalendarManagerSheet(
         }
     }
 }
+
 
 

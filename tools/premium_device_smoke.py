@@ -11,8 +11,9 @@ def dump():
     shell("uiautomator", "dump", "/sdcard/smoke.xml")
     return ET.fromstring(adb("exec-out", "cat", "/sdcard/smoke.xml"))
 def snapshot(name):
+    root = dump()  # Wait for accessibility traversal before capturing the rendered frame.
     (OUT / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p", binary=True))
-    (OUT / (name + ".xml")).write_text(ET.tostring(dump(), encoding="unicode"))
+    (OUT / (name + ".xml")).write_text(ET.tostring(root, encoding="unicode"))
 def wait(fn, seconds=45):
     end = time.monotonic() + seconds
     last = None
@@ -45,12 +46,13 @@ def install(path):
 def run():
     old, candidate = map(pathlib.Path, sys.argv[1:3])
     adb("logcat", "-c")
-    install(old); launch(); wait(loaded); snapshot("37-before-update")
-    launch("QuickTaskActivity")
+    install(old); launch(); wait(loaded); snapshot("42-before-update")
+    click("Tasks", "المهام")
+    click("Add task", "إضافة مهمة")
     tap(wait(lambda: find(dump(), cls="android.widget.EditText")))
     shell("input", "text", "UpgradeFixture")
     wait(lambda: any("UpgradeFixture" in n.get("text", "") for n in dump().iter("node") if n.get("class") == "android.widget.EditText"))
-    snapshot("37-task-draft")
+    snapshot("42-task-draft")
     click("Save", "حفظ")
     wait(lambda: task("UpgradeFixture"))
     shell("am", "force-stop", APP)
@@ -62,11 +64,11 @@ def run():
     for key in ("calendars", "days", "dayItems", "tasks", "payments", "settlements"):
         assert before[key] == after[key], "Upgrade changed " + key
     assert task("UpgradeFixture")["id"] == fixture_id
-    snapshot("38-after-update")
+    snapshot("43-after-update")
     click("Tasks", "المهام")
     tap(wait(lambda: next((n for n in dump().iter("node") if "UpgradeFixture" in n.get("text", "")), None)))
     wait(lambda: next((n for n in dump().iter("node") if n.get("class") == "android.widget.EditText" and "UpgradeFixture" in n.get("text", "")), None))
-    snapshot("38-task-editor")
+    snapshot("43-task-editor")
     click("Cancel", "إلغاء")
     def task_checkbox():
         root = dump()
@@ -76,16 +78,40 @@ def run():
                 if len(boxes) == 1: return boxes[0]
         return None
     tap(wait(task_checkbox)); wait(lambda: task("UpgradeFixture")["status"] == "COMPLETED")
-    snapshot("38-completed-task")
+    snapshot("43-completed-task")
     tap(wait(task_checkbox)); wait(lambda: task("UpgradeFixture")["status"] == "TODO")
     for i in range(3):
         shell("am", "force-stop", APP); launch(); wait(loaded)
         assert task("UpgradeFixture")["status"] == "TODO"
-        snapshot("38-restart-" + str(i+1))
+        snapshot("43-restart-" + str(i+1))
+    for label in ("Schedules", "Tasks", "Finance", "Settings", "Calendar"):
+        click(label)
+        snapshot("43-screen-" + label.lower())
+    shell("am", "force-stop", APP)
+    prefs_path = "shared_prefs/todo_shift_neo3_appearance.xml"
+    appearance_raw = adb("exec-out", "run-as", APP, "cat", prefs_path)
+    appearance_xml = ET.fromstring(appearance_raw) if appearance_raw.lstrip().startswith("<") else ET.Element("map")
+    appearance_node = next((n for n in appearance_xml if n.get("name") == "neo4Appearance"), None)
+    if appearance_node is None:
+        appearance_node = ET.SubElement(appearance_xml, "string", {"name": "neo4Appearance"})
+    appearance = json.loads(appearance_node.text or "{}")
+    appearance.update(language="ARABIC", uiDirection="RTL", brightness="LIGHT")
+    appearance_node.text = json.dumps(appearance, ensure_ascii=False)
+    subprocess.run(["adb", "shell", "run-as", APP, "sh", "-c", "'cat > " + prefs_path + "'"],
+        input=ET.tostring(appearance_xml, encoding="unicode"), text=True, check=True, timeout=20)
+    shell("wm", "size", "320x640")
+    shell("wm", "density", "160")
+    launch(); wait(loaded); snapshot("43-ar-320-calendar")
+    for label, name in (("جداولي", "schedules"), ("المهام", "tasks"), ("الحسابات", "finance"), ("الإعدادات", "settings")):
+        click(label); snapshot("43-ar-320-"+name)
+    shell("settings", "put", "system", "font_scale", "1.5")
+    shell("am", "force-stop", APP); launch(); wait(loaded); snapshot("43-ar-320-large-font-calendar")
+    shell("settings", "put", "system", "font_scale", "1.0")
+    shell("wm", "size", "reset"); shell("wm", "density", "reset")
     log = adb("logcat", "-d", "-v", "threadtime")
     (OUT / "logcat.txt").write_text(log)
     assert not re.search(r"(ANR in com\.todoshift\.app|Process: com\.todoshift\.app|am_anr.*com\.todoshift\.app)", log)
-    (OUT / "RESULT.txt").write_text("PASS: vc37 -> vc38 update; task save/edit/toggle/restart; fixture IDs/data retained; no observed app crash/ANR.\n")
+    (OUT / "RESULT.txt").write_text("PASS: vc42 -> vc43 update; task save/edit/toggle/restart; fixture IDs/data retained; no observed app crash/ANR.\n")
     print((OUT / "RESULT.txt").read_text())
 try: run()
 except Exception:

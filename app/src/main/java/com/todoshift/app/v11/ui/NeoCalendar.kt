@@ -190,9 +190,9 @@ fun NeoCalendarArea(
             .then(
                 if (premiumCashBook) Modifier.background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFFFAFCFF), Color(0xFFF0F4FB))
+                        listOf(Color(0xFFFFF9ED), Color(0xFFF5F0E7))
                     ),
-                    RoundedCornerShape(22.dp),
+                    RoundedCornerShape(24.dp),
                 ) else Modifier
             )
             .padding(if (premiumCashBook) 6.dp else 0.dp)
@@ -200,7 +200,7 @@ fun NeoCalendarArea(
         Column(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 52.dp)
-                    .background(if (premiumCashBook) Color(0xFFF4F7FC) else Color.Transparent, RoundedCornerShape(24.dp))
+                    .background(if (premiumCashBook) Color(0xFFFFF5E6) else Color.Transparent, RoundedCornerShape(24.dp))
                     .padding(horizontal = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -344,7 +344,7 @@ fun NeoCalendarArea(
                                 neoDirection(p.weekdayDirection, gridDirection)
                         ) {
                             Row(Modifier.fillMaxWidth().height(headerHeight)
-                                    .background(if (premiumCashBook) Color(0xFFE9EEF7) else Color.Transparent, RoundedCornerShape(12.dp))) {
+                                    .background(if (premiumCashBook) Color(0xFFF2E8D9) else Color.Transparent, RoundedCornerShape(12.dp))) {
                                 repeat(columns) { col ->
                                     val weekday = start.plusDays(col.toLong())
                                     val fullLabel =
@@ -386,7 +386,7 @@ fun NeoCalendarArea(
                             repeat(rows) { row ->
                                 Row(
                                     Modifier.fillMaxWidth().height(rowHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 3.dp else 0.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 4.dp else 0.dp),
                                 ) {
                                     repeat(columns) { col ->
                                         val cellDate =

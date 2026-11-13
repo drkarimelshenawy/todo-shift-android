@@ -314,7 +314,7 @@ fun NeoCalendarArea(
                 // Month fit is a hard layout constraint: labels and text preferences must
                 // never enlarge the month grid or introduce calendar scrolling.
                 // Text is ellipsized/clipped inside a cell; full details remain tappable.
-                val rowHeight = ((maxHeight - headerHeight) / rows).coerceAtLeast(1.dp)
+                val rowHeight = fittedCalendarRowHeight(maxHeight, headerHeight, rows)
                 Column(Modifier.fillMaxSize().clipToBounds()) {
                     Column(Modifier.fillMaxSize()) {
                         CompositionLocalProvider(

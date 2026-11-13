@@ -520,7 +520,8 @@ fun neoEnumLabel(value: Any): String =
         NeoTimelineFilter.UPCOMING -> neoLabel("القادمة", "Upcoming")
         NeoTimelineFilter.PAST -> neoLabel("السابقة", "Past")
         is NeoPalette ->
-            value.name.lowercase().split('_').joinToString(" ") {
+            if (value == NeoPalette.CASHBOOK_BLUE) neoLabel("كاش بوك • أزرق هادئ", "Cash Book • Calm Blue")
+            else value.name.lowercase().split('_').joinToString(" ") {
                 it.replaceFirstChar { c -> c.uppercase() }
             }
         else -> value.toString()

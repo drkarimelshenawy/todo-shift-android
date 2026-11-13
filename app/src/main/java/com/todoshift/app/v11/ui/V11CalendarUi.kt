@@ -419,15 +419,15 @@ fun V11CalendarScreen(
             // Opening the bar cannot resize the calendar or cover its final week.
             if (uiSettings.experience == V11Experience.PREMIUM) {
                 Box(
-                    Modifier.fillMaxWidth().height(112.dp)
-                        .padding(top = 4.dp, bottom = 4.dp)
+                    Modifier.fillMaxWidth().height(78.dp)
+                        .padding(top = 2.dp, bottom = 2.dp)
                 ) {
                     if (paintMode || paletteOpen) {
                         LaunchedEffect(Unit) {
                             paintMode = true
                             paletteOpen = false
                         }
-                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        Column(Modifier.fillMaxSize()) {
                             NeoPainterBar(
                     db,
                     workplaces,

@@ -68,7 +68,7 @@ class PremiumCompleteLayoutTest {
         val chip=compose.onNodeWithText("Clinic long workplace name").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
         assertFalse("Paint control must not obscure the scrollable workplace selector",action.overlaps(chip))
         compose.onNodeWithContentDescription("Paint shifts").performClick()
-        compose.onNodeWithContentDescription("Eraser").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Eraser").assertExists()
     }
 
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.todoshift.app.v11.*
 
 @Composable
@@ -33,8 +34,9 @@ fun Neo4CompactHeader(
 ) {
     val p = LocalNeoAppearance.current
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = p.cardOpacity),
-        shadowElevation = if (p.palette == NeoPalette.CASHBOOK_BLUE) 1.dp else 0.dp,
+        color = if (calendar && p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFF122F53) else MaterialTheme.colorScheme.surface.copy(alpha = p.cardOpacity),
+        contentColor = if (calendar && p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFF4D9) else MaterialTheme.colorScheme.onSurface,
+        shadowElevation = if (p.palette == NeoPalette.CASHBOOK_BLUE) 3.dp else 0.dp,
     ) {
         Row(
             Modifier.fillMaxWidth()
@@ -68,7 +70,8 @@ fun Neo4CompactHeader(
                 Text(
                     title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
+                    color = if (calendar && p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFFFE1A3) else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

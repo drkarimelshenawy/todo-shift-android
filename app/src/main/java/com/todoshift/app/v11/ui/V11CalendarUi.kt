@@ -419,8 +419,9 @@ fun V11CalendarScreen(
             // Opening the bar cannot resize the calendar or cover its final week.
             if (uiSettings.experience == V11Experience.PREMIUM) {
                 Box(
-                    Modifier.fillMaxWidth().height(78.dp)
-                        .padding(top = 2.dp, bottom = 2.dp)
+                    Modifier.fillMaxWidth().height(68.dp)
+                        .padding(top = 2.dp, bottom = 2.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     if (paintMode || paletteOpen) {
                         LaunchedEffect(Unit) {

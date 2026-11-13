@@ -20,6 +20,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.window.Popup
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Brush
 import com.todoshift.app.data.Workplace
 import com.todoshift.app.v11.*
 import java.time.LocalDate
@@ -191,13 +197,39 @@ fun NeoPainterBar(
             } catch (failure: Exception) { error = failure.message }
         }
     }
-    Surface(tonalElevation = 3.dp) {
-        Column(Modifier.fillMaxWidth()) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        shape = RoundedCornerShape(20.dp),
+        shadowElevation = 3.dp,
+    ) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+            // Shift types are a transient overlay ABOVE the calendar's lower edge.
+            // They do not consume height in the permanently reserved workplace slot.
             if (typesOpen)
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                Popup(
+                    alignment = Alignment.TopCenter,
+                    offset = IntOffset(0, -with(LocalDensity.current) { 106.dp.roundToPx() }),
+                    onDismissRequest = { typesOpen = false },
                 ) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        shape = RoundedCornerShape(22.dp),
+                        color = Color(0xFF123B68),
+                        contentColor = Color.White,
+                        shadowElevation = 12.dp,
+                        border = BorderStroke(1.dp, Color(0xFFD9B46A)),
+                    ) {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                neoLabel("اختر نوع الشيفت", "Choose shift type"),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                            )
+                            Row(
+                                Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
                     ShiftKind.entries.forEach { type ->
                         FilterChip(
                             selected = kind == type && !erase,
@@ -227,8 +259,17 @@ fun NeoPainterBar(
                                         )
                                 )
                             },
-                            label = { Text(neoShiftLabel(type)) },
+                            label = { Text(premiumShiftLabel(type)) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = Color(0xFFF4F7FC),
+                                labelColor = Color(0xFF143455),
+                                selectedContainerColor = Color(0xFFEBD8AE),
+                                selectedLabelColor = Color(0xFF102D4B),
+                            ),
                         )
+                    }
+                            }
+                        }
                     }
                 }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -450,4 +491,15 @@ fun NeoPainterBar(
             },
         )
     }
+}
+
+/** Labels are transliterations by product decision, not literal Arabic translations. */
+@Composable
+private fun premiumShiftLabel(kind: ShiftKind): String = when (kind) {
+    ShiftKind.FULL_DAY -> "24h"
+    ShiftKind.LONG -> neoLabel("لونج", "Long")
+    ShiftKind.NIGHT -> neoLabel("نايت", "Night")
+    ShiftKind.MORNING -> neoLabel("مورننج", "Morning")
+    ShiftKind.EVENING -> neoLabel("إيفننج", "Evening")
+    ShiftKind.OFF -> neoLabel("إجازة", "Off")
 }

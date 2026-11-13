@@ -343,7 +343,8 @@ fun NeoCalendarArea(
                             androidx.compose.ui.platform.LocalLayoutDirection provides
                                 neoDirection(p.weekdayDirection, gridDirection)
                         ) {
-                            Row(Modifier.fillMaxWidth().height(headerHeight)) {
+                            Row(Modifier.fillMaxWidth().height(headerHeight)
+                                    .background(if (premiumCashBook) Color(0xFFE9EEF7) else Color.Transparent, RoundedCornerShape(12.dp))) {
                                 repeat(columns) { col ->
                                     val weekday = start.plusDays(col.toLong())
                                     val fullLabel =
@@ -385,7 +386,7 @@ fun NeoCalendarArea(
                             repeat(rows) { row ->
                                 Row(
                                     Modifier.fillMaxWidth().height(rowHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 3.dp else 0.dp),
                                 ) {
                                     repeat(columns) { col ->
                                         val cellDate =
@@ -417,9 +418,10 @@ fun NeoCalendarArea(
                                                 YearMonth.from(cellDate) != shownMonth,
                                                 Modifier.weight(1f)
                                                     .fillMaxHeight()
+                                                    .padding(if (premiumCashBook) 1.5.dp else 0.dp)
                                                     .drawWithContent {
                                                         drawContent()
-                                                        if (shownView == NeoCalendarView.MONTH) {
+                                                        if (shownView == NeoCalendarView.MONTH && !premiumCashBook) {
                                                             val stroke = 1.5.dp.toPx()
                                                             val inset = stroke / 2
                                                             fun edge(x1: Float,y1: Float,x2: Float,y2: Float) = drawLine(monthInk, androidx.compose.ui.geometry.Offset(x1,y1), androidx.compose.ui.geometry.Offset(x2,y2), stroke)
@@ -623,7 +625,7 @@ internal fun NeoCalendarCell(
     Surface(
         modifier
             .alpha(if (muted) .20f else 1f)
-            .clip(RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 12.dp else 1.dp))
+            .clip(RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 13.dp else 1.dp))
             .semantics {
                 contentDescription = description
                 selected = chosen
@@ -633,7 +635,7 @@ internal fun NeoCalendarCell(
         shape = RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 1.dp),
         border =
             BorderStroke(
-                if (today || chosen || painting) 2.dp else if (p.palette == NeoPalette.CASHBOOK_BLUE) 0.75.dp else 0.5.dp,
+                if (today || chosen || painting) 2.dp else if (p.palette == NeoPalette.CASHBOOK_BLUE) 0.5.dp else 0.5.dp,
                 when {
                     painting -> c.tertiary
                     chosen -> c.secondary

@@ -652,6 +652,7 @@ internal fun NeoCalendarCell(
                 (maxHeight - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
                 1f,
             ).coerceAtLeast(.25f)
+            val compactCell = maxHeight < measured.dateHeight + measured.captionHeight + 12.dp
             Neo4ShiftFill(
                 segments,
                 workplaces,
@@ -683,7 +684,7 @@ internal fun NeoCalendarCell(
                 else null
             val markerLine =
                 marker != null && androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
-            if (marker != null)
+            if (marker != null && !compactCell)
                 Text(
                     marker,
                     modifier =
@@ -693,7 +694,7 @@ internal fun NeoCalendarCell(
                         else Modifier.align(Alignment.TopEnd).padding(2.dp),
                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                 )
-            if ((p.showNotes && notes.isNotEmpty()) || ((p.showShiftNames || p.showWorkplaceNames) && segments.isNotEmpty()))
+            if (!compactCell && ((p.showNotes && notes.isNotEmpty()) || ((p.showShiftNames || p.showWorkplaceNames) && segments.isNotEmpty())))
                 Column(
                     Modifier.align(Alignment.TopStart)
                         .fillMaxWidth()
@@ -775,7 +776,11 @@ internal fun NeoCalendarCell(
                                 ),
                         )
                 }
-            if (p.showTaskIndicators && (tasks > 0 || events > 0))
+            if (compactCell && notes.isNotEmpty() && (p.showNotes || p.showNoteIcons))
+                Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(4.dp).background(NeoPremium.Gold, CircleShape))
+            if (compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
+                Box(Modifier.align(Alignment.BottomStart).padding(3.dp).size(4.dp).background(c.primary, CircleShape))
+            if (!compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
                 FlowRow(
                     Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(2.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),

@@ -199,10 +199,12 @@ fun NeoCalendarArea(
     ) {
         Column(Modifier.fillMaxWidth()) {
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                    .background(if (premiumCashBook) Color(0xFFF4F7FC) else Color.Transparent, RoundedCornerShape(24.dp))
+                    .padding(horizontal = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { move(-1) }) {
+                FilledTonalIconButton(onClick = { move(-1) }) {
                     Icon(
                         Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
                         neoLabel("السابق", "Previous"),
@@ -216,7 +218,7 @@ fun NeoCalendarArea(
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
-                IconButton(onClick = { move(1) }) {
+                FilledTonalIconButton(onClick = { move(1) }) {
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next"))
                 }
             }
@@ -244,6 +246,13 @@ fun NeoCalendarArea(
                             enabled = !paintMode,
                             onClick = { update(p.copy(calendarView = item)) },
                             modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(24.dp),
+                            border = if (premiumCashBook && view == item) BorderStroke(1.5.dp, Color(0xFFD5AD60)) else null,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF173B65),
+                                selectedLabelColor = Color.White,
+                                containerColor = Color(0xFFF7F9FD),
+                            ),
                             label = {
                                 Text(
                                     neoEnumLabel(item),
@@ -614,7 +623,7 @@ internal fun NeoCalendarCell(
     Surface(
         modifier
             .alpha(if (muted) .20f else 1f)
-            .clip(RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 1.dp))
+            .clip(RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 12.dp else 1.dp))
             .semantics {
                 contentDescription = description
                 selected = chosen

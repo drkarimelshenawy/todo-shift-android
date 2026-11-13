@@ -2,7 +2,7 @@
   "applicationId": "com.todoshift.app",
   "versionCode": 42,
   "versionName": "4.5.2-premium-calendar-vc42-test",
-  "branch": "feat/vc41-premium-ui-rebuild",
+  "branch": "feat/vc42-calendar-premium-rebuild",
   "baseline": "e178b134658afad04d645b044f24d236594cbe33",
   "classification": "PERSISTENT-SIGNED UI TEST CANDIDATE — not a release; device acceptance pending"
 }

@@ -12,8 +12,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 38
-        versionName = "4.4.0-premium-ux-test"
+        versionCode = 39
+        versionName = "4.4.1-cashbook-ui-test"
     }
 
 

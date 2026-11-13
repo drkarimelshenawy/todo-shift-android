@@ -52,6 +52,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             finally { settingsBusy=false }
         }
     }
+    var notesTab by rememberSaveable { mutableStateOf(false) }
+    var noteEditor by rememberSaveable { mutableStateOf(false) }
+    var noteId by rememberSaveable { mutableStateOf<String?>(null) }
     var period by rememberSaveable { mutableStateOf(NeoTaskPeriod.TODAY) }
     var status by rememberSaveable { mutableStateOf(NeoTaskStatus.ALL) }
     var search by rememberSaveable { mutableStateOf("") }
@@ -80,59 +83,87 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
         confirmButton={TextButton(onClick={missing=false}) {Text(neoLiteral("إغلاق","Close"))}})
-    val direction=LocalLayoutDirection.current
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(horizontal=12.dp)) {
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f).padding(vertical=6.dp)) {
-                        Text(today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM",if(LocalNeoEnglish.current) Locale.ENGLISH else Locale.forLanguageTag("ar"))),style=MaterialTheme.typography.labelMedium)
+        CompositionLocalProvider(LocalNeoTaskCompact provides options.compact,
+            LocalNeoTaskMove provides if(options.sort==NeoTaskSort.MANUAL && optionsReady && !settingsBusy) { { id,delta ->
+                saveOptions(options.copy(order=NeoTaskQueries.move(db.tasks,options.order,tasks,id,delta)))
+            } } else null) {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start=12.dp,end=12.dp,top=8.dp,bottom=96.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                item(key="task-header") {
+                    NeoPremiumBanner(neoLabel("المهام والملاحظات", "Tasks & notes"))
+                    NeoPremiumTabs(listOf(neoLabel("المهام", "Tasks"),neoLabel("الملاحظات", "Notes")),if(notesTab) 1 else 0,{notesTab=it==1})
+                }
+                if (!notesTab) {
+                    item(key="task-filters") {
+                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                            OutlinedTextField(search,{search=it},label={Text(neoLabel("بحث في المهام","Search tasks"))},singleLine=true,modifier=Modifier.weight(1f),shape=MaterialTheme.shapes.large)
+                            IconButton(onClick={filters=true}) {Icon(Icons.Rounded.Tune,neoLabel("بحث وفلاتر","Filters"))}
+                            Box {
+                                IconButton(onClick={menu=true}) {Icon(Icons.Rounded.MoreVert,neoLabel("خيارات المهام","Task options"))}
+                                DropdownMenu(menu,{menu=false}) {
+                                    DropdownMenuItem(text={Text(neoLabel("قوالب المهام","Task templates"))},onClick={menu=false;nav.open("TASK_TEMPLATES")})
+                                    DropdownMenuItem(text={Text(neoLabel("مكتبة المرفقات","Attachments"))},onClick={menu=false;nav.open("ATTACHMENTS")})
+                                    DropdownMenuItem(text={Text(neoLabel("تراجع عن آخر تعديل","Undo last change"))},enabled=undo.enabled&&!write.pending,onClick={menu=false;undo.perform()})
+                                }
+                            }
+                        }
+                        NeoPremiumTabs(listOf(neoLabel("الكل","All"),neoLabel("نشطة","Active"),neoLabel("مكتملة","Done")),NeoTaskStatus.entries.indexOf(status),{status=NeoTaskStatus.entries[it]})
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                            AssistChip(onClick={filters=true},label={Text(periodLabel(period))})
+                            FilterChip(selected=calendar==null,onClick={calendar=null},label={Text(neoLabel("كل التقاويم","All calendars"))})
+                            db.calendars.filter {it.visible}.forEach { category ->
+                                FilterChip(selected=calendar==category.id,onClick={calendar=category.id},label={Text(category.name)})
+                            }
+                        }
+                        val due=visible.filter {it.date==date};val done=due.count {it.status==TaskStatusV11.COMPLETED}
+                        if(due.isNotEmpty()) {
+                            Text(neoLabel("$done من ${due.size} مكتملة اليوم","$done of ${due.size} completed today"),style=MaterialTheme.typography.labelSmall)
+                            LinearProgressIndicator(progress={done.toFloat()/due.size},modifier=Modifier.fillMaxWidth().padding(vertical=6.dp))
+                        }
+                        error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
                     }
-                    IconButton(onClick={menu=true}) { Icon(Icons.Rounded.MoreVert,neoLiteral("خيارات المهام","Task options")) }
-                    DropdownMenu(menu,{menu=false}) {
-                        DropdownMenuItem(text={Text(neoLiteral("قوالب المهام","Task templates"))},onClick={menu=false;nav.open("TASK_TEMPLATES")})
-                        DropdownMenuItem(text={Text(neoLiteral("مكتبة المرفقات","Attachments"))},onClick={menu=false;nav.open("ATTACHMENTS")})
-                        DropdownMenuItem(text={Text(neoLiteral("تراجع عن آخر تعديل","Undo last change"))},enabled=undo.enabled&&!write.pending,onClick={menu=false;undo.perform()})
+                    if(tasks.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد مهام مطابقة","No matching tasks"),neoLabel("غيّر التاريخ أو الفلاتر، أو أضف مهمة","Change the date or filters, or add a task"))}
+                    tasks.groupBy {it.date}.forEach { (day,group) ->
+                        item(key="heading-$day") {Text((if(day==date) neoLabel("مهام اليوم","Today") else day)+" · "+group.size,Modifier.padding(top=8.dp),style=MaterialTheme.typography.titleMedium)}
+                        items(group,key={it.id}) {task ->
+                            TaskCardV11(task,onToggleComplete={
+                                val complete=task.status!=TaskStatusV11.COMPLETED;val now=System.currentTimeMillis()
+                                changed(db.copy(tasks=db.tasks.map {if(it.id==task.id) it.copy(status=if(complete) TaskStatusV11.COMPLETED else TaskStatusV11.TODO,completedAt=if(complete) now else null,updatedAt=now) else it}),neoLiteral("تم تحديث المهمة","Task updated"))
+                            },onEdit={open(task.id)},onDelete={deleteId=task.id})
+                        }
+                    }
+                } else {
+                    val notes=db.dayItems.filter {it.type==DayItemTypeV11.NOTE && (it.calendarId==null || db.calendars.any {c -> c.id==it.calendarId && c.visible})}.sortedByDescending {it.date}
+                    if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات","No notes"),neoLabel("أضف ملاحظة ليومك","Add a note for your day"))}
+                    items(notes,key={it.id}) {note ->
+                        Card(onClick={noteId=note.id;noteEditor=true}) {
+                            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                                Text(note.title,style=MaterialTheme.typography.titleMedium)
+                                Text(note.date,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                                if(note.details.isNotBlank()) Text(note.details,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+                                TextButton(onClick={nav.open("ATTACHMENTS",note.id)}) {Text(neoLabel("المرفقات","Attachments"))}
+                            }
+                        }
                     }
                 }
-                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                    OutlinedTextField(search,{search=it},label={Text(neoLiteral("بحث في المهام","Search tasks"))},singleLine=true,modifier=Modifier.weight(1f))
-                    IconButton(onClick={filters=true}) { Icon(Icons.Rounded.Tune,neoLiteral("بحث وفلاتر","Filters")) }
-                }
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-                    NeoTaskStatus.entries.forEach { state -> FilterChip(selected=status==state,onClick={status=state},label={Text(when(state) { NeoTaskStatus.ALL -> neoLiteral("الكل","All");NeoTaskStatus.ACTIVE -> neoLiteral("نشطة","Active");NeoTaskStatus.COMPLETED -> neoLiteral("مكتملة","Done") })}) }
-                    TextButton(onClick={filters=true}) {Text(periodLabel(period))}
-                }
-            }
-            val due=visible.filter { it.date==date };val done=due.count { it.status==TaskStatusV11.COMPLETED }
-            if(due.isNotEmpty()) {
-                Text(neoLiteral("$done من ${due.size} مكتملة اليوم","$done of ${due.size} completed today"),style=MaterialTheme.typography.labelSmall)
-                LinearProgressIndicator(progress={done.toFloat()/due.size},modifier=Modifier.fillMaxWidth().padding(vertical=4.dp))
-            }
-            error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
-            CompositionLocalProvider(LocalNeoTaskCompact provides options.compact,
-                LocalNeoTaskMove provides if(options.sort==NeoTaskSort.MANUAL && optionsReady && !settingsBusy) { { id,delta ->
-                    saveOptions(options.copy(order=NeoTaskQueries.move(db.tasks,options.order,tasks,id,delta)))
-                } } else null) {
-                LazyColumn(Modifier.weight(1f),contentPadding=PaddingValues(top=6.dp,bottom=88.dp),verticalArrangement=Arrangement.spacedBy(if(options.compact) 5.dp else 10.dp)) {
-                    if(tasks.isEmpty()) item { NeoEmptyState(if(search.isBlank() && priority==null && calendar==null && period==NeoTaskPeriod.TODAY && status==NeoTaskStatus.ALL) neoLiteral("لا توجد مهام لليوم","No tasks for today") else neoLiteral("لا توجد مهام مطابقة","No matching tasks"),neoLiteral("غيّر التاريخ أو الفلاتر، أو أضف مهمة","Change the date or filters, or add a task")) }
-                    items(tasks,key={it.id}) { task ->
-                        TaskCardV11(task,onToggleComplete={
-                            val complete=task.status!=TaskStatusV11.COMPLETED;val now=System.currentTimeMillis()
-                            changed(db.copy(tasks=db.tasks.map { if(it.id==task.id) it.copy(status=if(complete) TaskStatusV11.COMPLETED else TaskStatusV11.TODO,completedAt=if(complete) now else null,updatedAt=now) else it }),neoLiteral("تم تحديث المهمة","Task updated"))
-                        },onEdit={open(task.id)},onDelete={deleteId=task.id})
+                if(notice!=null) item {
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        Text(notice!!,Modifier.weight(1f),style=MaterialTheme.typography.labelMedium)
+                        if(undoCandidate==db && undo.enabled) TextButton(enabled=!write.pending,onClick={undo.perform();notice=null}) {Text(neoLabel("تراجع","Undo"))}
+                        IconButton(onClick={notice=null}) {Icon(Icons.Rounded.Close,neoLabel("إغلاق","Close"))}
                     }
-                }
-            }
-            if(notice!=null) Surface(tonalElevation=3.dp,shape=MaterialTheme.shapes.medium) {
-                Row(Modifier.fillMaxWidth().padding(horizontal=8.dp),verticalAlignment=Alignment.CenterVertically) {
-                    Text(notice!!,Modifier.weight(1f),style=MaterialTheme.typography.labelMedium)
-                    if(undoCandidate==db && undo.enabled) TextButton(enabled=!write.pending,onClick={undo.perform();notice=null}) {Text(neoLiteral("تراجع","Undo"))}
-                    IconButton(onClick={notice=null}) {Icon(Icons.Rounded.Close,neoLiteral("إغلاق","Close"))}
                 }
             }
         }
-        FloatingActionButton(onClick={open()},modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {Icon(Icons.Rounded.Add,neoLiteral("إضافة مهمة","Add task"))}
+        FloatingActionButton(onClick={if(notesTab) {noteId=null;noteEditor=true} else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+            Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
+        }
+    }
+    if (noteEditor) {
+        val existing = db.dayItems.firstOrNull { it.id == noteId }
+        NeoDayNoteDialog(existing?.date?.let { java.time.LocalDate.parse(it) } ?: today, existing,
+            expectedDatabase = db, calendarId = existing?.calendarId ?: db.calendars.firstOrNull { it.visible }?.id,
+            onDismiss = { noteEditor = false; noteId = null }) { noteEditor = false; noteId = null }
     }
     if(filters) AlertDialog(onDismissRequest={filters=false},title={Text(neoLiteral("فلاتر وعرض المهام","Task filters and view"))},text={
         Column(Modifier.heightIn(max=420.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {

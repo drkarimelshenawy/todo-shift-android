@@ -184,7 +184,7 @@ data class NeoShiftPaint(
 
 data class NeoAppearance(
     val brightness: NeoBrightness = NeoBrightness.SYSTEM,
-    val palette: NeoPalette = NeoPalette.CASHBOOK_BLUE,
+    val palette: NeoPalette = NeoPalette.OCEAN_DEPTH,
     val accentHex: String = "",
     val intensity: Float = 0.65f,
     val cardStyle: NeoCardStyle = NeoCardStyle.FLAT,

@@ -184,13 +184,13 @@ fun NeoCalendarArea(
     }
     val inheritedDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
     val gridDirection = neoDirection(p.gridDirection, inheritedDirection)
-    val premiumCashBook = p.palette == NeoPalette.CASHBOOK_BLUE
+    val premiumCashBook = true
     Column(
         modifier.fillMaxSize()
             .then(
                 if (premiumCashBook) Modifier.background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFFFFF9ED), Color(0xFFF5F0E7))
+                        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.background)
                     ),
                     RoundedCornerShape(24.dp),
                 ) else Modifier
@@ -200,7 +200,7 @@ fun NeoCalendarArea(
         Column(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 52.dp)
-                    .background(if (premiumCashBook) Color(0xFFFFF5E6) else Color.Transparent, RoundedCornerShape(24.dp))
+                    .background(if (premiumCashBook) MaterialTheme.colorScheme.surface else Color.Transparent, RoundedCornerShape(24.dp))
                     .padding(horizontal = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -251,7 +251,7 @@ fun NeoCalendarArea(
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(0xFF173B65),
                                 selectedLabelColor = Color.White,
-                                containerColor = Color(0xFFF7F9FD),
+                                containerColor = MaterialTheme.colorScheme.surface,
                             ),
                             label = {
                                 Text(
@@ -344,7 +344,7 @@ fun NeoCalendarArea(
                                 neoDirection(p.weekdayDirection, gridDirection)
                         ) {
                             Row(Modifier.fillMaxWidth().height(headerHeight)
-                                    .background(if (premiumCashBook) Color(0xFFF2E8D9) else Color.Transparent, RoundedCornerShape(12.dp))) {
+                                    .background(if (premiumCashBook) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent, RoundedCornerShape(12.dp))) {
                                 repeat(columns) { col ->
                                     val weekday = start.plusDays(col.toLong())
                                     val fullLabel =
@@ -625,21 +625,21 @@ internal fun NeoCalendarCell(
     Surface(
         modifier
             .alpha(if (muted) .20f else 1f)
-            .clip(RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 13.dp else 1.dp))
+            .clip(RoundedCornerShape(12.dp))
             .semantics {
                 contentDescription = description
                 selected = chosen
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         color = (if (muted) c.surfaceContainerLowest else c.surface).copy(alpha = p.cardOpacity),
-        shape = RoundedCornerShape(if (p.palette == NeoPalette.CASHBOOK_BLUE) 8.dp else 1.dp),
+        shape = RoundedCornerShape(12.dp),
         border =
             BorderStroke(
-                if (today || chosen || painting) 2.dp else if (p.palette == NeoPalette.CASHBOOK_BLUE) 0.5.dp else 0.5.dp,
+                if (today || chosen || painting) 2.dp else if (true) 0.5.dp else 0.5.dp,
                 when {
                     painting -> c.tertiary
                     chosen -> c.secondary
-                    today -> if (p.palette == NeoPalette.CASHBOOK_BLUE) Color(0xFFD8AD55) else c.primary
+                    today -> if (true) Color(0xFFD8AD55) else c.primary
                     else -> c.outlineVariant
                 },
             ),

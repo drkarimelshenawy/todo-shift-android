@@ -33,27 +33,9 @@ fun NeoRescueSchedules(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),
         verticalArrangement = Arrangement.spacedBy(NeoSpace.gap),
     ) {
-        Row(Modifier.fillMaxWidth()) {
-            listOf(
-                    neoLabel("الورديات", "Shifts"),
-                    neoLabel("الملخص", "Summary"),
-                    neoLabel("التقاويم", "Calendars"),
-                )
-                .forEachIndexed { index, title ->
-                    TextButton(
-                        onClick = { selected = index },
-                        modifier = Modifier.weight(1f),
-                        colors =
-                            ButtonDefaults.textButtonColors(
-                                contentColor =
-                                    if (selected == index) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                    ) {
-                        Text(title)
-                    }
-                }
-        }
+        NeoPremiumBanner(neoLabel("جداولي وأماكن العمل", "Schedules & workplaces"))
+        NeoPremiumTabs(listOf(neoLabel("الورديات", "Shifts"), neoLabel("الملخص", "Summary"), neoLabel("التقاويم", "Calendars")), selected, { selected = it })
+        OutlinedButton(onClick = { nav.open("WORKPLACES") }, modifier = Modifier.fillMaxWidth()) { Text(neoLabel("إدارة أماكن العمل والأجور", "Manage workplaces & rates")) }
         when (selected) {
             0 -> NeoShiftTimeline(db, places, month, onMonth, onDay)
             1 -> {

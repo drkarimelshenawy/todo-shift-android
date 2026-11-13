@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -419,7 +420,7 @@ fun V11CalendarScreen(
             // Opening the bar cannot resize the calendar or cover its final week.
             if (uiSettings.experience == V11Experience.PREMIUM) {
                 Box(
-                    Modifier.fillMaxWidth().height(68.dp)
+                    Modifier.fillMaxWidth().height(if (bulkPaint) 116.dp else 68.dp)
                         .padding(top = 2.dp, bottom = 2.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -450,6 +451,20 @@ fun V11CalendarScreen(
                     },
                     onPreview = { paintPreview = it },
                             )
+                        }
+                    } else {
+                        Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                TextButton(onClick = { paintMode = true }) { Text(neoLabel("أماكن العمل", "Workplaces")) }
+                                workplaces.forEach { place ->
+                                    AssistChip(onClick = { paintMode = true }, label = { Text(place.name) }, leadingIcon = {
+                                        Box(Modifier.size(10.dp).background(neoHexColor(place.colorHex), androidx.compose.foundation.shape.CircleShape))
+                                    })
+                                }
+                                if (workplaces.isEmpty()) TextButton(onClick = { showCalendarManager = true }) { Text(neoLabel("إدارة التقاويم", "Manage calendars")) }
+                            }
                         }
                     }
                 }

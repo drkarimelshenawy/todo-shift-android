@@ -76,6 +76,8 @@ fun V11FinanceScreen(
                 neoLabel("الحسابات والمدفوعات • $month", "Income and payments • $month"),
             )
         }
+        if (LocalV11NeoEnabled.current) NeoPremiumMonth(neoMonthTitle(month, LocalNeoEnglish.current), onPrevious, onNext)
+        else {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -88,6 +90,7 @@ fun V11FinanceScreen(
             FilledTonalButton(onClick = onNext) { Text("›", fontSize = 25.sp) }
         }
 
+        }
         Spacer(Modifier.height(12.dp))
 
         if (LocalV11NeoEnabled.current) {
@@ -125,28 +128,7 @@ fun V11FinanceScreen(
                 headlineContent = { Text(neoLabel("التزامات الشهر", "Upcoming obligations")) },
                 trailingContent = { Text(money(obligationDue, moneyVisible)) },
             )
-            Row(Modifier.fillMaxWidth()) {
-                listOf(
-                        neoLabel("الملخص", "Summary"),
-                        neoLabel("الدفعات", "Receipts"),
-                        neoLabel("الالتزامات", "Obligations"),
-                    )
-                    .forEachIndexed { index, title ->
-                        TextButton(
-                            onClick = neoWriteAction { financeSection = index },
-                            modifier = Modifier.weight(1f),
-                            colors =
-                                ButtonDefaults.textButtonColors(
-                                    contentColor =
-                                        if (financeSection == index)
-                                            MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                        ) {
-                            Text(title)
-                        }
-                    }
-            }
+            NeoPremiumTabs(listOf(neoLabel("الملخص", "Summary"), neoLabel("الدفعات", "Receipts"), neoLabel("الالتزامات", "Obligations")), financeSection, { financeSection = it })
             if (financeSection == 0) {
                 val nav = LocalNeoFeatures.current
                 NeoSettingsRow(neoLabel("أسعار الورديات", "Shift rates")) { nav.open("RATES") }
@@ -208,7 +190,7 @@ fun V11FinanceScreen(
             Text(neoLiteral("تسجيل مبلغ مستلم", "Record received payment"))
         }
 
-        if (!LocalV11NeoEnabled.current || financeSection == 1) {
+        if (!LocalV11NeoEnabled.current || financeSection in 0..1) {
             Spacer(Modifier.height(8.dp))
 
             Row(

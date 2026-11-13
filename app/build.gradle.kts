@@ -12,8 +12,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 42
-        versionName = "4.5.2-premium-calendar-vc42-test"
+        versionCode = 43
+        versionName = "4.6.0-premium-complete-vc43-test"
     }
 
 

@@ -505,9 +505,9 @@ internal fun TaskCardV11(
     val compact = LocalNeoTaskCompact.current
     val move = LocalNeoTaskMove.current
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
-        containerColor = if(completed) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainer,
-    )) {
-        CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+        containerColor = if(completed) androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.surface, androidx.compose.ui.graphics.Color(0xFF8FCB9D), 0.28f) else MaterialTheme.colorScheme.surface,
+    ), border = androidx.compose.foundation.BorderStroke(1.dp, if(completed) androidx.compose.ui.graphics.Color(0xFF80AE8C) else MaterialTheme.colorScheme.outlineVariant)) {
+        CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides contentDirection) {
         Row(
             modifier =
                 Modifier.fillMaxWidth()
@@ -754,7 +754,7 @@ fun FullTaskEditorDialogV11(
         }
     }
 
-    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides contentDirection) {
     AlertDialog(
         onDismissRequest = { leaveEditor() },
         title = {

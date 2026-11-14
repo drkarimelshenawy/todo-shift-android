@@ -50,6 +50,7 @@ fun NeoItemReminderRecurrenceControls(id:String) {
                 try {
                     withContext(Dispatchers.IO) {
                         rules.configure(id,kind,interval)
+                        ToDoShiftReminder.cancel(context,id)
                         val current=V11Runtime(context.applicationContext).start()
                         current.tasks.firstOrNull {it.id==id}?.let {ToDoShiftReminder.schedule(context,it)}
                         current.dayItems.firstOrNull {it.id==id}?.let {ToDoShiftReminder.schedule(context,it)}

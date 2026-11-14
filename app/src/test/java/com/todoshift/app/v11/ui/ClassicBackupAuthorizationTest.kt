@@ -43,11 +43,11 @@ class ClassicBackupAuthorizationTest {
         }
         compose.onNodeWithText("Financial verification required").assertExists()
         compose.onAllNodesWithText("Export legacy JSON").assertCountEquals(0)
-        compose.onAllNodesWithText("Export full ZIP").assertCountEquals(0)
+        compose.onAllNodesWithText("Export encrypted backup").assertCountEquals(0)
         compose.onAllNodesWithText("9000", substring = true).assertCountEquals(0)
         compose.runOnIdle { authorized.value = true }
         compose.onNodeWithText("Export legacy JSON").assertExists()
-        compose.onNodeWithText("Export full ZIP").assertExists()
+        compose.onNodeWithText("Export encrypted backup").assertExists()
         compose.runOnIdle { authorized.value = false }
         compose.onAllNodesWithText("Export legacy JSON").assertCountEquals(0)
         compose.onNodeWithText("Financial verification required").assertExists()

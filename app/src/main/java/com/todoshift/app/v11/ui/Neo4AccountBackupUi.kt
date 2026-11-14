@@ -43,6 +43,9 @@ fun Neo4AccountBackupPage(
     var pendingExport by remember { mutableStateOf<Uri?>(null) }
     var pendingImport by remember { mutableStateOf<Uri?>(null) }
     var prepared by remember { mutableStateOf<Neo4PreparedRestore?>(null) }
+    var encryptedInput by remember { mutableStateOf<ByteArray?>(null) }
+    var exportPassword by remember { mutableStateOf<CharArray?>(null) }
+    var requestExportPassword by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
@@ -72,9 +75,10 @@ fun Neo4AccountBackupPage(
     var lastBytes by remember { mutableLongStateOf(cloud.lastLocalBytes()) }
     val exportPicker =
         rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/zip")
+            ActivityResultContracts.CreateDocument("application/octet-stream")
         ) {
             pendingExport = it
+            if (it == null) { exportPassword?.fill('\u0000'); exportPassword = null }
         }
     val importPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
@@ -120,7 +124,9 @@ fun Neo4AccountBackupPage(
 
                                         override fun close() = raw.close()
                                     }
-                                backup.export(db, counted, exportScope)
+                                val secret = exportPassword ?: error("Backup password required")
+                                try { backup.exportEncrypted(db, counted, exportScope, secret) }
+                                finally { secret.fill('\u0000'); exportPassword = null }
                             } ?: error("Cannot open backup destination")
                             cloud.localSuccess(count)
                             null
@@ -139,7 +145,8 @@ fun Neo4AccountBackupPage(
                         } else { restoreScope = value.preview.availableSections; prepared = value }
                     }
                     .onFailure {
-                        failed = true
+                        if (it is BackupPasswordRequired) encryptedInput = it.envelope
+                        failed = it !is BackupPasswordRequired
                         message =
                             neoLiteral("تعذر إتمام العملية: ", "Operation failed: ") +
                                 (it.message ?: it.javaClass.simpleName)
@@ -175,6 +182,13 @@ fun Neo4AccountBackupPage(
         }
         return
     }
+    if (requestExportPassword) BackupExportPasswordDialog(onDismiss = { requestExportPassword = false }) { secret ->
+        exportPassword?.fill('\u0000'); exportPassword = secret; requestExportPassword = false
+        exportPicker.launch("ToDoShift-${java.time.LocalDate.now()}.tdsb")
+    }
+    encryptedInput?.let { envelope -> BackupImportPasswordDialog(envelope, backup, onDismiss = { encryptedInput = null }) { value ->
+        restoreScope = value.preview.availableSections; prepared = value; encryptedInput = null; message = null; failed = false
+    } }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -192,18 +206,18 @@ fun Neo4AccountBackupPage(
         )
         Text(
             neoLabel(
-                "يشمل البيانات والإعدادات والتخطيطات والصور الشخصية المستخدمة. لا يشمل PIN أو البصمة أو مفاتيح الجهاز. الملف غير مشفر.",
-                "Includes data, settings, profiles and referenced personal images. Excludes PINs, biometrics and device keys. The archive is not encrypted.",
+                "تُشفر النسخة بكلمة مرور مستقلة. تشمل البيانات والإعدادات والتخطيطات، دون PIN أو البصمة أو مفاتيح الجهاز. تُقبل النسخ القديمة أيضًا.",
+                "Backups are encrypted with a separate password. Includes data, settings and profiles; excludes PINs, biometrics and device keys. Older ZIP and JSON backups can still be imported.",
             ),
             style = MaterialTheme.typography.bodySmall,
         )
         BackupScopeControls(exportScope) { exportScope = it }
         Button(
             enabled = !busy && exportScope.isNotEmpty(),
-            onClick = { exportPicker.launch("ToDoShift-${java.time.LocalDate.now()}.zip") },
+            onClick = { requestExportPassword = true },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(neoLabel("تصدير نسخة محلية", "Export local backup"))
+            Text(neoLabel("تصدير نسخة محلية مشفرة", "Export encrypted local backup"))
         }
         OutlinedButton(
             enabled = !busy,

@@ -28,16 +28,20 @@ fun SafeStorageRecovery(onDismiss: () -> Unit, onRecovered: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var prepared by remember { mutableStateOf<Neo4PreparedRestore?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
+    var encryptedInput by remember { mutableStateOf<ByteArray?>(null) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null && unlocked && !busy) {
             busy = true
             scope.launch {
                 try { prepared = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { backup.preview(it) } ?: error("Cannot open backup") } }
-                catch (failure: Exception) { message = failure.message ?: "Backup could not be validated" }
+                catch (failure: Exception) { if (failure is BackupPasswordRequired) encryptedInput = failure.envelope; message = failure.message ?: "Backup could not be validated" }
                 finally { busy = false }
             }
         }
     }
+    if (unlocked) encryptedInput?.let { envelope -> BackupImportPasswordDialog(envelope, backup, onDismiss = { encryptedInput = null }) { value ->
+        prepared = value; encryptedInput = null; message = null
+    } }
     Dialog(onDismissRequest = { if (!busy) onDismiss() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = !busy, dismissOnClickOutside = false)) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

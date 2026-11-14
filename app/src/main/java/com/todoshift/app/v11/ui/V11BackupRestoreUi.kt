@@ -45,6 +45,9 @@ fun V11BackupRestoreDialog(
     var expected by remember { mutableStateOf<V11Database?>(null) }
     var pendingExport by remember { mutableStateOf<Uri?>(null) }
     var pendingImport by remember { mutableStateOf<Uri?>(null) }
+    var encryptedInput by remember { mutableStateOf<ByteArray?>(null) }
+    var exportPassword by remember { mutableStateOf<CharArray?>(null) }
+    var requestExportPassword by remember { mutableStateOf(false) }
 
     val privateNotes = db.dayItems.any { it.notePrivate }
     var notesAuthorized by remember(privateNotes) { mutableStateOf(!privateNotes) }
@@ -64,6 +67,7 @@ fun V11BackupRestoreDialog(
             ActivityResultContracts.CreateDocument("application/octet-stream")
         ) {
             if (it != null) pendingExport = it
+            else { exportPassword?.fill('\u0000'); exportPassword = null }
         }
     val importLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
@@ -116,7 +120,11 @@ fun V11BackupRestoreDialog(
                         val raw = if (legacy) V11Storage(app).exportJson(db) else null
                         context.contentResolver.openOutputStream(uri, "wt")?.use { output ->
                             if (raw != null) output.write(raw.toByteArray(Charsets.UTF_8))
-                            else coordinator.export(db, output)
+                            else {
+                                val secret = exportPassword ?: error("Backup password required")
+                                try { coordinator.exportEncrypted(db, output, BackupSection.entries.toSet(), secret) }
+                                finally { secret.fill('\u0000'); exportPassword = null }
+                            }
                         } ?: error("Unable to open backup destination")
                     }
                 }
@@ -145,6 +153,7 @@ fun V11BackupRestoreDialog(
                 expected = db
                 prepared = preview
             } catch (failure: Exception) {
+                if (failure is BackupPasswordRequired) encryptedInput = failure.envelope
                 message = failure.message ?: neoLiteral("النسخة غير صالحة", "Invalid backup")
             } finally {
                 busy = false
@@ -161,9 +170,15 @@ fun V11BackupRestoreDialog(
     fun startExport(legacy: Boolean) {
         legacyExport = legacy
         val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
-        exportLauncher.launch("ToDo-Shift-$stamp.${if (legacy) "json" else "zip"}")
+        exportLauncher.launch("ToDo-Shift-$stamp.${if (legacy) "json" else "tdsb"}")
     }
 
+    if (requestExportPassword) BackupExportPasswordDialog(onDismiss = { requestExportPassword = false }) { secret ->
+        exportPassword?.fill('\u0000'); exportPassword = secret; requestExportPassword = false; startExport(false)
+    }
+    encryptedInput?.let { envelope -> BackupImportPasswordDialog(envelope, coordinator, onDismiss = { encryptedInput = null }) { value ->
+        expected = db; prepared = value; encryptedInput = null; message = null
+    } }
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
         title = { Text(neoLiteral("النسخ والاستعادة", "Backup and restore")) },
@@ -174,20 +189,20 @@ fun V11BackupRestoreDialog(
             ) {
                 Text(
                     neoLiteral(
-                        "ZIP: البيانات والإعدادات والمرفقات. JSON القديم: قاعدة البيانات فقط. الملفات غير مشفرة.",
-                        "ZIP: data, settings and attachments. Legacy JSON: database only. Files are not encrypted.",
+                        "النسخة الكاملة مشفرة بكلمة مرور مستقلة. تصدير JSON القديم غير المشفر متاح فقط دون حماية مفعلة. تُقبل ملفات ZIP وJSON القديمة للاستيراد.",
+                        "Full backups use a separate encryption password. Unencrypted legacy JSON export is available only without active protection. Older ZIP and JSON files can still be imported.",
                     )
                 )
                 OutlinedButton(
-                    onClick = { startExport(false) },
+                    onClick = { requestExportPassword = true },
                     enabled = !busy,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(neoLiteral("تصدير ZIP كامل", "Export full ZIP"))
+                    Text(neoLiteral("تصدير نسخة مشفرة", "Export encrypted backup"))
                 }
                 OutlinedButton(
                     onClick = { startExport(true) },
-                    enabled = !busy,
+                    enabled = !busy && !privateNotes && (security == null || (security.mode == V11LockMode.NONE && !security.biometricEnabled)),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(neoLiteral("تصدير JSON القديم", "Export legacy JSON"))

@@ -97,4 +97,17 @@ class SelectiveRestoreTest {
         try { backup.restore(prepared, prepared.token, setOf(BackupSection.SETTINGS), RestoreMode.REPLACE, preview.currentFingerprint); fail("Expected stale preview rejection") } catch (_: IllegalStateException) { }
         assertEquals(changed, storage.load())
     }
+
+    @Test fun encryptedBackupRequiresPasswordBeforeInspectedPreviewAndWrongPasswordCannotWrite() {
+        val original = V11Runtime(context).start()
+        val backup = Neo4LocalBackup(context)
+        val secret = "independent backup phrase 44".toCharArray()
+        val encrypted = ByteArrayOutputStream().also { backup.exportEncrypted(original, it, BackupSection.entries.toSet(), secret) }.toByteArray()
+        try { backup.preview(encrypted.inputStream()); fail("Password required before preview") } catch (required: BackupPasswordRequired) { assertArrayEquals(encrypted, required.envelope) }
+        try { backup.preview(encrypted.inputStream(), "incorrect password".toCharArray()); fail("Wrong password must fail") } catch (_: IllegalArgumentException) { }
+        assertEquals(original, storage.load())
+        val prepared = backup.preview(encrypted.inputStream(), secret)
+        assertEquals(original.calendars.size, backup.validate(prepared).calendars)
+        assertEquals(original, backup.restore(prepared, prepared.token).database)
+    }
 }

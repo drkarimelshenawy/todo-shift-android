@@ -165,8 +165,24 @@ class Neo4LocalBackup(context: Context) :
             }
         }
 
-    override fun preview(input: InputStream): Neo4PreparedRestore {
-        val raw = readBounded(input, Neo4BackupFormat.MAX_BYTES)
+    fun exportEncrypted(database: V11Database, output: OutputStream, scope: Set<BackupSection>, password: CharArray) {
+        require(EncryptedBackup.validPassword(password)) { "Use a backup passphrase of at least 12 characters with at least four distinct characters" }
+        val archive = ByteArrayOutputStream()
+        export(database, archive, scope)
+        val plain = archive.toByteArray()
+        try { output.write(EncryptedBackup.encrypt(plain, password)); output.flush() }
+        finally { plain.fill(0) }
+    }
+
+    override fun preview(input: InputStream): Neo4PreparedRestore = preview(input, null)
+
+    fun preview(input: InputStream, password: CharArray?): Neo4PreparedRestore {
+        val inputBytes = readBounded(input, Neo4BackupFormat.MAX_BYTES + 128)
+        val raw = if (EncryptedBackup.isEncrypted(inputBytes)) {
+            if (password == null) throw BackupPasswordRequired(inputBytes)
+            EncryptedBackup.decrypt(inputBytes, password)
+        } else inputBytes
+        require(raw.size <= Neo4BackupFormat.MAX_BYTES) { "Backup exceeds limit" }
         val parsed = parse(raw)
         return Neo4PreparedRestore(Neo4BackupFormat.sha256(raw), parsed.preview, raw)
     }

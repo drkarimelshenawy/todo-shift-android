@@ -39,9 +39,6 @@ fun SafeStorageRecovery(onDismiss: () -> Unit, onRecovered: () -> Unit) {
             }
         }
     }
-    if (unlocked) encryptedInput?.let { envelope -> BackupImportPasswordDialog(envelope, backup, onDismiss = { encryptedInput = null }) { value ->
-        prepared = value; encryptedInput = null; message = null
-    } }
     Dialog(onDismissRequest = { if (!busy) onDismiss() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = !busy, dismissOnClickOutside = false)) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -74,4 +71,7 @@ fun SafeStorageRecovery(onDismiss: () -> Unit, onRecovered: () -> Unit) {
             }
         }
     }
+    if (unlocked) encryptedInput?.let { envelope -> BackupImportPasswordDialog(envelope, backup, onDismiss = { encryptedInput = null }) { value ->
+        prepared = value; encryptedInput = null; message = null
+    } }
 }

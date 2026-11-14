@@ -173,12 +173,6 @@ fun V11BackupRestoreDialog(
         exportLauncher.launch("ToDo-Shift-$stamp.${if (legacy) "json" else "tdsb"}")
     }
 
-    if (requestExportPassword) BackupExportPasswordDialog(onDismiss = { requestExportPassword = false }) { secret ->
-        exportPassword?.fill('\u0000'); exportPassword = secret; requestExportPassword = false; startExport(false)
-    }
-    encryptedInput?.let { envelope -> BackupImportPasswordDialog(envelope, coordinator, onDismiss = { encryptedInput = null }) { value ->
-        expected = db; prepared = value; encryptedInput = null; message = null
-    } }
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
         title = { Text(neoLiteral("النسخ والاستعادة", "Backup and restore")) },
@@ -304,4 +298,10 @@ fun V11BackupRestoreDialog(
             },
         )
     }
+    if (requestExportPassword) BackupExportPasswordDialog(onDismiss = { requestExportPassword = false }) { secret ->
+        exportPassword?.fill('\u0000'); exportPassword = secret; requestExportPassword = false; startExport(false)
+    }
+    encryptedInput?.let { envelope -> BackupImportPasswordDialog(envelope, coordinator, onDismiss = { encryptedInput = null }) { value ->
+        expected = db; prepared = value; encryptedInput = null; message = null
+    } }
 }

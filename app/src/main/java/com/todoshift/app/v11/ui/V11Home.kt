@@ -842,7 +842,11 @@ fun V11Home(
                             if (navigation.featureOpen) {
                                 BackHandler { navigation.back() }
                                 key(navigation.feature, navigation.owner) {
-                                    if (
+                                    if (navigation.feature == "WORK_SUMMARY") {
+                                        V11SchedulesScreen(month, db, oldData.workplaces, { saveDb(it) },
+                                            onMonthChange = { month = it }, financeAuthorized = accountsUnlocked,
+                                            financeAmountsVisible = moneyVisible, initialSection = 1)
+                                    } else if (
                                         navigation.feature in
                                             NeoFeatureCatalog.entries
                                                 .filter { it.group.isNotEmpty() }

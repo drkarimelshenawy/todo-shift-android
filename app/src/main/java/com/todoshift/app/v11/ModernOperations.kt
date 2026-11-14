@@ -164,7 +164,7 @@ object ModernOperations {
     fun search(db: V11Database, query: String, finance: Boolean): List<SearchResult> {
         if (query.isBlank()) return emptyList()
         val q = query.trim()
-        return (db.tasks.map { SearchResult("TASK", it.id, it.date, it.title + " " + it.details) } +
+        return (db.tasks.filterNot {it.linkedNotePrivateV11(db)}.map { SearchResult("TASK", it.id, it.date, it.title + " " + it.details) } +
                 db.dayItems.filter { !it.notePrivate && it.noteVisible }.map {
                     SearchResult(
                         if (it.type == DayItemTypeV11.NOTE) "NOTE" else "EVENT",

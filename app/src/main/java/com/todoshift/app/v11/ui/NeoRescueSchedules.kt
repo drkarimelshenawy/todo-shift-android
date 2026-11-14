@@ -26,8 +26,9 @@ fun NeoRescueSchedules(
     onMonth: (YearMonth) -> Unit,
     onChange: (V11Database) -> Unit,
     onDay: (LocalDate, String) -> Unit,
+    initialTab: Int = 0,
 ) {
-    var selected by rememberSaveable { mutableIntStateOf(0) }
+    var selected by rememberSaveable { mutableIntStateOf(initialTab) }
     val nav = LocalNeoFeatures.current
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),

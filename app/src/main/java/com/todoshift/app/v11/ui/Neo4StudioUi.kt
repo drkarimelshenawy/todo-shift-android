@@ -204,7 +204,7 @@ fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
                                                 Modifier.weight(1f).fillMaxHeight(),
                                                 {},
                                                 metrics,
-                                                {},
+                                                onClick = {},
                                             )
                                         }
                                     }

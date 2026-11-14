@@ -34,6 +34,7 @@ fun V11SchedulesScreen(
     onMonthChange: (YearMonth) -> Unit = {},
     financeAuthorized: Boolean = false,
     financeAmountsVisible: Boolean = false,
+    initialSection: Int = 0,
 ) {
     val commit = rememberNeoCommit(onDatabaseChange)
     var timelineDay by remember { mutableStateOf<Pair<java.time.LocalDate, String>?>(null) }
@@ -59,6 +60,7 @@ fun V11SchedulesScreen(
             onMonthChange,
             onDatabaseChange,
             { date, id -> timelineDay = date to id },
+            initialTab = initialSection,
         )
         return
     }

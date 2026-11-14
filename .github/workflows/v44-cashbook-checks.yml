@@ -67,6 +67,7 @@ jobs:
             --tests 'com.todoshift.app.v11.FinanceCalendarFilterTest' \
             --tests 'com.todoshift.app.v11.NeoCalendarPresentationTest' \
             --tests 'com.todoshift.app.v11.ReminderDeliveryPolicyTest' \
+            --tests 'com.todoshift.app.v11.ModernSafetyTest' \
             --tests 'com.todoshift.app.v11.SecurityAttemptLimitTest' \
             --tests 'com.todoshift.app.v11.NoteTransactionTest' \
             --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \

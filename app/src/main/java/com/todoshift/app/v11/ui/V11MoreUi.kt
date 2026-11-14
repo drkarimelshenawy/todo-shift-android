@@ -81,6 +81,7 @@ fun V11MoreScreen(
                 navigateDate(date)
             },
             { toolsOpen = false },
+            searchScope = "SETTINGS",
         )
         return
     }

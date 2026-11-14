@@ -34,7 +34,8 @@ data class NeoFeature(
 object NeoFeatureCatalog {
     val entries =
         listOf(
-            NeoFeature("FINANCE_DISPLAY", "عرض الحسابات", "Finance display", "Finances", "PRIVACY"),
+            NeoFeature("FINANCE_DISPLAY", "عرض الحسابات", "Finance display", "Salary", "PRIVACY"),
+            NeoFeature("WORK_SUMMARY", "ملخص العمل التشغيلي", "Operational work summary", "Calendar"),
             NeoFeature("COPY", "نسخ الورديات", "Copy shifts", "Calendar"),
             NeoFeature(
                 "PAINT_SHORTCUTS",
@@ -71,10 +72,10 @@ object NeoFeatureCatalog {
             NeoFeature("COMPARE", "مقارنة شهرين", "Compare months", "Schedules"),
             NeoFeature("TASK_TEMPLATES", "قوالب المهام", "Task templates", "Tasks"),
             NeoFeature("ATTACHMENTS", "المرفقات", "Attachments", "Tasks"),
-            NeoFeature("RATES", "أسعار الورديات المؤرخة", "Effective-dated rates", "Finances"),
-            NeoFeature("PAYMENTS", "توزيع الدفعات على الشهور", "Allocate receipts", "Finances"),
-            NeoFeature("STATEMENT", "كشف مكان العمل وتصديره", "Workplace statements", "Finances"),
-            NeoFeature("MONTH_REVIEW", "مراجعة وإقفال الشهر", "Review and close month", "Finances"),
+            NeoFeature("RATES", "أسعار الورديات المؤرخة", "Effective-dated rates", "Salary"),
+            NeoFeature("PAYMENTS", "توزيع الدفعات على الشهور", "Allocate receipts", "Salary"),
+            NeoFeature("STATEMENT", "كشف مكان العمل وتصديره", "Workplace statements", "Salary"),
+            NeoFeature("MONTH_REVIEW", "مراجعة وإقفال الشهر", "Review and close month", "Salary"),
             NeoFeature(
                 "APPEARANCE",
                 "استوديو المظهر",
@@ -169,6 +170,7 @@ object NeoFeatureCatalog {
                 "Settings",
                 "PRIVACY",
             ),
+            NeoFeature("LAUNCH", "البداية والاختصارات", "Landing and shortcuts", "Settings", "ADVANCED"),
             NeoFeature("PERFORMANCE", "وضع الأداء", "Performance mode", "Settings", "ADVANCED"),
             NeoFeature("FOCUS", "التركيز المؤقت", "Temporary focus", "Settings", "ADVANCED"),
             NeoFeature(
@@ -291,6 +293,13 @@ fun NeoContextActions(destination: String) {
                         undo.perform()
                     },
                 )
+            if (destination == "Calendar") {
+                val appearance = LocalNeoAppearance.current
+                val update = LocalNeoOnChange.current
+                DropdownMenuItem(text = { Text(neoLabel("أماكن العمل", "Workplaces")) }, onClick = { open = false; nav.open("WORKPLACES") })
+                DropdownMenuItem(text = { Text(if (appearance.weeklyRows) neoLabel("الأسبوع: ٧ أعمدة", "Week: 7 columns") else neoLabel("الأسبوع: ٧ صفوف", "Week: 7 rows")) },
+                    onClick = { open = false; update(appearance.copy(weeklyRows = !appearance.weeklyRows)) })
+            }
             NeoFeatureCatalog.entries
                 .filter { it.destination == destination }
                 .forEach { feature ->

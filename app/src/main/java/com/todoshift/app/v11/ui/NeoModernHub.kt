@@ -112,7 +112,7 @@ fun NeoModernHub(
         }
     val owners =
         remember(db.tasks, db.dayItems) {
-            db.tasks.map { it.id to it.title } +
+            db.tasks.filterNot {it.linkedNotePrivateV11(db)}.map { it.id to it.title } +
                 db.dayItems.filter { it.type == DayItemTypeV11.NOTE && !it.notePrivate && it.noteVisible }.map { it.id to it.title }
         }
     var owner by rememberSaveable { mutableStateOf(initialOwner ?: owners.firstOrNull()?.first) }

@@ -33,31 +33,31 @@ class PinSetupAsyncUiTest {
         val store = V11SecurityStore(RuntimeEnvironment.getApplication())
         val saved = AtomicBoolean(false)
         show(store, false, saved)
-        compose.onNodeWithText("New PIN").performTextInput("4826")
-        compose.onNodeWithText("Confirm PIN").performTextInput("4826")
+        compose.onNodeWithText("New PIN").performTextInput("482601")
+        compose.onNodeWithText("Confirm PIN").performTextInput("482601")
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000L) { saved.get() }
-        assertTrue(store.verifyPin("4826"))
+        assertTrue(store.verifyPin("482601"))
     }
 
     @Test fun wrongCurrentPinKeepsOldSecretAndDraftThenAllowsValidRetry() {
         val store = V11SecurityStore(RuntimeEnvironment.getApplication())
-        assertTrue(store.setPin("4826"))
+        assertTrue(store.setPin("482601"))
         val saved = AtomicBoolean(false)
         show(store, true, saved)
         compose.onNodeWithText("Current PIN").performTextInput("0000")
-        compose.onNodeWithText("New PIN").performTextInput("1234")
-        compose.onNodeWithText("Confirm PIN").performTextInput("1234")
+        compose.onNodeWithText("New PIN").performTextInput("123456")
+        compose.onNodeWithText("Confirm PIN").performTextInput("123456")
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000L) {
             compose.onAllNodesWithText("Incorrect current PIN").fetchSemanticsNodes().isNotEmpty()
         }
         assertFalse(saved.get())
-        assertTrue(store.verifyPin("4826"))
-        compose.onNodeWithText("Current PIN").performTextReplacement("4826")
+        assertTrue(store.verifyPin("482601"))
+        compose.onNodeWithText("Current PIN").performTextReplacement("482601")
         compose.onNodeWithText("Save").performClick()
         compose.waitUntil(10_000L) { saved.get() }
-        assertTrue(store.verifyPin("1234"))
-        assertFalse(store.verifyPin("4826"))
+        assertTrue(store.verifyPin("123456"))
+        assertFalse(store.verifyPin("482601"))
     }
 }

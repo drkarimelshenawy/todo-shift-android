@@ -44,16 +44,26 @@ fun V11BackupRestoreDialog(
     var prepared by remember { mutableStateOf<Neo4PreparedRestore?>(null) }
     var expected by remember { mutableStateOf<V11Database?>(null) }
 
+    val privateNotes = db.dayItems.any { it.notePrivate }
+    var notesAuthorized by remember(privateNotes) { mutableStateOf(!privateNotes) }
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(owner, privateNotes) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && privateNotes) notesAuthorized = false
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
     val latestAuthorized by rememberUpdatedState(financeAuthorized)
     val rootAccess = LocalNeoFinanceAccess.current
-    fun canAccess() = latestAuthorized && (rootAccess?.invoke() ?: true)
+    fun canAccess() = latestAuthorized && notesAuthorized && (rootAccess?.invoke() ?: true)
     if (!canAccess()) {
-        if (security != null && securityStore != null) {
+        if (security != null && securityStore != null && (!privateNotes || security.mode != V11LockMode.NONE || security.biometricEnabled)) {
             V11FinancialVerificationDialog(
                 security,
                 securityStore,
                 onDismiss = { if (!busy) onDismiss() },
-                onVerified = onUnlocked,
+                onVerified = { notesAuthorized = true; onUnlocked() },
             )
         } else
             AlertDialog(

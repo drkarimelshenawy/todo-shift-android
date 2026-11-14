@@ -17,7 +17,9 @@ data class V11SecuritySettings(
     val biometricEnabled: Boolean = false,
     val protectAccounts: Boolean = false,
     val hideAmounts: Boolean = true,
-    val autoLockMinutes: Int = 0
+    val autoLockMinutes: Int = 0,
+    val protectApplication: Boolean = false,
+    val protectTasks: Boolean = false
 )
 
 class V11SecurityStore internal constructor(
@@ -130,6 +132,8 @@ class V11SecurityStore internal constructor(
                     true
                 ),
 
+            protectApplication = prefs.getBoolean("protect_application", false),
+            protectTasks = prefs.getBoolean("protect_tasks", false),
             autoLockMinutes =
                 prefs.getInt(
                     KEY_AUTO_LOCK,
@@ -142,6 +146,8 @@ class V11SecurityStore internal constructor(
         settings: V11SecuritySettings
     ) {
         val editor = prefs.edit()
+            .putBoolean("protect_application", settings.protectApplication)
+            .putBoolean("protect_tasks", settings.protectTasks)
             .putString(
                 KEY_MODE,
                 settings.mode.name
@@ -181,7 +187,7 @@ class V11SecurityStore internal constructor(
         pin: String
     ): Boolean {
         if (
-            pin.length !in 4..12 ||
+            pin.length !in 6..12 ||
             !pin.all(Char::isDigit)
         ) {
             return false

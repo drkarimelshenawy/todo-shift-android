@@ -44,6 +44,19 @@ fun V11SecuritySettingsDialog(
 ) {
     val saveRunner = rememberNeoSecurityVerifier()
     val context = LocalContext.current
+    var verifiedForSettings by remember(current) {
+        mutableStateOf(current.mode == V11LockMode.NONE && !current.biometricEnabled)
+    }
+    if (!verifiedForSettings) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(neoLiteral("تحقق لتغيير الحماية", "Verify to change protection")) },
+            text = { V11AccountsUnlockScreen(current, store) { verifiedForSettings = true } },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = onDismiss) { Text(neoLiteral("إلغاء", "Cancel")) } },
+        )
+        return
+    }
 
     var settings by remember(current) {
         mutableStateOf(current)
@@ -174,7 +187,7 @@ fun V11SecuritySettingsDialog(
                         )
                             neoLiteral("PIN مُعيّن حالياً", "PIN is configured")
                         else
-                            neoLiteral("رقم سري من 4 إلى 12 رقماً", "PIN of 4 to 12 digits"),
+                            neoLiteral("رقم سري من 6 إلى 12 رقماً", "PIN of 6 to 12 digits"),
                     selected =
                         settings.mode == V11LockMode.PIN,
                     actionText =
@@ -316,6 +329,23 @@ fun V11SecuritySettingsDialog(
                 )
 
                 SecuritySwitchCard(
+                    icon = { Icon(Icons.Default.Lock, null) },
+                    title = neoLiteral("قفل التطبيق بالكامل", "Protect entire application"),
+                    subtitle = neoLiteral("التحقق عند فتح أي قسم أو اختصار", "Verify before opening any section or shortcut"),
+                    checked = settings.protectApplication,
+                    enabled = protectionAvailable,
+                    onCheckedChange = { settings = settings.copy(protectApplication = it) },
+                )
+                SecuritySwitchCard(
+                    icon = { Icon(Icons.Default.Lock, null) },
+                    title = neoLiteral("قفل المهام والملاحظات", "Protect tasks and notes"),
+                    subtitle = neoLiteral("حماية القسم وروابطه المباشرة", "Protect the section and its direct links"),
+                    checked = settings.protectTasks,
+                    enabled = protectionAvailable,
+                    onCheckedChange = { settings = settings.copy(protectTasks = it) },
+                )
+
+                SecuritySwitchCard(
                     icon = {
                         Icon(
                             Icons.Default.VisibilityOff,
@@ -397,14 +427,9 @@ fun V11SecuritySettingsDialog(
                     if (!securityActive) {
                         finalSettings =
                             finalSettings.copy(
-                                protectAccounts = false
-                            )
-                    } else if (
-                        !finalSettings.protectAccounts
-                    ) {
-                        finalSettings =
-                            finalSettings.copy(
-                                protectAccounts = true
+                                protectAccounts = false,
+                                protectApplication = false,
+                                protectTasks = false,
                             )
                     }
 
@@ -433,7 +458,13 @@ fun V11SecuritySettingsDialog(
                     }
 
                     val submitted = finalSettings
-                    saveRunner.execute({ store.save(submitted) }) { result ->
+                    saveRunner.execute({
+                        if (submitted.mode == V11LockMode.NONE && !submitted.biometricEnabled)
+                            check(!V11Storage(context).load().dayItems.any { it.notePrivate }) {
+                                neoLiteral("افتح حماية الملاحظات أولًا قبل إزالة وسيلة التحقق", "Unlock or unhide protected notes before removing the last authentication method")
+                            }
+                        store.save(submitted)
+                    }) { result ->
                         result.onSuccess {
                             onChanged(submitted)
                             onDismiss()
@@ -681,8 +712,8 @@ internal fun PinSetupDialogV3(
             Button(
                 enabled = !verifier.busy,
                 onClick = {
-                    if (newPin.length !in 4..12 || !newPin.all(Char::isDigit)) {
-                        message = neoLiteral("PIN يجب أن يكون من 4 إلى 12 رقماً", "PIN must contain 4 to 12 digits")
+                    if (newPin.length !in 6..12 || !newPin.all(Char::isDigit)) {
+                        message = neoLiteral("PIN يجب أن يكون من 6 إلى 12 رقماً", "PIN must contain 6 to 12 digits")
                     } else if (newPin != confirmPin) {
                         message = neoLiteral("تأكيد PIN غير مطابق", "PINs do not match")
                     } else {

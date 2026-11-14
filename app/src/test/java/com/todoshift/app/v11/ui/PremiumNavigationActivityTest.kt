@@ -176,7 +176,7 @@ class PremiumNavigationActivityTest {
         ui.await("Manage calendars")
         val c = RuntimeEnvironment.getApplication()
         val security = V11SecurityStore(c)
-        assertTrue(security.setPin("4826"))
+        assertTrue(security.setPin("482601"))
         security.save(V11SecuritySettings(mode = V11LockMode.PIN, protectAccounts = true))
         val runtime = V11Runtime(c)
         val old = runtime.start()

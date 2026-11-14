@@ -18,22 +18,22 @@ class SecurityAttemptLimitTest {
     private fun wrongFive(s: V11SecurityStore) { repeat(5) { assertFalse(s.verifyPin("0000")) } }
 
     @Test fun correctPinIsBlockedAfterFiveFailuresAndWorksAfterDelay() {
-        val s = store(); assertTrue(s.setPin("4826")); wrongFive(s)
+        val s = store(); assertTrue(s.setPin("482601")); wrongFive(s)
         assertEquals(30_000L, s.verificationDelayMillis())
-        assertFalse(s.verifyPin("4826"))
+        assertFalse(s.verifyPin("482601"))
         time += 30_000L
-        assertTrue(s.verifyPin("4826"))
+        assertTrue(s.verifyPin("482601"))
         assertEquals(0L, s.verificationDelayMillis())
     }
 
     @Test fun recreatedStoreKeepsTheSameDelay() {
-        val s = store(); s.setPin("4826"); wrongFive(s)
-        assertFalse(store().verifyPin("4826"))
+        val s = store(); s.setPin("482601"); wrongFive(s)
+        assertFalse(store().verifyPin("482601"))
         assertEquals(30_000L, store().verificationDelayMillis())
     }
 
     @Test fun pinAndPatternShareOneAttemptBudget() {
-        val s = store(); s.setPin("4826"); s.setPattern(listOf(0, 1, 2, 3))
+        val s = store(); s.setPin("482601"); s.setPattern(listOf(0, 1, 2, 3))
         wrongFive(s)
         assertFalse(store().verifyPattern(listOf(0, 1, 2, 3)))
         time += 30_000L
@@ -41,42 +41,42 @@ class SecurityAttemptLimitTest {
     }
 
     @Test fun repeatedFailuresIncreaseDelayButNeverPermanentlyLockTheOwner() {
-        val s = store(); s.setPin("4826"); wrongFive(s)
+        val s = store(); s.setPin("482601"); wrongFive(s)
         for (expected in listOf(60_000L, 120_000L, 240_000L, 300_000L, 300_000L)) {
             time += s.verificationDelayMillis()
             assertFalse(s.verifyPin("0000"))
             assertEquals(expected, s.verificationDelayMillis())
         }
         time += s.verificationDelayMillis()
-        assertTrue(s.verifyPin("4826"))
+        assertTrue(s.verifyPin("482601"))
     }
 
     @Test fun blockedTapsDoNotExtendTheDelay() {
-        val s = store(); s.setPin("4826"); wrongFive(s)
+        val s = store(); s.setPin("482601"); wrongFive(s)
         time += 5_000L
         repeat(10) { assertFalse(store().verifyPin("0000")) }
         assertEquals(25_000L, s.verificationDelayMillis())
     }
 
     @Test fun successfulVerificationResetsFailureBudget() {
-        val s = store(); s.setPin("4826")
+        val s = store(); s.setPin("482601")
         repeat(4) { assertFalse(s.verifyPin("0000")) }
-        assertTrue(s.verifyPin("4826"))
+        assertTrue(s.verifyPin("482601"))
         repeat(4) { assertFalse(s.verifyPin("0000")) }
         assertEquals(0L, s.verificationDelayMillis())
-        assertTrue(s.verifyPin("4826"))
+        assertTrue(s.verifyPin("482601"))
     }
 
     @Test fun backwardsClockChangeHasBoundedRecovery() {
-        val s = store(); s.setPin("4826"); wrongFive(s)
+        val s = store(); s.setPin("482601"); wrongFive(s)
         time -= 86_400_000L
         assertEquals(300_000L, s.verificationDelayMillis())
         time += 300_000L
-        assertTrue(s.verifyPin("4826"))
+        assertTrue(s.verifyPin("482601"))
     }
 
     @Test fun failedDurableAcknowledgementCannotUnlock() {
-        val s = store(); s.setPin("4826")
+        val s = store(); s.setPin("482601")
         val failing = object : SharedPreferences by prefs {
             override fun edit(): SharedPreferences.Editor {
                 val editor = prefs.edit()
@@ -86,6 +86,25 @@ class SecurityAttemptLimitTest {
                 }
             }
         }
-        assertFalse(V11SecurityStore(failing) { time }.verifyPin("4826"))
+        assertFalse(V11SecurityStore(failing) { time }.verifyPin("482601"))
+    }
+
+    @Test fun newPinsRequireSixDigitsWhileLegacyHashesRemainUsable() {
+        val s = store()
+        assertFalse(s.setPin("4826"))
+        assertTrue(s.setPin("482601"))
+        val salt = ByteArray(16) { it.toByte() }
+        val hash = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+            .generateSecret(javax.crypto.spec.PBEKeySpec("4826".toCharArray(), salt, 120_000, 256)).encoded
+        prefs.edit().putString("pin_salt", android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP))
+            .putString("pin_hash", android.util.Base64.encodeToString(hash, android.util.Base64.NO_WRAP)).commit()
+        assertTrue(s.verifyPin("4826"))
+    }
+
+    @Test fun independentApplicationAndTaskProtectionSurviveReload() {
+        val s = store(); s.setPin("482601")
+        val settings = V11SecuritySettings(mode = V11LockMode.PIN, protectApplication = true, protectTasks = true, protectAccounts = false, autoLockMinutes = 5)
+        s.save(settings)
+        assertEquals(settings, store().load())
     }
 }

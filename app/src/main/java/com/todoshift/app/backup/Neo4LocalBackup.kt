@@ -3,6 +3,9 @@ package com.todoshift.app.backup
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.AtomicFile
+import android.util.Base64
+import com.todoshift.cashbook.core.Ledger
+import com.todoshift.cashbook.ui.AndroidLedgerStore
 import com.todoshift.app.data.AppStorage
 import com.todoshift.app.reminders.ToDoShiftReminder
 import com.todoshift.app.storage.requireLoaded
@@ -35,6 +38,7 @@ class Neo4LocalBackup(context: Context) :
             "todo_shift_neo4_profiles",
             "todo_shift_neo4_widgets",
             "todo_shift_cloud_readiness",
+            "todo_shift_launch_v44",
             NeoSmartStore.NAME,
         )
     internal var restoreCheckpoint: (String) -> Unit = {}
@@ -42,25 +46,52 @@ class Neo4LocalBackup(context: Context) :
 
     private fun prefs(name: String) = app.getSharedPreferences(name, Context.MODE_PRIVATE)
 
+    private inline fun <T> dataGate(block: () -> T): T = synchronized(Neo4DataGate.monitor) { synchronized(Ledger::class.java) { block() } }
+
+    private fun emptyCashSnapshot(): ByteArray = Ledger(object : Ledger.Store {
+        override fun read(): ByteArray? = null
+        override fun write(snapshot: ByteArray) {}
+    }).also { it.load() }.backup()
+
     private fun bytes(text: String) = text.toByteArray(Charsets.UTF_8)
 
     private fun json(data: ByteArray) = JSONObject(String(data, Charsets.UTF_8))
 
-    override fun export(database: V11Database, output: OutputStream) =
-        synchronized(Neo4DataGate.monitor) {
+    override fun export(database: V11Database, output: OutputStream) = export(database, output, BackupSection.entries.toSet())
+
+    fun export(database: V11Database, output: OutputStream, requestedScope: Set<BackupSection>) =
+        dataGate {
+            val scope = if (BackupSection.CASHBOOK in requestedScope) requestedScope + BackupSection.SALARY else requestedScope
             recoverIfNeeded()
             val confirmedDatabase = storage.load()
             check(confirmedDatabase == database) { "Data changed; reopen before exporting" }
             val sections = linkedMapOf<String, ByteArray>()
-            sections["data/v11.json"] = bytes(storage.exportJson(database))
-            sections["data/legacy.json"] = bytes(legacy.exportJson(legacy.load()))
-            uiPreferences.forEach {
-                sections["prefs/$it.json"] = bytes(capture(prefs(it)).toString())
+            require(scope.isNotEmpty()) { "Select at least one backup section" }
+            sections["data/v11.json"] = bytes(SelectiveRestore.filtered(JSONObject(storage.exportJson(database)), scope).toString())
+            val legacyJson = JSONObject(legacy.exportJson(legacy.load()))
+            if (scope != BackupSection.entries.toSet()) {
+                if (BackupSection.CALENDAR !in scope) listOf("shifts", "dayDetails", "templates").forEach { legacyJson.put(it, JSONArray()) }
+                if (BackupSection.SALARY !in scope) legacyJson.put("payments", JSONArray())
+            }
+            sections["data/legacy.json"] = bytes(legacyJson.toString())
+            if (BackupSection.CASHBOOK in scope) synchronized(Ledger::class.java) {
+                val ledger = Ledger(AndroidLedgerStore(app)); ledger.load()
+                sections["data/cashbook.bin"] = ledger.backup()
+            }
+            uiPreferences.filter { BackupSection.SETTINGS in scope || (BackupSection.TASKS in scope && it == NeoSmartStore.NAME) }.forEach {
+                var captured = capture(prefs(it))
+                if (it == NeoSmartStore.NAME && BackupSection.SETTINGS !in scope) {
+                    val original = NeoSmartStore(app).snapshot()
+                    val noteMetadata = JSONObject().put("version", 1)
+                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories").forEach { key -> original.opt(key)?.let { value -> noteMetadata.put(key, value) } }
+                    captured = JSONObject().put("data", typed(noteMetadata.toString()))
+                }
+                sections["prefs/$it.json"] = bytes(captured.toString())
             }
             val appearances =
                 listOf(NeoAppearanceStore(app).load()) +
                     Neo4Profiles(app).list().map { it.appearance }
-            appearances
+            appearances.filter { BackupSection.SETTINGS in scope }
                 .map { it.customImageFile }
                 .filter { it.matches(Regex("neo4-theme-[a-zA-Z0-9-]+[.]jpg")) }
                 .distinct()
@@ -70,7 +101,7 @@ class Neo4LocalBackup(context: Context) :
                         sections["themes/$name"] =
                             file.inputStream().use { readBounded(it, 4 * 1024 * 1024) }
                 }
-            val validOwners = database.tasks.map { it.id }.toSet() + database.dayItems.map { it.id }
+            val validOwners = if (BackupSection.TASKS in scope) database.tasks.map { it.id }.toSet() + database.dayItems.map { it.id } else emptySet()
             NeoAttachmentStore(app)
                 .list()
                 .filter { it.owner in validOwners }
@@ -85,6 +116,7 @@ class Neo4LocalBackup(context: Context) :
             }
             val manifest =
                 JSONObject()
+                    .put("selectedSections", JSONArray(scope.map { it.name }))
                     .put("formatVersion", Neo4BackupFormat.FORMAT)
                     .put("applicationId", "com.todoshift.app")
                     .put(
@@ -183,6 +215,7 @@ class Neo4LocalBackup(context: Context) :
                     name == "manifest.json" ||
                         name == "data/v11.json" ||
                         name == "data/legacy.json" ||
+                        name == "data/cashbook.bin" ||
                         uiPreferences.any { name == "prefs/$it.json" } ||
                         (Neo4BackupFormat.safeAsset(name) || NeoAttachmentStore.safePath(name))
                 ) {
@@ -234,8 +267,7 @@ class Neo4LocalBackup(context: Context) :
         require(
             all.keys == expected &&
                 "data/v11.json" in all &&
-                "data/legacy.json" in all &&
-                uiPreferences.filterNot { it == NeoSmartStore.NAME }.all { "prefs/$it.json" in all }
+                "data/legacy.json" in all
         ) {
             "Incomplete data manifest"
         }
@@ -313,7 +345,8 @@ class Neo4LocalBackup(context: Context) :
                 }
             }
         }
-        val appearancePrefs = json(all.getValue("prefs/todo_shift_neo3_appearance.json"))
+        all["data/cashbook.bin"]?.let { validateCashSnapshot(it, null, RestoreMode.REPLACE) }
+        val appearancePrefs = all["prefs/todo_shift_neo3_appearance.json"]?.let { json(it) } ?: JSONObject()
         appearancePrefs.optJSONObject("neo4Appearance")?.optString("value")?.let {
             Neo4AppearanceCodec.decode(JSONObject(it))
         }
@@ -329,8 +362,34 @@ class Neo4LocalBackup(context: Context) :
                 database.payments.size,
                 all.keys.count { Neo4BackupFormat.safeAsset(it) },
                 false,
+                manifest.optJSONArray("selectedSections")?.let { a -> (0 until a.length()).map { BackupSection.valueOf(a.getString(it)) }.toSet() }
+                    ?: BackupSection.entries.filter { it != BackupSection.CASHBOOK || "data/cashbook.bin" in all }.toSet(),
             ),
         )
+    }
+
+    /** Validate and merge in memory before touching either persistent store. */
+    private fun validateCashSnapshot(incoming: ByteArray, previous: ByteArray?, mode: RestoreMode): ByteArray {
+        var data = previous
+        val memory = object : Ledger.Store {
+            override fun read(): ByteArray? = data
+            override fun write(snapshot: ByteArray) { data = snapshot }
+        }
+        val ledger = Ledger(memory); ledger.load()
+        if (mode == RestoreMode.MERGE) ledger.mergeBackup(incoming) else ledger.restore(incoming)
+        return ledger.backup()
+    }
+
+    fun inspect(prepared: Neo4PreparedRestore, scope: Set<BackupSection>, mode: RestoreMode): RestoreInspection = dataGate {
+        validate(prepared)
+        require(scope.all { it in prepared.preview.availableSections }) { "Section unavailable in this backup" }
+        val incoming = parse(prepared.bytes)
+        val plan = SelectiveRestore.plan(JSONObject(storage.exportJson(storage.load())), JSONObject(storage.exportJson(incoming.database)), scope, mode, mode == RestoreMode.REPLACE && scope == prepared.preview.availableSections && scope.containsAll(setOf(BackupSection.CALENDAR, BackupSection.TASKS, BackupSection.SALARY, BackupSection.SETTINGS))).second
+        if (BackupSection.CASHBOOK in scope && incoming.sections["data/cashbook.bin"] != null) {
+            val bytes = incoming.sections.getValue("data/cashbook.bin")
+            val candidate = Ledger(object : Ledger.Store { override fun read() = bytes; override fun write(snapshot: ByteArray) {} }).load()
+            plan.copy(cashAccounts = candidate.accounts.size, cashTransactions = candidate.entries.size, cashDebts = candidate.debts.size)
+        } else plan
     }
 
     private fun validateDatabase(data: ByteArray): V11Database {
@@ -394,7 +453,10 @@ class Neo4LocalBackup(context: Context) :
     }
 
     override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
-        restoreChecked(prepared, confirmedToken, false)
+        restoreChecked(prepared, confirmedToken, false, prepared.preview.availableSections, RestoreMode.REPLACE)
+
+    fun restore(prepared: Neo4PreparedRestore, confirmedToken: String, scope: Set<BackupSection>, mode: RestoreMode): Neo4RestoredState =
+        restoreChecked(prepared, confirmedToken, false, scope, mode)
 
     /**
      * Only the authenticated boot recovery UI may explicitly request replacement of a failed store.
@@ -402,24 +464,87 @@ class Neo4LocalBackup(context: Context) :
     fun recoverFromBackup(
         prepared: Neo4PreparedRestore,
         confirmedToken: String,
-    ): Neo4RestoredState = restoreChecked(prepared, confirmedToken, true)
+    ): Neo4RestoredState = restoreChecked(prepared, confirmedToken, true, prepared.preview.availableSections, RestoreMode.REPLACE)
 
     private fun restoreChecked(
         prepared: Neo4PreparedRestore,
         confirmedToken: String,
         recovery: Boolean,
+        scope: Set<BackupSection>,
+        mode: RestoreMode,
     ): Neo4RestoredState =
-        synchronized(Neo4DataGate.monitor) {
+        dataGate {
             require(confirmedToken == prepared.token) {
                 "Restore confirmation does not match preview"
             }
             validate(prepared)
             recoverIfNeeded()
-            val parsed = parse(prepared.bytes)
+            val originalParsed = parse(prepared.bytes)
+            require(scope.isNotEmpty() && scope.all { it in prepared.preview.availableSections }) { "Invalid restore scope" }
             val currentRead = storage.read()
             val oldDatabase =
                 if (recovery) (currentRead as? com.todoshift.app.storage.StorageRead.Loaded)?.data
                 else currentRead.requireLoaded()
+            val fullReplace = mode == RestoreMode.REPLACE && scope == prepared.preview.availableSections && scope.containsAll(setOf(BackupSection.CALENDAR, BackupSection.TASKS, BackupSection.SALARY, BackupSection.SETTINGS))
+            val plan = if (oldDatabase == null) null else SelectiveRestore.plan(JSONObject(storage.exportJson(oldDatabase)), JSONObject(storage.exportJson(originalParsed.database)), scope, mode, fullReplace)
+            require(mode != RestoreMode.MERGE || plan?.second?.conflicts == 0) { "Backup has conflicting records. Review and select Replace." }
+            val nextDatabase = if (recovery || fullReplace) originalParsed.database else validateDatabase(bytes(plan!!.first.toString()))
+            val selectedSections = originalParsed.sections.filterKeys { name ->
+                when {
+                    name == "data/cashbook.bin" -> BackupSection.CASHBOOK in scope
+                    name.startsWith("prefs/") -> BackupSection.SETTINGS in scope || (BackupSection.TASKS in scope && name == "prefs/${NeoSmartStore.NAME}.json")
+                    name.startsWith("themes/") -> BackupSection.SETTINGS in scope
+                    name.startsWith("attachments/") -> BackupSection.TASKS in scope
+                    else -> true
+                }
+            }.toMutableMap()
+            selectedSections["data/v11.json"] = bytes(storage.exportJson(nextDatabase))
+            if (!fullReplace && !recovery) {
+                // Preserve all unrelated legacy records. Workplaces are shared dependencies.
+                val currentLegacy = JSONObject(legacy.exportJson(legacy.load()))
+                originalParsed.sections["data/legacy.json"]?.let { raw ->
+                    val from = json(raw)
+                    listOf("workplaces", "templates").forEach { key ->
+                        val retained = currentLegacy.getJSONArray(key)
+                        val ids = (0 until retained.length()).map { retained.getJSONObject(it).getString("id") }.toSet()
+                        val incoming = from.getJSONArray(key)
+                        for (i in 0 until incoming.length()) if (incoming.getJSONObject(i).getString("id") !in ids) retained.put(incoming.getJSONObject(i))
+                    }
+                }
+                selectedSections["data/legacy.json"] = bytes(currentLegacy.toString())
+            }
+            if (BackupSection.TASKS in scope && BackupSection.SETTINGS !in scope) {
+                selectedSections["prefs/${NeoSmartStore.NAME}.json"]?.let { raw ->
+                    val incoming = JSONObject(json(raw).getJSONObject("data").getString("value"))
+                    val retained = NeoSmartStore(app).snapshot()
+                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories").forEach { key ->
+                        incoming.opt(key)?.let { value ->
+                            if (value is JSONObject && retained.optJSONObject(key) != null) {
+                                val old = retained.getJSONObject(key)
+                                value.keys().forEach { id -> if (mode == RestoreMode.REPLACE || !old.has(id)) old.put(id, value.get(id)) }
+                            } else retained.put(key, value)
+                        }
+                    }
+                    selectedSections["prefs/${NeoSmartStore.NAME}.json"] = bytes(JSONObject().put("data", typed(retained.toString())).toString())
+                }
+            }
+            val parsed = originalParsed.copy(sections = selectedSections, database = nextDatabase)
+            val cashStore = AndroidLedgerStore(app)
+            val oldCash = cashStore.read()
+            var nextCash = selectedSections["data/cashbook.bin"]?.let { validateCashSnapshot(it, oldCash, mode) }
+            if (nextDatabase.payments.any { it.cashBookAccountId != null }) {
+                val persistedCash = cashStore.read()
+                var memoryCash = nextCash ?: persistedCash
+                val memoryLedger = Ledger(object : Ledger.Store {
+                    override fun read(): ByteArray? = memoryCash
+                    override fun write(snapshot: ByteArray) { memoryCash = snapshot }
+                })
+                memoryLedger.load()
+                nextDatabase.payments.filter { it.cashBookAccountId != null }.forEach { payment ->
+                    memoryLedger.reconcileSalaryIncome(payment.id, payment.cashBookAccountId!!, LocalizedNumbers.cents(payment.amount), payment.receivedDate, payment.cashBookRevision, payment.reversedAt != null)
+                }
+                nextCash = memoryLedger.backup()
+            }
             if (oldDatabase != null) {
                 com.todoshift.app.integration.SalaryCashSync.validateTransition(
                     oldDatabase, validateDatabase(parsed.sections.getValue("data/v11.json"))
@@ -448,6 +573,7 @@ class Neo4LocalBackup(context: Context) :
                 NeoCommittedEffects.STORE_NAME,
                 capture(prefs(NeoCommittedEffects.STORE_NAME)),
             )
+            if (nextCash != null) previous.put("__cashbook", Base64.encodeToString(oldCash ?: emptyCashSnapshot(), Base64.NO_WRAP))
             val createdAssets = JSONArray()
             parsed.sections
                 .filterKeys { Neo4BackupFormat.safeAsset(it) || NeoAttachmentStore.safePath(it) }
@@ -485,9 +611,17 @@ class Neo4LocalBackup(context: Context) :
                     )
                 writeAtomic(quarantine, journalBytes)
             }
+            if (!recovery && oldDatabase != null) {
+                val safetyDirectory = File(app.filesDir, "safety-copies")
+                check(safetyDirectory.isDirectory || safetyDirectory.mkdirs()) { "Cannot create safety snapshot" }
+                val safetyFile = File(safetyDirectory, "before-restore-${java.util.UUID.randomUUID()}.zip")
+                safetyFile.outputStream().use { export(oldDatabase, it) }
+            }
             writeAtomic(journal, journalBytes)
             try {
                 restoreCheckpoint("journal")
+                nextCash?.let { cashStore.write(it) }
+                restoreCheckpoint("cashbook")
                 NeoCommittedEffects(app).prepare(oldDatabase ?: V11Database(), parsed.database)
                 restoreCheckpoint("effects")
                 // Stage image files before changing data. Existing files with different content are
@@ -549,7 +683,7 @@ class Neo4LocalBackup(context: Context) :
         expected: V11Database,
         workplaces: List<com.todoshift.app.data.Workplace>,
     ): Pair<com.todoshift.app.data.AppData, V11Database> =
-        synchronized(Neo4DataGate.monitor) {
+        dataGate {
             recoverIfNeeded()
             check(legacy.load() == expectedLegacy && storage.load() == expected) {
                 "Data changed; reopen before editing workplaces"
@@ -603,9 +737,9 @@ class Neo4LocalBackup(context: Context) :
         oldData: com.todoshift.app.data.AppData,
         effectiveFrom: String,
         checkpoint: (String) -> Unit = {},
-    ): V11Database = synchronized(Neo4DataGate.monitor) {
+    ): V11Database = dataGate {
         recoverIfNeeded()
-        if (storage.hasDatabase()) return@synchronized storage.load()
+        if (storage.hasDatabase()) return@dataGate storage.load()
         check(!storage.wasMigrated()) { "Previously migrated database is missing" }
         val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
         val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
@@ -630,14 +764,14 @@ class Neo4LocalBackup(context: Context) :
         next: V11Database,
         checkpoint: (String) -> Unit = {},
     ): V11Database =
-        synchronized(Neo4DataGate.monitor) {
+        dataGate {
             recoverIfNeeded()
             check(storage.load() == expected) { "Data changed; draft retained" }
             NeoNewReferenceGuard.validate(expected, next) {
                 legacy.load().workplaces.map { it.id }.toSet()
             }
             FinancialDataValidation.validate(next)
-            com.todoshift.app.integration.SalaryCashSync.validateTransition(expected, next)
+            com.todoshift.app.integration.SalaryCashSync.validateWrite(expected, next)
             val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
             previous.put(
                 NeoCommittedEffects.STORE_NAME,
@@ -672,9 +806,10 @@ class Neo4LocalBackup(context: Context) :
         note: DayItemV11,
         color: String,
         border: Boolean,
+        linkedTasks: List<TaskV11> = emptyList(),
         checkpoint: (String) -> Unit = {},
     ): V11Database =
-        synchronized(Neo4DataGate.monitor) {
+        dataGate {
             recoverIfNeeded()
             require(note.type == DayItemTypeV11.NOTE)
             require(color.matches(Regex("#[0-9a-fA-F]{6}")))
@@ -683,7 +818,15 @@ class Neo4LocalBackup(context: Context) :
                 "Data changed; reopen before saving the note. Draft retained."
             }
             val next =
-                expected.copy(dayItems = expected.dayItems.filterNot { it.id == note.id } + note)
+                expected.copy(
+                    dayItems = expected.dayItems.filterNot { it.id == note.id } + note,
+                    tasks = expected.tasks + linkedTasks.filter { candidate -> expected.tasks.none { it.id == candidate.id } },
+                )
+            require(linkedTasks.all { it.linkedNoteId == note.id }) { "Checklist task must reference its source note" }
+            require(linkedTasks.map { it.id }.distinct().size == linkedTasks.size) { "Duplicate checklist task identifiers" }
+            require(linkedTasks.none { candidate -> expected.tasks.any { stored -> stored.id == candidate.id && stored.linkedNoteId != note.id } }) {
+                "Checklist task identity conflicts with another record; no note or task was changed"
+            }
             NeoNewReferenceGuard.validate(expected, next) {
                 legacy.load().workplaces.map { it.id }.toSet()
             }
@@ -728,12 +871,12 @@ class Neo4LocalBackup(context: Context) :
         }
 
     fun recoverIfNeeded() =
-        synchronized(Neo4DataGate.monitor) {
+        dataGate {
             val raw =
                 try {
                     journal.openRead().use { readBounded(it, 48 * 1024 * 1024) }
                 } catch (_: FileNotFoundException) {
-                    return@synchronized
+                    return@dataGate
                 }
             val o = json(raw)
             require(o.getInt("format") == 1) { "Unsupported restore recovery journal" }
@@ -743,7 +886,7 @@ class Neo4LocalBackup(context: Context) :
                     it in uiPreferences ||
                         it == "todo_shift_v11" ||
                         it == "todo_shift_data" ||
-                        it == NeoCommittedEffects.STORE_NAME
+                        it == NeoCommittedEffects.STORE_NAME || it == "__cashbook"
                 }
             )
             val created = o.optJSONArray("createdAssets") ?: JSONArray()
@@ -753,8 +896,9 @@ class Neo4LocalBackup(context: Context) :
                 require(Neo4BackupFormat.safeAsset(path) || NeoAttachmentStore.safePath(path))
                 require(asset.getString("sha256").matches(Regex("[0-9a-f]{64}")))
             }
+            previous.optString("__cashbook").takeIf { it.isNotBlank() }?.let { AndroidLedgerStore(app).write(Base64.decode(it, Base64.NO_WRAP)) }
             previous.keys().forEach { name ->
-                writePreferences(prefs(name), previous.getJSONObject(name))
+                if (name != "__cashbook") writePreferences(prefs(name), previous.getJSONObject(name))
             }
             for (i in 0 until created.length()) {
                 val asset = created.getJSONObject(i)
@@ -843,6 +987,7 @@ class Neo4LocalBackup(context: Context) :
                     }
                 "todo_shift_cloud_readiness" ->
                     mapOf("frequency" to "string", "wifiOnly" to "boolean")
+                "todo_shift_launch_v44" -> mapOf("landing" to "int", "notes" to "boolean")
                 else -> emptyMap()
             }
         o.keys().forEach { key ->
@@ -887,6 +1032,7 @@ class Neo4LocalBackup(context: Context) :
                             )
                                 "string"
                             else null
+                    "todo_shift_neo4_widgets" -> if (key.substringBefore(':') in com.todoshift.app.widget.Neo4WidgetKind.entries.map { it.name }) "string" else null
                     else -> expected[key]
                 }
             if (type != null)

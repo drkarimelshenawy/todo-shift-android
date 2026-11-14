@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -45,6 +46,28 @@ fun Neo4AccountBackupPage(
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
+    var exportScope by remember { mutableStateOf(BackupSection.entries.toSet()) }
+    var restoreScope by remember { mutableStateOf(BackupSection.entries.toSet()) }
+    var restoreMode by remember { mutableStateOf(RestoreMode.MERGE) }
+    var inspection by remember { mutableStateOf<RestoreInspection?>(null) }
+    var inspectionError by remember { mutableStateOf<String?>(null) }
+    var backupAuthorized by remember(security) { mutableStateOf(security.mode == V11LockMode.NONE && !security.biometricEnabled) }
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(owner, security) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP && (security.mode != V11LockMode.NONE || security.biometricEnabled)) backupAuthorized = false
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(prepared, restoreScope, restoreMode) {
+        inspection = null
+        inspectionError = null
+        prepared?.let { value ->
+            runCatching { withContext(Dispatchers.IO) { backup.inspect(value, restoreScope, restoreMode) } }
+                .onSuccess { inspection = it }.onFailure { inspectionError = it.message }
+        }
+    }
     var lastLocal by remember { mutableLongStateOf(cloud.lastLocalSuccess()) }
     var lastBytes by remember { mutableLongStateOf(cloud.lastLocalBytes()) }
     val exportPicker =
@@ -61,8 +84,8 @@ fun Neo4AccountBackupPage(
         enabled = busy
     ) { /* Restore/export cannot be abandoned halfway through a transaction. */
     }
-    LaunchedEffect(financeAuthorized, pendingExport, pendingImport) {
-        if (financeAuthorized && !busy && (pendingExport != null || pendingImport != null)) {
+    LaunchedEffect(backupAuthorized, pendingExport, pendingImport) {
+        if (backupAuthorized && !busy && (pendingExport != null || pendingImport != null)) {
             val destination = pendingExport
             val source = pendingImport
             pendingExport = null
@@ -97,7 +120,7 @@ fun Neo4AccountBackupPage(
 
                                         override fun close() = raw.close()
                                     }
-                                backup.export(db, counted)
+                                backup.export(db, counted, exportScope)
                             } ?: error("Cannot open backup destination")
                             cloud.localSuccess(count)
                             null
@@ -113,7 +136,7 @@ fun Neo4AccountBackupPage(
                             lastLocal = cloud.lastLocalSuccess()
                             lastBytes = cloud.lastLocalBytes()
                             message = neoLiteral("تم إنشاء النسخة المحلية", "Local backup created")
-                        } else prepared = value
+                        } else { restoreScope = value.preview.availableSections; prepared = value }
                     }
                     .onFailure {
                         failed = true
@@ -137,7 +160,7 @@ fun Neo4AccountBackupPage(
                 }
             }
         }
-    if (!financeAuthorized) {
+    if (!backupAuthorized) {
         Column(Modifier.fillMaxSize()) {
             if (!LocalNeoShellPageHeader.current)
                 TextButton(onClick = onBack) { Text(neoLabel("رجوع", "Back")) }
@@ -148,7 +171,7 @@ fun Neo4AccountBackupPage(
                 ),
                 Modifier.padding(16.dp),
             )
-            V11AccountsUnlockScreen(security, securityStore, onUnlocked)
+            V11AccountsUnlockScreen(security, securityStore) { backupAuthorized = true; onUnlocked() }
         }
         return
     }
@@ -174,8 +197,9 @@ fun Neo4AccountBackupPage(
             ),
             style = MaterialTheme.typography.bodySmall,
         )
+        BackupScopeControls(exportScope) { exportScope = it }
         Button(
-            enabled = !busy,
+            enabled = !busy && exportScope.isNotEmpty(),
             onClick = { exportPicker.launch("ToDoShift-${java.time.LocalDate.now()}.zip") },
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -282,7 +306,11 @@ fun Neo4AccountBackupPage(
             onDismissRequest = { if (!busy) prepared = null },
             title = { Text(neoLabel("مراجعة قبل الاستعادة", "Review before restoring")) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BackupScopeControls(restoreScope, pending.preview.availableSections) { restoreScope = it }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        RestoreMode.entries.forEach { mode -> FilterChip(selected = restoreMode == mode, onClick = { restoreMode = mode }, label = { Text(if (mode == RestoreMode.MERGE) neoLabel("دمج", "Merge") else neoLabel("استبدال", "Replace")) }) }
+                    }
                     Text("${pending.preview.createdAt} • ${pending.preview.appVersion}")
                     Text(
                         neoLabel(
@@ -292,10 +320,17 @@ fun Neo4AccountBackupPage(
                     )
                     Text(
                         neoLabel(
-                            "ستُستبدل البيانات الحالية بعد تأكيدك. يُستحسن تصدير نسخة منها أولًا. لا تتغير وسائل الحماية الحالية.",
-                            "Confirmation replaces current data. Export a backup of current data first. Existing authentication is kept.",
+                            "تُنشأ نسخة أمان تلقائيًا. الاستبدال يخص الأقسام المحددة فقط، وتُحفظ التبعيات المشتركة الحالية.",
+                            "A safety snapshot is created automatically. Replace affects selected sections; current shared dependencies are preserved.",
                         )
                     )
+                    inspection?.let { plan ->
+                        Text(neoLabel("إضافات: ${plan.additions} • متطابق: ${plan.duplicates} • تعارضات: ${plan.conflicts} • استبدال: ${plan.replacements} • تبعيات مشتركة: ${plan.dependencies}", "Additions: ${plan.additions} • duplicates: ${plan.duplicates} • conflicts: ${plan.conflicts} • replacements: ${plan.replacements} • shared dependencies: ${plan.dependencies}"))
+                        if (BackupSection.CASHBOOK in restoreScope) Text(neoLabel("حسابات: ${plan.cashAccounts} • قيود: ${plan.cashTransactions} • مديونيات: ${plan.cashDebts}", "Accounts: ${plan.cashAccounts} • transactions: ${plan.cashTransactions} • debts: ${plan.cashDebts}"))
+                        if (BackupSection.CASHBOOK in restoreScope) Text(neoLabel("تُفحص قيود كاش بوك قبل الحفظ؛ يُرفض تعارض المعرفات والدفعات المرتبطة.", "Cash Book identifiers and linked receipts are validated before writing; conflicts are rejected."))
+                    }
+                    inspectionError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    if (restoreMode == RestoreMode.MERGE && (inspection?.conflicts ?: 0) > 0) Text(neoLabel("توجد تعارضات: راجع النسخة واختر الاستبدال إن كان مقصودًا.", "Conflicting records: review the backup and choose Replace if intended."), color = MaterialTheme.colorScheme.error)
                     if (pending.preview.legacyJson)
                         Text(
                             neoLabel(
@@ -307,13 +342,13 @@ fun Neo4AccountBackupPage(
             },
             confirmButton = {
                 Button(
-                    enabled = !busy,
+                    enabled = !busy && inspection != null && restoreScope.isNotEmpty() && !(restoreMode == RestoreMode.MERGE && inspection!!.conflicts > 0),
                     onClick = {
                         scope.launch {
                             busy = true
                             runCatching {
                                     withContext(Dispatchers.IO) {
-                                        backup.restore(pending, pending.token)
+                                        backup.restore(pending, pending.token, restoreScope, restoreMode)
                                     }
                                 }
                                 .onSuccess { value ->
@@ -347,5 +382,31 @@ fun Neo4AccountBackupPage(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun BackupScopeControls(selected: Set<BackupSection>, available: Set<BackupSection> = BackupSection.entries.toSet(), onChange: (Set<BackupSection>) -> Unit) {
+    val presets = listOf(
+        neoLabel("الكل", "Full application") to available,
+        neoLabel("التقويم", "Calendar only") to setOf(BackupSection.CALENDAR),
+        neoLabel("التقويم والمستحقات", "Calendar + Salary") to setOf(BackupSection.CALENDAR, BackupSection.SALARY),
+        neoLabel("كاش بوك كامل", "Complete Cash Book") to setOf(BackupSection.CASHBOOK, BackupSection.SALARY),
+        neoLabel("المهام والملاحظات", "Notes + Tasks") to setOf(BackupSection.TASKS),
+        neoLabel("الإعدادات", "Settings only") to setOf(BackupSection.SETTINGS),
+    )
+    Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        presets.filter { (_, scope) -> available.containsAll(scope) }.forEach { (label, scope) ->
+            FilterChip(selected == scope, onClick = { onChange(scope) }, label = { Text(label) })
+        }
+    }
+    Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        available.forEach { section -> FilterChip(section in selected, onClick = { onChange(if (section in selected) selected - section else selected + section) }, label = { Text(when (section) {
+            BackupSection.CALENDAR -> neoLabel("التقويم", "Calendar")
+            BackupSection.TASKS -> neoLabel("المهام والملاحظات", "Tasks + Notes")
+            BackupSection.SALARY -> neoLabel("المستحقات", "Salary")
+            BackupSection.CASHBOOK -> neoLabel("الإدارة المالية", "Cash Book")
+            BackupSection.SETTINGS -> neoLabel("الإعدادات", "Settings")
+        }) }) }
     }
 }

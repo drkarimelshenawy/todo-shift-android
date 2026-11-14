@@ -80,9 +80,9 @@ class ScreenUiSmokeTest {
     }
     @Test fun pinAndProtectionSurviveSettingsCommit() {
         val store = V11SecurityStore(RuntimeEnvironment.getApplication())
-        assertTrue(store.setPin("4826"))
+        assertTrue(store.setPin("482601"))
         store.save(V11SecuritySettings(mode = V11LockMode.PIN, protectAccounts = true))
-        assertTrue(store.verifyPin("4826")); assertFalse(store.verifyPin("0000"))
+        assertTrue(store.verifyPin("482601")); assertFalse(store.verifyPin("0000"))
         assertTrue(store.load().protectAccounts)
     }
     @Test fun failedBootBlocksEditingAndPreservesTheRawPayload() {

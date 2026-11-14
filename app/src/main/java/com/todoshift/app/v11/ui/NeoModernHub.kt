@@ -33,12 +33,20 @@ fun NeoModernHub(
     initialSection: String = "SEARCH",
     focused: Boolean = false,
     initialOwner: String? = null,
+    searchScope: String = "CALENDAR",
 ) {
     val commit = rememberNeoCommit(onChange)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val store = remember { NeoSmartStore(context.applicationContext) }
     var section by remember { mutableStateOf(initialSection) }
+    val searchSecurity = remember { V11SecurityStore(context.applicationContext) }
+    val searchSettings = remember { searchSecurity.load() }
+    var searchUnlocked by remember { mutableStateOf(false) }
+    if (section == "SEARCH" && searchScope == "TASKS" && searchSettings.protectTasks && !financeAuthorized && !searchUnlocked) {
+        V11AccountsUnlockScreen(searchSettings, searchSecurity) { searchUnlocked = true }
+        return
+    }
     if(section == "TASK_TEMPLATES") {
         NeoTaskTemplatesScreen(db, workplaces, onChange, { if(focused) onBack() else section="SEARCH" })
         return
@@ -105,7 +113,7 @@ fun NeoModernHub(
     val owners =
         remember(db.tasks, db.dayItems) {
             db.tasks.map { it.id to it.title } +
-                db.dayItems.filter { it.type == DayItemTypeV11.NOTE }.map { it.id to it.title }
+                db.dayItems.filter { it.type == DayItemTypeV11.NOTE && !it.notePrivate && it.noteVisible }.map { it.id to it.title }
         }
     var owner by rememberSaveable { mutableStateOf(initialOwner ?: owners.firstOrNull()?.first) }
     val attachments = remember { NeoAttachmentStore(context.applicationContext) }
@@ -266,10 +274,10 @@ fun NeoModernHub(
                 OutlinedTextField(
                     query,
                     { query = it },
-                    label = { Text(neoLabel("بحث شامل", "Global search")) },
+                    label = { Text(neoLabel("بحث في القسم", "Search this section")) },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                NeoFeatureCatalog.search(query).take(12).forEach { feature ->
+                (if (searchScope == "SETTINGS") NeoFeatureCatalog.search(query).take(12) else emptyList()).forEach { feature ->
                     NeoSettingsRow(
                         neoLabel(feature.ar, feature.en),
                         neoLabel("إعداد أو إجراء", "Setting or action"),
@@ -278,9 +286,16 @@ fun NeoModernHub(
                     }
                 }
                 val result =
-                    ModernOperations.search(db, query, financial) +
-                        workplaces
-                            .filter { query.isNotBlank() && it.name.contains(query, true) }
+                    ModernOperations.search(db, query, financial).filter { row ->
+                        row.type in when (searchScope) {
+                            "TASKS" -> setOf("TASK", "NOTE")
+                            "SALARY" -> setOf("PAYMENT")
+                            "CASHBOOK" -> emptySet()
+                            "SETTINGS" -> emptySet()
+                            else -> setOf("SHIFT", "EVENT", "NOTE")
+                        }
+                    } + workplaces
+                            .filter { searchScope in setOf("CALENDAR", "SALARY") && query.isNotBlank() && it.name.contains(query, true) }
                             .map {
                                 ModernOperations.SearchResult("WORKPLACE", it.id, null, it.name)
                             }

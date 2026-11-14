@@ -63,10 +63,22 @@ internal fun AccountsDialog(accounts: List<Ledger.Account>, active: String?, sta
                     if (edit) Text(if (query.isBlank()) tr(R.string.cb_233) else tr(R.string.cb_234), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 5.dp))
                     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("account_order_saving"))
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 4.dp)) }
-                    AccountOrderList(accounts.filter { it.archived==archived }, active, busy, error, edit && !archived, query, Modifier.weight(1f).fillMaxWidth(), {id->if(archived)action=id else select(id)},
-                        { account -> action = account.id }, {ids->
-                            val next=ids.iterator();reorder(accounts.map{if(!it.archived)next.next() else it.id})
-                        })
+                    val debtIds = state.snapshot?.debts?.map { it.accountId }?.toSet().orEmpty()
+                    val ordinaryAccounts = accounts.filter { it.id !in debtIds && it.archived == archived }
+                    val debtAccounts = accounts.filter { it.id in debtIds && it.archived == archived }
+                    Column(Modifier.weight(1f).fillMaxWidth()) {
+                        Text(tr(R.string.cb_section_accounts), style = MaterialTheme.typography.titleSmall)
+                        AccountOrderList(ordinaryAccounts, active, busy, error, false, query, Modifier.weight(1f).fillMaxWidth(),
+                            { id -> if (archived) action=id else select(id) },
+                            { account -> action=account.id }, { })
+                        if (debtAccounts.isNotEmpty()) {
+                            HorizontalDivider()
+                            Text(tr(R.string.cb_section_debts), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(vertical = 8.dp))
+                            AccountOrderList(debtAccounts, active, busy, error, false, query, Modifier.weight(1f).fillMaxWidth(),
+                                { id -> if (archived) action=id else select(id) },
+                                { account -> action=account.id }, { })
+                        }
+                    }
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = add, shape = ReferenceShape, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("accounts_add"), contentPadding = PaddingValues(6.dp)) { Text(tr(R.string.cb_155)) }
                 }

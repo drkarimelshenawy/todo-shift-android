@@ -19,6 +19,10 @@ internal object NeoNewReferenceGuard {
                 require(task.workplaceId == null || task.workplaceId in places) {
                     "Workplace no longer exists; draft retained"
                 }
+            if (old == null || old.linkedNoteId != task.linkedNoteId)
+                require(task.linkedNoteId == null || next.dayItems.any { it.id == task.linkedNoteId && it.type == DayItemTypeV11.NOTE }) {
+                    "Linked note no longer exists; task draft retained"
+                }
             if (old == null || old.linkedShiftId != task.linkedShiftId)
                 require(task.linkedShiftId == null || task.linkedShiftId in shifts) {
                     "Linked shift no longer exists; draft retained"

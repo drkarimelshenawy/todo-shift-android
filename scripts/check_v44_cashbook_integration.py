@@ -13,7 +13,7 @@ assert 'include(":app", ":cashbook-core", ":cashbook-feature")' in settings
 assert 'implementation(project(":cashbook-feature"))' in app
 assert 'lifecycle-viewmodel-compose' in app
 assert 'CashBookRoute(vm = vm' in host
-assert 'com.todoshift.app.integration.EmbeddedCashBookScreen()' in home
+assert 'com.todoshift.app.integration.EmbeddedCashBookScreen(' in home
 assert 'neoLiteral("كاش بوك", "Cash Book")' in home
 assert 'neoLabel("كاش بوك", "Cash Book")' in home
 
@@ -21,8 +21,11 @@ assert 'neoLabel("كاش بوك", "Cash Book")' in home
 cashbook_start = home.index('                                    1 ->\n                                        if (\n                                            securitySettings.protectAccounts')
 cashbook_end = home.index('                                    2 ->', cashbook_start)
 cashbook = home[cashbook_start:cashbook_end]
-for token in ('securitySettings.biometricEnabled', '!accountsUnlocked', 'V11AccountsUnlockScreen(', 'EmbeddedCashBookScreen()'):
+for token in ('securitySettings.biometricEnabled', '!accountsUnlocked', 'V11AccountsUnlockScreen(', 'EmbeddedCashBookScreen('):
     assert token in cashbook, f'Cash Book security guard missing: {token}'
+
+assert 'salaryContent = {' in cashbook, 'Cash Book must embed the shared Salary implementation'
+assert 'V11FinanceScreen(' in cashbook, 'Cash Book must use the host Salary screen'
 
 assert 'salary-receipt:$paymentId' in gateway
 assert 'CashIncomePort' in gateway

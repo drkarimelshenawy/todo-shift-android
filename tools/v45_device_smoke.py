@@ -70,7 +70,9 @@ def run():
         fields=[n for n in dump().iter('node') if n.get('class')=='android.widget.EditText']
         return next((n for n in fields if 'Before' in n.get('text','')),None)
     tap(wait(body_field));shell('input','text','_Autosaved')
-    wait(lambda:any(n['id']=='v45-note' and '_Autosaved' in n.get('details','') for n in database()['dayItems']))
+    time.sleep(.65)
+    shell('input','text','_Continued')
+    wait(lambda:any(n['id']=='v45-note' and '_Autosaved' in n.get('details','') and '_Continued' in n.get('details','') for n in database()['dayItems']))
     capture('v45-note-autosaved-without-save-button')
     shell('am','force-stop',APP);launch();wait(lambda:any(n['id']=='v45-note' and '_Autosaved' in n.get('details','') for n in database()['dayItems']))
     # Arabic layout on a small screen; capture actual native rendering.

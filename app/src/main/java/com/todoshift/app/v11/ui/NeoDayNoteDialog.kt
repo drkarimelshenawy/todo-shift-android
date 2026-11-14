@@ -66,6 +66,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     val committed=LocalNeoNoteCommitted.current
     val scope=rememberCoroutineScope()
     var pending by remember { mutableStateOf(false) }
+    var closing by remember {mutableStateOf(false)}
+    var lastSavedEdit by remember {mutableStateOf<String?>(null)}
     val rootWritePending=LocalNeoEditorWriteState.current.pending
     var id by rememberSaveable(existing?.id) { mutableStateOf(existing?.id ?: UUID.randomUUID().toString()) }
     val draftKey=remember { existing?.id ?: "new-$date-${calendarId?.hashCode() ?: 0}" }
@@ -134,8 +136,11 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             draftReady=error==null
         } catch(failure: Exception) { error="Unable to recover note draft: ${failure.message}" }
     }
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
-        if(pending || rootWritePending || !draftReady || conflictingDraft!=null) return false
+        while(pending) delay(10)
+        if(rootWritePending || !draftReady || conflictingDraft!=null) return false
+        if(!close && lastSavedEdit==editVersion()) return true
         if(title.isBlank() && body.text.isBlank() && expected.dayItems.none {it.id==id}) {if(close) onDismiss();return true}
         if(!color.matches(Regex("#[0-9a-fA-F]{6}")) || (background.isNotBlank() && !background.matches(Regex("#[0-9a-fA-F]{6}")))) {
             error="اختر لونًا صحيحًا / Choose a valid color";return false
@@ -150,10 +155,12 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             expected.tasks.firstOrNull {(it.id==taskId||it.id==key)&&it.linkedNoteId==id} ?: TaskV11(id=taskId,title=label,date=linkedDate,calendarId=linkedCalendar,linkedNoteId=id)
         }
         val linkedExisting=existingTaskLinks.mapNotNull {key->expected.tasks.firstOrNull {it.id==key}?.copy(linkedNoteId=id)}
-        pending=true
+        val savedEdit=editVersion()
+        closing=close;pending=true
         return try {
             val next=withContext(Dispatchers.IO) {com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).saveNote(expected,expectedMetadata,note,color,border,linkedTasks=(linkedTasks+linkedExisting).distinctBy {it.id}.filterNot {it.id in detachedTasks},detachedTaskIds=detachedTasks.toSet())}
             expected=next;expectedMetadata=withContext(Dispatchers.IO) {styleStore.snapshot().toString()};sourceRevision=note.toString()
+            lastSavedEdit=savedEdit
             detachedTasks=emptyList();existingTaskLinks=emptyList()
             onProtectionChanged(note.noteLocked);committed(next);draftStatus="تم الحفظ / Saved";error=null
             withContext(Dispatchers.IO) {drafts.remove(draftKey)}
@@ -161,7 +168,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             true
         } catch(cancelled:CancellationException) {throw cancelled}
         catch(_:Exception) {error="تعذر الحفظ؛ التعديلات والمسودة محفوظة لإعادة المحاولة / Save failed; edits and draft retained";false}
-        finally {pending=false}
+        finally {pending=false;closing=false}
     }
     suspend fun keepDraft() {
       try {
@@ -171,8 +178,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }
       } catch(_:Exception) {error="تعذر حفظ المسودة؛ لن تُحذف التعديلات / Draft save failed; edits retained"}
     }
-    LaunchedEffect(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady) {
-        if(!draftReady || pending) return@LaunchedEffect
+    LaunchedEffect(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending) {
+        if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
         catch(cancelled:CancellationException) {throw cancelled}
@@ -193,8 +200,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         lifecycle.addObserver(observer)
         onDispose {lifecycle.removeObserver(observer)}
     }
-    val gate=LocalNeoLeaveGate.current
-    val leave=rememberNeoEditorExit(listOf(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs),onDismiss,pending)
+    neoRegisterLeaveGuard {next -> scope.launch {keepDraft();if(persistNote(true)) next()} }
     if(verifyLinkedTasks) Dialog(onDismissRequest={verifyLinkedTasks=false},properties=DialogProperties(securePolicy=SecureFlagPolicy.SecureOn)) {
         V11AccountsUnlockScreen(linkedTaskSecurity.load(),linkedTaskSecurity) {linkedTasksAuthorized=true;verifyLinkedTasks=false}
     }
@@ -213,8 +219,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         properties=DialogProperties(securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit),
         title={Text(neoLabel("ملاحظة", "Note")+(if(calendarLinked) " • $linkedDate" else ""))},
         text={Column(Modifier.heightIn(max=560.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-            OutlinedTextField(title,{if(!pending) title=it},label={Text(neoLabel("عنوان اختياري","Optional title"))},modifier=Modifier.fillMaxWidth())
-            NeoNoteFormatting(body,{if(!pending) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!pending,canRedo=redo.isNotEmpty()&&!pending)
+            OutlinedTextField(title,{if(!closing) title=it},enabled=!closing,label={Text(neoLabel("عنوان اختياري","Optional title"))},modifier=Modifier.fillMaxWidth())
+            NeoNoteFormatting(body,{if(!closing) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!closing,canRedo=redo.isNotEmpty()&&!closing)
             Row {
                 FilterChip(preview,{preview=!preview},label={Text(neoLabel("معاينة وتحديد القوائم","Preview / checklists"))})
                 TextButton(onClick={options=!options}) {Text(neoLabel("تنظيم ومظهر","Organize / style"))}
@@ -236,7 +242,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         val spec="$key\n$label";taskSpecs=taskSpecs.filterNot {it.substringBefore('\n')==key}+spec
                     }
                 }
-            }) else OutlinedTextField(body,{if(!pending) edit(it)},label={Text(neoLabel("النص والتنسيق","Text and formatting"))},visualTransformation=remember {NeoNoteVisualTransformation()},minLines=6,maxLines=16,modifier=Modifier.fillMaxWidth())
+            }) else OutlinedTextField(body,{if(!closing) edit(it)},enabled=!closing,label={Text(neoLabel("النص والتنسيق","Text and formatting"))},visualTransformation=remember {NeoNoteVisualTransformation()},minLines=6,maxLines=16,modifier=Modifier.fillMaxWidth())
             Regex("<!--task:([A-Za-z0-9_-]+)-->").findAll(body.text).map {it.groupValues[1]}.distinct().filter {key ->
                 taskSpecs.none {it.substringBefore('\n')==key} && expected.tasks.none {it.linkedNoteId==id && (it.id==key || it.id==UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString())}
             }.toList().forEach {key ->
@@ -267,7 +273,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 val linkable=if(!linkedTasksAuthorized) emptyList() else expected.tasks.filter {it.linkedNoteId==null && it.id !in existingTaskLinks}
                 if(linkable.isNotEmpty()) {
                     NeoChoice(neoLabel("ربط مهمة موجودة","Link existing task"),listOf<String?>(null)+linkable.map {it.id},selectedTaskLink,{key->linkable.firstOrNull {it.id==key}?.title ?: neoLabel("اختر مهمة","Choose task")},{selectedTaskLink=it})
-                    TextButton(enabled=selectedTaskLink!=null,onClick={existingTaskLinks=existingTaskLinks+requireNotNull(selectedTaskLink);selectedTaskLink=null}) {Text(neoLabel("ربط","Link"))}
+                    TextButton(enabled=selectedTaskLink!=null&&!pending,onClick={existingTaskLinks=existingTaskLinks+requireNotNull(selectedTaskLink);selectedTaskLink=null}) {Text(neoLabel("ربط","Link"))}
                 }
                 OutlinedTextField(reminder,{reminder=it},label={Text(neoLabel("تذكير اختياري: 2026-11-14T18:30","Optional reminder: 2026-11-14T18:30"))})
                 if(reminder.isNotBlank()) NeoItemReminderRecurrenceControls(id)
@@ -290,7 +296,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 TextButton(onClick={val content=noteDisplayText(body.text);(context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(title,content))}) {Text(neoLabel("نسخ","Copy"))}
                 TextButton(onClick={context.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT,listOf(title,noteDisplayText(body.text)).filter {it.isNotBlank()}.joinToString("\n")),null))}) {Text(neoLabel("مشاركة","Share"))}
             }
-            Text(draftStatus,style=MaterialTheme.typography.labelSmall)
+            Text(if(pending) neoLabel("جارٍ الحفظ…","Saving…") else if(editVersion()!=lastSavedEdit) neoLabel("تعديلات قيد الحفظ","Changes pending save") else draftStatus,style=MaterialTheme.typography.labelSmall)
             conflictingDraft?.let { recovered ->
                 TextButton(onClick={
                     id=UUID.randomUUID().toString();title=recovered.optString("title");body=TextFieldValue(recovered.optString("details"));tags=recovered.optString("tags")
@@ -299,7 +305,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             }
             error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
         }},
-        confirmButton={TextButton(enabled=!pending&&!rootWritePending&&draftReady,onClick={scope.launch {keepDraft();if(persistNote(true)) gate?.takeSavedExit()?.invoke()}}) {Text(neoLabel("تم","Done"))}},
+        confirmButton={TextButton(enabled=!pending&&!rootWritePending&&draftReady,onClick={scope.launch {keepDraft();persistNote(true)}}) {Text(neoLabel("تم","Done"))}},
         dismissButton={TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(true)) onDismiss()}}) {Text(neoLabel("إغلاق","Close"))}})
     }
 }

@@ -39,11 +39,13 @@ fun NeoModernHub(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val store = remember { NeoSmartStore(context.applicationContext) }
+    var receiveMonths by remember {mutableStateOf<List<YearMonth>?>(null)}
     var section by remember { mutableStateOf(initialSection) }
+    receiveMonths?.let {months -> NeoReceiveEntitlementsDialog(db,workplaces,initialOwner,months,{receiveMonths=null}) {next->commit(next) {receiveMonths=null}}}
     val searchSecurity = remember { V11SecurityStore(context.applicationContext) }
     val searchSettings = remember { searchSecurity.load() }
     var searchUnlocked by remember { mutableStateOf(false) }
-    if (section == "SEARCH" && searchScope == "TASKS" && searchSettings.protectTasks && !financeAuthorized && !searchUnlocked) {
+    if (section == "SEARCH" && searchScope == "TASKS" && (searchSettings.protectTasks||searchSettings.protectNotes) && !financeAuthorized && !searchUnlocked) {
         V11AccountsUnlockScreen(searchSettings, searchSecurity) { searchUnlocked = true }
         return
     }
@@ -552,6 +554,10 @@ fun NeoModernHub(
                     )
                     NeoDateInput(neoLabel("من", "From"), from) { from = it }
                     NeoDateInput(neoLabel("إلى", "Through"), to) { to = it }
+                    Button(enabled=workplace!=null,onClick={attempt {
+                        val first=YearMonth.from(LocalDate.parse(from));val last=YearMonth.from(LocalDate.parse(to));require(!last.isBefore(first))
+                        receiveMonths=generateSequence(first) {it.plusMonths(1)}.takeWhile {!it.isAfter(last)}.toList()
+                    }}) {Text(neoLabel("استلام مستحقات الكشف","Receive statement entitlements"))}
                     Button(
                         enabled = workplace != null,
                         onClick = {

@@ -27,11 +27,11 @@ object NeoWidgetContentModel {
             ShiftKind.OFF -> if (en) "Off" else "راحة"
         }
 
-    fun tasks(db: V11Database, today: LocalDate): List<TaskV11> {
+    fun tasks(db: V11Database, today: LocalDate, protectNotes:Boolean = false): List<TaskV11> {
         val visible = db.calendars.filter { it.visible }.map { it.id }.toSet()
         return db.tasks
             .filter {
-                it.status != TaskStatusV11.COMPLETED && !it.linkedNotePrivateV11(db) &&
+                it.status != TaskStatusV11.COMPLETED && !(protectNotes && it.linkedNoteId!=null) && !it.linkedNotePrivateV11(db) &&
                     (it.calendarId == null || it.calendarId in visible)
             }
             .sortedWith(
@@ -93,7 +93,7 @@ object NeoWidgetContentModel {
             )
         return when (kind) {
             Neo4WidgetKind.TASKS -> {
-                val tasks = tasks(db, now.toLocalDate())
+                val tasks = tasks(db, now.toLocalDate(),security?.protectNotes==true)
                 NeoWidgetContent(title, tasks.size.toString(), rows = tasks.map { it.title })
             }
             Neo4WidgetKind.CALENDAR -> {
@@ -109,7 +109,7 @@ object NeoWidgetContentModel {
                 if (
                     security == null ||
                         !options.showAmounts ||
-                        security.protectAccounts ||
+                        security.protectAccounts || security.protectSalary || security.protectCashBook ||
                         security.hideAmounts ||
                         amountsHidden
                 )

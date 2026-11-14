@@ -100,30 +100,31 @@ fun NeoCalendarArea(
     val context = androidx.compose.ui.platform.LocalContext.current
     val securityStore = remember(context) { V11SecurityStore(context.applicationContext) }
     val includeTaskContent = !securityStore.load().protectTasks
+    val includeNoteContent = includeTaskContent && !securityStore.load().protectNotes
     val cellMetrics = neoCellMetrics()
     val locale = if (LocalNeoEnglish.current) Locale.ENGLISH else Locale.forLanguageTag("ar")
     val presentation =
-        remember(db.days, db.tasks, db.dayItems, visibleCalendarIds, includeTaskContent) {
-            neoVisibleDays(db, visibleCalendarIds, includeTaskContent)
+        remember(db.days, db.tasks, db.dayItems, visibleCalendarIds, includeTaskContent, includeNoteContent) {
+            neoVisibleDays(db, visibleCalendarIds, includeTaskContent, includeNoteContent)
         }
     val entries =
         remember(db.days, visibleCalendarIds) {
             db.days.filter { it.calendarId in visibleCalendarIds }.groupBy { it.date }
         }
     val tasks =
-        remember(db.tasks, visibleCalendarIds, includeTaskContent) {
+        remember(db.tasks, visibleCalendarIds, includeTaskContent, includeNoteContent) {
             db.tasks
                 .filter {
-                    includeTaskContent && it.status != TaskStatusV11.COMPLETED &&
+                    includeTaskContent && (includeNoteContent || it.linkedNoteId==null) && it.status != TaskStatusV11.COMPLETED &&
                         (it.calendarId == null || it.calendarId in visibleCalendarIds)
                 }
                 .groupBy { it.date }
         }
     val events =
-        remember(db.dayItems, visibleCalendarIds, includeTaskContent) {
+        remember(db.dayItems, visibleCalendarIds, includeTaskContent, includeNoteContent) {
             db.dayItems
                 .filter {
-                    !it.completed && (includeTaskContent || (it.type != DayItemTypeV11.NOTE && it.type != DayItemTypeV11.TASK)) && (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) && (it.calendarId == null || it.calendarId in visibleCalendarIds)
+                    !it.completed && (includeTaskContent || (it.type != DayItemTypeV11.NOTE && it.type != DayItemTypeV11.TASK)) && (it.type != DayItemTypeV11.NOTE || (includeNoteContent && it.noteVisible && !it.notePrivate)) && (it.calendarId == null || it.calendarId in visibleCalendarIds)
                 }
                 .groupBy { it.date }
         }

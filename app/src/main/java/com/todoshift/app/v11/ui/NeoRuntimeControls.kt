@@ -84,10 +84,21 @@ fun NeoNotificationControls(db: V11Database) {
         save("notify_shifts", it)
     }
     NeoSwitch(
-        neoLabel("هدوء ٢٢:٠٠–٠٧:٠٠؛ تنبيه صامت في موعده", "Quiet 22:00–07:00; deliver silently on time"),
+        neoLabel("فترة الهدوء؛ تنبيه صامت في موعده", "Quiet hours; deliver silently on time"),
         data.optBoolean("quietHours", false),
     ) {
         save("quietHours", it)
+    }
+    var quietStart by remember {mutableStateOf(java.time.LocalTime.of(data.optInt("quietStartMinute",1320)/60,data.optInt("quietStartMinute",1320)%60).toString())}
+    var quietEnd by remember {mutableStateOf(java.time.LocalTime.of(data.optInt("quietEndMinute",420)/60,data.optInt("quietEndMinute",420)%60).toString())}
+    if(data.optBoolean("quietHours",false)) {
+        OutlinedTextField(quietStart,{quietStart=it},label={Text(neoLabel("بداية الهدوء HH:mm","Quiet start HH:mm"))},singleLine=true)
+        OutlinedTextField(quietEnd,{quietEnd=it},label={Text(neoLabel("نهاية الهدوء HH:mm","Quiet end HH:mm"))},singleLine=true)
+        TextButton(onClick={try {
+            val start=java.time.LocalTime.parse(quietStart);val end=java.time.LocalTime.parse(quietEnd)
+            store.update {it.put("quietStartMinute",start.hour*60+start.minute);it.put("quietEndMinute",end.hour*60+end.minute)}
+            revision++;error=null
+        } catch(_:Exception) {error="وقت غير صحيح / Invalid time"}}) {Text(neoLabel("حفظ فترة الهدوء","Save quiet interval"))}
     }
     var lead by remember { mutableStateOf(data.optInt("shiftReminderMinutes",30).toString()) }
     OutlinedTextField(lead, { lead=it.filter(Char::isDigit).take(5) },

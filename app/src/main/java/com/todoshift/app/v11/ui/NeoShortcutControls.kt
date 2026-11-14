@@ -31,6 +31,7 @@ fun NeoShortcutControls() {
                 val intent=Intent(context,MainActivity::class.java).setAction(Intent.ACTION_VIEW)
                     .putExtra("neo4_open_tab",tab)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                if(id=="tasks") intent.putExtra("todo_shift_task_action","tasks")
                 if(id=="notes") intent.putExtra("todo_shift_task_action","notes")
                 val icon=when(id){"calendar"->R.drawable.neo41_nav_calendar;"cashbook"->R.drawable.neo41_nav_finance;else->R.drawable.neo41_nav_tasks}
                 val shortcut=ShortcutInfo.Builder(context,id).setShortLabel(label).setLongLabel(label)

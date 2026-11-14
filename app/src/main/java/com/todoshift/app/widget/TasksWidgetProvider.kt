@@ -91,7 +91,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
                         val db = V11Runtime(context).start()
                         val visible = db.calendars.filter { it.visible }.map { it.id }.toSet()
                         db.tasks.count {
-                            it.status != TaskStatusV11.COMPLETED && !it.linkedNotePrivateV11(db) &&
+                            it.status != TaskStatusV11.COMPLETED && !(com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && it.linkedNoteId!=null) && !it.linkedNotePrivateV11(db) &&
                                 (it.calendarId == null || it.calendarId in visible)
                         }
                     }
@@ -259,7 +259,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
             val db = runCatching { runtime.start() }.getOrNull() ?: return
 
             val task = db.tasks.firstOrNull { it.id == taskId } ?: return
-            if(task.linkedNotePrivateV11(db)) {context.startActivity(tasksWidgetEntry(context,"open",taskId));return}
+            if(task.linkedNotePrivateV11(db) || (com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && task.linkedNoteId!=null)) {context.startActivity(tasksWidgetEntry(context,"open",taskId));return}
 
             if ((task.status == TaskStatusV11.COMPLETED) == completed) {
                 return

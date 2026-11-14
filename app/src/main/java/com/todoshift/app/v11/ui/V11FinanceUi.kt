@@ -38,6 +38,9 @@ fun V11FinanceScreen(
     val commit = rememberNeoCommit(onDatabaseChange)
     val result = remember(db, month) { V11FinanceEngine.month(db = db, month = month) }
 
+    var receiveOpen by rememberSaveable {mutableStateOf(false)}
+    var receiveWorkplace by rememberSaveable {mutableStateOf<String?>(null)}
+    if(receiveOpen) NeoReceiveEntitlementsDialog(db,workplaces,receiveWorkplace,listOf(month),{receiveOpen=false}) {next -> commit(next) {receiveOpen=false}}
     var paymentOpen by rememberSaveable { mutableStateOf(false) }
 
     var obligationOpen by rememberSaveable { mutableStateOf(false) }
@@ -209,6 +212,7 @@ fun V11FinanceScreen(
         }
         Spacer(Modifier.height(12.dp))
 
+        Button(onClick=neoWriteAction {receiveWorkplace=null;receiveOpen=true},modifier=Modifier.fillMaxWidth()) {Text(neoLabel("استلام المستحقات","Receive entitlements"))}
         Button(
             onClick = neoWriteAction { paymentOpen = true },
             modifier = Modifier.fillMaxWidth(),
@@ -475,6 +479,7 @@ fun V11FinanceScreen(
             workplaces = workplaces,
             moneyVisible = moneyVisible,
             onDismiss = { workplaceDetailsId = null },
+            onReceive = {receiveWorkplace=workplaceId;workplaceDetailsId=null;receiveOpen=true},
         )
     }
 
@@ -679,7 +684,9 @@ private fun V11WorkplaceDueDetailsDialog(
     workplaces: List<Workplace>,
     moneyVisible: Boolean,
     onDismiss: () -> Unit,
+    onReceive: () -> Unit,
 ) {
+    val context=androidx.compose.ui.platform.LocalContext.current
     val workplaceName =
         workplaces.firstOrNull { it.id == workplaceId }?.name
             ?: neoLiteral("غير محدد", "Unspecified")
@@ -692,10 +699,9 @@ private fun V11WorkplaceDueDetailsDialog(
 
     val groups = rows.groupBy { it.second.kind }
 
-    val total =
-        rows.sumOf { (day, segment) ->
-            V11RateEngine.segmentAmount(segment = segment, date = day.date, rates = db.rates)
-        }
+    val total=V11FinanceEngine.month(db,month).byWorkplace.firstOrNull {it.workplaceId==workplaceId}?.amount ?: 0.0
+    val monthlySalary=db.incomeSources.any {it.workplaceId==workplaceId && (it.fixedMonthlyAmount!=null || it.compensationHistory.isNotEmpty())}
+    val remaining=workplaceId?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -732,7 +738,7 @@ private fun V11WorkplaceDueDetailsDialog(
 
                             AccountLine(neoLiteral("العدد", "Count"), kindRows.size.toString())
 
-                            AccountLine(
+                            if(!monthlySalary) AccountLine(
                                 neoLiteral("قيمة الوحدة", "Unit value"),
                                 if (unitRates.size == 1) {
                                     money(unitRates.first(), moneyVisible)
@@ -741,7 +747,7 @@ private fun V11WorkplaceDueDetailsDialog(
                                 },
                             )
 
-                            AccountLine(
+                            if(!monthlySalary) AccountLine(
                                 neoLiteral("الإجمالي", "Total"),
                                 money(subtotal, moneyVisible),
                             )
@@ -751,6 +757,14 @@ private fun V11WorkplaceDueDetailsDialog(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                 AccountLine(neoLiteral("الإجمالي الكلي", "Grand total"), money(total, moneyVisible))
+                if(monthlySalary) Text(neoLabel("راتب شهري ثابت؛ عدد الورديات للإحصاء فقط","Fixed monthly salary; shifts are counted for statistics only"))
+                AccountLine(neoLabel("المتبقي","Remaining"),money(LocalizedNumbers.amount(remaining),moneyVisible))
+                Button(enabled=remaining>0 && workplaceId!=null,onClick=onReceive,modifier=Modifier.fillMaxWidth()) {Text(if(remaining>0) neoLabel("استلام مستحقات هذا الكشف","Receive this statement") else neoLabel("تم استلام المستحقات بالكامل","Entitlements fully received"))}
+                TextButton(enabled=workplaceId!=null,onClick={
+                    val csv=ModernOperations.statementCsv(db,requireNotNull(workplaceId),month.atDay(1),month.atEndOfMonth())
+                    (context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(workplaceName,csv))
+                }) {Text(neoLabel("نسخ الكشف بصيغة CSV","Copy statement as CSV"))}
+
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(neoLiteral("إغلاق", "Close")) } },

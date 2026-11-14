@@ -16,8 +16,11 @@ object NeoNotificationPolicy {
     fun quiet(context: Context, at: Long = System.currentTimeMillis()): Boolean {
         val config = NeoSmartStore(context).snapshot()
         if (!config.optBoolean("quietHours", false)) return false
-        val hour = Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).hour
-        return hour >= 22 || hour < 7
+        val local=Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault())
+        val minute=local.hour*60+local.minute
+        val start=config.optInt("quietStartMinute",22*60).coerceIn(0,1439)
+        val end=config.optInt("quietEndMinute",7*60).coerceIn(0,1439)
+        return if(start==end) true else if(start<end) minute in start until end else minute>=start || minute<end
     }
 
     fun shiftLeadMinutes(context: Context): Int = NeoSmartStore(context).snapshot()

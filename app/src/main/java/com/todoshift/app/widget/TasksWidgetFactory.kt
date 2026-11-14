@@ -34,10 +34,10 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
         tasks =
             runCatching {
                     val db = V11Runtime(context).start()
-                    NeoWidgetContentModel.tasks(db, LocalDate.now()) +
+                    NeoWidgetContentModel.tasks(db, LocalDate.now(),com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes) +
                         if(Neo4WidgetSettings(context,widgetId).load(Neo4WidgetKind.TASKS).showCompleted) {
                             val visible=db.calendars.filter {it.visible}.map {it.id}.toSet()
-                            db.tasks.filter {!it.linkedNotePrivateV11(db) && it.status==com.todoshift.app.v11.TaskStatusV11.COMPLETED && (it.calendarId==null || it.calendarId in visible)}.sortedByDescending {it.completedAt}
+                            db.tasks.filter {!(com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && it.linkedNoteId!=null) && !it.linkedNotePrivateV11(db) && it.status==com.todoshift.app.v11.TaskStatusV11.COMPLETED && (it.calendarId==null || it.calendarId in visible)}.sortedByDescending {it.completedAt}
                         } else emptyList()
                 }
                 .getOrDefault(emptyList())

@@ -51,6 +51,10 @@ fun NeoRescueSettings(
         NeoLanguageSettings(page) { back() }
         return
     }
+    if(page=="TASK_NOTES") {
+        Column(Modifier.fillMaxSize().padding(12.dp)) {NeoPageHeader(neoLabel("المهام والملاحظات","Tasks & Notes"),{back()});NeoLaunchPreferencesUi()}
+        return
+    }
     when (page) {
         "APPEARANCE" -> {
             NeoAppearanceStudio(
@@ -113,6 +117,7 @@ fun NeoRescueSettings(
                     neoLabel("الأداء والتشخيص والخيارات المحفوظة", "Performance, diagnostics and saved preferences"))
                 NeoPremiumSettingTile(neoLabel("النسخ الاحتياطي والاستعادة", "Backup & restore"),
                     neoLabel("حفظ بياناتك واستعادتها", "Save and restore your data"), Icons.Rounded.CloudUpload) { nav.open("BACKUP") }
+                NeoPremiumSettingTile(neoLabel("المهام والملاحظات","Tasks & Notes"),neoLabel("القسم الافتراضي وخلفيات الملاحظات","Default section and note backgrounds"),Icons.Rounded.Notes) {page="TASK_NOTES"}
                 neoSettingsGroups.forEachIndexed { index, (id, ar, en) ->
                     NeoPremiumSettingTile(neoLabel(ar, en), summaries[index], icons[index]) {
                         if (id == "APPEARANCE") nav.open("APPEARANCE") else page = id + "_GROUP"

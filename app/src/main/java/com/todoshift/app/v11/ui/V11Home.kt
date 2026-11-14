@@ -199,7 +199,7 @@ fun V11Home(
 
     var accountsUnlocked by remember {
         mutableStateOf(
-            !(securitySettings.protectAccounts || securitySettings.protectApplication || securitySettings.protectTasks) ||
+            !(securitySettings.anyProtection) ||
                 (securitySettings.mode == V11LockMode.NONE && !securitySettings.biometricEnabled)
         )
     }
@@ -217,7 +217,7 @@ fun V11Home(
                     backgroundAt = System.currentTimeMillis()
 
                     if (
-                        (securitySettings.protectAccounts || securitySettings.protectApplication || securitySettings.protectTasks) &&
+                        (securitySettings.anyProtection) &&
                             (securitySettings.mode != V11LockMode.NONE ||
                                 securitySettings.biometricEnabled) &&
                             securitySettings.autoLockMinutes == 0
@@ -228,7 +228,7 @@ fun V11Home(
 
                 Lifecycle.Event.ON_START -> {
                     if (
-                        (securitySettings.protectAccounts || securitySettings.protectApplication || securitySettings.protectTasks) &&
+                        (securitySettings.anyProtection) &&
                             (securitySettings.mode != V11LockMode.NONE ||
                                 securitySettings.biometricEnabled) &&
                             backgroundAt > 0L
@@ -255,7 +255,7 @@ fun V11Home(
 
     DisposableEffect(context, securitySettings) {
         val window = (context as? android.app.Activity)?.window
-        val secured = securitySettings.protectApplication || securitySettings.protectAccounts || securitySettings.protectTasks
+        val secured = securitySettings.anyProtection
         if (secured) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         onDispose { }
@@ -646,6 +646,7 @@ fun V11Home(
                     (uiSettings.experience == V11Experience.PREMIUM && navigation.featureOpen),
                 LocalNeoLeaveGate provides leaveGate,
                 LocalNeoAppearanceCommit provides { value, done -> saveAppearance(value, done) },
+                LocalNeoOpenNoteTask provides {taskId -> pendingTaskAction="open";pendingTaskId=taskId;navigation.selectTab(4)},
                 LocalNeoNoteCommitted provides
                     { next ->
                         undoHistory.add(db)
@@ -727,7 +728,11 @@ fun V11Home(
                             androidx.compose.ui.unit.LayoutDirection.Rtl,
                         LocalNeoRuntimeReduced.current || temporaryFocus,
                     )
-                if (securitySettings.protectApplication &&
+                if ((securitySettings.protectApplication ||
+                    (navigation.tab==0 && securitySettings.protectCalendar) ||
+                    (navigation.tab==2 && (securitySettings.protectSalary||securitySettings.protectAccounts)) ||
+                    (navigation.tab==1 && (securitySettings.protectCashBook||securitySettings.protectAccounts)) ||
+                    (navigation.tab==4 && securitySettings.protectTasks)) &&
                     (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled) &&
                     !accountsUnlocked) {
                     V11AccountsUnlockScreen(settings = securitySettings, securityStore = securityStore,
@@ -871,7 +876,7 @@ fun V11Home(
                                                 securitySettings = it
                                                 moneyVisible = !it.hideAmounts
                                                 accountsUnlocked =
-                                                    !(it.protectAccounts || it.protectApplication || it.protectTasks) ||
+                                                    !(it.anyProtection) ||
                                                         (it.mode == V11LockMode.NONE &&
                                                             !it.biometricEnabled)
                                             },
@@ -970,7 +975,8 @@ fun V11Home(
                                             com.todoshift.app.integration.EmbeddedCashBookScreen(
                                                 weekStart = java.time.DayOfWeek.of(neoAppearance.firstWeekday),
                                                 salaryContent = {
-                                                    V11FinanceScreen(
+                                                    if(securitySettings.protectSalary&&!accountsUnlocked) V11AccountsUnlockScreen(securitySettings,securityStore) {accountsUnlocked=true}
+                                                    else V11FinanceScreen(
                                                         month = month,
                                                         db = db,
                                                         workplaces = oldData.workplaces,
@@ -1030,7 +1036,7 @@ fun V11Home(
                                                 moneyVisible = !it.hideAmounts
 
                                                 accountsUnlocked =
-                                                    !(it.protectAccounts || it.protectApplication || it.protectTasks) ||
+                                                    !(it.anyProtection) ||
                                                         (it.mode == V11LockMode.NONE &&
                                                             !it.biometricEnabled)
                                             },

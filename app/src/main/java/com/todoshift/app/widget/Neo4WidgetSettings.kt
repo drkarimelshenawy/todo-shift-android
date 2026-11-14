@@ -246,8 +246,8 @@ object Neo4WidgetPrivacy {
 
 
 /** Widget processes never inherit an in-app authentication session. */
-fun neoWidgetProtected(context: Context, tasks: Boolean = false): Boolean = runCatching {
+fun neoWidgetProtected(context: Context, tasks: Boolean = false, calendar:Boolean = false): Boolean = runCatching {
     val security = V11SecurityStore(context).load()
     (security.mode != V11LockMode.NONE || security.biometricEnabled) &&
-        (security.protectApplication || (tasks && security.protectTasks))
+        (security.protectApplication || (tasks && security.protectTasks) || (calendar && security.protectCalendar))
 }.getOrDefault(true)

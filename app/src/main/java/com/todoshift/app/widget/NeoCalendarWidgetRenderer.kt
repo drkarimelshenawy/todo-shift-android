@@ -31,7 +31,7 @@ object NeoCalendarWidgetRenderer {
         views.setViewVisibility(R.id.widget_summary,if(db==null) View.VISIBLE else View.GONE)
         views.setTextViewText(R.id.widget_summary,if(english) "Unable to read data; open app" else "تعذر قراءة البيانات؛ افتح التطبيق")
         views.setTextColor(R.id.widget_summary,skin.text)
-        val hidden=options.hideContent || db==null || neoWidgetProtected(context)
+        val hidden=options.hideContent || db==null || neoWidgetProtected(context,calendar=true)
         views.setViewVisibility(R.id.widget_grid,if(hidden) View.GONE else View.VISIBLE)
         views.setViewVisibility(R.id.widget_month_paint,if(hidden) View.GONE else View.VISIBLE)
         views.setViewVisibility(R.id.widget_weekdays,if(hidden) View.GONE else View.VISIBLE)
@@ -65,7 +65,7 @@ object NeoCalendarWidgetRenderer {
                     val segments=indexed[date.toString()].orEmpty()
                     val names=segments.map { s -> places.firstOrNull { it.id==s.workplaceId }?.name ?: NeoWidgetContentModel.shiftLabel(s.kind,english) }.distinct().joinToString(" / ")
                     val notes=(db.days.filter { it.date==date.toString() && it.calendarId in visible }.map { it.note } +
-                        db.dayItems.filter { it.date==date.toString() && it.type==DayItemTypeV11.NOTE && it.noteVisible && !it.notePrivate && (it.calendarId==null || it.calendarId in visible) }.map { it.title }).filter { it.isNotBlank() }.joinToString(" • ")
+                        db.dayItems.filter { it.date==date.toString() && !com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && it.type==DayItemTypeV11.NOTE && it.noteVisible && !it.notePrivate && (it.calendarId==null || it.calendarId in visible) }.map { it.title }).filter { it.isNotBlank() }.joinToString(" • ")
                     val ink=segments.firstOrNull()?.let { segment ->
                         val custom=p.shiftPaints[segment.kind]?.takeIf { p.showShiftPaint && it.mode!=NeoPaintMode.INHERIT }?.first
                         val background=custom?.let { runCatching { Color.parseColor(it) }.getOrNull() } ?: colors[segment.workplaceId]

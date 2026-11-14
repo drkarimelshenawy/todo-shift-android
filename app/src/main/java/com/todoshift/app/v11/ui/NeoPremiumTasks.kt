@@ -52,7 +52,27 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             finally { settingsBusy=false }
         }
     }
-    var notesTab by rememberSaveable { mutableStateOf(false) }
+    var notesTab by rememberSaveable { mutableStateOf(NeoLaunchPreferences(context).openNotes) }
+    val noteSecurity=remember {V11SecurityStore(context.applicationContext)}
+    val noteSecuritySettings=noteSecurity.load()
+    var noteSectionUnlocked by remember {mutableStateOf(false)}
+    val securityLifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var noteBackgroundAt by remember {mutableLongStateOf(0L)}
+    DisposableEffect(securityLifecycle,noteSecuritySettings) {
+        val observer=androidx.lifecycle.LifecycleEventObserver {_,event ->
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP) {noteBackgroundAt=System.currentTimeMillis();if(noteSecuritySettings.autoLockMinutes==0) noteSectionUnlocked=false}
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_START && noteBackgroundAt>0 && System.currentTimeMillis()-noteBackgroundAt>=noteSecuritySettings.autoLockMinutes*60000L) noteSectionUnlocked=false
+        }
+        securityLifecycle.addObserver(observer);onDispose {securityLifecycle.removeObserver(observer)}
+    }
+    if(notesTab&&noteSecuritySettings.protectNotes&&!noteSectionUnlocked) {
+        Column {
+            TextButton(onClick={notesTab=false}) {Text(neoLabel("المهام","Tasks"))}
+            V11AccountsUnlockScreen(noteSecuritySettings,noteSecurity) {noteSectionUnlocked=true}
+        }
+        return
+    }
+    var preferencesOpen by remember { mutableStateOf(false) }
     var noteEditor by rememberSaveable { mutableStateOf(false) }
     var noteId by rememberSaveable { mutableStateOf<String?>(null) }
     var noteSearch by rememberSaveable { mutableStateOf("") }
@@ -85,13 +105,14 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     fun open(id: String?=null) { editingId=id;editor=true }
     LaunchedEffect(initialAction,initialTaskId) {
-        when(initialAction) { "notes" -> notesTab=true; "add" -> open(); "open" -> when {db.tasks.any { it.id==initialTaskId }->open(initialTaskId);db.dayItems.any {it.id==initialTaskId&&it.type==DayItemTypeV11.NOTE}-> {notesTab=true;noteId=initialTaskId;noteEditor=true};else->missing=true} }
+        when(initialAction) { "tasks" -> notesTab=false; "notes" -> notesTab=true; "add" -> open(); "open" -> when {db.tasks.any { it.id==initialTaskId }->open(initialTaskId);db.dayItems.any {it.id==initialTaskId&&it.type==DayItemTypeV11.NOTE}-> {notesTab=true;noteId=initialTaskId;noteEditor=true};else->missing=true} }
         if(initialAction!=null) onHandled()
     }
     fun changed(next: V11Database, message: String) {
         if(write.pending) return
         commit(next) { undoCandidate=next;notice=message }
     }
+    if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
         confirmButton={TextButton(onClick={missing=false}) {Text(neoLiteral("إغلاق","Close"))}})
     Box(Modifier.fillMaxSize()) {
@@ -101,7 +122,16 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             } } else null) {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start=12.dp,end=12.dp,top=8.dp,bottom=96.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 item(key="task-header") {
-                    NeoPremiumBanner(neoLabel("المهام والملاحظات", "Tasks & notes"))
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f)) {NeoPremiumBanner(neoLabel("المهام والملاحظات", "Tasks & notes"))}
+                        Box {
+                            var sharedMenu by remember {mutableStateOf(false)}
+                            IconButton(onClick={sharedMenu=true}) {Icon(Icons.Rounded.MoreVert,neoLabel("خيارات","Options"))}
+                            DropdownMenu(sharedMenu,{sharedMenu=false}) {
+                                DropdownMenuItem(text={Text(neoLabel("القسم الافتراضي وألوان الملاحظات","Default section and note colors"))},onClick={sharedMenu=false;preferencesOpen=true})
+                            }
+                        }
+                    }
                     NeoPremiumTabs(listOf(neoLabel("قائمة المهام", "Task list"),neoLabel("الملاحظات", "Notes")),if(notesTab) 1 else 0,{notesTab=it==1})
                 }
                 if (!notesTab) {
@@ -164,7 +194,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.date};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
                     if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات مطابقة","No matching notes"),neoLabel("غيّر البحث أو المجلد، أو أضف ملاحظة","Change search or folder, or add a note"))}
                     items(notes,key={it.id}) {note ->
-                        val customColor=if(note.notePrivate) null else note.noteBackground?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
+                        val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
                         val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
                         Card(onClick={noteId=note.id;noteEditor=true},colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
                             Column(Modifier.fillMaxWidth().padding(12.dp)) {

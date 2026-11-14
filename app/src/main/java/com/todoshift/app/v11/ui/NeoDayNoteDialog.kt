@@ -29,7 +29,7 @@ fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V
     val context = LocalContext.current
     val security = remember { V11SecurityStore(context.applicationContext) }
     val editorState=androidx.compose.runtime.saveable.rememberSaveableStateHolder()
-    val sectionProtection=remember { security.load().let {it.protectTasks||it.protectApplication} }
+    val sectionProtection=remember { security.load().let {it.protectTasks||it.protectNotes||it.protectApplication} }
     var authorized by remember(existing?.id) { mutableStateOf(existing?.noteLocked != true&&!sectionProtection) }
     val lifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle,existing?.id) {
@@ -121,7 +121,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         val linkedTasks=taskSpecs.map {spec ->
             val key=spec.substringBefore('\n'); val label=spec.substringAfter('\n')
             val taskId=UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString()
-            expected.tasks.firstOrNull {it.id==taskId} ?: TaskV11(id=taskId,title=label,date=date.toString(),calendarId=calendarId,linkedNoteId=id)
+            expected.tasks.firstOrNull {(it.id==taskId||it.id==key)&&it.linkedNoteId==id} ?: TaskV11(id=taskId,title=label,date=date.toString(),calendarId=calendarId,linkedNoteId=id)
         }
         pending=true
         return try {
@@ -159,7 +159,10 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     }
     val gate=LocalNeoLeaveGate.current
     val leave=rememberNeoEditorExit(listOf(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs),onDismiss,pending)
-    AlertDialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
+    val effectiveBackground=(background.ifBlank {NeoLaunchPreferences(context).defaultNoteBackground}).takeIf {it.isNotBlank()}?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
+    AlertDialog(containerColor=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,
+        textContentColor=effectiveBackground?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface,
+        onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
         properties=DialogProperties(securePolicy=SecureFlagPolicy.SecureOn),
         title={Text(neoLabel("ملاحظة", "Note")+" • $date")},
         text={Column(Modifier.heightIn(max=560.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -174,7 +177,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             },onCreateTask={line,label->
                 if(!pending) {val lines=body.text.lines().toMutableList()
                     val found=Regex("<!--task:([A-Za-z0-9_-]+)-->").find(lines[line])
-                    val key=found?.groupValues?.get(1) ?: UUID.randomUUID().toString()
+                    val key=found?.groupValues?.get(1) ?: expected.tasks.firstOrNull {it.linkedNoteId==id&&it.title==label}?.id ?: UUID.randomUUID().toString()
                     if(found==null) {lines[line]+=" <!--task:$key-->";edit(TextFieldValue(lines.joinToString("\n")))}
                     val spec="$key\n$label";taskSpecs=taskSpecs.filterNot {it.substringBefore('\n')==key}+spec}
             }) else OutlinedTextField(body,{if(!pending) edit(it)},label={Text(neoLabel("النص والتنسيق","Text and formatting"))},visualTransformation=remember {NeoNoteVisualTransformation()},minLines=6,maxLines=16,modifier=Modifier.fillMaxWidth())

@@ -50,7 +50,7 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
             val dayNotes = db.days.filter { it.calendarId in visible && it.note.isNotBlank() }.groupBy { it.date }
                 .mapValues { (_,v) -> v.map { it.note } }
             val independentNotes = db.dayItems.filter {
-                it.type == DayItemTypeV11.NOTE && it.noteVisible && !it.notePrivate && (it.calendarId == null || it.calendarId in visible)
+                !com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && it.type == DayItemTypeV11.NOTE && it.noteVisible && !it.notePrivate && (it.calendarId == null || it.calendarId in visible)
             }.groupBy { it.date }.mapValues { (_, entries) -> entries.map { it.title } }
             notes = (independentNotes.keys + dayNotes.keys).associateWith { date ->
                 dayNotes[date].orEmpty() + independentNotes[date].orEmpty()
@@ -79,9 +79,9 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
         }
         val currentOptions = Neo4WidgetSettings(context,widgetId).load(Neo4WidgetKind.CALENDAR)
         val muted = YearMonth.from(date)!=month
-        val segments = if(currentOptions.hideContent || neoWidgetProtected(context)) emptyList() else indexed[date.toString()].orEmpty()
+        val segments = if(currentOptions.hideContent || neoWidgetProtected(context,calendar=true)) emptyList() else indexed[date.toString()].orEmpty()
         val shift = segments.map { names[it.workplaceId] ?: NeoWidgetContentModel.shiftLabel(it.kind,english) }.distinct().joinToString(" / ")
-        val note = if(currentOptions.hideContent || neoWidgetProtected(context)) "" else notes[date.toString()].orEmpty().joinToString(" • ")
+        val note = if(currentOptions.hideContent || neoWidgetProtected(context,calendar=true)) "" else notes[date.toString()].orEmpty().joinToString(" • ")
         val ink = segments.firstOrNull()?.let {
             val paint = appearance.shiftPaints[it.kind]?.takeIf { s -> appearance.showShiftPaint && s.mode != NeoPaintMode.INHERIT }
             val background = paint?.first?.let { hex -> runCatching { Color.parseColor(hex) }.getOrNull() } ?: colors[it.workplaceId]
@@ -94,7 +94,7 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
         v.setTextColor(R.id.day_shift,faded(ink))
         v.setTextViewText(R.id.day_note,if(note.isBlank()) "" else "• $note")
         v.setTextColor(R.id.day_note,faded(ink))
-        val showDetails = currentOptions.showDetails && !currentOptions.hideContent && !neoWidgetProtected(context) && height>=32
+        val showDetails = currentOptions.showDetails && !currentOptions.hideContent && !neoWidgetProtected(context,calendar=true) && height>=32
         v.setViewVisibility(R.id.day_shift,if(showDetails) View.VISIBLE else View.GONE)
         v.setViewVisibility(R.id.day_note,if(showDetails && height>=44) View.VISIBLE else View.GONE)
         v.setImageViewBitmap(R.id.day_paint,Neo4WidgetPainter.calendarCell(segments,colors,appearance,date,month,rtl,skin.accent))

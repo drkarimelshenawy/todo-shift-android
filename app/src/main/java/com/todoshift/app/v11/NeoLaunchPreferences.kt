@@ -8,6 +8,9 @@ class NeoLaunchPreferences(context: Context) {
     var landingTab: Int
         get() = prefs.getInt("landing", 0).takeIf { it in 0..4 } ?: 0
         set(value) { require(value in 0..4); check(prefs.edit().putInt("landing", value).commit()) }
+    var defaultNoteBackground:String
+        get()=prefs.getString("note_background","").orEmpty()
+        set(value) {require(value.isBlank() || value.matches(Regex("#[0-9a-fA-F]{6}")));check(prefs.edit().putString("note_background",value).commit())}
     var openNotes: Boolean
         get() = prefs.getBoolean("notes", false)
         set(value) { check(prefs.edit().putBoolean("notes", value).commit()) }

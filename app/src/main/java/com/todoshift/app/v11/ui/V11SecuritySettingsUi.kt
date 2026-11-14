@@ -338,12 +338,19 @@ fun V11SecuritySettingsDialog(
                 )
                 SecuritySwitchCard(
                     icon = { Icon(Icons.Default.Lock, null) },
-                    title = neoLiteral("قفل المهام والملاحظات", "Protect tasks and notes"),
+                    title = neoLiteral("قفل المهام والملاحظات معًا", "Protect tasks and notes together"),
                     subtitle = neoLiteral("حماية القسم وروابطه المباشرة", "Protect the section and its direct links"),
                     checked = settings.protectTasks,
                     enabled = protectionAvailable,
                     onCheckedChange = { settings = settings.copy(protectTasks = it) },
                 )
+
+                listOf(
+                    Triple(neoLiteral("قفل التقويم","Protect Calendar"),settings.protectCalendar,{value:Boolean->settings=settings.copy(protectCalendar=value)}),
+                    Triple(neoLiteral("قفل الملاحظات","Protect Notes"),settings.protectNotes,{value:Boolean->settings=settings.copy(protectNotes=value)}),
+                    Triple(neoLiteral("قفل المستحقات","Protect Salary"),settings.protectSalary,{value:Boolean->settings=settings.copy(protectSalary=value)}),
+                    Triple(neoLiteral("قفل كاش بوك","Protect Cash Book"),settings.protectCashBook,{value:Boolean->settings=settings.copy(protectCashBook=value)})
+                ).forEach {(title,checked,change)->SecuritySwitchCard(icon={Icon(Icons.Default.Lock,null)},title=title,subtitle=neoLiteral("حماية مستقلة تشمل مسارات الدخول المباشر","Independent protection, including direct entry"),checked=checked,enabled=protectionAvailable,onCheckedChange=change)}
 
                 SecuritySwitchCard(
                     icon = {
@@ -430,6 +437,10 @@ fun V11SecuritySettingsDialog(
                                 protectAccounts = false,
                                 protectApplication = false,
                                 protectTasks = false,
+                                protectCalendar = false,
+                                protectNotes = false,
+                                protectSalary = false,
+                                protectCashBook = false,
                             )
                     }
 

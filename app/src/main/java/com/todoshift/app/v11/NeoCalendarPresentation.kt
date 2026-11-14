@@ -9,11 +9,11 @@ import java.util.Locale
 data class NeoDayPresentation(val entries: List<DayEntryV11>, val tasks: Int, val events: Int, val notes: List<DayItemV11> = emptyList()) {
     val segments: List<ShiftSegmentV11> get() = entries.flatMap { it.segments }
 }
-fun neoVisibleDays(db: V11Database, visible: Set<String>, includeTaskContent: Boolean = true): Map<String, NeoDayPresentation> {
+fun neoVisibleDays(db: V11Database, visible: Set<String>, includeTaskContent: Boolean = true, includeNoteContent:Boolean = includeTaskContent): Map<String, NeoDayPresentation> {
     val days = db.days.filter { it.calendarId in visible }.groupBy { it.date }
-    val tasks = db.tasks.filter { includeTaskContent && it.status != TaskStatusV11.COMPLETED && (it.calendarId == null || it.calendarId in visible) }.groupingBy { it.date }.eachCount()
+    val tasks = db.tasks.filter { includeTaskContent && (includeNoteContent || it.linkedNoteId==null) && it.status != TaskStatusV11.COMPLETED && (it.calendarId == null || it.calendarId in visible) }.groupingBy { it.date }.eachCount()
     val events = db.dayItems.filter { it.type != DayItemTypeV11.NOTE && (includeTaskContent || it.type != DayItemTypeV11.TASK) && !it.completed && (it.calendarId == null || it.calendarId in visible) }.groupingBy { it.date }.eachCount()
-    val notes = db.dayItems.filter { includeTaskContent && it.type == DayItemTypeV11.NOTE && it.noteVisible && !it.notePrivate && !it.completed && (it.calendarId == null || it.calendarId in visible) }.groupBy { it.date }
+    val notes = db.dayItems.filter { includeNoteContent && it.type == DayItemTypeV11.NOTE && it.noteVisible && !it.notePrivate && !it.completed && (it.calendarId == null || it.calendarId in visible) }.groupBy { it.date }
     return (days.keys + tasks.keys + events.keys + notes.keys).associateWith { NeoDayPresentation(days[it].orEmpty(), tasks[it] ?: 0, events[it] ?: 0, notes[it].orEmpty().sortedByDescending { n -> n.title.startsWith("📌") }) }
 }
 fun neoMoveMonth(month: YearMonth, selected: LocalDate, step: Long): LocalDate =

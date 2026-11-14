@@ -19,8 +19,14 @@ data class V11SecuritySettings(
     val hideAmounts: Boolean = true,
     val autoLockMinutes: Int = 0,
     val protectApplication: Boolean = false,
-    val protectTasks: Boolean = false
-)
+    val protectTasks: Boolean = false,
+    val protectCalendar: Boolean = false,
+    val protectNotes: Boolean = false,
+    val protectSalary: Boolean = false,
+    val protectCashBook: Boolean = false,
+) {
+    val anyProtection:Boolean get()=protectApplication||protectAccounts||protectTasks||protectCalendar||protectNotes||protectSalary||protectCashBook
+}
 
 class V11SecurityStore internal constructor(
     private val prefs: android.content.SharedPreferences,
@@ -134,6 +140,10 @@ class V11SecurityStore internal constructor(
 
             protectApplication = prefs.getBoolean("protect_application", false),
             protectTasks = prefs.getBoolean("protect_tasks", false),
+            protectCalendar = prefs.getBoolean("protect_calendar", false),
+            protectNotes = prefs.getBoolean("protect_notes", false),
+            protectSalary = prefs.getBoolean("protect_salary", false),
+            protectCashBook = prefs.getBoolean("protect_cashbook", false),
             autoLockMinutes =
                 prefs.getInt(
                     KEY_AUTO_LOCK,
@@ -148,6 +158,10 @@ class V11SecurityStore internal constructor(
         val editor = prefs.edit()
             .putBoolean("protect_application", settings.protectApplication)
             .putBoolean("protect_tasks", settings.protectTasks)
+            .putBoolean("protect_calendar", settings.protectCalendar)
+            .putBoolean("protect_notes", settings.protectNotes)
+            .putBoolean("protect_salary", settings.protectSalary)
+            .putBoolean("protect_cashbook", settings.protectCashBook)
             .putString(
                 KEY_MODE,
                 settings.mode.name

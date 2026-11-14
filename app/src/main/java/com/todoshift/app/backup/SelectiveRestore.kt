@@ -10,6 +10,7 @@ data class RestoreInspection(
     val duplicates: Int, val conflicts: Int, val replacements: Int,
     val dependencies: Int,
     val cashAccounts: Int = 0, val cashTransactions: Int = 0, val cashDebts: Int = 0,
+    val currentFingerprint: String = "",
 )
 
 /** Stable IDs are the merge key. Partial replacement never replaces shared dependencies. */

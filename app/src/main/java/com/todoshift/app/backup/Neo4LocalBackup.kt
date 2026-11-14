@@ -380,11 +380,15 @@ class Neo4LocalBackup(context: Context) :
         return ledger.backup()
     }
 
+    private fun currentFingerprint(): String = Neo4BackupFormat.sha256(
+        bytes(storage.exportJson(storage.load())) + bytes(legacy.exportJson(legacy.load())) + (AndroidLedgerStore(app).read() ?: byteArrayOf())
+    )
+
     fun inspect(prepared: Neo4PreparedRestore, scope: Set<BackupSection>, mode: RestoreMode): RestoreInspection = dataGate {
         validate(prepared)
         require(scope.all { it in prepared.preview.availableSections }) { "Section unavailable in this backup" }
         val incoming = parse(prepared.bytes)
-        val plan = SelectiveRestore.plan(JSONObject(storage.exportJson(storage.load())), JSONObject(storage.exportJson(incoming.database)), scope, mode, mode == RestoreMode.REPLACE && scope == prepared.preview.availableSections && scope.containsAll(setOf(BackupSection.CALENDAR, BackupSection.TASKS, BackupSection.SALARY, BackupSection.SETTINGS))).second
+        val plan = SelectiveRestore.plan(JSONObject(storage.exportJson(storage.load())), JSONObject(storage.exportJson(incoming.database)), scope, mode, mode == RestoreMode.REPLACE && scope == prepared.preview.availableSections && scope.containsAll(setOf(BackupSection.CALENDAR, BackupSection.TASKS, BackupSection.SALARY, BackupSection.SETTINGS))).second.copy(currentFingerprint = currentFingerprint())
         if (BackupSection.CASHBOOK in scope && incoming.sections["data/cashbook.bin"] != null) {
             val bytes = incoming.sections.getValue("data/cashbook.bin")
             val candidate = Ledger(object : Ledger.Store { override fun read() = bytes; override fun write(snapshot: ByteArray) {} }).load()
@@ -455,8 +459,8 @@ class Neo4LocalBackup(context: Context) :
     override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
         restoreChecked(prepared, confirmedToken, false, prepared.preview.availableSections, RestoreMode.REPLACE)
 
-    fun restore(prepared: Neo4PreparedRestore, confirmedToken: String, scope: Set<BackupSection>, mode: RestoreMode): Neo4RestoredState =
-        restoreChecked(prepared, confirmedToken, false, scope, mode)
+    fun restore(prepared: Neo4PreparedRestore, confirmedToken: String, scope: Set<BackupSection>, mode: RestoreMode, expectedCurrentFingerprint: String? = null): Neo4RestoredState =
+        restoreChecked(prepared, confirmedToken, false, scope, mode, expectedCurrentFingerprint)
 
     /**
      * Only the authenticated boot recovery UI may explicitly request replacement of a failed store.
@@ -472,6 +476,7 @@ class Neo4LocalBackup(context: Context) :
         recovery: Boolean,
         scope: Set<BackupSection>,
         mode: RestoreMode,
+        expectedCurrentFingerprint: String? = null,
     ): Neo4RestoredState =
         dataGate {
             require(confirmedToken == prepared.token) {
@@ -479,6 +484,7 @@ class Neo4LocalBackup(context: Context) :
             }
             validate(prepared)
             recoverIfNeeded()
+            if (expectedCurrentFingerprint != null) check(expectedCurrentFingerprint == currentFingerprint()) { "Data changed since preview; inspect the backup again" }
             val originalParsed = parse(prepared.bytes)
             require(scope.isNotEmpty() && scope.all { it in prepared.preview.availableSections }) { "Invalid restore scope" }
             val currentRead = storage.read()

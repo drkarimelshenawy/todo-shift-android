@@ -348,7 +348,7 @@ fun Neo4AccountBackupPage(
                             busy = true
                             runCatching {
                                     withContext(Dispatchers.IO) {
-                                        backup.restore(pending, pending.token, restoreScope, restoreMode)
+                                        backup.restore(pending, pending.token, restoreScope, restoreMode, inspection!!.currentFingerprint)
                                     }
                                 }
                                 .onSuccess { value ->

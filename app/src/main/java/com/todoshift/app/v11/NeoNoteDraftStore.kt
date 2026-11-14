@@ -17,9 +17,9 @@ import org.json.JSONObject
 internal class NeoNoteDraftStore(context: Context) {
     private val directory = File(context.noBackupFilesDir, "note-drafts-v44")
     private fun file(id: String): AtomicFile {
-        require(id.matches(Regex("[A-Za-z0-9_-]{1,160}")))
+        val name=java.security.MessageDigest.getInstance("SHA-256").digest(id.toByteArray(Charsets.UTF_8)).joinToString("") {"%02x".format(it)}
         check(directory.exists() || directory.mkdirs()) { "Unable to open note drafts" }
-        return AtomicFile(File(directory, "$id.draft"))
+        return AtomicFile(File(directory, "$name.draft"))
     }
     private fun key(): SecretKey = synchronized(NeoNoteDraftStore::class.java) {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }

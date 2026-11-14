@@ -201,7 +201,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
             state.message?.let { Text(it, Modifier.padding(horizontal = 8.dp), style = MaterialTheme.typography.bodySmall) }
             if (snapshot == null) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { if (!state.busy) Button(onClick = vm::reload) { Text(tr(R.string.cb_014)) } }
-            } else if (accounts.isEmpty()) {
+            } else if (accounts.isEmpty() && !(mainSection == "debts" && debtDetail && activeDebt != null)) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Button(onClick = { addAccount = true }) { Text(tr(R.string.cb_015)) } }
             } else if(activeDebt!=null&&page=="movement"){
                 DebtPanel(snapshot,activeDebt,Modifier.weight(1f))

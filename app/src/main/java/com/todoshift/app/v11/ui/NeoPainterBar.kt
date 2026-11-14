@@ -208,7 +208,7 @@ fun NeoPainterBar(
             } catch (failure: Exception) { error = failure.message }
         }
     }
-    Surface(
+    if (selectorVisible) Surface(
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(24.dp),

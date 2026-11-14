@@ -728,7 +728,7 @@ fun V11Home(
                                     else
                                         when (navigation.tab) {
                                             0 -> "Calendar"
-                                            1 -> "Schedules"
+                                            1 -> "Cash Book"
                                             4 -> "Tasks"
                                             2 -> "Finances"
                                             else -> "Settings"
@@ -743,7 +743,7 @@ fun V11Home(
                                             navigation.workplacesOpen ->
                                                 neoLabel("أماكن العمل", "Workplaces")
                                             navigation.tab == 0 -> neoLabel("التقويم", "Calendar")
-                                            navigation.tab == 1 -> neoLabel("جداولي", "Schedules")
+                                            navigation.tab == 1 -> neoLabel("كاش بوك", "Cash Book")
                                             navigation.tab == 2 -> neoLabel("الحسابات", "Finance")
                                             navigation.tab == 3 -> neoLabel("الإعدادات", "Settings")
                                             else -> neoLabel("المهام", "Tasks")
@@ -919,15 +919,7 @@ fun V11Home(
                                         }
 
                                     1 ->
-                                        V11SchedulesScreen(
-                                            financeAuthorized = accountsUnlocked,
-                                            financeAmountsVisible = moneyVisible,
-                                            onMonthChange = { month = it },
-                                            month = month,
-                                            db = db,
-                                            workplaces = oldData.workplaces,
-                                            onDatabaseChange = { saveDb(it) },
-                                        )
+                                        com.todoshift.app.integration.EmbeddedCashBookScreen()
 
                                     2 ->
                                         if (

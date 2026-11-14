@@ -20,7 +20,7 @@ internal fun NeoTaskEditorGate(onDismiss:()->Unit, sourceProtected:Boolean=false
     val settings=security.load()
     val required=settings.protectTasks||settings.protectApplication||sourceProtected
     val inherited=LocalTaskEditorAuthorized.current
-    var authorized by remember {mutableStateOf(!required||inherited)}
+    var authorized by remember(required) {mutableStateOf(!required||inherited)}
     val state=rememberSaveableStateHolder()
     val lifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle,required) {

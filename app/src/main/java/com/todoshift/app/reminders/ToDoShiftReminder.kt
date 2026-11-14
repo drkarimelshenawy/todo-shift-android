@@ -328,9 +328,9 @@ class ToDoShiftReminderReceiver : BroadcastReceiver() {
                     val source=intent.getLongExtra(ToDoShiftReminder.EXTRA_SOURCE_AT,0L)
                     val currentSource=task?.reminderAt ?: item?.reminderAt ?: shift?.start?.atZone(java.time.ZoneId.systemDefault())?.toInstant()?.toEpochMilli()?.minus(com.todoshift.app.v11.NeoNotificationPolicy.shiftLeadMinutes(app)*60_000L)
                     if(currentSource==null || source!=currentSource) return@runCatching
-                    when {task!=null->ToDoShiftReminder.schedule(app,task);item!=null->ToDoShiftReminder.schedule(app,item)}
                     val scheduled=intent.getLongExtra(ToDoShiftReminder.EXTRA_SCHEDULED_AT,0L)
                     val now=System.currentTimeMillis()
+                    when {task!=null->ToDoShiftReminder.schedule(app,task);item!=null->ToDoShiftReminder.schedule(app,item)}
                     // A delayed broadcast must never replay yesterday's reminders in a flood.
                     if(scheduled<=0 || now<scheduled-60_000L || now-scheduled>15*60_000L) return@runCatching
                     val private=item?.notePrivate==true

@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ToDoShift"
-include(":app")
+include(":app", ":cashbook-core", ":cashbook-feature")

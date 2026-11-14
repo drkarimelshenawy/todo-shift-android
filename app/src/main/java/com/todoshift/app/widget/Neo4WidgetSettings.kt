@@ -46,12 +46,11 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
 
     fun remap(kind: Neo4WidgetKind, oldIds: IntArray, newIds: IntArray) {
         require(oldIds.size==newIds.size)
+        val values=oldIds.map { prefs.getString("${kind.name}:$it",null) }
         val editor=prefs.edit()
-        oldIds.indices.forEach { index ->
-            prefs.getString("${kind.name}:${oldIds[index]}",null)?.let { value ->
-                editor.putString("${kind.name}:${newIds[index]}",value)
-                if(oldIds[index]!=newIds[index]) editor.remove("${kind.name}:${oldIds[index]}")
-            }
+        oldIds.forEach { editor.remove("${kind.name}:$it") }
+        newIds.indices.forEach { index ->
+            values[index]?.let { editor.putString("${kind.name}:${newIds[index]}",it) }
         }
         check(editor.commit())
     }

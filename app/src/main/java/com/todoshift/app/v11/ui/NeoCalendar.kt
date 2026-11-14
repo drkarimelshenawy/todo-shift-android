@@ -97,30 +97,33 @@ fun NeoCalendarArea(
     val focus = LocalNeoFocus.current || LocalNeoRuntimeReduced.current
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val securityStore = remember(context) { V11SecurityStore(context.applicationContext) }
+    val includeTaskContent = !securityStore.load().protectTasks
     val cellMetrics = neoCellMetrics()
     val locale = if (LocalNeoEnglish.current) Locale.ENGLISH else Locale.forLanguageTag("ar")
     val presentation =
-        remember(db.days, db.tasks, db.dayItems, visibleCalendarIds) {
-            neoVisibleDays(db, visibleCalendarIds)
+        remember(db.days, db.tasks, db.dayItems, visibleCalendarIds, includeTaskContent) {
+            neoVisibleDays(db, visibleCalendarIds, includeTaskContent)
         }
     val entries =
         remember(db.days, visibleCalendarIds) {
             db.days.filter { it.calendarId in visibleCalendarIds }.groupBy { it.date }
         }
     val tasks =
-        remember(db.tasks, visibleCalendarIds) {
+        remember(db.tasks, visibleCalendarIds, includeTaskContent) {
             db.tasks
                 .filter {
-                    it.status != TaskStatusV11.COMPLETED &&
+                    includeTaskContent && it.status != TaskStatusV11.COMPLETED &&
                         (it.calendarId == null || it.calendarId in visibleCalendarIds)
                 }
                 .groupBy { it.date }
         }
     val events =
-        remember(db.dayItems, visibleCalendarIds) {
+        remember(db.dayItems, visibleCalendarIds, includeTaskContent) {
             db.dayItems
                 .filter {
-                    !it.completed && (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) && (it.calendarId == null || it.calendarId in visibleCalendarIds)
+                    !it.completed && (includeTaskContent || (it.type != DayItemTypeV11.NOTE && it.type != DayItemTypeV11.TASK)) && (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) && (it.calendarId == null || it.calendarId in visibleCalendarIds)
                 }
                 .groupBy { it.date }
         }
@@ -177,7 +180,6 @@ fun NeoCalendarArea(
         if (!paintMode) onSelectedDate(date)
     }
     val noteNavigator = LocalNeoFeatures.current
-    val context = androidx.compose.ui.platform.LocalContext.current
     val noteStore = remember { NeoSmartStore(context.applicationContext) }
     var noteRevision by remember { mutableIntStateOf(0) }
     val noteMetadata = remember(db.dayItems, noteRevision) { noteStore.snapshot() }
@@ -502,7 +504,7 @@ fun NeoCalendarArea(
         )
     }
     selectedEventId?.let { id ->
-        val event = db.dayItems.firstOrNull { it.id == id && it.type != DayItemTypeV11.NOTE }
+        val event = db.dayItems.firstOrNull { it.id == id && it.type != DayItemTypeV11.NOTE && (includeTaskContent || it.type != DayItemTypeV11.TASK) }
         if (event != null) AlertDialog(
             onDismissRequest = { selectedEventId = null },
             title = { Text(event.title) },

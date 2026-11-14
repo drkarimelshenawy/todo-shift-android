@@ -368,7 +368,7 @@ fun V11CalendarScreen(
                         selectedDate = LocalDate.now()
                         onMonthChange(YearMonth.from(selectedDate))
                     },
-                    creationCalendarId = activeCalendarId,
+                    creationCalendarId = activeCalendar?.id,
                     onOpenDay = { openDay = selectedDate },
                     modifier = Modifier.weight(1f),
                     onDatabaseChange = onDatabaseChange,

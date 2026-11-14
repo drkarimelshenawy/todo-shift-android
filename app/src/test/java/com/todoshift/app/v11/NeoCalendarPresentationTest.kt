@@ -43,6 +43,40 @@ class NeoCalendarPresentationTest {
             note.copy(id = "trashed", noteTrashed = true)))
         assertEquals(listOf("public"), neoVisibleDays(db, emptySet()).getValue(date).notes.map { it.id })
     }
+    @Test fun sectionProtectedTaskContentDoesNotLeakThroughCalendarCountsOrTitles() {
+        val data = V11Database(
+            tasks = listOf(TaskV11("task", "Private task", date = date)),
+            dayItems = listOf(
+                DayItemV11("note", date, type = DayItemTypeV11.NOTE, title = "Private note"),
+                DayItemV11("legacy-task", date, type = DayItemTypeV11.TASK, title = "Private legacy task"),
+                DayItemV11("event", date, type = DayItemTypeV11.ERRAND, title = "Public event"),
+            ),
+        )
+        val day = neoVisibleDays(data, emptySet(), includeTaskContent = false).getValue(date)
+        assertEquals(0, day.tasks)
+        assertTrue(day.notes.isEmpty())
+        assertEquals(1, day.events)
+        assertEquals(3, data.dayItems.size)
+        assertEquals(1, data.tasks.size)
+    }
+    @Test fun approvedShiftCoverageUsesNamedKindsWithoutChangingActualDurations() {
+        val expected = mapOf(
+            ShiftKind.FULL_DAY to Neo4Coverage(0f, 1f),
+            ShiftKind.LONG to Neo4Coverage(0f, .5f),
+            ShiftKind.NIGHT to Neo4Coverage(.5f, 1f),
+            ShiftKind.MORNING to Neo4Coverage(0f, .25f),
+            ShiftKind.EVENING to Neo4Coverage(.25f, .5f),
+        )
+        expected.forEach { (kind, coverage) -> assertEquals(coverage, neo4Coverage(kind)) }
+        assertNull(neo4Coverage(ShiftKind.OFF))
+        val recorded = ShiftSegmentV11("custom", ShiftKind.MORNING, startMinute = 480, endMinute = 960)
+        assertEquals(Neo4Coverage(0f, .25f), neo4Coverage(recorded.kind))
+        assertEquals(480, recorded.timeRange()!!.durationMinutes)
+    }
+    @Test fun lastCalendarIsRetainedEvenWhenItIsHiddenAndEmpty() {
+        val data = V11Database(calendars = listOf(AppCalendarV11("only", "Only", "#123456", visible = false)))
+        assertEquals(data, V11CalendarController.deleteCalendar(data, "only"))
+    }
     @Test fun everyNonOffShiftProducesPaint() {
         ShiftKind.entries.filter { it != ShiftKind.OFF }.forEach { assertTrue(neo4PaintBands(listOf(it)).isNotEmpty()) }
     }

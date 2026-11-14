@@ -55,6 +55,9 @@ fun V11DayDetailsScreen(
     var pendingDeleteSegmentId by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
+    val securityStore = remember(context) { V11SecurityStore(context.applicationContext) }
+    val includeTaskContent = !securityStore.load().protectTasks
+
 
     val notificationPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -75,7 +78,9 @@ fun V11DayDetailsScreen(
 
     val items =
         db.dayItems
-            .filter { it.date == date.toString() && (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) }
+            .filter { it.date == date.toString() &&
+                (includeTaskContent || (it.type != DayItemTypeV11.NOTE && it.type != DayItemTypeV11.TASK)) &&
+                (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) }
             .sortedWith(
                 compareByDescending<DayItemV11> { it.title.startsWith("📌") }
                     .thenBy { it.createdAt }
@@ -635,6 +640,16 @@ private fun V11AddDayItemDialog(
     onDismiss: () -> Unit,
     onSave: (String, String, Long?) -> Unit,
 ) {
+    NeoTaskEditorGate(onDismiss) { V11AddDayItemDialogContent(type, dateForReminder, onDismiss, onSave) }
+}
+
+@Composable
+private fun V11AddDayItemDialogContent(
+    type: DayItemTypeV11,
+    dateForReminder: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String, Long?) -> Unit,
+) {
     var title by rememberSaveable { mutableStateOf("") }
 
     var details by rememberSaveable { mutableStateOf("") }
@@ -653,6 +668,7 @@ private fun V11AddDayItemDialog(
             onDismiss,
         )
     AlertDialog(
+        properties = neoTaskDialogProperties(),
         onDismissRequest = leave,
         title = { Text(neoLiteral("إضافة ${itemTypeLabel(type)}", "Add ${itemTypeLabel(type)}")) },
         text = {

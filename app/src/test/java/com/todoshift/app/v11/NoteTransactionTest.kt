@@ -12,6 +12,31 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28])
 class NoteTransactionTest {
     @Test
+    fun richNoteMetadataAndChecklistTaskCommitTogetherWithoutRetryDuplication() {
+        val c = RuntimeEnvironment.getApplication()
+        val before = V11Runtime(c).start()
+        val note = DayItemV11("rich-note", "2026-11-14", type=DayItemTypeV11.NOTE, title="", details="**عربي** and *English*\n- [ ] Checklist", notePinned=true, noteLocked=true, noteHidden=true, noteTags="work,عمل", noteBackground="#AABBCC")
+        val task = TaskV11("linked-checklist-task", "Checklist", date=note.date, linkedNoteId=note.id)
+        val store=Neo4LocalBackup(c)
+        val first=store.saveNote(before, NeoSmartStore(c).snapshot().toString(), note, "#00A4B8", false, linkedTasks=listOf(task))
+        assertEquals(note, V11Runtime(c).start().dayItems.first {it.id==note.id})
+        assertEquals(task, first.tasks.first {it.id==task.id})
+        val second=store.saveNote(first, NeoSmartStore(c).snapshot().toString(), note, "#00A4B8", false, linkedTasks=listOf(task))
+        assertEquals(1, second.tasks.count {it.id==task.id})
+        assertEquals(first, second)
+    }
+
+    @Test
+    fun taskHistoryPreservesOriginalCompletionWhenReopenedAndCompletedAgain() {
+        val original=TaskV11("history", "Task", date="2026-11-14", status=TaskStatusV11.COMPLETED,completedAt=100L)
+        val reopened=original.withCompletionV11(false,200L)
+        val again=reopened.withCompletionV11(true,300L)
+        assertEquals(listOf(TaskCompletionV11(100L,true),TaskCompletionV11(200L,false),TaskCompletionV11(300L,true)),again.completionHistory)
+        assertEquals(300L,again.completedAt)
+        assertEquals(again,again.withCompletionV11(true,400L))
+    }
+
+    @Test
     fun textAndStyleReopenTogether() {
         val c = RuntimeEnvironment.getApplication()
         val runtime = V11Runtime(c)

@@ -55,6 +55,17 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var notesTab by rememberSaveable { mutableStateOf(false) }
     var noteEditor by rememberSaveable { mutableStateOf(false) }
     var noteId by rememberSaveable { mutableStateOf<String?>(null) }
+    var noteSearch by rememberSaveable { mutableStateOf("") }
+    var noteFolder by rememberSaveable { mutableStateOf("active") }
+    var noteSort by rememberSaveable { mutableStateOf("updated") }
+    var hiddenAuthorized by remember { mutableStateOf(false) }
+    var hiddenUnlock by remember { mutableStateOf(false) }
+    val noteLifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(noteLifecycle) {
+        val observer=androidx.lifecycle.LifecycleEventObserver {_,event->if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP){hiddenAuthorized=false;if(noteFolder=="hidden")noteFolder="active"}}
+        noteLifecycle.addObserver(observer)
+        onDispose {noteLifecycle.removeObserver(observer)}
+    }
     var period by rememberSaveable { mutableStateOf(NeoTaskPeriod.TODAY) }
     var status by rememberSaveable { mutableStateOf(NeoTaskStatus.ALL) }
     var search by rememberSaveable { mutableStateOf("") }
@@ -74,7 +85,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     fun open(id: String?=null) { editingId=id;editor=true }
     LaunchedEffect(initialAction,initialTaskId) {
-        when(initialAction) { "add" -> open(); "open" -> if(db.tasks.any { it.id==initialTaskId }) open(initialTaskId) else missing=true }
+        when(initialAction) { "notes" -> notesTab=true; "add" -> open(); "open" -> when {db.tasks.any { it.id==initialTaskId }->open(initialTaskId);db.dayItems.any {it.id==initialTaskId&&it.type==DayItemTypeV11.NOTE}-> {notesTab=true;noteId=initialTaskId;noteEditor=true};else->missing=true} }
         if(initialAction!=null) onHandled()
     }
     fun changed(next: V11Database, message: String) {
@@ -128,20 +139,40 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         items(group,key={it.id}) {task ->
                             TaskCardV11(task,onToggleComplete={
                                 val complete=task.status!=TaskStatusV11.COMPLETED;val now=System.currentTimeMillis()
-                                changed(db.copy(tasks=db.tasks.map {if(it.id==task.id) it.copy(status=if(complete) TaskStatusV11.COMPLETED else TaskStatusV11.TODO,completedAt=if(complete) now else null,updatedAt=now) else it}),neoLiteral("تم تحديث المهمة","Task updated"))
+                                changed(db.copy(tasks=db.tasks.map {if(it.id==task.id) it.withCompletionV11(complete,now) else it}),neoLiteral("تم تحديث المهمة","Task updated"))
                             },onEdit={open(task.id)},onDelete={deleteId=task.id})
                         }
                     }
                 } else {
-                    val notes=db.dayItems.filter {it.type==DayItemTypeV11.NOTE && (it.calendarId==null || db.calendars.any {c -> c.id==it.calendarId && c.visible})}.sortedByDescending {it.date}
-                    if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات","No notes"),neoLabel("أضف ملاحظة ليومك","Add a note for your day"))}
+                    item(key="notes-controls") {
+                        OutlinedTextField(noteSearch,{noteSearch=it},label={Text(neoLabel("بحث في الملاحظات والوسوم","Search notes and tags"))},singleLine=true,modifier=Modifier.fillMaxWidth())
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                            listOf("active" to neoLabel("الملاحظات","Notes"),"archive" to neoLabel("الأرشيف","Archive"),"trash" to neoLabel("المهملات","Trash"),"hidden" to neoLabel("المخفية","Hidden")).forEach { (folder,label) ->
+                                FilterChip(noteFolder==folder,onClick={if(folder=="hidden"&&!hiddenAuthorized) hiddenUnlock=true else noteFolder=folder},label={Text(label)})
+                            }
+                        }
+                        Row {
+                            FilterChip(noteSort=="updated",{noteSort="updated"},label={Text(neoLabel("آخر تعديل","Updated"))})
+                            FilterChip(noteSort=="title",{noteSort="title"},label={Text(neoLabel("العنوان","Title"))})
+                            FilterChip(noteSort=="date",{noteSort="date"},label={Text(neoLabel("التاريخ","Date"))})
+                        }
+                    }
+                    val notes=db.dayItems.filter { note ->
+                        note.type==DayItemTypeV11.NOTE &&
+                        when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
+                        (noteSearch.isBlank() || (!note.notePrivate && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
+                    }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.date};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
+                    if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات مطابقة","No matching notes"),neoLabel("غيّر البحث أو المجلد، أو أضف ملاحظة","Change search or folder, or add a note"))}
                     items(notes,key={it.id}) {note ->
-                        Card(onClick={noteId=note.id;noteEditor=true}) {
-                            Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                                Text(note.title,style=MaterialTheme.typography.titleMedium)
-                                Text(note.date,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                                if(note.details.isNotBlank()) Text(note.details,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
-                                TextButton(onClick={nav.open("ATTACHMENTS",note.id)}) {Text(neoLabel("المرفقات","Attachments"))}
+                        Card(onClick={noteId=note.id;noteEditor=true},colors=CardDefaults.cardColors(containerColor=if(!note.notePrivate&&note.noteBackground!=null) runCatching {androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(note.noteBackground))}.getOrDefault(MaterialTheme.colorScheme.surface) else MaterialTheme.colorScheme.surface)) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                                if(note.notePrivate) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium)
+                                else {
+                                    Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium)
+                                    Text(note.date,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if(note.details.isNotBlank()) Text(note.details,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+                                    if(note.noteTags.isNotBlank()) Text(note.noteTags,style=MaterialTheme.typography.labelSmall)
+                                }
                             }
                         }
                     }
@@ -158,6 +189,12 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         FloatingActionButton(onClick={if(notesTab) {noteId=null;noteEditor=true} else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
         }
+    }
+    if(hiddenUnlock) androidx.compose.ui.window.Dialog(onDismissRequest={hiddenUnlock=false},properties=androidx.compose.ui.window.DialogProperties(securePolicy=androidx.compose.ui.window.SecureFlagPolicy.SecureOn)) {
+        val security=remember {V11SecurityStore(context.applicationContext)}
+        val settings=security.load()
+        if(settings.mode==V11LockMode.NONE&&!settings.biometricEnabled) Surface {Text(neoLabel("أعد إعداد المصادقة من الإعدادات لفتح الملاحظات المحمية","Configure authentication in Settings to open protected notes"),Modifier.padding(20.dp))}
+        else V11AccountsUnlockScreen(settings,security) {hiddenAuthorized=true;hiddenUnlock=false;noteFolder="hidden"}
     }
     if (noteEditor) {
         val existing = db.dayItems.firstOrNull { it.id == noteId }

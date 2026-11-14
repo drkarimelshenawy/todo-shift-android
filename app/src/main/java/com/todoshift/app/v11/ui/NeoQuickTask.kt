@@ -40,6 +40,11 @@ fun TaskEditorDialogV11(
     externalQuick: Boolean,
     onSave: (TaskV11) -> Unit,
 ) {
+    NeoTaskEditorGate(onDismiss) {TaskEditorContentV11(existing,db,workplaces,onDismiss,externalQuick,onSave)}
+}
+
+@Composable
+private fun TaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces:List<Workplace>,onDismiss:()->Unit,externalQuick:Boolean,onSave:(TaskV11)->Unit) {
     if(!externalQuick) {
         FullTaskEditorDialogV11(existing,db,workplaces,onDismiss,onSave)
         return
@@ -74,6 +79,7 @@ fun TaskEditorDialogV11(
     }
     val leave = rememberNeoEditorExit(listOf(title, date), onDismiss)
     AlertDialog(
+        properties=neoTaskDialogProperties(),
         onDismissRequest = { leave() },
         title = { Text(neoLabel("مهمة جديدة", "New task")) },
         text = {

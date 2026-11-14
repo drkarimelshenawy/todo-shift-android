@@ -294,14 +294,7 @@ fun V11TasksScreen(
 
                             val completed = task.status != TaskStatusV11.COMPLETED
 
-                            val updatedTask =
-                                task.copy(
-                                    status =
-                                        if (completed) TaskStatusV11.COMPLETED
-                                        else TaskStatusV11.TODO,
-                                    completedAt = if (completed) now else null,
-                                    updatedAt = now,
-                                )
+                            val updatedTask = task.withCompletionV11(completed,now)
 
                             onDatabaseChange(
                                 db.copy(
@@ -662,6 +655,11 @@ fun FullTaskEditorDialogV11(
     onDismiss: () -> Unit,
     onSave: (TaskV11) -> Unit,
 ) {
+    NeoTaskEditorGate(onDismiss) {FullTaskEditorContentV11(existing,db,workplaces,onDismiss,onSave)}
+}
+
+@Composable
+private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces:List<Workplace>,onDismiss:()->Unit,onSave:(TaskV11)->Unit) {
     val write = LocalNeoEditorWriteState.current
     val editorContext = LocalContext.current
     val navigator = LocalNeoFeatures.current
@@ -756,6 +754,7 @@ fun FullTaskEditorDialogV11(
 
     CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.platform.LocalLayoutDirection.current) {
     AlertDialog(
+        properties=neoTaskDialogProperties(),
         onDismissRequest = { leaveEditor() },
         title = {
             Text(
@@ -773,6 +772,16 @@ fun FullTaskEditorDialogV11(
             ) {
                 write.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (write.showProgress) Text(neoLabel("جارٍ الحفظ", "Saving"))
+                existing?.let { task ->
+                    Text(neoLabel("أُنشئت: ","Created: ")+java.time.Instant.ofEpochMilli(task.createdAt).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),style=MaterialTheme.typography.labelSmall)
+                    if(task.completionHistory.isNotEmpty()) {
+                        var history by remember { mutableStateOf(false) }
+                        TextButton(onClick={history=!history}) { Text(neoLabel("سجل الإكمال وإعادة الفتح","Completion / reopening history")) }
+                        if(history) task.completionHistory.forEach { event ->
+                            Text((if(event.completed) neoLabel("✓ اكتملت ","✓ Completed ") else neoLabel("↶ أُعيد فتحها ","↶ Reopened "))+java.time.Instant.ofEpochMilli(event.at).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),style=MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
                 OutlinedTextField(
                     enabled = !write.pending && !submitted,
                     value = title,
@@ -1162,6 +1171,8 @@ fun FullTaskEditorDialogV11(
                             createdAt = existing?.createdAt ?: now,
                             updatedAt = now,
                             completedAt = existing?.completedAt,
+                            linkedNoteId = existing?.linkedNoteId,
+                            completionHistory = existing?.completionHistory ?: emptyList(),
                         )
                     )
                 },

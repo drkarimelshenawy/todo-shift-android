@@ -82,7 +82,8 @@ def run():
     # Arabic layout on a small screen; capture actual native rendering.
     shell('am','force-stop',APP)
     appearance_path='/data/user/0/'+APP+'/shared_prefs/todo_shift_neo3_appearance.xml'
-    appearance_root=ET.fromstring(adb('exec-out','cat',appearance_path))
+    appearance_exists= subprocess.run(['adb','shell','test','-f',appearance_path],capture_output=True).returncode==0
+    appearance_root=ET.fromstring(adb('exec-out','cat',appearance_path)) if appearance_exists else ET.Element('map')
     appearance_node=next((n for n in appearance_root if n.get('name')=='neo4Appearance'),None)
     if appearance_node is None:appearance_node=ET.SubElement(appearance_root,'string',{'name':'neo4Appearance'})
     appearance=json.loads(appearance_node.text or '{}');appearance.update(language='ARABIC',uiDirection='RTL')

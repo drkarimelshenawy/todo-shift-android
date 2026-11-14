@@ -64,7 +64,7 @@ internal class NoteContentCipher(private val sectionProtected:()->Boolean = {fal
     }
     private fun sealRecord(record:JSONObject, fields:List<String>,kind:String) {
         val content=JSONObject()
-        fields.forEach {content.put(it,record.optString(it));record.put(it,"")}
+        fields.forEach {if(record.has(it)) {content.put(it,record.get(it));record.put(it,"")}}
         record.put("sealedContentV45",seal(content.toString(),"$kind:${record.getString("id")}"))
     }
     fun decode(raw:String):String {

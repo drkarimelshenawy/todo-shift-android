@@ -11,6 +11,19 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class NoteTransactionTest {
+    @Test fun protectedLegacyRecordWithoutOptionalMetadataMigratesWithoutChangingItsFields() {
+        val context=RuntimeEnvironment.getApplication();val base=V11Runtime(context).start()
+        val storage=V11Storage(context)
+        val record=DayItemV11("legacy-protected","2026-11-14",type=DayItemTypeV11.NOTE,title="Legacy secret",details="Retain me",noteLocked=true)
+        val raw=org.json.JSONObject(storage.exportJson(base.copy(dayItems=listOf(record))))
+        raw.getJSONArray("dayItems").getJSONObject(0).remove("noteTags")
+        context.getSharedPreferences("todo_shift_v11",android.content.Context.MODE_PRIVATE).edit().putString("database",raw.toString()).commit()
+        assertEquals(record,V11Runtime(context).start().dayItems.single())
+        val persisted=context.getSharedPreferences("todo_shift_v11",android.content.Context.MODE_PRIVATE).getString("database",null)!!
+        assertFalse(persisted.contains("Legacy secret"))
+        assertFalse(persisted.contains("Retain me"))
+    }
+
     @Test fun linkingAndUnlinkingExistingTaskRetainsBothRecords() {
         val context=RuntimeEnvironment.getApplication()
         val base=V11Runtime(context).start()

@@ -866,6 +866,8 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
                     )
                 }
 
+                if(reminderEnabled) NeoItemReminderRecurrenceControls(draftId)
+
                 TextButton(enabled=!write.pending && !submitted,onClick={expanded=!expanded}) { Text(neoLiteral("خيارات إضافية", "More options")) }
                 if(expanded) {
                 OutlinedTextField(

@@ -139,6 +139,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             expectedDatabase.tasks.filter {it.linkedNoteId==id}.forEach {task->Text(neoLabel("مهمة مرتبطة: ","Linked task: ")+task.title,style=MaterialTheme.typography.labelMedium)}
             if(options) {
                 OutlinedTextField(reminder,{reminder=it},label={Text(neoLabel("تذكير اختياري: 2026-11-14T18:30","Optional reminder: 2026-11-14T18:30"))})
+                if(reminder.isNotBlank()) NeoItemReminderRecurrenceControls(id)
                 OutlinedTextField(tags,{tags=it},label={Text(neoLabel("وسوم مفصولة بفواصل","Tags, comma separated"))})
                 NeoSwitch(neoLabel("تثبيت","Pin"),pinned){pinned=it}
                 NeoSwitch(neoLabel("أرشفة","Archive"),archived){archived=it}

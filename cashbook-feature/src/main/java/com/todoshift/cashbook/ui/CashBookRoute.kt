@@ -53,11 +53,11 @@ private val Outgoing = Color(0xFFF45151)
 /** A module route, with the screenshot's ledger layout; no separate Activity or launcher. */
 @androidx.compose.runtime.NonSkippableComposable
 @Composable
-fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStart: DayOfWeek = DayOfWeek.SATURDAY, hostLocale: java.util.Locale? = null) {
+fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStart: DayOfWeek = DayOfWeek.SATURDAY, hostLocale: java.util.Locale? = null, salaryContent: (@Composable () -> Unit)? = null) {
     val language by CashBookText.language.collectAsStateWithLifecycle()
     CashBookText.hostLocale(hostLocale ?: LocalContext.current.resources.configuration.locales[0])
     CashBookCompactTheme { CompositionLocalProvider(LocalCashBookVM provides vm, LocalLayoutDirection provides LayoutDirection.Ltr) { Box(modifier.fillMaxSize()){
-        CashBookContent(vm,Modifier.fillMaxSize(),weekStart,language)
+        CashBookContent(vm,Modifier.fillMaxSize(),weekStart,language,salaryContent)
         val undo by vm.undo.collectAsStateWithLifecycle()
         val operation by vm.state.collectAsStateWithLifecycle()
         LaunchedEffect(undo){if(undo!=null){kotlinx.coroutines.delay(8000);vm.clearUndo()}}
@@ -67,22 +67,25 @@ fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStar
 
 @androidx.compose.runtime.NonSkippableComposable
 @Composable
-private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart: DayOfWeek,language:String) {
+private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart: DayOfWeek,language:String,salaryContent: (@Composable () -> Unit)?) {
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.message) { if (state.message != null) { kotlinx.coroutines.delay(2800); vm.clearMessage() } }
     val snapshot = state.snapshot
     val allAccounts = snapshot?.accounts.orEmpty()
-    val accounts = allAccounts.filter { !it.archived }
+    val debtIds = snapshot?.debts?.map { it.accountId }?.toSet().orEmpty()
+    val accounts = allAccounts.filter { !it.archived && it.id !in debtIds }
+    val selectableAccounts = allAccounts.filter { !it.archived }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
-    val active = selected?.takeIf { id -> accounts.any { it.id == id } } ?: accounts.firstOrNull()?.id
-    val activeAccount = accounts.find { it.id == active }
+    var mainSection by rememberSaveable { mutableStateOf("accounts") }
+    val active = selected?.takeIf { id -> selectableAccounts.any { it.id == id } && (mainSection == "debts" || it !in debtIds) }
+        ?: (if (mainSection == "debts") selectableAccounts.firstOrNull { it.id in debtIds }?.id else accounts.firstOrNull()?.id)
+    val activeAccount = selectableAccounts.find { it.id == active }
     val activeDebt=snapshot?.debts?.find{it.accountId==active}
     val navigation by vm.navigation.collectAsStateWithLifecycle()
     val inLabel = activeAccount?.let{displayLabels(it.incomingLabel,it.outgoingLabel).first} ?: tr(R.string.cb_001)
     val outLabel = activeAccount?.let{displayLabels(it.incomingLabel,it.outgoingLabel).second} ?: tr(R.string.cb_002)
     val defaults = snapshot?.defaults ?: Ledger.ButtonLabels(tr(R.string.cb_001), tr(R.string.cb_002))
     var page by rememberSaveable { mutableStateOf("movement") }
-    var mainSection by rememberSaveable { mutableStateOf("accounts") }
     var debtDetail by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(navigation){navigation?.let{selected=it;page="movement";mainSection="debts";debtDetail=true;vm.navigationHandled()}}
     var dataMenu by remember { mutableStateOf(false) }
@@ -146,7 +149,8 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                 }
             }
             if (mainSection == "salary") {
-                WorkEntitlementsEmpty(Modifier.weight(1f))
+                if (salaryContent != null) Box(Modifier.weight(1f).fillMaxWidth()) { salaryContent() }
+                else WorkEntitlementsEmpty(Modifier.weight(1f))
             } else if (mainSection == "debts" && !debtDetail) {
                 Column(Modifier.weight(1f).fillMaxWidth().padding(12.dp)) {
                     Text(tr(R.string.cb_section_debts), style = MaterialTheme.typography.titleLarge)
@@ -260,7 +264,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
         }
     }
     if (accountMenu) AccountsDialog(allAccounts, active, archivedMenu, defaults, state.busy, state.error, { accountMenu = false },
-        { selected = it; page = "movement"; accountMenu = false },
+        { selected = it; mainSection = if (it in debtIds) "debts" else "accounts"; debtDetail = it in debtIds; page = "movement"; accountMenu = false },
         { accountMenu = false; addAccount = true },
         { id, name, plus, minus, icon, done -> vm.customizeAccount(id, name, plus, minus, icon, done) }, { ids -> selected = active; vm.reorderAccounts(ids) })
     if(dataMenu) AlertDialog(onDismissRequest={dataMenu=false},title={Text(tr(R.string.cb_013))},text={Column {

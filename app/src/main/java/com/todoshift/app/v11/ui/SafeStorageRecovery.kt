@@ -47,14 +47,16 @@ fun SafeStorageRecovery(onDismiss: () -> Unit, onRecovered: () -> Unit) {
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) pendingUri = uri
     }
-    LaunchedEffect(pendingUri, unlocked, busy) {
+    LaunchedEffect(pendingUri, unlocked) {
         val uri = pendingUri
         if (uri != null && unlocked && !busy) {
             pendingUri = null
             busy = true
-            try { prepared = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { backup.preview(it) } ?: error("Cannot open backup") } }
-            catch (failure: Exception) { if (failure is BackupPasswordRequired) encryptedInput = failure.envelope; message = failure.message ?: "Backup could not be validated" }
-            finally { busy = false }
+            scope.launch {
+                try { prepared = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { backup.preview(it) } ?: error("Cannot open backup") } }
+                catch (failure: Exception) { if (failure is BackupPasswordRequired) encryptedInput = failure.envelope; message = failure.message ?: "Backup could not be validated" }
+                finally { busy = false }
+            }
         }
     }
     Dialog(onDismissRequest = { if (!busy) onDismiss() }, properties = DialogProperties(securePolicy = androidx.compose.ui.window.SecureFlagPolicy.SecureOn, usePlatformDefaultWidth = false, dismissOnBackPress = !busy, dismissOnClickOutside = false)) {

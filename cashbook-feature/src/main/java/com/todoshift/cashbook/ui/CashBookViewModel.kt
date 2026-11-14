@@ -37,14 +37,14 @@ class CashBookViewModel @JvmOverloads constructor(app: Application, private val 
                 var reminderFailed=false
                 val snapshot = withContext(Dispatchers.IO) {
                     synchronized(Ledger::class.java) {
-                    ledger.load()
-                    action()
-                    ledger.snapshot().also { snapshot ->
-                        try { reminderHost.sync(snapshot) } catch(e:Exception) {
-                            if(e is kotlinx.coroutines.CancellationException)throw e
-                            reminderFailed=true
+                        ledger.load()
+                        action()
+                        ledger.snapshot().also { snapshot ->
+                            try { reminderHost.sync(snapshot) } catch(e:Exception) {
+                                if(e is kotlinx.coroutines.CancellationException)throw e
+                                reminderFailed=true
+                            }
                         }
-                    }
                     }
                 }
                 mutable.value = State(snapshot, message = if(reminderFailed) tr(R.string.cb_079) else message)

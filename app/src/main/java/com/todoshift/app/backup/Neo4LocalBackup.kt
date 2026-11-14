@@ -420,6 +420,11 @@ class Neo4LocalBackup(context: Context) :
             val oldDatabase =
                 if (recovery) (currentRead as? com.todoshift.app.storage.StorageRead.Loaded)?.data
                 else currentRead.requireLoaded()
+            if (oldDatabase != null) {
+                com.todoshift.app.integration.SalaryCashSync.validateTransition(
+                    oldDatabase, validateDatabase(parsed.sections.getValue("data/v11.json"))
+                )
+            }
             if (recovery && parsed.preview.legacyJson) legacy.load()
             val targets = linkedMapOf<String, JSONObject>()
             targets["todo_shift_v11"] =

@@ -315,7 +315,10 @@ public final class Ledger {
                 return found.id;
             }
             ready();
-            if(account(current,accountId).archived)throw new IllegalArgumentException("Archived salary account");
+            Account destination=account(current,accountId);
+            if(destination.archived || !destination.currency.equals("EGP") ||
+                current.debts.stream().anyMatch(d->d.accountId.equals(accountId)))
+                throw new IllegalArgumentException("Select an active EGP money account for salary");
             String id=UUID.randomUUID().toString();
             List<Entry> list=new ArrayList<>(current.entries);
             list.add(new Entry(id,Kind.INCOME,accountId,"",minor,marker,date,"",false,Collections.emptyList(),Collections.emptyList()));

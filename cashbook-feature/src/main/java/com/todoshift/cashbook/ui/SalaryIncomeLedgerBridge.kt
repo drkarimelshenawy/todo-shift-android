@@ -19,8 +19,10 @@ class SalaryIncomeLedgerBridge(context: Context) {
 
     @Throws(IOException::class)
     fun accounts(): List<EligibleAccount> = synchronized(Ledger::class.java) {
-        ledger.load().accounts
-            .filter { !it.archived && it.currency == "EGP" }
+        val snapshot = ledger.load()
+        val debtIds = snapshot.debts.map { it.accountId }.toSet()
+        snapshot.accounts
+            .filter { !it.archived && it.currency == "EGP" && it.id !in debtIds }
             .map { EligibleAccount(it.id, it.name, it.currency) }
     }
 

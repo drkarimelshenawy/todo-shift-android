@@ -790,145 +790,7 @@ internal fun V11EditPaymentDialog(
     onDismiss: () -> Unit,
     onSave: (PaymentV11) -> Unit,
 ) {
-    if (true) {
-        NeoPaymentForm(
-            db,
-            java.time.YearMonth.parse(payment.accrualMonth),
-            payment,
-            onDismiss,
-            onSave,
-        )
-        return
-    }
-
-    var amount by rememberSaveable(payment.id) { mutableStateOf(payment.amount.toString()) }
-
-    var date by rememberSaveable(payment.id) { mutableStateOf(payment.receivedDate) }
-
-    var note by rememberSaveable(payment.id) { mutableStateOf(payment.note) }
-
-    var sourceId by rememberSaveable(payment.id) { mutableStateOf(payment.sourceId) }
-
-    var methodId by rememberSaveable(payment.id) { mutableStateOf(payment.paymentMethodId) }
-
-    val amountInput = MoneyInput.parse(amount)
-    val dateValid = runCatching { LocalDate.parse(date) }.isSuccess
-    val leave = rememberNeoEditorExit(listOf(amount, date, note, sourceId, methodId), onDismiss)
-    AlertDialog(
-        onDismissRequest = leave,
-        title = { Text(neoLiteral("تعديل المبلغ المستلم", "Edit received payment")) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(
-                    value = amount,
-                    isError = amount.isNotBlank() && !amountInput.positive,
-                    keyboardOptions =
-                        androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
-                        ),
-                    supportingText = {
-                        if (amount.isNotBlank() && !amountInput.positive)
-                            Text(
-                                neoLiteral(
-                                    "أدخل مبلغًا موجبًا صحيحًا",
-                                    "Enter a valid positive amount",
-                                )
-                            )
-                    },
-                    onValueChange = { amount = it },
-                    label = { Text(neoLiteral("المبلغ", "Amount")) },
-                    singleLine = true,
-                )
-
-                OutlinedTextField(
-                    value = date,
-                    isError = date.isNotBlank() && !dateValid,
-                    supportingText = { if (!dateValid) Text("YYYY-MM-DD") },
-                    onValueChange = { date = it },
-                    label = { Text(neoLiteral("تاريخ الاستلام", "Received date")) },
-                    singleLine = true,
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(neoLiteral("مصدر الدخل", "Income source"), fontWeight = FontWeight.Bold)
-
-                db.incomeSources
-                    .filter { it.active || it.id == sourceId }
-                    .sortedBy { it.order }
-                    .forEach { source ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = sourceId == source.id,
-                                onClick = neoWriteAction { sourceId = source.id },
-                            )
-                            Text(source.name)
-                        }
-                    }
-
-                Text(neoLiteral("طريقة الدفع", "Payment method"), fontWeight = FontWeight.Bold)
-
-                db.paymentMethods
-                    .filter { it.active || it.id == methodId }
-                    .sortedBy { it.order }
-                    .forEach { method ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = methodId == method.id,
-                                onClick = neoWriteAction { methodId = method.id },
-                            )
-                            Text(method.name)
-                        }
-                    }
-
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text(neoLiteral("ملاحظة", "Note")) },
-                )
-
-                if (payment.allocations.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        neoLiteral(
-                            "سيتم الحفاظ على توزيع الدفعة الحالي.",
-                            "The existing payment allocation will be preserved.",
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            leave.SaveButton(
-                onClick =
-                    neoWriteAction {
-                        val newAmount = amountInput.amount ?: return@neoWriteAction
-
-                        val oldAmount = payment.amount
-
-                        val newAllocations =
-                            ModernOperations.resizedAllocations(payment.allocations, newAmount)
-
-                        onSave(
-                            payment.copy(
-                                amount = newAmount,
-                                receivedDate = date,
-                                sourceId = sourceId,
-                                paymentMethodId = methodId,
-                                note = note,
-                                allocations = newAllocations,
-                            )
-                        )
-                    },
-                enabled = amountInput.positive && dateValid,
-            ) {
-                Text(neoLiteral("حفظ التعديل", "Save change"))
-            }
-        },
-        dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
-    )
+    NeoPaymentForm(db, YearMonth.parse(payment.accrualMonth), payment, onDismiss, onSave)
 }
 
 @Composable
@@ -1129,150 +991,25 @@ internal fun V11PaymentDialog(
     onDismiss: () -> Unit,
     onSave: (V11Database) -> Unit,
 ) {
-    if (true) {
-        NeoPaymentForm(db, month, null, onDismiss) { payment ->
-            check(db.payments.none { it.id == payment.id }) {
-                "This payment request was already saved. Review the stored record before opening a new entry."
-            }
-            onSave(
-                db.copy(
-                    payments = db.payments + payment,
-                    auditLog =
-                        db.auditLog +
-                            AuditEntryV11(
-                                java.util.UUID.randomUUID().toString(),
-                                "PAYMENT_ADD",
-                                "payment",
-                                payment.id,
-                                "Received payment added",
-                            ),
-                )
-            )
+    NeoPaymentForm(db, month, null, onDismiss) { payment ->
+        check(db.payments.none { it.id == payment.id }) {
+            "This payment request was already saved. Review the stored record before opening a new entry."
         }
-        return
-    }
-
-    val recordId = rememberSaveable { java.util.UUID.randomUUID().toString() }
-    var amount by rememberSaveable { mutableStateOf("") }
-
-    var date by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
-
-    var note by rememberSaveable { mutableStateOf("") }
-
-    var sourceId by rememberSaveable {
-        mutableStateOf(db.incomeSources.firstOrNull { it.active }?.id)
-    }
-
-    var methodId by rememberSaveable {
-        mutableStateOf(db.paymentMethods.firstOrNull { it.active }?.id)
-    }
-
-    val amountInput = MoneyInput.parse(amount)
-    val dateValid = runCatching { LocalDate.parse(date) }.isSuccess
-    val leave = rememberNeoEditorExit(listOf(amount, date, note, sourceId, methodId), onDismiss)
-    AlertDialog(
-        onDismissRequest = leave,
-        title = { Text(neoLiteral("تسجيل مبلغ مستلم", "Record received payment")) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(
-                    value = amount,
-                    isError = amount.isNotBlank() && !amountInput.positive,
-                    keyboardOptions =
-                        androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+        onSave(
+            db.copy(
+                payments = db.payments + payment,
+                auditLog =
+                    db.auditLog +
+                        AuditEntryV11(
+                            java.util.UUID.randomUUID().toString(),
+                            "PAYMENT_ADD",
+                            "payment",
+                            payment.id,
+                            "Received payment added",
                         ),
-                    supportingText = {
-                        if (amount.isNotBlank() && !amountInput.positive)
-                            Text(
-                                neoLiteral(
-                                    "أدخل مبلغًا موجبًا صحيحًا",
-                                    "Enter a valid positive amount",
-                                )
-                            )
-                    },
-                    onValueChange = { amount = it },
-                    label = { Text(neoLiteral("المبلغ", "Amount")) },
-                    singleLine = true,
-                )
-
-                OutlinedTextField(
-                    value = date,
-                    isError = date.isNotBlank() && !dateValid,
-                    supportingText = { if (!dateValid) Text("YYYY-MM-DD") },
-                    onValueChange = { date = it },
-                    label = { Text(neoLiteral("تاريخ الاستلام", "Received date")) },
-                    singleLine = true,
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(neoLiteral("مصدر الدخل", "Income source"), fontWeight = FontWeight.Bold)
-
-                db.incomeSources
-                    .filter { it.active }
-                    .sortedBy { it.order }
-                    .forEach { source ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = sourceId == source.id,
-                                onClick = neoWriteAction { sourceId = source.id },
-                            )
-
-                            Text(source.name)
-                        }
-                    }
-
-                Text(neoLiteral("طريقة الدفع", "Payment method"), fontWeight = FontWeight.Bold)
-
-                db.paymentMethods
-                    .filter { it.active }
-                    .sortedBy { it.order }
-                    .forEach { method ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = methodId == method.id,
-                                onClick = neoWriteAction { methodId = method.id },
-                            )
-
-                            Text(method.name)
-                        }
-                    }
-
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text(neoLiteral("ملاحظة", "Note")) },
-                )
-            }
-        },
-        confirmButton = {
-            leave.SaveButton(
-                enabled = amountInput.positive && dateValid,
-                onClick =
-                    neoWriteAction {
-                        if (!amountInput.positive || !dateValid) return@neoWriteAction
-                        val value = amountInput.amount ?: return@neoWriteAction
-
-                        onSave(
-                            V11AccountsController.addPayment(
-                                db = db,
-                                amount = value,
-                                receivedDate = date,
-                                accrualMonth = month.toString(),
-                                sourceId = sourceId,
-                                paymentMethodId = methodId,
-                                note = note,
-                                recordId = recordId,
-                            )
-                        )
-                    },
-            ) {
-                Text(neoLiteral("حفظ", "Save"))
-            }
-        },
-        dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
-    )
+            )
+        )
+    }
 }
 
 @Composable

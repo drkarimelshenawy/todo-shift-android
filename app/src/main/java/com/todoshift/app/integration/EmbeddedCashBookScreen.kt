@@ -12,8 +12,8 @@ import java.time.DayOfWeek
  * Embedded Cash Book destination for the host navigation graph.
  * Keeps the feature's ViewModel scoped to the host ViewModelStoreOwner.
  *
- * This is intentionally NOT wired into the bottom navigation yet: the
- * host must first define an explicit destination and privacy/deep-link policy.
+ * Wired to the Cash Book tab. Salary posting remains disabled until the
+ * two-store transaction and backup/recovery contracts are implemented.
  */
 @Composable
 fun EmbeddedCashBookScreen(

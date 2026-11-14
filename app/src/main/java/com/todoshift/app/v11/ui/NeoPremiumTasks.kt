@@ -80,8 +80,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         val ids=db.calendars.filter { it.visible }.map { it.id }.toSet()
         db.tasks.filter { it.calendarId==null || it.calendarId in ids }
     }
-    val tasks=remember(visible,period,status,search,priority,calendar,options,date) {
-        NeoTaskQueries.select(visible,date,period,status,search,priority,calendar,options)
+    val tasks=remember(visible,db.dayItems,period,status,search,priority,calendar,options,date) {
+        NeoTaskQueries.select(visible.filter {search.isBlank() || !it.linkedNotePrivateV11(db)},date,period,status,search,priority,calendar,options)
     }
     fun open(id: String?=null) { editingId=id;editor=true }
     LaunchedEffect(initialAction,initialTaskId) {
@@ -137,7 +137,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     (if(options.sort==NeoTaskSort.MANUAL) linkedMapOf("" to tasks) else tasks.groupBy {it.date}).forEach { (day,group) ->
                         item(key="heading-$day") {Text((if(day.isEmpty()) neoLabel("ترتيب يدوي","Manual order") else if(day==date) neoLabel("مهام اليوم","Today") else day)+" · "+group.size,Modifier.padding(top=8.dp),style=MaterialTheme.typography.titleMedium)}
                         items(group,key={it.id}) {task ->
-                            TaskCardV11(task,onToggleComplete={
+                            TaskCardV11(task,privateSource=task.linkedNotePrivateV11(db),onToggleComplete={
                                 val complete=task.status!=TaskStatusV11.COMPLETED;val now=System.currentTimeMillis()
                                 changed(db.copy(tasks=db.tasks.map {if(it.id==task.id) it.withCompletionV11(complete,now) else it}),neoLiteral("تم تحديث المهمة","Task updated"))
                             },onEdit={open(task.id)},onDelete={deleteId=task.id})

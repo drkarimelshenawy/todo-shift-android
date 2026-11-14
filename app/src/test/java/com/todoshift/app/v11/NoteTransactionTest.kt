@@ -12,6 +12,19 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28])
 class NoteTransactionTest {
     @Test
+    fun linkedChecklistTasksInheritOnlyTheirSourceNotesPrivacy() {
+        val note=DayItemV11("private-source", "2026-11-14", type=DayItemTypeV11.NOTE,title="Secret",noteLocked=true)
+        val linked=TaskV11("linked", "Secret checklist",date=note.date,linkedNoteId=note.id)
+        val unrelated=TaskV11("ordinary", "Ordinary",date=note.date)
+        val db=V11Database(dayItems=listOf(note),tasks=listOf(linked,unrelated))
+        assertTrue(linked.linkedNotePrivateV11(db))
+        assertFalse(unrelated.linkedNotePrivateV11(db))
+        assertTrue(ModernOperations.search(db,"Secret",false).isEmpty())
+        assertFalse(linked.linkedNotePrivateV11(db.copy(dayItems=listOf(note.copy(noteLocked=false)))))
+        assertTrue(linked.linkedNotePrivateV11(db.copy(dayItems=emptyList())))
+    }
+
+    @Test
     fun richNoteMetadataAndChecklistTaskCommitTogetherWithoutRetryDuplication() {
         val c = RuntimeEnvironment.getApplication()
         val before = V11Runtime(c).start()

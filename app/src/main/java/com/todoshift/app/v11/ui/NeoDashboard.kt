@@ -58,18 +58,20 @@ fun NeoDashboard(
     val today = now.toLocalDate().toString()
     val pendingTasks =
         db.tasks.filter {
+            !it.linkedNotePrivateV11(db) &&
             it.status != TaskStatusV11.COMPLETED &&
                 (it.calendarId == null || it.calendarId in visibleIds)
         }
     val completed =
         db.tasks.count {
+            !it.linkedNotePrivateV11(db) &&
             it.status == TaskStatusV11.COMPLETED &&
                 (it.calendarId == null || it.calendarId in visibleIds)
         }
     val events =
         db.dayItems
             .filter {
-                !it.completed &&
+                !it.completed && !it.notePrivate && it.noteVisible &&
                     it.date >= today &&
                     (it.calendarId == null || it.calendarId in visibleIds)
             }

@@ -14,11 +14,11 @@ private val LocalTaskEditorAuthorized=staticCompositionLocalOf {false}
 
 /** All task editor entry paths share the same persistent section policy. */
 @Composable
-internal fun NeoTaskEditorGate(onDismiss:()->Unit, content:@Composable ()->Unit) {
+internal fun NeoTaskEditorGate(onDismiss:()->Unit, sourceProtected:Boolean=false, content:@Composable ()->Unit) {
     val context=LocalContext.current
     val security=remember {V11SecurityStore(context.applicationContext)}
     val settings=security.load()
-    val required=settings.protectTasks||settings.protectApplication
+    val required=settings.protectTasks||settings.protectApplication||sourceProtected
     val inherited=LocalTaskEditorAuthorized.current
     var authorized by remember {mutableStateOf(!required||inherited)}
     val state=rememberSaveableStateHolder()
@@ -36,7 +36,7 @@ internal fun NeoTaskEditorGate(onDismiss:()->Unit, content:@Composable ()->Unit)
 }
 
 @Composable
-internal fun neoTaskDialogProperties():DialogProperties {
+internal fun neoTaskDialogProperties(sourceProtected:Boolean=false):DialogProperties {
     val security=V11SecurityStore(LocalContext.current.applicationContext).load()
-    return DialogProperties(securePolicy=if(security.protectTasks||security.protectApplication) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)
+    return DialogProperties(securePolicy=if(security.protectTasks||security.protectApplication||sourceProtected) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)
 }

@@ -137,10 +137,10 @@ fun V11TasksScreen(
         }
 
     val filteredTasks =
-        remember(visibleTasks, filter, today, searchQuery, priorityFilter, categoryFilter, neo) {
+        remember(visibleTasks, db.dayItems, filter, today, searchQuery, priorityFilter, categoryFilter, neo) {
             visibleTasks
                 .filter { task ->
-                    (!neo ||
+                    (searchQuery.isBlank() || !task.linkedNotePrivateV11(db)) && (!neo ||
                         ((searchQuery.isBlank() ||
                             task.title.contains(searchQuery, ignoreCase = true) ||
                             task.details.contains(searchQuery, ignoreCase = true)) &&
@@ -289,6 +289,7 @@ fun V11TasksScreen(
                 items(items = filteredTasks, key = { it.id }) { task ->
                     TaskCardV11(
                         task = task,
+                        privateSource = task.linkedNotePrivateV11(db),
                         onToggleComplete = {
                             val now = System.currentTimeMillis()
 
@@ -491,7 +492,12 @@ internal fun TaskCardV11(
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    privateSource: Boolean = false,
 ) {
+    if(privateSource) {
+        Card(onClick=onEdit,modifier=Modifier.fillMaxWidth()) {Text(neoLabel("🔒 مهمة مرتبطة بملاحظة محمية","🔒 Task linked to a protected note"),Modifier.padding(16.dp))}
+        return
+    }
     val navigator = LocalNeoFeatures.current
     val contentDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
     val completed = task.status == TaskStatusV11.COMPLETED
@@ -655,7 +661,7 @@ fun FullTaskEditorDialogV11(
     onDismiss: () -> Unit,
     onSave: (TaskV11) -> Unit,
 ) {
-    NeoTaskEditorGate(onDismiss) {FullTaskEditorContentV11(existing,db,workplaces,onDismiss,onSave)}
+    NeoTaskEditorGate(onDismiss,existing?.linkedNotePrivateV11(db)==true) {FullTaskEditorContentV11(existing,db,workplaces,onDismiss,onSave)}
 }
 
 @Composable
@@ -754,7 +760,7 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
 
     CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.platform.LocalLayoutDirection.current) {
     AlertDialog(
-        properties=neoTaskDialogProperties(),
+        properties=neoTaskDialogProperties(existing?.linkedNotePrivateV11(db)==true),
         onDismissRequest = { leaveEditor() },
         title = {
             Text(

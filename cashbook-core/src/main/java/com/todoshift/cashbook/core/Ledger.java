@@ -318,7 +318,7 @@ public final class Ledger {
             if(account(current,accountId).archived)throw new IllegalArgumentException("Archived salary account");
             String id=UUID.randomUUID().toString();
             List<Entry> list=new ArrayList<>(current.entries);
-            list.add(new Entry(id,Kind.INCOME,accountId,"",minor,marker,date,"",false));
+            list.add(new Entry(id,Kind.INCOME,accountId,"",minor,marker,date,"",false,Collections.emptyList(),Collections.emptyList()));
             commit(new Snapshot(current.accounts,list,current.defaults,current.preferences,current.debts));
             return id;
         }

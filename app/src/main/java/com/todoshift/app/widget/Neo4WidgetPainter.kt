@@ -17,7 +17,8 @@ object Neo4WidgetPainter {
                 val style =
                     (if (appearance.showShiftPaint) appearance.shiftPaints[segment.kind] else null)
                         ?: NeoShiftPaint()
-                val first =
+                val own=workplaceColors["${segment.workplaceId}|${segment.kind.name}"]
+                val first = own ?:
                     if (style.mode == NeoPaintMode.INHERIT)
                         workplaceColors[segment.workplaceId] ?: Color.rgb(139, 186, 203)
                     else color(style.first)
@@ -28,7 +29,7 @@ object Neo4WidgetPainter {
                         NeoGradientStrength.STRONG -> 1f
                     }
                 val second =
-                    if (style.mode == NeoPaintMode.GRADIENT)
+                    if (own==null && style.mode == NeoPaintMode.GRADIENT)
                         blend(first, color(style.second), factor)
                     else first
                 val end =

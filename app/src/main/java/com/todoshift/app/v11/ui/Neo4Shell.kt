@@ -69,7 +69,7 @@ fun Neo4CompactHeader(
                     androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
             if (p.showBrand) {
                 Icon(Icons.Rounded.CalendarMonth, null,
-                    Modifier.size(if (constrained) 24.dp else 30.dp), tint = NeoPremium.Gold)
+                    Modifier.size(if (constrained) 24.dp else 30.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
             }
             Column(Modifier.weight(1f)) {
@@ -77,18 +77,18 @@ fun Neo4CompactHeader(
                     buildAnnotatedString {
                         if (p.showBrand && onBack == null) {
                             withStyle(SpanStyle(color = MaterialTheme.colorScheme.onPrimaryContainer)) { append("ToDo ") }
-                            withStyle(SpanStyle(color = NeoPremium.Gold)) { append("Shift") }
+                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) { append("Shift") }
                         } else append(title)
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = NeoPremium.Gold,
+                    color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
             if (calendar) {
-                IconButton(onClick = onManage, modifier = Modifier.border(1.dp, Color(0xFF507DA6), CircleShape)) {
+                IconButton(onClick = onManage, modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)) {
                     Icon(
                         Icons.Rounded.CalendarMonth,
                         neoLabel("إدارة التقاويم", "Manage calendars"),
@@ -96,7 +96,7 @@ fun Neo4CompactHeader(
                 }
             }
             if (overview)
-                IconButton(onClick = onOverview, modifier = Modifier.border(1.dp, Color(0xFF507DA6), CircleShape)) {
+                IconButton(onClick = onOverview, modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)) {
                     Icon(Icons.Rounded.Search, neoLabel("بحث", "Search"))
                 }
             if (destination.isNotEmpty() && destination !in listOf("Settings", "Tasks"))

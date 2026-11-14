@@ -254,14 +254,14 @@ private fun V11WorkplaceEditor(
     onDismiss: () -> Unit,
     onSave: (Workplace,Double?,String) -> Unit,
 ) {
-    val source=database?.incomeSources?.firstOrNull {it.workplaceId==initial?.id}
+    val source=initial?.let {place->database?.incomeSources?.firstOrNull {it.workplaceId==place.id}}
     var monthly by rememberSaveable(initial?.id) {mutableStateOf(source?.fixedMonthlyAmount!=null)}
     var salary by rememberSaveable(initial?.id) {mutableStateOf(source?.fixedMonthlyAmount?.toString() ?: "")}
     var effective by rememberSaveable(initial?.id) {mutableStateOf(java.time.LocalDate.now().toString())}
     var periodsOpen by rememberSaveable {mutableStateOf(false)}
-    var enabledKinds by remember {mutableStateOf(initial?.enabledShiftKinds ?: ShiftKind.entries.map {it.name}.toSet())}
-    var names by remember {mutableStateOf(initial?.shiftNames ?: emptyMap())}
-    var colors by remember {mutableStateOf(initial?.shiftColors ?: emptyMap())}
+    var enabledKinds by rememberSaveable(initial?.id) {mutableStateOf(initial?.enabledShiftKinds ?: ShiftKind.entries.map {it.name}.toSet())}
+    var names by rememberSaveable(initial?.id) {mutableStateOf(initial?.shiftNames ?: emptyMap())}
+    var colors by rememberSaveable(initial?.id) {mutableStateOf(initial?.shiftColors ?: emptyMap())}
     var kindsOpen by rememberSaveable {mutableStateOf(false)}
     var editError by remember {mutableStateOf<String?>(null)}
     val recordId = rememberSaveable(initial?.id) { initial?.id ?: UUID.randomUUID().toString() }
@@ -274,23 +274,23 @@ private fun V11WorkplaceEditor(
 
     var fullDay by
         rememberSaveable(initial?.id) {
-            mutableStateOf(initial?.fullDayRate?.editableMoney() ?: "")
+            mutableStateOf(initial?.fullDayRate?.editableMoney() ?: "0")
         }
 
     var longRate by
-        rememberSaveable(initial?.id) { mutableStateOf(initial?.longRate?.editableMoney() ?: "") }
+        rememberSaveable(initial?.id) { mutableStateOf(initial?.longRate?.editableMoney() ?: "0") }
 
     var night by
-        rememberSaveable(initial?.id) { mutableStateOf(initial?.nightRate?.editableMoney() ?: "") }
+        rememberSaveable(initial?.id) { mutableStateOf(initial?.nightRate?.editableMoney() ?: "0") }
 
     var morning by
         rememberSaveable(initial?.id) {
-            mutableStateOf(initial?.morningRate?.editableMoney() ?: "")
+            mutableStateOf(initial?.morningRate?.editableMoney() ?: "0")
         }
 
     var evening by
         rememberSaveable(initial?.id) {
-            mutableStateOf(initial?.eveningRate?.editableMoney() ?: "")
+            mutableStateOf(initial?.eveningRate?.editableMoney() ?: "0")
         }
 
     val leave =
@@ -359,14 +359,14 @@ private fun V11WorkplaceEditor(
 
                 if(database!=null) {
                     NeoChoice(neoLabel("طريقة احتساب المستحقات","Compensation model"),listOf(false,true),monthly,{if(it) neoLabel("راتب شهري ثابت","Fixed monthly salary") else neoLabel("بالوردية","Per shift")},{monthly=it})
-                    if(monthly) RateField(neoLabel("الراتب الشهري","Monthly salary"),value=salary,onValueChange={salary=it})
+                    if(monthly) {RateField(neoLabel("الراتب الشهري","Monthly salary"),value=salary,onValueChange={salary=it});Text(neoLabel("يسري الراتب من أول شهر التاريخ المختار؛ لا يُضرب في عدد الورديات","Salary applies from the first of the selected month; it is never multiplied by shift count"),style=MaterialTheme.typography.labelSmall)}
                     NeoDateInput(neoLabel("سريان التغيير؛ الفترات السابقة محفوظة","Effective date; previous periods retained"),effective){effective=it}
                     TextButton(onClick={periodsOpen=!periodsOpen}) {Text(if(monthly) neoLabel("فترات الرواتب","Salary periods") else neoLabel("فترات الأسعار","Rate periods"))}
                     if(periodsOpen) {
                         source?.compensationHistory?.sortedByDescending {it.effectiveMonth}?.forEach {Text("${it.effectiveMonth} • "+if(it.shiftBased) neoLabel("بالوردية","Per shift") else it.amount.toString())}
                         database.rates.filter {it.workplaceId==initial?.id}.groupBy {it.effectiveFrom}.toSortedMap(reverseOrder()).forEach {(date,periods)->
                             Text(date,style=MaterialTheme.typography.titleSmall)
-                            Text(periods.joinToString(" • "){neoShiftLabel(it.shiftKind)+": "+it.amount})
+                            Text(periods.map {neoShiftLabel(it.shiftKind)+": "+it.amount}.joinToString(" • "))
                             TextButton(onClick={fullDay=(periods.firstOrNull {it.shiftKind==ShiftKind.FULL_DAY}?.amount ?: fullDay.toMoneyOrNull() ?: 0.0).toString();longRate=(periods.firstOrNull {it.shiftKind==ShiftKind.LONG}?.amount ?: longRate.toMoneyOrNull() ?: 0.0).toString();night=(periods.firstOrNull {it.shiftKind==ShiftKind.NIGHT}?.amount ?: night.toMoneyOrNull() ?: 0.0).toString();morning=(periods.firstOrNull {it.shiftKind==ShiftKind.MORNING}?.amount ?: morning.toMoneyOrNull() ?: 0.0).toString();evening=(periods.firstOrNull {it.shiftKind==ShiftKind.EVENING}?.amount ?: evening.toMoneyOrNull() ?: 0.0).toString()}) {Text(neoLabel("نسخ أسعار الفترة","Copy period rates"))}
                         }
                     }
@@ -380,6 +380,7 @@ private fun V11WorkplaceEditor(
                     }
                 }
                 editError?.let {Text(it,color=MaterialTheme.colorScheme.error)}
+                if(!monthly) Column {
                 RateField(
                     enabled = true,
                     label = neoLiteral("24 ساعة", "24 hours"),
@@ -414,6 +415,7 @@ private fun V11WorkplaceEditor(
                     value = evening,
                     onValueChange = { evening = it },
                 )
+                }
             }
         },
         confirmButton = {

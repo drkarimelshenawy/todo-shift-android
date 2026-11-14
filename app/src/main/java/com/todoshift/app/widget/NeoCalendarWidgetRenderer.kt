@@ -51,7 +51,7 @@ object NeoCalendarWidgetRenderer {
         views.removeAllViews(R.id.widget_grid)
         if(!hidden && db!=null) {
             val places=AppStorage(context).load().workplaces
-            val colors=places.associate { it.id to runCatching { Color.parseColor(it.colorHex) }.getOrDefault(Color.GRAY) }
+            val colors=places.associate { it.id to runCatching { Color.parseColor(it.colorHex) }.getOrDefault(Color.GRAY) } + places.flatMap {p->p.shiftColors.map {(kind,hex)-> "${p.id}|$kind" to runCatching {Color.parseColor(hex)}.getOrDefault(Color.GRAY)}}.toMap()
             val dates=NeoMonthGrid.dates(month,p.firstWeekday);val rows=dates.size/7
             val gridHeight=(height-80).coerceAtLeast(rows*22);val cellHeight=gridHeight/rows
             views.setImageViewBitmap(R.id.widget_month_paint,Neo4WidgetPainter.monthGrid(db,colors,p,month,rtl,skin.accent,(width*2).coerceIn(280,640),(gridHeight*2).coerceIn(200,900)))
@@ -68,7 +68,7 @@ object NeoCalendarWidgetRenderer {
                         db.dayItems.filter { it.date==date.toString() && !com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && it.type==DayItemTypeV11.NOTE && it.noteCalendarLinked && it.noteVisible && !it.notePrivate && (it.calendarId==null || it.calendarId in visible) }.map { it.title }).filter { it.isNotBlank() }.joinToString(" • ")
                     val ink=segments.firstOrNull()?.let { segment ->
                         val custom=p.shiftPaints[segment.kind]?.takeIf { p.showShiftPaint && it.mode!=NeoPaintMode.INHERIT }?.first
-                        val background=custom?.let { runCatching { Color.parseColor(it) }.getOrNull() } ?: colors[segment.workplaceId]
+                        val background=colors["${segment.workplaceId}|${segment.kind.name}"] ?: custom?.let { runCatching { Color.parseColor(it) }.getOrNull() } ?: colors[segment.workplaceId]
                         background?.let { if(Color.luminance(it)>.179) Color.BLACK else Color.WHITE }
                     } ?: skin.text
                     val text=if(YearMonth.from(date)==month) ink else (ink and 0xffffff) or (95 shl 24)

@@ -38,7 +38,7 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
         try {
             db = V11Runtime(context).start()
             val workplaces = AppStorage(context).load().workplaces
-            colors = workplaces.associate { it.id to runCatching { Color.parseColor(it.colorHex) }.getOrDefault(Color.GRAY) }
+            colors = workplaces.associate { it.id to runCatching { Color.parseColor(it.colorHex) }.getOrDefault(Color.GRAY) } + workplaces.flatMap {p->p.shiftColors.map {(kind,hex)-> "${p.id}|$kind" to runCatching {Color.parseColor(hex)}.getOrDefault(Color.GRAY)}}.toMap()
             names = workplaces.associate { it.id to it.name }
             val settings = Neo4WidgetSettings(context,widgetId)
             skin = settings.skin(Neo4WidgetKind.CALENDAR)
@@ -84,7 +84,7 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
         val note = if(currentOptions.hideContent || neoWidgetProtected(context,calendar=true)) "" else notes[date.toString()].orEmpty().joinToString(" • ")
         val ink = segments.firstOrNull()?.let {
             val paint = appearance.shiftPaints[it.kind]?.takeIf { s -> appearance.showShiftPaint && s.mode != NeoPaintMode.INHERIT }
-            val background = paint?.first?.let { hex -> runCatching { Color.parseColor(hex) }.getOrNull() } ?: colors[it.workplaceId]
+            val background = colors["${it.workplaceId}|${it.kind.name}"] ?: paint?.first?.let { hex -> runCatching { Color.parseColor(hex) }.getOrNull() } ?: colors[it.workplaceId]
             background?.let { color -> if(Color.luminance(color)>.179) Color.BLACK else Color.WHITE }
         } ?: skin.text
         fun faded(color: Int) = if(muted) (color and 0x00ffffff) or (85 shl 24) else color

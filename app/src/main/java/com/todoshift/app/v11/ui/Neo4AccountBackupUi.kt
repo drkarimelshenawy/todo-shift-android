@@ -54,6 +54,7 @@ fun Neo4AccountBackupPage(
     var restoreMode by remember { mutableStateOf(RestoreMode.MERGE) }
     var inspection by remember { mutableStateOf<RestoreInspection?>(null) }
     var inspectionError by remember { mutableStateOf<String?>(null) }
+    var inspectionLimit by remember(inspection) {mutableIntStateOf(200)}
     var backupAuthorized by remember(security) { mutableStateOf(security.mode == V11LockMode.NONE && !security.biometricEnabled) }
     val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(owner, security) {
@@ -341,8 +342,9 @@ fun Neo4AccountBackupPage(
                     )
                     inspection?.let { plan ->
                         if(plan.details.isNotEmpty()) {
-                            Text(neoLabel("تفاصيل الفحص (أول ٢٠٠ سجل من ${plan.details.size})","Inspection details (first 200 of ${plan.details.size} records)"),style=MaterialTheme.typography.titleSmall)
-                            plan.details.take(200).forEach {Text(it,style=MaterialTheme.typography.labelSmall)}
+                            Text(neoLabel("تفاصيل الفحص (${minOf(inspectionLimit,plan.details.size)} سجل من ${plan.details.size})","Inspection details (${minOf(inspectionLimit,plan.details.size)} of ${plan.details.size} records)"),style=MaterialTheme.typography.titleSmall)
+                            plan.details.take(inspectionLimit).forEach {Text(it,style=MaterialTheme.typography.labelSmall)}
+                            if(inspectionLimit<plan.details.size) TextButton(onClick={inspectionLimit+=200}) {Text(neoLabel("عرض المزيد من السجلات","Show more records"))}
                         }
                         Text(neoLabel("إضافات: ${plan.additions} • متطابق: ${plan.duplicates} • تعارضات: ${plan.conflicts} • استبدال: ${plan.replacements} • تبعيات مشتركة: ${plan.dependencies}", "Additions: ${plan.additions} • duplicates: ${plan.duplicates} • conflicts: ${plan.conflicts} • replacements: ${plan.replacements} • shared dependencies: ${plan.dependencies}"))
                         if (BackupSection.CASHBOOK in restoreScope) Text(neoLabel("حسابات: ${plan.cashAccounts} • قيود: ${plan.cashTransactions} • مديونيات: ${plan.cashDebts}", "Accounts: ${plan.cashAccounts} • transactions: ${plan.cashTransactions} • debts: ${plan.cashDebts}"))

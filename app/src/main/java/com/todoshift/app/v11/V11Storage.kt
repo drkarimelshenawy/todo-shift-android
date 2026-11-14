@@ -7,8 +7,8 @@ import com.todoshift.app.data.AppData
 import org.json.JSONArray
 import org.json.JSONObject
 
-class V11Storage internal constructor(private val prefs: SharedPreferences) {
-    constructor(context: Context) : this(context.getSharedPreferences("todo_shift_v11", Context.MODE_PRIVATE))
+class V11Storage internal constructor(private val prefs: SharedPreferences, private val contentCipher: NoteContentCipher? = null) {
+    constructor(context: Context) : this(context.getSharedPreferences("todo_shift_v11", Context.MODE_PRIVATE), NoteContentCipher())
 
     companion object {
         private const val KEY_DATABASE = "database"
@@ -33,7 +33,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
         FinancialDataValidation.validate(migrated)
         val raw = toJson(migrated).toString()
         fromJson(JSONObject(raw))
-        check(prefs.edit().putString(KEY_DATABASE, raw).putBoolean(KEY_MIGRATED, true).commit()) {
+        check(prefs.edit().putString(KEY_DATABASE, contentCipher?.encode(raw) ?: raw).putBoolean(KEY_MIGRATED, true).commit()) {
             "Unable to persist migrated database"
         }
         return migrated
@@ -52,14 +52,24 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
         FinancialDataValidation.validate(db)
         val raw = toJson(db).toString()
         fromJson(JSONObject(raw))
-        check(prefs.edit().putString(KEY_DATABASE, raw).commit()) { "Unable to persist database" }
+        check(prefs.edit().putString(KEY_DATABASE, contentCipher?.encode(raw) ?: raw).commit()) { "Unable to persist database" }
     }
 
     fun read(): StorageRead<V11Database> = try {
         if (!prefs.contains(KEY_DATABASE)) StorageRead.Missing
-        else StorageRead.Loaded(fromJson(JSONObject(requireNotNull(prefs.getString(KEY_DATABASE, null)))))
+        else StorageRead.Loaded(fromJson(JSONObject(requireNotNull(prefs.getString(KEY_DATABASE, null)).let {contentCipher?.decode(it) ?: it})))
     } catch (failure: Exception) {
         StorageRead.Failed(failure)
+    }
+
+    internal fun protectLegacyNotes(db:V11Database) {
+        if(contentCipher==null || db.dayItems.none {it.noteLocked}) return
+        val raw=prefs.getString(KEY_DATABASE,null) ?: return
+        if(!raw.contains("sealedContentV45")) {
+            val protected=contentCipher.encode(raw)
+            check(contentCipher.decode(protected)==JSONObject(raw).toString()) {"Protected migration verification failed"}
+            check(prefs.edit().putString(KEY_DATABASE,protected).commit()) {"Unable to protect stored notes"}
+        }
     }
 
     fun load(): V11Database = read().requireLoaded()

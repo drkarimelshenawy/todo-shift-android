@@ -34,6 +34,10 @@ class NoteTransactionTest {
         val first=store.saveNote(before, NeoSmartStore(c).snapshot().toString(), note, "#00A4B8", false, linkedTasks=listOf(task))
         assertEquals(note, V11Runtime(c).start().dayItems.first {it.id==note.id})
         assertEquals(task, first.tasks.first {it.id==task.id})
+        val persisted=c.getSharedPreferences("todo_shift_v11",android.content.Context.MODE_PRIVATE).getString("database",null)!!
+        assertTrue(persisted.contains("sealedContentV45"))
+        assertFalse(persisted.contains("**عربي**"))
+        assertFalse(persisted.contains("Checklist"))
         val second=store.saveNote(first, NeoSmartStore(c).snapshot().toString(), note, "#00A4B8", false, linkedTasks=listOf(task))
         assertEquals(1, second.tasks.count {it.id==task.id})
         assertEquals(first, second)

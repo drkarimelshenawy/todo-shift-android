@@ -148,7 +148,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         OutlinedTextField(noteSearch,{noteSearch=it},label={Text(neoLabel("بحث في الملاحظات والوسوم","Search notes and tags"))},singleLine=true,modifier=Modifier.fillMaxWidth())
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                             listOf("active" to neoLabel("الملاحظات","Notes"),"archive" to neoLabel("الأرشيف","Archive"),"trash" to neoLabel("المهملات","Trash"),"hidden" to neoLabel("المخفية","Hidden")).forEach { (folder,label) ->
-                                FilterChip(noteFolder==folder,onClick={if(folder=="hidden"&&!hiddenAuthorized) hiddenUnlock=true else noteFolder=folder},label={Text(label)})
+                                FilterChip(noteFolder==folder,onClick={if(folder=="hidden") hiddenAuthorized=true;noteFolder=folder},label={Text(label)})
                             }
                         }
                         Row {
@@ -170,9 +170,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             Column(Modifier.fillMaxWidth().padding(12.dp)) {
                                 if(note.notePrivate) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium)
                                 else {
-                                    Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium)
+                                    Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {note.details.lineSequence().firstOrNull {it.isNotBlank()}?.take(100) ?: neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium)
                                     Text(note.date,style=MaterialTheme.typography.bodySmall,color=contentColor.copy(alpha=0.75f))
-                                    if(note.details.isNotBlank()) Text(note.details,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+                                    if(note.details.isNotBlank()) Text(noteDisplayText(note.details),maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
                                     if(note.noteTags.isNotBlank()) Text(note.noteTags,style=MaterialTheme.typography.labelSmall)
                                 }
                             }
@@ -200,9 +200,11 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     if (noteEditor) {
         val existing = db.dayItems.firstOrNull { it.id == noteId }
+        CompositionLocalProvider(LocalNeoOpenNoteTask provides {taskId -> noteEditor=false;noteId=null;open(taskId)}) {
         NeoDayNoteDialog(existing?.date?.let { java.time.LocalDate.parse(it) } ?: today, existing,
             expectedDatabase = db, calendarId = existing?.calendarId ?: db.calendars.firstOrNull { it.visible }?.id,
             onDismiss = { noteEditor = false; noteId = null }) { noteEditor = false; noteId = null }
+        }
     }
     if(filters) AlertDialog(onDismissRequest={filters=false},title={Text(neoLiteral("فلاتر وعرض المهام","Task filters and view"))},text={
         Column(Modifier.heightIn(max=420.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {

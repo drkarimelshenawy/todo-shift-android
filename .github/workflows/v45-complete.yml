@@ -1,0 +1,107 @@
+name: v45 Cash Book signed APK
+
+on:
+  push:
+    branches: [feat/v45-complete-specification]
+    paths:
+      - 'cashbook-core/**'
+      - 'cashbook-feature/**'
+      - 'app/**'
+      - 'scripts/check_v44_cashbook_integration.py'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - '.github/workflows/v45-complete.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v45-cashbook-signed
+  cancel-in-progress: false
+
+jobs:
+  signed-apk:
+    if: github.ref == 'refs/heads/feat/v45-complete-specification'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Pin source branch
+        run: git checkout -B feat/v45-complete-specification "$GITHUB_SHA"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify integration structure
+        run: python3 scripts/check_v44_cashbook_integration.py
+      - name: Restore persistent signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Verify financial idempotency and build signed APK
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          gradle --no-daemon -I tools/premium_qa.init.gradle :cashbook-core:check :app:testDebugUnitTest \
+            --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest' \
+            --tests 'com.todoshift.app.v11.SalaryReceiptOperationsTest' \
+            --tests 'com.todoshift.app.v11.FixedSalaryIntegrityTest' \
+            --tests 'com.todoshift.app.v11.NeoRatePolicyTest' \
+            --tests 'com.todoshift.app.v11.FinanceCalendarFilterTest' \
+            --tests 'com.todoshift.app.v11.NeoCalendarPresentationTest' \
+            --tests 'com.todoshift.app.v11.ReminderDeliveryPolicyTest' \
+            --tests 'com.todoshift.app.v11.ModernSafetyTest' \
+            --tests 'com.todoshift.app.v11.ReminderPublicVersionTest' \
+            --tests 'com.todoshift.app.v11.CompletedTaskWidgetTest' \
+            --tests 'com.todoshift.app.v11.WidgetPresentationSafetyTest' \
+            --tests 'com.todoshift.app.v11.SecurityAttemptLimitTest' \
+            --tests 'com.todoshift.app.v11.NoteTransactionTest' \
+            --tests 'com.todoshift.app.backup.EncryptedBackupTest' \
+            --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
+            --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \
+            --tests 'com.todoshift.app.backup.MigrationTransactionTest' \
+            --tests 'com.todoshift.app.backup.BackupRecoveryTest' \
+            --tests 'com.todoshift.app.storage.SafePersistenceTest' \
+            :app:assembleRelease --stacktrace
+      - name: Verify APK signature and identity
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/release/app-release.apk \
+            --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
+            --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
+            --expected-sha "$GITHUB_SHA" \
+            --expected-branch feat/v45-complete-specification --require-release \
+            --output delivery/identity
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v45-CashBook.apk
+          (cd delivery && sha256sum *.apk > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ToDoShift-v45-signed-APK
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v45-cashbook-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v45-CashBook.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 Cash Book" --notes "Signed release-variant APK; physical-device acceptance pending. Source: $GITHUB_SHA. Cash Book receipt integration with durable idempotent posting."
+      - name: Remove private signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

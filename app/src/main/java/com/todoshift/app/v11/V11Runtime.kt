@@ -24,7 +24,7 @@ class V11Runtime internal constructor(
             recover()
 
             when (val result = storage.read()) {
-                is StorageRead.Loaded -> return@synchronized result.data
+                is StorageRead.Loaded -> {storage.protectLegacyNotes(result.data);return@synchronized result.data}
                 is StorageRead.Failed -> throw IllegalStateException("V11 load failed; no initialization allowed", result.cause)
                 StorageRead.Missing -> check(!storage.wasMigrated()) {
                     "Previously migrated V11 database is missing; refusing to recreate it"

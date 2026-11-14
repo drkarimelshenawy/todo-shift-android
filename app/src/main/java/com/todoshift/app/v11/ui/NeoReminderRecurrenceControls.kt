@@ -1,6 +1,11 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.material3.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.todoshift.app.v11.*
@@ -31,6 +36,7 @@ fun NeoItemReminderRecurrenceControls(id:String) {
     val scope=rememberCoroutineScope()
     val rules=remember {ReminderPolicy(context.applicationContext)}
     var kind by remember(id) {mutableStateOf(rules.rule(id).first)}
+    var weekdays by remember(id) { mutableStateOf(rules.weekdays(id)) }
     var days by remember(id) {mutableStateOf(rules.rule(id).second.toString())}
     var error by remember(id) {mutableStateOf<String?>(null)}
     var saved by remember(id) {mutableStateOf(false)}
@@ -40,6 +46,11 @@ fun NeoItemReminderRecurrenceControls(id:String) {
         "DAILY"->neoLiteral("يومي","Daily");"WEEKLY"->neoLiteral("أسبوعي","Weekly");"MONTHLY"->neoLiteral("شهري","Monthly")
         "YEARLY"->neoLiteral("سنوي","Yearly");"CUSTOM"->neoLiteral("كل عدد من الأيام","Custom interval in days");else->neoLiteral("مرة واحدة","One time")
     }},{kind=it;saved=false})
+    if(kind=="WEEKLY") Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+        java.time.DayOfWeek.entries.forEach { day ->
+            FilterChip(selected=day.value in weekdays,onClick={weekdays=if(day.value in weekdays) weekdays-day.value else weekdays+day.value;saved=false},label={Text(day.getDisplayName(java.time.format.TextStyle.SHORT,java.util.Locale.getDefault()))})
+        }
+    }
     if(kind=="CUSTOM") OutlinedTextField(days,{days=it.filter(Char::isDigit).take(4);saved=false},label={Text(neoLabel("عدد الأيام","Days"))},singleLine=true)
     TextButton(enabled=!saving,onClick={
         val interval=if(kind=="CUSTOM") days.toIntOrNull() else 1
@@ -49,7 +60,7 @@ fun NeoItemReminderRecurrenceControls(id:String) {
             scope.launch {
                 try {
                     withContext(Dispatchers.IO) {
-                        rules.configure(id,kind,interval)
+                        rules.configure(id,kind,interval,weekdays)
                         ToDoShiftReminder.cancel(context,id)
                         val current=V11Runtime(context.applicationContext).start()
                         current.tasks.firstOrNull {it.id==id}?.let {ToDoShiftReminder.schedule(context,it)}

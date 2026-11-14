@@ -13,22 +13,36 @@ class ReminderPolicy(context:Context) {
         val snoozes=config.optJSONObject("reminderSnoozes") ?: JSONObject()
         snoozes.put(id,at);config.put("reminderSnoozes",snoozes)
     }}
-    fun configure(id:String,kind:String,days:Int=1) {
-        require(kind in kinds && days in 1..3660)
+    fun configure(id:String,kind:String,days:Int=1,weekdays:Set<Int> = emptySet()) {
+        require(kind in kinds && days in 1..3660 && weekdays.all { it in 1..7 })
         store.update {config ->
             val rules=config.optJSONObject("reminderRecurrence") ?: JSONObject()
-            rules.put(id,JSONObject().put("kind",kind).put("days",days));config.put("reminderRecurrence",rules)
+            rules.put(id,JSONObject().put("kind",kind).put("days",days).put("weekdays",org.json.JSONArray(weekdays.sorted())));config.put("reminderRecurrence",rules)
         }
     }
     fun rule(id:String):Pair<String,Int> = store.snapshot().optJSONObject("reminderRecurrence")?.optJSONObject(id)
         ?.let {it.optString("kind","NONE") to it.optInt("days",1)} ?: ("NONE" to 1)
 
+    fun weekdays(id:String):Set<Int> = store.snapshot().optJSONObject("reminderRecurrence")?.optJSONObject(id)?.optJSONArray("weekdays")?.let { a -> (0 until a.length()).map { a.getInt(it) }.toSet() } ?: emptySet()
     fun next(id:String,original:Long,fallback:String="NONE",now:Long=System.currentTimeMillis()):Long? {
         val config=store.snapshot()
         val snooze=config.optJSONObject("reminderSnoozes")?.optLong(id,0) ?: 0L
         if(snooze>now) return snooze
         val rule=config.optJSONObject("reminderRecurrence")?.optJSONObject(id)
         val kind=rule?.optString("kind",fallback) ?: fallback
+        val selected=rule?.optJSONArray("weekdays")?.let {a -> (0 until a.length()).map {a.getInt(it)}.toSet()}.orEmpty()
+        if(kind=="WEEKLY" && selected.isNotEmpty()) {
+            val zone=ZoneId.systemDefault()
+            val anchor=Instant.ofEpochMilli(original).atZone(zone)
+            val current=Instant.ofEpochMilli(now).atZone(zone)
+            val start=maxOf(anchor.toLocalDate(),current.toLocalDate())
+            for(offset in 0L..7L) {
+                val day=start.plusDays(offset)
+                val candidate=day.atTime(anchor.toLocalTime()).atZone(zone).toInstant().toEpochMilli()
+                if(day.dayOfWeek.value in selected && candidate>now && candidate>=original) return candidate
+            }
+            return null
+        }
         if(original>now) return original
         if(kind=="NONE") return null
         val zone=ZoneId.systemDefault()

@@ -44,6 +44,18 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
         if (widgetId != null && widgetId >= 0 && !explicit(kind)) save(kind, Neo4WidgetSettings(context).load(kind))
     }
 
+    fun remap(kind: Neo4WidgetKind, oldIds: IntArray, newIds: IntArray) {
+        require(oldIds.size==newIds.size)
+        val editor=prefs.edit()
+        oldIds.indices.forEach { index ->
+            prefs.getString("${kind.name}:${oldIds[index]}",null)?.let { value ->
+                editor.putString("${kind.name}:${newIds[index]}",value)
+                if(oldIds[index]!=newIds[index]) editor.remove("${kind.name}:${oldIds[index]}")
+            }
+        }
+        check(editor.commit())
+    }
+
     fun delete(kind: Neo4WidgetKind) { check(prefs.edit().remove(key(kind)).commit()) }
 
     fun instanceIds(kind: Neo4WidgetKind): List<Int> {

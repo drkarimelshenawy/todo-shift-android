@@ -155,6 +155,11 @@ class ToDoShiftWidget :
         updateOffMain(context, AppWidgetManager.getInstance(context), intArrayOf(widgetId))
     }
 
+    override fun onRestored(context: Context, oldWidgetIds: IntArray, newWidgetIds: IntArray) {
+        Neo4WidgetSettings(context).remap(Neo4WidgetKind.CALENDAR,oldWidgetIds,newWidgetIds)
+        super.onRestored(context,oldWidgetIds,newWidgetIds)
+    }
+
     override fun onDeleted(
         context: Context,
         appWidgetIds: IntArray

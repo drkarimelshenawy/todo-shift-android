@@ -114,6 +114,11 @@ abstract class Neo4SummaryWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onRestored(context: Context, oldWidgetIds: IntArray, newWidgetIds: IntArray) {
+        Neo4WidgetSettings(context).remap(kind,oldWidgetIds,newWidgetIds)
+        super.onRestored(context,oldWidgetIds,newWidgetIds)
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         appWidgetIds.forEach { Neo4WidgetSettings(context,it).delete(kind) }
         super.onDeleted(context,appWidgetIds)

@@ -201,6 +201,11 @@ class TasksWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onRestored(context: Context, oldWidgetIds: IntArray, newWidgetIds: IntArray) {
+        Neo4WidgetSettings(context).remap(Neo4WidgetKind.TASKS,oldWidgetIds,newWidgetIds)
+        super.onRestored(context,oldWidgetIds,newWidgetIds)
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         appWidgetIds.forEach { Neo4WidgetSettings(context,it).delete(Neo4WidgetKind.TASKS) }
         super.onDeleted(context,appWidgetIds)

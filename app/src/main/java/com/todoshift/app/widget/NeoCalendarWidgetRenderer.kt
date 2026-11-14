@@ -43,7 +43,7 @@ object NeoCalendarWidgetRenderer {
             views.setTextViewText(res,if(english) java.time.DayOfWeek.of(day).getDisplayName(TextStyle.SHORT,locale) else ar[day-1]);views.setTextColor(res,skin.text)
         }
         fun pending(intent: Intent, request: Int)=PendingIntent.getActivity(context,request,intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        views.setOnClickPendingIntent(R.id.widget_title,pending(Intent(context,MainActivity::class.java).setData(Uri.parse("todoshift://widget/$id/open")),id))
+        views.setOnClickPendingIntent(R.id.widget_title,pending(Intent(context,MainActivity::class.java).putExtra("neo4_open_tab",0).setData(Uri.parse("todoshift://widget/$id/open")),id))
         listOf(R.id.widget_prev to ToDoShiftWidget.ACTION_PREV,R.id.widget_next to ToDoShiftWidget.ACTION_NEXT).forEach { (res,action) ->
             val intent=Intent(context,ToDoShiftWidget::class.java).setAction(action).setData(Uri.parse("todoshift://widget/$id/$action")).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id)
             views.setOnClickPendingIntent(res,PendingIntent.getBroadcast(context,id,intent,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))

@@ -7,7 +7,7 @@ import java.time.ZoneId
 object NeoNotificationPolicy {
     fun enabled(context: Context, category: String): Boolean {
         val config = NeoSmartStore(context).snapshot()
-        return config.optBoolean("notificationsEnabled", true) && config.optBoolean("notify_$category", category != "shifts")
+        return config.optBoolean("notificationsEnabled", true) && config.optBoolean("notify_$category", if(category=="notes") config.optBoolean("notify_events",true) else category != "shifts")
     }
 
     /** Quiet Hours change delivery presentation, never recognition time or source records. */

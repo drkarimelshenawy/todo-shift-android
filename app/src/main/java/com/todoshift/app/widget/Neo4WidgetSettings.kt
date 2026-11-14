@@ -29,6 +29,7 @@ data class Neo4WidgetOptions(
     val showAmounts: Boolean = false,
     val backgroundOpacity: Float = .85f,
     val showCompleted: Boolean = true,
+    val financeDestination:Int = 2,
 )
 
 class Neo4WidgetSettings(private val context: Context, private val widgetId: Int? = null) {
@@ -93,6 +94,7 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
                     o.optBoolean("showAmounts", false),
                     o.optDouble("backgroundOpacity", if(o.optString("theme", defaultTheme.name) == Neo4WidgetTheme.TRANSPARENT.name) 0.0 else .85).toFloat().let { require(it.isFinite() && it in 0f..1f); it },
                     o.optBoolean("showCompleted", true),
+                    o.optInt("financeDestination",2).takeIf {it==1||it==2} ?: 2,
                 )
             }
             .getOrDefault(Neo4WidgetOptions(hideContent = true))
@@ -113,6 +115,7 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
                             .put("showAmounts", value.showAmounts)
                             .put("backgroundOpacity", value.backgroundOpacity.toDouble())
                             .put("showCompleted", value.showCompleted)
+                            .put("financeDestination",value.financeDestination)
                             .toString(),
                     )
             check(editor.commit()) { "Unable to save widget settings" }

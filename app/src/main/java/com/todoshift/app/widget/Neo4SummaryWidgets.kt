@@ -61,7 +61,7 @@ object Neo4WidgetRefresh {
             R.id.neo4_widget_detail,
         )
         val security = runCatching { V11SecurityStore(context).load() }.getOrNull()
-        val content =
+        var content =
             NeoWidgetContentModel.project(
                 kind,
                 db,
@@ -71,6 +71,12 @@ object Neo4WidgetRefresh {
                 now,
                 en,
             )
+        if(kind==Neo4WidgetKind.FINANCE && options.financeDestination==1) {
+            val title=if(en) "Cash Book" else "كاش بوك"
+            content=if(!options.hideContent && options.showAmounts && security!=null && !security.protectApplication && !security.protectAccounts && !security.protectCashBook && !security.hideAmounts && !Neo4WidgetPrivacy.amountsHidden(context)) {
+                runCatching {val total=com.todoshift.cashbook.ui.SalaryIncomeLedgerBridge(context).totalMoneyBalance();NeoWidgetContent(title,java.text.NumberFormat.getNumberInstance(if(en) java.util.Locale.ENGLISH else java.util.Locale("ar")).format(LocalizedNumbers.amount(total))+" EGP",if(en) "Money account balances" else "أرصدة الحسابات المالية")}.getOrDefault(NeoWidgetContent(title,if(en) "Open app to review" else "افتح التطبيق للمراجعة"))
+            } else NeoWidgetContent(title,"••••••")
+        }
         views.setTextViewText(R.id.neo4_widget_title, content.title)
         views.setTextViewText(R.id.neo4_widget_value, content.value)
         views.setTextViewText(R.id.neo4_widget_detail, content.detail)
@@ -149,7 +155,7 @@ internal fun summaryWidgetEntry(
     date: String,
 ): Intent =
     Intent(context, MainActivity::class.java)
-        .putExtra("neo4_open_tab", if (kind == Neo4WidgetKind.FINANCE) 2 else 0)
+        .putExtra("neo4_open_tab", if (kind == Neo4WidgetKind.FINANCE) Neo4WidgetSettings(context,id).load(kind).financeDestination else 0)
         .apply { if (kind == Neo4WidgetKind.TODAY) putExtra("todo_shift_open_date", date) }
         .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         .setData(android.net.Uri.parse("todoshift://neo4/${kind.name}/$id"))

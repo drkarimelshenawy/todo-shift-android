@@ -57,6 +57,7 @@ fun V11DayDetailsScreen(
     val context = LocalContext.current
     val securityStore = remember(context) { V11SecurityStore(context.applicationContext) }
     val includeTaskContent = !securityStore.load().protectTasks
+    val includeNoteContent = includeTaskContent && !securityStore.load().protectNotes
 
 
     val notificationPermissionLauncher =
@@ -80,7 +81,7 @@ fun V11DayDetailsScreen(
         db.dayItems
             .filter { it.date == date.toString() &&
                 (includeTaskContent || (it.type != DayItemTypeV11.NOTE && it.type != DayItemTypeV11.TASK)) &&
-                (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) }
+                (it.type != DayItemTypeV11.NOTE || (includeNoteContent && it.noteVisible && !it.notePrivate)) }
             .sortedWith(
                 compareByDescending<DayItemV11> { it.title.startsWith("📌") }
                     .thenBy { it.createdAt }

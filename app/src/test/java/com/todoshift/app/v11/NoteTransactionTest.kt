@@ -11,6 +11,22 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class NoteTransactionTest {
+    @Test fun linkingAndUnlinkingExistingTaskRetainsBothRecords() {
+        val context=RuntimeEnvironment.getApplication()
+        val base=V11Runtime(context).start()
+        val note=DayItemV11("link-note","2026-11-14",type=DayItemTypeV11.NOTE,title="Link",details="Preserved")
+        val task=TaskV11("existing-task","Existing",date=note.date)
+        val withTask=base.copy(tasks=base.tasks+task)
+        V11Runtime(context).save(withTask)
+        val backup=Neo4LocalBackup(context)
+        val linked=backup.saveNote(withTask,NeoSmartStore(context).snapshot().toString(),note,"#00A4B8",false,linkedTasks=listOf(task.copy(linkedNoteId=note.id)))
+        assertEquals(1,linked.tasks.count {it.id==task.id})
+        assertEquals(note.id,linked.tasks.single {it.id==task.id}.linkedNoteId)
+        val detached=backup.saveNote(linked,NeoSmartStore(context).snapshot().toString(),note,"#00A4B8",false,detachedTaskIds=setOf(task.id))
+        assertEquals(task,detached.tasks.single {it.id==task.id})
+        assertEquals(note,detached.dayItems.single {it.id==note.id})
+    }
+
     @Test
     fun linkedChecklistTasksInheritOnlyTheirSourceNotesPrivacy() {
         val note=DayItemV11("private-source", "2026-11-14", type=DayItemTypeV11.NOTE,title="Secret",noteLocked=true)

@@ -214,6 +214,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             save(value.copy(hideContent = it))
         }
         if (kind == Neo4WidgetKind.FINANCE) {
+            NeoChoice(neoLabel("الوجهة المالية","Finance destination"),listOf(2,1),value.financeDestination,{if(it==2) neoLabel("المستحقات","Salary") else neoLabel("كاش بوك","Cash Book")},{save(value.copy(financeDestination=it))})
             NeoSwitch(
                 neoLabel("السماح بالمبالغ غير المحمية فقط", "Allow unprotected amounts only"),
                 value.showAmounts,

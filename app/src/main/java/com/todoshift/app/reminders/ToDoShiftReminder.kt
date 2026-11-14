@@ -67,7 +67,7 @@ object ToDoShiftReminder {
         if (
             !com.todoshift.app.v11.NeoNotificationPolicy.enabled(
                 context,
-                if (item.id.startsWith("shift-")) "shifts" else "events",
+                if (item.id.startsWith("shift-")) "shifts" else if(item.type==com.todoshift.app.v11.DayItemTypeV11.NOTE) "notes" else "events",
             )
         )
             return
@@ -326,7 +326,7 @@ class ToDoShiftReminderReceiver : BroadcastReceiver() {
                     val task=db.tasks.firstOrNull {it.id==id}
                     val item=db.dayItems.firstOrNull {it.id==id}
                     val shift=if(id.startsWith("shift-")) com.todoshift.app.v11.neoShiftOccurrences(db).firstOrNull {"shift-${it.segment.id}"==id} else null
-                    val category=if(task!=null) "tasks" else if(shift!=null) "shifts" else "events"
+                    val category=if(task!=null) "tasks" else if(shift!=null) "shifts" else if(item?.type==com.todoshift.app.v11.DayItemTypeV11.NOTE) "notes" else "events"
                     if(!com.todoshift.app.v11.NeoNotificationPolicy.enabled(app,category)) return@runCatching
                     if(task==null && item==null && shift==null) return@runCatching
                     if(task?.status==TaskStatusV11.COMPLETED || item?.completed==true || item?.noteVisible==false || item?.noteTrashed==true) return@runCatching

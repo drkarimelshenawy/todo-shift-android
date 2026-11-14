@@ -23,8 +23,12 @@ internal fun NeoTaskEditorGate(onDismiss:()->Unit, sourceProtected:Boolean=false
     var authorized by remember(required) {mutableStateOf(!required||inherited)}
     val state=rememberSaveableStateHolder()
     val lifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(lifecycle,required) {
-        val observer=androidx.lifecycle.LifecycleEventObserver {_,event->if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP&&required)authorized=false}
+    var backgroundAt by remember {mutableLongStateOf(0L)}
+    DisposableEffect(lifecycle,required,settings.autoLockMinutes) {
+        val observer=androidx.lifecycle.LifecycleEventObserver {_,event ->
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP) {backgroundAt=System.currentTimeMillis();if(required&&settings.autoLockMinutes==0) authorized=false}
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_START && required && backgroundAt>0 && System.currentTimeMillis()-backgroundAt>=settings.autoLockMinutes*60000L) authorized=false
+        }
         lifecycle.addObserver(observer);onDispose {lifecycle.removeObserver(observer)}
     }
     if(!authorized) {

@@ -3,6 +3,8 @@ package com.todoshift.app.integration
 import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.todoshift.cashbook.ui.CashBookRoute
@@ -25,6 +27,10 @@ fun EmbeddedCashBookScreen(
         factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app)
     )
     LaunchedEffect(vm) { vm.reload() }
+    val ledgerState by vm.state.collectAsState()
+    LaunchedEffect(ledgerState.busy,ledgerState.message) {
+        if(!ledgerState.busy && ledgerState.error==null) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {com.todoshift.app.widget.Neo4WidgetRefresh.schedule(app)}
+    }
     val appearance = com.todoshift.app.v11.ui.LocalNeoAppearance.current
     val hostLocale = when (appearance.language) {
         com.todoshift.app.v11.NeoLanguage.ARABIC -> java.util.Locale("ar")

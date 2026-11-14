@@ -8,7 +8,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class V11Storage internal constructor(private val prefs: SharedPreferences, private val contentCipher: NoteContentCipher? = null) {
-    constructor(context: Context) : this(context.getSharedPreferences("todo_shift_v11", Context.MODE_PRIVATE), NoteContentCipher())
+    constructor(context: Context) : this(context.getSharedPreferences("todo_shift_v11", Context.MODE_PRIVATE), NoteContentCipher {V11SecurityStore(context).load().let {it.protectNotes||it.protectTasks||it.protectApplication}})
 
     companion object {
         private const val KEY_DATABASE = "database"
@@ -63,11 +63,12 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
     }
 
     internal fun protectLegacyNotes(db:V11Database) {
-        if(contentCipher==null || db.dayItems.none {it.noteLocked}) return
+        if(contentCipher==null) return
         val raw=prefs.getString(KEY_DATABASE,null) ?: return
-        if(!raw.contains("sealedContentV45")) {
-            val protected=contentCipher.encode(raw)
-            check(contentCipher.decode(protected)==JSONObject(raw).toString()) {"Protected migration verification failed"}
+        if(contentCipher.needsProtection(raw)) {
+            val decoded=contentCipher.decode(raw)
+            val protected=contentCipher.encode(decoded)
+            check(contentCipher.decode(protected)==JSONObject(decoded).toString()) {"Protected migration verification failed"}
             check(prefs.edit().putString(KEY_DATABASE,protected).commit()) {"Unable to protect stored notes"}
         }
     }

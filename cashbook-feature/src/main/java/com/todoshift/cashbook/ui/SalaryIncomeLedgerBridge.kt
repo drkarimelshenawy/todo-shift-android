@@ -18,6 +18,13 @@ class SalaryIncomeLedgerBridge(context: Context) {
     data class EligibleAccount(val id: String, val name: String, val currency: String)
 
     @Throws(IOException::class)
+    fun totalMoneyBalance():Long = synchronized(Ledger::class.java) {
+        val snapshot=ledger.load()
+        val debtIds=snapshot.debts.map {it.accountId}.toSet()
+        snapshot.accounts.filter {it.id !in debtIds && it.currency=="EGP"}.fold(0L) {total,account->Math.addExact(total,snapshot.balance(account.id))}
+    }
+
+    @Throws(IOException::class)
     fun accounts(): List<EligibleAccount> = synchronized(Ledger::class.java) {
         val snapshot = ledger.load()
         val debtIds = snapshot.debts.map { it.accountId }.toSet()

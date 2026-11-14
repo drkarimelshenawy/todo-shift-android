@@ -661,7 +661,7 @@ fun FullTaskEditorDialogV11(
     onDismiss: () -> Unit,
     onSave: (TaskV11) -> Unit,
 ) {
-    NeoTaskEditorGate(onDismiss,existing?.linkedNotePrivateV11(db)==true) {FullTaskEditorContentV11(existing,db,workplaces,onDismiss,onSave)}
+    NeoTaskEditorGate(onDismiss,(existing?.linkedNotePrivateV11(db)==true || (existing?.linkedNoteId!=null && V11SecurityStore(LocalContext.current.applicationContext).load().protectNotes))) {FullTaskEditorContentV11(existing,db,workplaces,onDismiss,onSave)}
 }
 
 @Composable
@@ -760,7 +760,7 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
 
     CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.platform.LocalLayoutDirection.current) {
     AlertDialog(
-        properties=neoTaskDialogProperties(existing?.linkedNotePrivateV11(db)==true),
+        properties=neoTaskDialogProperties((existing?.linkedNotePrivateV11(db)==true || (existing?.linkedNoteId!=null && V11SecurityStore(LocalContext.current.applicationContext).load().protectNotes))),
         onDismissRequest = { leaveEditor() },
         title = {
             Text(

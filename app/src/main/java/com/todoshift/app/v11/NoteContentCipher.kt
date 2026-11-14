@@ -11,7 +11,7 @@ import javax.crypto.spec.GCMParameterSpec
 import org.json.JSONObject
 
 /** Device-only authenticated encryption. Portable exports use the backup password envelope. */
-internal class NoteContentCipher {
+internal class NoteContentCipher(private val sectionProtected:()->Boolean = {false}) {
     companion object {
         private const val ALIAS = "todoshift-note-content-v45"
         internal var keyProvider: () -> SecretKey = {
@@ -44,7 +44,7 @@ internal class NoteContentCipher {
         val notes=root.optJSONArray("dayItems")
         if(notes!=null) for(i in 0 until notes.length()) {
             val note=notes.getJSONObject(i)
-            if(note.optBoolean("noteLocked")) {
+            if(note.optString("type")=="NOTE" && (note.optBoolean("noteLocked") || sectionProtected())) {
                 protected+=note.getString("id")
                 sealRecord(note,listOf("title","details","noteTags"),"note")
             }
@@ -52,9 +52,15 @@ internal class NoteContentCipher {
         val tasks=root.optJSONArray("tasks")
         if(tasks!=null) for(i in 0 until tasks.length()) {
             val task=tasks.getJSONObject(i)
-            if(task.optString("linkedNoteId") in protected) sealRecord(task,listOf("title","details"),"task")
+            if(task.optString("linkedNoteId") in protected) {sealRecord(task,listOf("title","details"),"task");protected+=task.getString("id")}
         }
+        val audit=root.optJSONArray("auditLog")
+        if(audit!=null) for(i in 0 until audit.length()) {val entry=audit.getJSONObject(i);if(entry.optString("entityId") in protected) sealRecord(entry,listOf("description"),"audit")}
         return root.toString()
+    }
+    fun needsProtection(raw:String):Boolean {
+        val notes=JSONObject(raw).optJSONArray("dayItems") ?: return false
+        return (0 until notes.length()).any {i->val note=notes.getJSONObject(i);note.optString("type")=="NOTE" && (note.optBoolean("noteLocked")||sectionProtected()) && !note.has("sealedContentV45")}
     }
     private fun sealRecord(record:JSONObject, fields:List<String>,kind:String) {
         val content=JSONObject()
@@ -63,7 +69,7 @@ internal class NoteContentCipher {
     }
     fun decode(raw:String):String {
         val root=JSONObject(raw)
-        listOf("dayItems" to "note","tasks" to "task").forEach {(collection,kind) ->
+        listOf("dayItems" to "note","tasks" to "task","auditLog" to "audit").forEach {(collection,kind) ->
             val records=root.optJSONArray(collection)
             if(records!=null) for(i in 0 until records.length()) {
                 val record=records.getJSONObject(i)

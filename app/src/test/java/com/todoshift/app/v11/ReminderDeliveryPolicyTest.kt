@@ -14,6 +14,20 @@ import java.util.TimeZone
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28])
 class ReminderDeliveryPolicyTest {
+    @Test fun selectedWeeklyDaysAndCustomQuietIntervalRespectBoundaries() {
+        val previous=TimeZone.getDefault();TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+        try {
+            val context=RuntimeEnvironment.getApplication();val policy=ReminderPolicy(context)
+            fun ms(value:String)=ZonedDateTime.parse(value).toInstant().toEpochMilli()
+            policy.configure("weekly-selected","WEEKLY",weekdays=setOf(1,3))
+            assertEquals(ms("2026-11-16T10:00:00Z"),policy.next("weekly-selected",ms("2026-11-14T10:00:00Z"),now=ms("2026-11-14T11:00:00Z")))
+            assertEquals(ms("2026-11-18T10:00:00Z"),policy.next("weekly-selected",ms("2026-11-14T10:00:00Z"),now=ms("2026-11-16T10:00:00Z")))
+            NeoSmartStore(context).update {it.put("quietHours",true);it.put("quietStartMinute",12*60);it.put("quietEndMinute",14*60)}
+            assertTrue(NeoNotificationPolicy.quiet(context,ms("2026-11-14T12:00:00Z")))
+            assertFalse(NeoNotificationPolicy.quiet(context,ms("2026-11-14T14:00:00Z")))
+        } finally {TimeZone.setDefault(previous)}
+    }
+
     @Test fun quietHoursKeepOriginalRecognitionTime() {
         val context=RuntimeEnvironment.getApplication()
         NeoSmartStore(context).update {it.put("quietHours",true)}

@@ -22,9 +22,9 @@ internal fun remainingWorkEntitlement(db:V11Database,workplace:String,month:Year
     val earned=V11FinanceEngine.month(db,month).byWorkplace.filter {it.workplaceId==workplace}.sumOf {LocalizedNumbers.cents(it.amount)}
     val received=db.payments.filter {it.reversedAt==null}.sumOf {p ->
         if(p.allocations.isEmpty()) if(p.sourceId in sourceIds && p.accrualMonth==month.toString()) LocalizedNumbers.cents(p.amount) else 0L
-        else p.allocations.filter {it.sourceId in sourceIds && it.accrualMonth==month.toString()}.sumOf {LocalizedNumbers.cents(it.amount)}
+        else p.allocations.filter {(it.sourceId in sourceIds || it.workplaceId==workplace) && it.accrualMonth==month.toString() && it.action in setOf(SettlementActionV11.WRITE_OFF,SettlementActionV11.CANCEL_ENTITLEMENT,SettlementActionV11.ADJUSTMENT)}.sumOf {LocalizedNumbers.cents(it.amount)}
     }
-    val settled=db.settlements.filter {it.sourceId in sourceIds && it.accrualMonth==month.toString()}.sumOf {LocalizedNumbers.cents(it.amount)}
+    val settled=db.settlements.filter {(it.sourceId in sourceIds || it.workplaceId==workplace) && it.accrualMonth==month.toString() && it.action in setOf(SettlementActionV11.WRITE_OFF,SettlementActionV11.CANCEL_ENTITLEMENT,SettlementActionV11.ADJUSTMENT)}.sumOf {LocalizedNumbers.cents(it.amount)}
     return (earned-received-settled).coerceAtLeast(0)
 }
 

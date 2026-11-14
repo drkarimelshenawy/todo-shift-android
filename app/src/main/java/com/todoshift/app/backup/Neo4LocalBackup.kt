@@ -671,6 +671,8 @@ class Neo4LocalBackup(context: Context) :
                     writePreferences(prefs(name), data)
                     restoreCheckpoint("prefs:$name")
                 }
+                // Encrypt restored protected content before finalizing the rollback journal.
+                storage.protectLegacyNotes(storage.load())
                 // Success becomes durable only after every preference commit has completed.
                 journal.delete()
                 check(!journal.baseFile.exists()) { "Unable to finalize restore journal" }
@@ -829,6 +831,7 @@ class Neo4LocalBackup(context: Context) :
         color: String,
         border: Boolean,
         linkedTasks: List<TaskV11> = emptyList(),
+        detachedTaskIds: Set<String> = emptySet(),
         checkpoint: (String) -> Unit = {},
     ): V11Database =
         dataGate {
@@ -842,11 +845,15 @@ class Neo4LocalBackup(context: Context) :
             val next =
                 expected.copy(
                     dayItems = expected.dayItems.filterNot { it.id == note.id } + note,
-                    tasks = expected.tasks + linkedTasks.filter { candidate -> expected.tasks.none { it.id == candidate.id } },
+                    tasks = expected.tasks.map { task ->
+                        if(task.id in detachedTaskIds) task.copy(linkedNoteId=null)
+                        else linkedTasks.firstOrNull {it.id==task.id} ?: task
+                    } + linkedTasks.filter { candidate -> expected.tasks.none { it.id == candidate.id } },
                 )
+            require(detachedTaskIds.all {id -> expected.tasks.any {it.id==id && it.linkedNoteId==note.id}}) {"Cannot unlink another note's task"}
             require(linkedTasks.all { it.linkedNoteId == note.id }) { "Checklist task must reference its source note" }
             require(linkedTasks.map { it.id }.distinct().size == linkedTasks.size) { "Duplicate checklist task identifiers" }
-            require(linkedTasks.none { candidate -> expected.tasks.any { stored -> stored.id == candidate.id && stored.linkedNoteId != note.id } }) {
+            require(linkedTasks.none { candidate -> expected.tasks.any { stored -> stored.id == candidate.id && stored.linkedNoteId != null && stored.linkedNoteId != note.id } }) {
                 "Checklist task identity conflicts with another record; no note or task was changed"
             }
             NeoNewReferenceGuard.validate(expected, next) {

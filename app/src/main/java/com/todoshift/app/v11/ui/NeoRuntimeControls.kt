@@ -72,11 +72,12 @@ fun NeoNotificationControls(db: V11Database) {
         save("notify_tasks", it)
     }
     NeoSwitch(
-        neoLabel("المواعيد والملاحظات", "Events and notes"),
+        neoLabel("المواعيد والأحداث", "Events"),
         data.optBoolean("notify_events", true),
     ) {
         save("notify_events", it)
     }
+    NeoSwitch(neoLabel("تذكيرات الملاحظات","Note reminders"),data.optBoolean("notify_notes",data.optBoolean("notify_events",true))) {save("notify_notes",it)}
     NeoSwitch(
         neoLabel("الشيفتات قبل ٣٠ دقيقة", "Shifts 30 minutes before"),
         data.optBoolean("notify_shifts", false),

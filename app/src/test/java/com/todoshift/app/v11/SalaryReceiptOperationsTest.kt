@@ -14,6 +14,15 @@ class SalaryReceiptOperationsTest {
         cashBookAccountId = "account-one",
     )
 
+    @Test fun receivingStatementUsesMonthlySalaryOnceAndExcludesGeneralUnallocatedReceipts() {
+        val source=IncomeSourceV11("work-source","Work",IncomeSourceTypeV11.FIXED_SALARY,workplaceId="work",fixedMonthlyAmount=1000.0)
+        val attributed=receipt().copy(sourceId=source.id,amount=200.0,allocations=listOf(PaymentAllocationV11("attributed","2026-11",source.id,200.0)))
+        val general=receipt().copy(id="general",amount=100.0,allocations=emptyList())
+        val db=V11Database(incomeSources=listOf(source),payments=listOf(attributed,general))
+        assertEquals(80000L,com.todoshift.app.v11.ui.remainingWorkEntitlement(db,"work",YearMonth.of(2026,11)))
+        assertEquals(100000L,com.todoshift.app.v11.ui.remainingWorkEntitlement(db.copy(payments=listOf(attributed.copy(reversedAt=1L))),"work",YearMonth.of(2026,11)))
+    }
+
     @Test fun correctionAdvancesRevisionAndKeepsAudit() {
         val payment = receipt()
         val db = V11Database(payments = listOf(payment))

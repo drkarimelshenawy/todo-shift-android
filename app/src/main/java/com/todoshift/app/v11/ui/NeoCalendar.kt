@@ -90,7 +90,7 @@ fun NeoCalendarArea(
     onSelectedDate: (LocalDate) -> Unit,
     onMonthChange: (YearMonth) -> Unit,
     onToday: () -> Unit,
-    onOpenDay: () -> Unit,
+    onOpenDay: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     onDatabaseChange: (V11Database) -> Unit = {},
     creationCalendarId: String? = null,
@@ -472,14 +472,14 @@ fun NeoCalendarArea(
                                                     }
                                                 },
                                             ) {
-                                                val open = !paintMode && tappedDate == key && cellDate == selectedDate && YearMonth.from(cellDate) == month
                                                 onSelectedDate(cellDate)
                                                 if (!paintMode) {
                                                     tappedDate = key
                                                     if (YearMonth.from(cellDate) != month) {
                                                         tappedDate = null
                                                         onMonthChange(YearMonth.from(cellDate))
-                                                    } else if (open) onOpenDay()
+                                                    }
+                                                    onOpenDay(cellDate)
                                                 }
                                             }
                                     }
@@ -504,7 +504,7 @@ fun NeoCalendarArea(
                 selectedShiftId = null
                 sheetDate = null
                 onSelectedDate(LocalDate.parse(shift.entry.date))
-                onOpenDay()
+                onOpenDay(LocalDate.parse(shift.entry.date))
             }) { Text(neoLabel("تعديل", "Edit")) } },
             dismissButton = { TextButton(onClick = { selectedShiftId = null }) { Text(neoLabel("إغلاق", "Close")) } },
         )
@@ -638,7 +638,7 @@ fun NeoCalendarArea(
                     Button(
                         onClick = {
                             sheetDate = null
-                            onOpenDay()
+                            onOpenDay(date)
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {

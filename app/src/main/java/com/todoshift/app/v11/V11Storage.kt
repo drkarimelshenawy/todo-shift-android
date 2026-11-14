@@ -47,7 +47,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
         when (val current = read()) {
             is StorageRead.Failed -> current.requireLoaded()
             StorageRead.Missing -> error("Cannot save before explicit initialization or migration")
-            is StorageRead.Loaded -> Unit
+            is StorageRead.Loaded -> com.todoshift.app.integration.SalaryCashSync.validateWrite(current.data, db)
         }
         FinancialDataValidation.validate(db)
         val raw = toJson(db).toString()
@@ -227,6 +227,11 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                                 source.fixedMonthlyAmount
                             )
 
+                        put("compensationHistory", JSONArray().apply {
+                            source.compensationHistory.forEach { period ->
+                                put(JSONObject().put("effectiveMonth", period.effectiveMonth).put("amount", period.amount))
+                            }
+                        })
                         put("order", source.order)
                     })
                 }
@@ -250,6 +255,8 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                         put("amount", payment.amount)
                         put("receivedDate", payment.receivedDate)
                         put("cashBookAccountId", payment.cashBookAccountId ?: JSONObject.NULL)
+                        put("cashBookRevision", payment.cashBookRevision)
+                        put("reversedAt", payment.reversedAt ?: JSONObject.NULL)
                         put("accrualMonth", payment.accrualMonth)
 
                         if (payment.sourceId == null)
@@ -393,6 +400,14 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                             put("reminderAt", item.reminderAt)
 
                         put("createdAt", item.createdAt)
+                        put("updatedAt", item.updatedAt)
+                        put("notePinned", item.notePinned)
+                        put("noteArchived", item.noteArchived)
+                        put("noteTrashed", item.noteTrashed)
+                        put("noteHidden", item.noteHidden)
+                        put("noteLocked", item.noteLocked)
+                        put("noteTags", item.noteTags)
+                        put("noteBackground", item.noteBackground ?: JSONObject.NULL)
                     })
                 }
             })
@@ -433,6 +448,10 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                             put("linkedShiftId", JSONObject.NULL)
                         else
                             put("linkedShiftId", item.linkedShiftId)
+                        put("linkedNoteId", item.linkedNoteId ?: JSONObject.NULL)
+                        put("completionHistory", JSONArray().apply {
+                            item.completionHistory.forEach { event -> put(JSONObject().put("at",event.at).put("completed",event.completed)) }
+                        })
 
                         put("createdAt", item.createdAt)
                         put("updatedAt", item.updatedAt)
@@ -695,7 +714,13 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                         !o.isNull("fixedMonthlyAmount")
                     ) o.optDouble("fixedMonthlyAmount")
                     else null,
-                order = o.optInt("order", i)
+                order = o.optInt("order", i),
+                compensationHistory = (o.optJSONArray("compensationHistory") ?: JSONArray()).let { periods ->
+                    (0 until periods.length()).map { index ->
+                        val period = periods.getJSONObject(index)
+                        FixedSalaryPeriodV11(period.getString("effectiveMonth"), period.getDouble("amount"))
+                    }
+                }
             )
         }
 
@@ -758,6 +783,8 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                 amount = o.optDouble("amount", 0.0),
                 receivedDate = o.optString("receivedDate"),
                 cashBookAccountId = nullableString(o, "cashBookAccountId"),
+                cashBookRevision = o.optInt("cashBookRevision", 0),
+                reversedAt = if (o.isNull("reversedAt")) null else o.getLong("reversedAt"),
                 accrualMonth = o.optString("accrualMonth"),
                 sourceId = nullableString(o, "sourceId"),
                 paymentMethodId =
@@ -881,7 +908,15 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                     o.optLong(
                         "createdAt",
                         System.currentTimeMillis()
-                    )
+                    ),
+                updatedAt = o.optLong("updatedAt", o.optLong("createdAt", 0L)),
+                notePinned = o.optBoolean("notePinned", false),
+                noteArchived = o.optBoolean("noteArchived", false),
+                noteTrashed = o.optBoolean("noteTrashed", false),
+                noteHidden = o.optBoolean("noteHidden", false),
+                noteLocked = o.optBoolean("noteLocked", false),
+                noteTags = o.optString("noteTags", ""),
+                noteBackground = nullableString(o, "noteBackground")
             )
         }
 
@@ -942,6 +977,10 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                     nullableString(o, "calendarId"),
                 linkedShiftId =
                     nullableString(o, "linkedShiftId"),
+                linkedNoteId = nullableString(o, "linkedNoteId"),
+                completionHistory = o.optJSONArray("completionHistory")?.let { history ->
+                    (0 until history.length()).map { i -> val event=history.getJSONObject(i); TaskCompletionV11(event.getLong("at"),event.getBoolean("completed")) }
+                } ?: emptyList(),
                 createdAt =
                     o.optLong(
                         "createdAt",

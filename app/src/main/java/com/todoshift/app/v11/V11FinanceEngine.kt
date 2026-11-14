@@ -19,6 +19,12 @@ data class MonthFinanceV11(
 )
 
 object V11FinanceEngine {
+    fun monthlyAmount(source: IncomeSourceV11, month: YearMonth): Double =
+        if (source.compensationHistory.isEmpty()) {
+            if (source.active) source.fixedMonthlyAmount ?: 0.0 else 0.0
+        } else source.compensationHistory
+            .filter { !YearMonth.parse(it.effectiveMonth).isAfter(month) }
+            .maxByOrNull { YearMonth.parse(it.effectiveMonth) }?.amount ?: 0.0
 
     fun month(
         db: V11Database,
@@ -44,9 +50,20 @@ object V11FinanceEngine {
                 .flatMap { day -> day.segments.map { day to it } }
                 .filter { it.second.kind != ShiftKind.OFF }
 
+        // A fixed salary is earned once per month, independently of the shift count.
+        // Keep every recorded shift in operational counts; only compensation changes here.
+        val monthlySources = db.incomeSources.filter {
+            included(it.calendarId) && (it.fixedMonthlyAmount != null || it.compensationHistory.isNotEmpty()) &&
+                (it.compensationHistory.isEmpty() || it.compensationHistory.any { period -> !YearMonth.parse(period.effectiveMonth).isAfter(month) })
+        }
+        val salariedWorkplaces = monthlySources.mapNotNull { it.workplaceId }.toSet()
+        val payableSegments = segments.filter { (_, segment) ->
+            segment.workplaceId !in salariedWorkplaces || segment.exceptionalAmount != null
+        }
+        val monthlyCents = monthlySources.sumOf { LocalizedNumbers.cents(monthlyAmount(it, month)) }
         val expected =
             LocalizedNumbers.amount(
-                segments.sumOf { (day, segment) ->
+                monthlyCents + payableSegments.sumOf { (day, segment) ->
                     LocalizedNumbers.cents(
                         V11RateEngine.segmentAmount(
                             segment = segment,
@@ -59,7 +76,7 @@ object V11FinanceEngine {
 
         val received =
             LocalizedNumbers.amount(
-                db.payments.sumOf { payment ->
+                db.payments.filter { it.reversedAt == null }.sumOf { payment ->
                     if (payment.allocations.isEmpty()) {
                         if (payment.accrualMonth == monthText && included(sources[payment.sourceId]?.calendarId))
                             LocalizedNumbers.cents(payment.amount)
@@ -117,23 +134,27 @@ object V11FinanceEngine {
                         count = rows.size,
                         amount =
                             rows.sumOf { (day, segment) ->
-                                V11RateEngine.segmentAmount(segment, day.date, db.rates)
+                                if (segment.workplaceId in salariedWorkplaces && segment.exceptionalAmount == null) 0.0
+                                else V11RateEngine.segmentAmount(segment, day.date, db.rates)
                             },
                     )
                 }
             }
 
         val byWorkplace =
-            segments
-                .groupBy { it.second.workplaceId }
-                .map { (workplaceId, rows) ->
+            (segments.map { it.second.workplaceId } + monthlySources.map { it.workplaceId }).distinct()
+                .map { workplaceId ->
+                    val rows = segments.filter { it.second.workplaceId == workplaceId }
                     WorkplaceSummaryV11(
                         workplaceId = workplaceId,
                         count = rows.size,
-                        amount =
-                            rows.sumOf { (day, segment) ->
-                                V11RateEngine.segmentAmount(segment, day.date, db.rates)
-                            },
+                        amount = LocalizedNumbers.amount(
+                            payableSegments.filter { it.second.workplaceId == workplaceId }.sumOf { (day, segment) ->
+                                LocalizedNumbers.cents(V11RateEngine.segmentAmount(segment, day.date, db.rates))
+                            } + monthlySources.filter { it.workplaceId == workplaceId }.sumOf {
+                                LocalizedNumbers.cents(monthlyAmount(it, month))
+                            }
+                        ),
                     )
                 }
 

@@ -101,8 +101,19 @@ data class DayItemV11(
     val details: String = "",
     val completed: Boolean = false,
     val reminderAt: Long? = null,
-    val createdAt: Long = System.currentTimeMillis()
-)
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = createdAt,
+    val notePinned: Boolean = false,
+    val noteArchived: Boolean = false,
+    val noteTrashed: Boolean = false,
+    val noteHidden: Boolean = false,
+    val noteLocked: Boolean = false,
+    val noteTags: String = "",
+    val noteBackground: String? = null,
+) {
+    val notePrivate: Boolean get() = type == DayItemTypeV11.NOTE && (noteLocked || noteHidden)
+    val noteVisible: Boolean get() = type != DayItemTypeV11.NOTE || (!noteArchived && !noteTrashed && !noteHidden)
+}
 
 enum class TaskPriorityV11 {
     LOW,
@@ -124,6 +135,8 @@ enum class TaskRepeatV11 {
     MONTHLY
 }
 
+data class TaskCompletionV11(val at: Long, val completed: Boolean)
+
 data class TaskV11(
     val id: String,
     val title: String,
@@ -144,7 +157,9 @@ data class TaskV11(
         System.currentTimeMillis(),
     val updatedAt: Long =
         System.currentTimeMillis(),
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val linkedNoteId: String? = null,
+    val completionHistory: List<TaskCompletionV11> = emptyList(),
 )
 
 data class DayEntryV11(
@@ -170,6 +185,9 @@ enum class IncomeSourceTypeV11 {
     OTHER
 }
 
+/** A monthly compensation amount effective from an earning month, retained on rate changes. */
+data class FixedSalaryPeriodV11(val effectiveMonth: String, val amount: Double)
+
 data class IncomeSourceV11(
     val id: String,
     val name: String,
@@ -178,7 +196,8 @@ data class IncomeSourceV11(
     val calendarId: String? = null,
     val active: Boolean = true,
     val fixedMonthlyAmount: Double? = null,
-    val order: Int = 0
+    val order: Int = 0,
+    val compensationHistory: List<FixedSalaryPeriodV11> = emptyList()
 )
 
 data class PaymentMethodV11(
@@ -211,7 +230,9 @@ data class PaymentV11(
     val note: String = "",
     val linkedShiftIds: List<String> = emptyList(),
     val allocations: List<PaymentAllocationV11> = emptyList(),
-    val cashBookAccountId: String? = null
+    val cashBookAccountId: String? = null,
+    val cashBookRevision: Int = 0,
+    val reversedAt: Long? = null
 )
 
 enum class ObligationTypeV11 {

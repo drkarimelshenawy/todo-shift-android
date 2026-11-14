@@ -56,7 +56,7 @@ private val Outgoing = Color(0xFFF45151)
 fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStart: DayOfWeek = DayOfWeek.SATURDAY, hostLocale: java.util.Locale? = null, salaryContent: (@Composable () -> Unit)? = null) {
     val language by CashBookText.language.collectAsStateWithLifecycle()
     CashBookText.hostLocale(hostLocale ?: LocalContext.current.resources.configuration.locales[0])
-    CashBookCompactTheme { CompositionLocalProvider(LocalCashBookVM provides vm, LocalLayoutDirection provides LayoutDirection.Ltr) { Box(modifier.fillMaxSize()){
+    CashBookCompactTheme { CompositionLocalProvider(LocalCashBookVM provides vm, LocalLayoutDirection provides if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) { Box(modifier.fillMaxSize()){
         CashBookContent(vm,Modifier.fillMaxSize(),weekStart,language,salaryContent)
         val undo by vm.undo.collectAsStateWithLifecycle()
         val operation by vm.state.collectAsStateWithLifecycle()
@@ -77,9 +77,11 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     val selectableAccounts = allAccounts.filter { !it.archived }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var mainSection by rememberSaveable { mutableStateOf("accounts") }
-    val active = selected?.takeIf { id -> selectableAccounts.any { it.id == id } && (mainSection == "debts" || id !in debtIds) }
-        ?: (if (mainSection == "debts") selectableAccounts.firstOrNull { it.id in debtIds }?.id else accounts.firstOrNull()?.id)
-    val activeAccount = selectableAccounts.find { it.id == active }
+    val active = selected?.takeIf { id ->
+        if (mainSection == "debts") allAccounts.any { it.id == id } && id in debtIds
+        else selectableAccounts.any { it.id == id } && id !in debtIds
+    } ?: (if (mainSection == "debts") allAccounts.firstOrNull { it.id in debtIds }?.id else accounts.firstOrNull()?.id)
+    val activeAccount = allAccounts.find { it.id == active }
     val activeDebt=snapshot?.debts?.find{it.accountId==active}
     val navigation by vm.navigation.collectAsStateWithLifecycle()
     val inLabel = activeAccount?.let{displayLabels(it.incomingLabel,it.outgoingLabel).first} ?: tr(R.string.cb_001)
@@ -283,8 +285,12 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     paymentEdit?.let{id->snapshot?.entries?.find{it.id==id}?.let{entry->snapshot.debts.find{it.accountId==entry.accountId||it.accountId==entry.targetId}?.let{debt->SettlementDialog(snapshot,debt,entry,{paymentEdit=null})}}}
     actionId?.let { id -> snapshot?.entries?.find { it.id == id }?.let { e -> AlertDialog(onDismissRequest = { actionId = null }, title = { Text(e.note.ifBlank { tr(R.string.cb_035) }) }, text = {
         Column {
-            if (!e.deleted) TextButton(onClick = { if(snapshot.debts.any{it.accountId==e.accountId||it.accountId==e.targetId})paymentEdit=e.id else{editId = e.id; editor = e.kind.name}; actionId = null; vm.clearMessage() }) { Text(tr(R.string.cb_036)) }
-            TextButton(enabled = !state.busy, onClick = { if(e.deleted)vm.deleted(e.id,false)else deleteEntry=e.id; actionId = null }) { Text(if (e.deleted) tr(R.string.cb_037) else tr(R.string.cb_038)) }
+            val salaryLinked = e.note.startsWith("[salary-receipt:") || e.note.startsWith("[salary-history:")
+            if (salaryLinked) TextButton(onClick = { actionId = null; mainSection = "salary" }) { Text(tr(R.string.cb_salary_manage)) }
+            else {
+                if (!e.deleted) TextButton(onClick = { if(snapshot.debts.any{it.accountId==e.accountId||it.accountId==e.targetId})paymentEdit=e.id else{editId = e.id; editor = e.kind.name}; actionId = null; vm.clearMessage() }) { Text(tr(R.string.cb_036)) }
+                TextButton(enabled = !state.busy, onClick = { if(e.deleted)vm.deleted(e.id,false)else deleteEntry=e.id; actionId = null }) { Text(if (e.deleted) tr(R.string.cb_037) else tr(R.string.cb_038)) }
+            }
         }
     }, confirmButton = { TextButton(onClick = { actionId = null }) { Text(tr(R.string.cb_029)) } }) } }
     deleteEntry?.let{id->AlertDialog(onDismissRequest={deleteEntry=null},title={Text(tr(R.string.cb_247))},confirmButton={TextButton({vm.deleted(id,true);deleteEntry=null}){Text(tr(R.string.cb_140))}},dismissButton={TextButton({deleteEntry=null}){Text(tr(R.string.cb_034))}})}

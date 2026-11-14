@@ -53,6 +53,8 @@ fun V11FinanceScreen(
     var paymentDetailsId by rememberSaveable { mutableStateOf<String?>(null) }
     val paymentDetails = db.payments.firstOrNull { it.id == paymentDetailsId }
 
+    var reversingPaymentId by rememberSaveable { mutableStateOf<String?>(null) }
+
     var editingPaymentId by rememberSaveable { mutableStateOf<String?>(null) }
     val editingPayment = db.payments.firstOrNull { it.id == editingPaymentId }
 
@@ -128,16 +130,24 @@ fun V11FinanceScreen(
                 headlineContent = { Text(neoLabel("التزامات الشهر", "Upcoming obligations")) },
                 trailingContent = { Text(money(obligationDue, moneyVisible)) },
             )
-            NeoPremiumTabs(listOf(neoLabel("الملخص", "Summary"), neoLabel("الدفعات", "Receipts"), neoLabel("الالتزامات", "Obligations")), financeSection, { financeSection = it })
+            val nav = LocalNeoFeatures.current
+            NeoPremiumTabs(
+                listOf(neoLabel("الملخص", "Summary"), neoLabel("الدفعات", "Payments"), neoLabel("كشف الحساب", "Statement"), neoLabel("المراجعة", "Review")),
+                financeSection,
+                { index ->
+                    financeSection = index
+                    if (index == 2) nav.open("STATEMENT")
+                    if (index == 3) nav.open("MONTH_REVIEW")
+                },
+            )
             if (financeSection == 0) {
-                val nav = LocalNeoFeatures.current
                 NeoSettingsRow(neoLabel("أسعار الورديات", "Shift rates")) { nav.open("RATES") }
-                NeoSettingsRow(neoLabel("كشف مكان العمل", "Workplace statement")) {
-                    nav.open("STATEMENT")
-                }
-                NeoSettingsRow(neoLabel("مراجعة وإقفال الشهر", "Review and close month")) {
-                    nav.open("MONTH_REVIEW")
-                }
+            }
+            if (financeSection == 2) {
+                NeoSettingsRow(neoLabel("كشف مكان العمل وتصديره", "Workplace statement and export")) { nav.open("STATEMENT") }
+            }
+            if (financeSection == 3) {
+                NeoSettingsRow(neoLabel("مراجعة وإقفال الشهر", "Review and close month")) { nav.open("MONTH_REVIEW") }
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -301,7 +311,7 @@ fun V11FinanceScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
-                                    money(payment.amount, moneyVisible),
+                                    (if (payment.reversedAt != null) neoLiteral("ملغاة • ", "Reversed • ") else "") + money(payment.amount, moneyVisible),
                                     fontWeight = FontWeight.Black,
                                 )
 
@@ -320,7 +330,7 @@ fun V11FinanceScreen(
                     }
                 }
         }
-        if (!LocalV11NeoEnabled.current || financeSection == 2) {
+        if (!LocalV11NeoEnabled.current || financeSection == 0) {
             Spacer(Modifier.height(22.dp))
 
             Row(
@@ -468,6 +478,7 @@ fun V11FinanceScreen(
         )
     }
 
+    val financeNavigator = LocalNeoFeatures.current
     paymentDetails?.let { payment ->
         V11PaymentDetailsDialog(
             payment = payment,
@@ -484,6 +495,31 @@ fun V11FinanceScreen(
                 paymentDetailsId = null
                 editingPaymentId = payment.id
             },
+            onReverse = { paymentDetailsId = null; reversingPaymentId = payment.id },
+            onAllocate = { paymentDetailsId = null; financeNavigator.open("PAYMENTS", payment.id) },
+        )
+    }
+
+    reversingPaymentId?.let { id ->
+        val unchanged = rememberNeoDraftUnchanged(id, db.payments.firstOrNull { it.id == id })
+        val reject = LocalNeoRejectWrite.current
+        AlertDialog(
+            onDismissRequest = { reversingPaymentId = null },
+            title = { Text(neoLiteral("عكس الدفعة", "Reverse receipt")) },
+            text = { Text(neoLiteral("سيُعكس الاستلام في المستحقات وكاش بوك مع الاحتفاظ بالسجل. هل تريد المتابعة؟", "Reverse this receipt in Salary and Cash Book while retaining its history?")) },
+            confirmButton = {
+                TextButton(onClick = neoWriteAction {
+                    if (!unchanged) {
+                        reject("Receipt changed; reopen and review before reversing")
+                        return@neoWriteAction
+                    }
+                    val action = { commit(SalaryReceiptOperations.reverse(db, id)) { reversingPaymentId = null } }
+                    if (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled)
+                        pendingProtectedAction = action
+                    else action()
+                }) { Text(neoLiteral("عكس الدفعة", "Reverse receipt")) }
+            },
+            dismissButton = { TextButton(onClick = { reversingPaymentId = null }) { Text(neoLiteral("إلغاء", "Cancel")) } },
         )
     }
 
@@ -503,9 +539,7 @@ fun V11FinanceScreen(
                 }
                 val saveAction = {
                     commit(
-                        db.copy(
-                            payments = db.payments.map { if (it.id == updated.id) updated else it }
-                        )
+                        SalaryReceiptOperations.update(db, updated)
                     ) {
                         editingPaymentId = null
                     }
@@ -592,6 +626,7 @@ fun V11FinanceScreen(
     if (sourceManagerOpen) {
         V11IncomeSourcesDialog(
             db = db,
+            workplaces = workplaces,
             onDismiss = { sourceManagerOpen = false },
             onDatabaseChange = onDatabaseChange,
         )
@@ -730,6 +765,8 @@ private fun V11PaymentDetailsDialog(
     moneyVisible: Boolean,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
+    onReverse: () -> Unit,
+    onAllocate: () -> Unit,
 ) {
     val source = db.incomeSources.firstOrNull { it.id == payment.sourceId }
 
@@ -773,10 +810,16 @@ private fun V11PaymentDetailsDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onEdit) {
-                Icon(Icons.Default.Edit, null)
-                Spacer(Modifier.width(5.dp))
-                Text(neoLiteral("تعديل", "Edit"))
+            Column {
+                if (payment.reversedAt == null) {
+                    Button(onClick = onEdit) {
+                        Icon(Icons.Default.Edit, null)
+                        Spacer(Modifier.width(5.dp))
+                        Text(neoLiteral("تعديل", "Edit"))
+                    }
+                    TextButton(onClick = onAllocate) { Text(neoLiteral("توزيع على أشهر", "Allocate across months")) }
+                    TextButton(onClick = onReverse) { Text(neoLiteral("عكس الدفعة", "Reverse receipt")) }
+                } else Text(neoLiteral("تم عكس الدفعة؛ السجل محفوظ", "Receipt reversed; history retained"))
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(neoLiteral("إغلاق", "Close")) } },
@@ -1015,6 +1058,7 @@ internal fun V11PaymentDialog(
 @Composable
 private fun V11IncomeSourcesDialog(
     db: V11Database,
+    workplaces: List<Workplace>,
     onDismiss: () -> Unit,
     onDatabaseChange: (V11Database) -> Unit,
 ) {
@@ -1023,6 +1067,8 @@ private fun V11IncomeSourcesDialog(
     var newName by rememberSaveable { mutableStateOf("") }
 
     var fixedAmount by rememberSaveable { mutableStateOf("") }
+    var sourceWorkplace by rememberSaveable { mutableStateOf("") }
+    var sourceCalendar by rememberSaveable { mutableStateOf("") }
 
     var editingId by rememberSaveable { mutableStateOf<String?>(null) }
     val editing = db.incomeSources.firstOrNull { it.id == editingId }
@@ -1169,6 +1215,20 @@ private fun V11IncomeSourcesDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
+                NeoChoice(
+                    neoLiteral("مكان العمل", "Workplace"),
+                    listOf("") + workplaces.map { it.id },
+                    sourceWorkplace,
+                    { id -> workplaces.firstOrNull { it.id == id }?.name ?: neoLiteral("بدون ربط", "Unlinked") },
+                    { sourceWorkplace = it },
+                )
+                NeoChoice(
+                    neoLiteral("التقويم", "Calendar"),
+                    listOf("") + db.calendars.map { it.id },
+                    sourceCalendar,
+                    { id -> db.calendars.firstOrNull { it.id == id }?.name ?: neoLiteral("كل التقاويم", "All calendars") },
+                    { sourceCalendar = it },
+                )
                 leave.SaveButton(
                     onClick =
                         neoWriteAction {
@@ -1180,6 +1240,8 @@ private fun V11IncomeSourcesDialog(
                                         type = IncomeSourceTypeV11.OTHER,
                                         fixedAmount = fixedAmountInput.amount,
                                         recordId = recordId,
+                                        workplaceId = sourceWorkplace.ifBlank { null },
+                                        calendarId = sourceCalendar.ifBlank { null },
                                     )
                                 ) {
                                     newName = ""
@@ -1204,12 +1266,12 @@ private fun V11IncomeSourcesDialog(
         V11EditIncomeSourceDialog(
             source = source,
             onDismiss = { editingId = null },
-            onSave = {
+            onSave = { updated, effectiveMonth ->
                 if (!unchanged) {
                     reject("Income source changed. Draft retained; review before reopening.")
                     return@V11EditIncomeSourceDialog
                 }
-                commit(V11AccountsController.updateIncomeSource(db, it)) { editingId = null }
+                commit(V11AccountsController.updateIncomeSource(db, updated, effectiveMonth)) { editingId = null }
             },
         )
     }
@@ -1219,15 +1281,17 @@ private fun V11IncomeSourcesDialog(
 internal fun V11EditIncomeSourceDialog(
     source: IncomeSourceV11,
     onDismiss: () -> Unit,
-    onSave: (IncomeSourceV11) -> Unit,
+    onSave: (IncomeSourceV11, String) -> Unit,
 ) {
+    var effectiveMonth by rememberSaveable(source.id) { mutableStateOf(java.time.YearMonth.now().toString()) }
+    val validMonth = runCatching { java.time.YearMonth.parse(effectiveMonth) }.isSuccess
     var name by rememberSaveable(source.id) { mutableStateOf(source.name) }
 
     var amount by
         rememberSaveable(source.id) { mutableStateOf(source.fixedMonthlyAmount?.toString() ?: "") }
 
     val amountInput = MoneyInput.parse(amount)
-    val leave = rememberNeoEditorExit(listOf(name, amount), onDismiss)
+    val leave = rememberNeoEditorExit(listOf(name, amount, effectiveMonth), onDismiss)
     AlertDialog(
         onDismissRequest = leave,
         title = { Text(neoLiteral("تعديل مصدر الدخل", "Edit income source")) },
@@ -1255,6 +1319,17 @@ internal fun V11EditIncomeSourceDialog(
                     label = { Text(neoLiteral("الدخل الشهري الثابت", "Fixed monthly income")) },
                     singleLine = true,
                 )
+                OutlinedTextField(
+                    value = effectiveMonth,
+                    onValueChange = { effectiveMonth = it.take(7) },
+                    label = { Text(neoLiteral("شهر السريان YYYY-MM", "Effective earning month YYYY-MM")) },
+                    isError = !validMonth,
+                    singleLine = true,
+                )
+                Text(neoLiteral("يُحسب مرة واحدة شهريًا. تبقى الفترات السابقة محفوظة.", "Earned once per month. Previous compensation periods are retained."), style = MaterialTheme.typography.labelSmall)
+                source.compensationHistory.sortedByDescending { it.effectiveMonth }.take(4).forEach { period ->
+                    Text("${period.effectiveMonth} • ${period.amount}", style = MaterialTheme.typography.labelSmall)
+                }
             }
         },
         confirmButton = {
@@ -1262,10 +1337,10 @@ internal fun V11EditIncomeSourceDialog(
                 onClick =
                     neoWriteAction {
                         onSave(
-                            source.copy(name = name.trim(), fixedMonthlyAmount = amountInput.amount)
+                            source.copy(name = name.trim(), fixedMonthlyAmount = amountInput.amount), effectiveMonth
                         )
                     },
-                enabled = name.isNotBlank() && amountInput.optionalValid,
+                enabled = name.isNotBlank() && amountInput.optionalValid && validMonth,
             ) {
                 Text(neoLiteral("حفظ", "Save"))
             }

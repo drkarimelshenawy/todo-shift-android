@@ -25,6 +25,11 @@ object ModernOperations {
     ): V11Database {
         require(months.isNotEmpty() && months.distinct().size == months.size)
         val payment = db.payments.single { it.id == paymentId }
+        require(payment.reversedAt == null) { "Reversed receipts cannot be allocated" }
+        val affectedMonths = (months.map { it.toString() } + payment.accrualMonth + payment.allocations.map { it.accrualMonth }).toSet()
+        require(db.monthSnapshots.none { it.month in affectedMonths && it.reopenedAt == null }) {
+            "Reopen the earning period before reallocating this receipt"
+        }
         val cents = LocalizedNumbers.cents(payment.amount)
         val base = cents / months.size
         val remainder = cents % months.size
@@ -160,7 +165,7 @@ object ModernOperations {
         if (query.isBlank()) return emptyList()
         val q = query.trim()
         return (db.tasks.map { SearchResult("TASK", it.id, it.date, it.title + " " + it.details) } +
-                db.dayItems.map {
+                db.dayItems.filter { !it.notePrivate && it.noteVisible }.map {
                     SearchResult(
                         if (it.type == DayItemTypeV11.NOTE) "NOTE" else "EVENT",
                         it.id,
@@ -267,7 +272,7 @@ object ModernOperations {
                 }
         val paymentRows =
             db.payments
-                .filter { LocalDate.parse(it.receivedDate) in from..to }
+                .filter { it.reversedAt == null && LocalDate.parse(it.receivedDate) in from..to }
                 .mapNotNull { payment ->
                     val cents =
                         if (payment.allocations.isEmpty()) {

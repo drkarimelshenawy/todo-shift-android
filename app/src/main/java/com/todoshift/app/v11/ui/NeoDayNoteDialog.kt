@@ -99,13 +99,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         if(next.text!=body.text) { undo.add(body); if(undo.size>50) undo.removeAt(0); redo.clear() }
         body=next
     }
-    var sourceRevision by remember { mutableStateOf(existing?.toString() ?: "<new>") }
+    var sourceRevision by remember { mutableStateOf(expectedDatabase.dayItems.firstOrNull {it.id==id}?.toString() ?: "<new>") }
     LaunchedEffect(draftKey) {
         if(draftReady) return@LaunchedEffect
         try {
             val recovered=withContext(Dispatchers.IO) { drafts.read(draftKey) }
             if(recovered!=null) {
-                if(recovered.optString("source")==sourceRevision) {
+                if(recovered.optString("source")==sourceRevision || recovered.optString("source")==expectedDatabase.dayItems.firstOrNull {it.id==recovered.optString("id")}?.toString()) {
+                    sourceRevision=recovered.optString("source",sourceRevision)
                     id=recovered.optString("id",id); title=recovered.optString("title",title)
                     body=TextFieldValue(recovered.optString("details",body.text)); tags=recovered.optString("tags",tags)
                     pinned=recovered.optBoolean("pinned",pinned); archived=recovered.optBoolean("archived",archived)

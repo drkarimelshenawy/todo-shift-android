@@ -54,7 +54,7 @@ def run():
     assert 'SECRET_MUST_BE_ENCRYPTED' not in adb('exec-out','cat',PREF)
     assert 'SecretFixture' not in adb('exec-out','cat',PREF)
     capture('v45-update-preserved')
-    launch(todo_shift_task_action='open',todo_shift_task_id='v45-note')
+    launch(todo_shift_task_action='open',todo_shift_task_open_id='v45-note')
     def body_field():
         fields=[n for n in dump().iter('node') if n.get('class')=='android.widget.EditText']
         return next((n for n in fields if 'Before' in n.get('text','')),None)

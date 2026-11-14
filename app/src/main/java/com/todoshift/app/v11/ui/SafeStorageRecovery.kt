@@ -22,24 +22,42 @@ fun SafeStorageRecovery(onDismiss: () -> Unit, onRecovered: () -> Unit) {
     val context = LocalContext.current
     val securityStore = remember { V11SecurityStore(context.applicationContext) }
     val security = remember { runCatching { securityStore.load() }.getOrNull() }
-    var unlocked by remember { mutableStateOf(security != null && !security.protectAccounts && security.mode == V11LockMode.NONE && !security.biometricEnabled) }
+    var unlocked by remember { mutableStateOf(security != null && !(security.protectAccounts || security.protectApplication || security.protectTasks) && security.mode == V11LockMode.NONE && !security.biometricEnabled) }
     val backup = remember { Neo4LocalBackup(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var prepared by remember { mutableStateOf<Neo4PreparedRestore?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var encryptedInput by remember { mutableStateOf<ByteArray?>(null) }
+    var pendingUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var backgroundAt by remember { mutableLongStateOf(0L) }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, security) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            val requiresAuth = security == null || security.mode != V11LockMode.NONE || security.biometricEnabled
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                backgroundAt = System.currentTimeMillis()
+                if (requiresAuth && security?.autoLockMinutes == 0) unlocked = false
+            } else if (event == androidx.lifecycle.Lifecycle.Event.ON_START && requiresAuth && backgroundAt > 0L &&
+                System.currentTimeMillis() - backgroundAt >= (security?.autoLockMinutes ?: 0) * 60_000L) unlocked = false
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) pendingUri = uri
+    }
+    LaunchedEffect(pendingUri, unlocked, busy) {
+        val uri = pendingUri
         if (uri != null && unlocked && !busy) {
+            pendingUri = null
             busy = true
-            scope.launch {
-                try { prepared = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { backup.preview(it) } ?: error("Cannot open backup") } }
-                catch (failure: Exception) { if (failure is BackupPasswordRequired) encryptedInput = failure.envelope; message = failure.message ?: "Backup could not be validated" }
-                finally { busy = false }
-            }
+            try { prepared = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { backup.preview(it) } ?: error("Cannot open backup") } }
+            catch (failure: Exception) { if (failure is BackupPasswordRequired) encryptedInput = failure.envelope; message = failure.message ?: "Backup could not be validated" }
+            finally { busy = false }
         }
     }
-    Dialog(onDismissRequest = { if (!busy) onDismiss() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = !busy, dismissOnClickOutside = false)) {
+    Dialog(onDismissRequest = { if (!busy) onDismiss() }, properties = DialogProperties(securePolicy = androidx.compose.ui.window.SecureFlagPolicy.SecureOn, usePlatformDefaultWidth = false, dismissOnBackPress = !busy, dismissOnClickOutside = false)) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("استعادة آمنة / Safe recovery", style = MaterialTheme.typography.titleLarge)

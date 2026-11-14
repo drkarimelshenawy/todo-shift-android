@@ -1,6 +1,7 @@
 package com.todoshift.app.v11.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import com.todoshift.app.v11.*
 
 enum class NeoStudioSection {
     THEMES,
+    COLORS,
     BACKGROUND,
     TYPE,
     LAYOUT,
@@ -48,7 +50,7 @@ fun NeoAppearanceStudio(
         ) {
             mutableStateOf(saved)
         }
-    var section by rememberSaveable { mutableStateOf<NeoStudioSection?>(null) }
+    var section by rememberSaveable { mutableStateOf<NeoStudioSection?>(initialSection) }
     var accent by rememberSaveable(saved.accentHex) { mutableStateOf(saved.accentHex) }
     var discard by remember { mutableStateOf(false) }
     val valid = accent.isEmpty() || accent.matches(Regex("#[0-9a-fA-F]{6}"))
@@ -124,18 +126,22 @@ fun NeoAppearanceStudio(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Neo4ThemePreview(draft, saved.fontScale)
-            listOf(
-                    NeoStudioSection.THEMES to neoLabel("الهوية والإضاءة", "Theme and identity"),
-                    NeoStudioSection.BACKGROUND to
-                        neoLabel("الألوان والخلفية", "Colors and background"),
+            val sections = listOf(
+                    NeoStudioSection.THEMES to neoLabel("الهوية", "Identity"),
+                    NeoStudioSection.COLORS to neoLabel("الألوان", "Colors"),
+                    NeoStudioSection.BACKGROUND to neoLabel("الخلفية", "Background"),
                     NeoStudioSection.TYPE to neoLabel("الخط والكثافة", "Fonts and density"),
                     NeoStudioSection.MOTION to
                         neoLabel("الحركة والانتقالات", "Motion and transitions"),
                     NeoStudioSection.PROFILES to
                         neoLabel("المظاهر المحفوظة", "Saved appearance profiles"),
                 )
-                .forEach { (id, title) ->
-                    NeoSettingsRow(title) { section = if (section == id) null else id }
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                sections.forEach { (id, title) ->
+                    FilterChip(selected = section == id, onClick = { section = id }, label = { Text(title) })
+                }
+            }
+            sections.filter { it.first == section }.forEach { (id, _) ->
                     if (section == id)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             when (id) {
@@ -187,7 +193,7 @@ fun NeoAppearanceStudio(
                                         { draft = draft.copy(brightness = it) },
                                     )
                                 }
-                                NeoStudioSection.BACKGROUND -> {
+                                NeoStudioSection.COLORS -> {
                                     NeoChoice(
                                         neoLabel("مجموعة الألوان", "Color profile"),
                                         NeoPalette.entries,
@@ -227,6 +233,8 @@ fun NeoAppearanceStudio(
                                     ) {
                                         draft = draft.copy(intensity = it)
                                     }
+                                }
+                                NeoStudioSection.BACKGROUND -> {
                                     Neo4BackgroundControls(draft) { draft = it }
                                 }
                                 NeoStudioSection.TYPE -> {

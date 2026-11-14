@@ -154,6 +154,7 @@ fun V11MoreScreen(
         }
         V11SettingsPage.HOME -> {
             SettingsPageContainer(title = neoLiteral("الإعدادات", "Settings")) {
+                NeoLaunchPreferencesUi()
                 if (uiSettings.experience == V11Experience.PREMIUM) {
                     V11NeoSectionHero(
                         neoLabel(neoLiteral("تخصيص تجربتك", "Make it yours"), "Make it yours"),

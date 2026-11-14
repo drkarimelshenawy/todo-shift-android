@@ -199,13 +199,12 @@ fun V11Home(
 
     var accountsUnlocked by remember {
         mutableStateOf(
-            !securitySettings.protectAccounts ||
+            !(securitySettings.protectAccounts || securitySettings.protectApplication || securitySettings.protectTasks) ||
                 (securitySettings.mode == V11LockMode.NONE && !securitySettings.biometricEnabled)
         )
     }
 
-    // Account authentication controls access to finance, not screen capture.
-    // Do not apply FLAG_SECURE to the shared window: it also hosts calendar and tasks.
+
 
     var backgroundAt by remember { mutableLongStateOf(0L) }
 
@@ -218,7 +217,7 @@ fun V11Home(
                     backgroundAt = System.currentTimeMillis()
 
                     if (
-                        securitySettings.protectAccounts &&
+                        (securitySettings.protectAccounts || securitySettings.protectApplication || securitySettings.protectTasks) &&
                             (securitySettings.mode != V11LockMode.NONE ||
                                 securitySettings.biometricEnabled) &&
                             securitySettings.autoLockMinutes == 0
@@ -229,7 +228,7 @@ fun V11Home(
 
                 Lifecycle.Event.ON_START -> {
                     if (
-                        securitySettings.protectAccounts &&
+                        (securitySettings.protectAccounts || securitySettings.protectApplication || securitySettings.protectTasks) &&
                             (securitySettings.mode != V11LockMode.NONE ||
                                 securitySettings.biometricEnabled) &&
                             backgroundAt > 0L
@@ -252,6 +251,21 @@ fun V11Home(
         lifecycleOwner.lifecycle.addObserver(observer)
 
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    DisposableEffect(context, securitySettings) {
+        val window = (context as? android.app.Activity)?.window
+        val secured = securitySettings.protectApplication || securitySettings.protectAccounts || securitySettings.protectTasks
+        if (secured) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { }
+    }
+    if (securitySettings.protectApplication &&
+        (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled) &&
+        !accountsUnlocked) {
+        V11AccountsUnlockScreen(settings = securitySettings, securityStore = securityStore,
+            onUnlocked = { accountsUnlocked = true })
+        return
     }
 
     var db by remember { mutableStateOf(loaded.database) }
@@ -299,13 +313,13 @@ fun V11Home(
 
     val neoStore = remember { NeoAppearanceStore(context.applicationContext) }
     var neoAppearance by remember { mutableStateOf(loaded.appearance) }
-    val navigation = rememberSaveable(saver = NeoNavigator.saver) { NeoNavigator(initialTab) }
+    val navigation = rememberSaveable(saver = NeoNavigator.saver) { NeoNavigator(if (entry != null || initialTab != 0) initialTab else NeoLaunchPreferences(context).landingTab) }
     val leaveGate = remember { NeoLeaveGate() }
     val routeState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     fun go(action: () -> Unit) {
         if (!writeBusy && writeFailure == null) leaveGate.request(action)
     }
-    var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction) }
+    var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction ?: if (NeoLaunchPreferences(context).openNotes) "notes" else null) }
     var pendingTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
     var temporaryFocus by remember { mutableStateOf(false) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
@@ -750,7 +764,7 @@ fun V11Home(
                                             0 -> "Calendar"
                                             1 -> "Cash Book"
                                             4 -> "Tasks"
-                                            2 -> "Finances"
+                                            2 -> "Salary"
                                             else -> "Settings"
                                         },
                                 title =
@@ -763,8 +777,8 @@ fun V11Home(
                                             navigation.workplacesOpen ->
                                                 neoLabel("أماكن العمل", "Workplaces")
                                             navigation.tab == 0 -> neoLabel("التقويم", "Calendar")
-                                            navigation.tab == 1 -> neoLabel("كاش بوك", "Cash Book")
-                                            navigation.tab == 2 -> neoLabel("الحسابات", "Finance")
+                                            navigation.tab == 1 -> neoLabel("الإدارة المالية", "Cash Book")
+                                            navigation.tab == 2 -> neoLabel("مستحقات العمل", "Salary")
                                             navigation.tab == 3 -> neoLabel("الإعدادات", "Settings")
                                             else -> neoLabel("المهام", "Tasks")
                                         }
@@ -856,7 +870,7 @@ fun V11Home(
                                                 securitySettings = it
                                                 moneyVisible = !it.hideAmounts
                                                 accountsUnlocked =
-                                                    !it.protectAccounts ||
+                                                    !(it.protectAccounts || it.protectApplication || it.protectTasks) ||
                                                         (it.mode == V11LockMode.NONE &&
                                                             !it.biometricEnabled)
                                             },
@@ -1013,7 +1027,7 @@ fun V11Home(
                                                 moneyVisible = !it.hideAmounts
 
                                                 accountsUnlocked =
-                                                    !it.protectAccounts ||
+                                                    !(it.protectAccounts || it.protectApplication || it.protectTasks) ||
                                                         (it.mode == V11LockMode.NONE &&
                                                             !it.biometricEnabled)
                                             },
@@ -1024,7 +1038,12 @@ fun V11Home(
                                         )
 
                                     4 ->
-                                        V11TasksScreen(
+                                        if (securitySettings.protectTasks &&
+                                            (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled) &&
+                                            !accountsUnlocked) {
+                                            V11AccountsUnlockScreen(settings = securitySettings, securityStore = securityStore,
+                                                onUnlocked = { accountsUnlocked = true })
+                                        } else V11TasksScreen(
                                             financeAuthorized = accountsUnlocked,
                                             moneyVisible = moneyVisible,
                                             onQuickAction = { action ->
@@ -1101,7 +1120,7 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         ) {
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("كاش بوك", "Cash Book"),
+                label = neoLiteral("الإدارة المالية", "Cash Book"),
                 selected = selectedTab == 1,
                 onClick = { onSelectTab(1) },
                 icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
@@ -1109,7 +1128,7 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("المهام", "Tasks"),
+                label = neoLiteral("المهام والملاحظات", "Tasks & Notes"),
                 selected = selectedTab == 4,
                 onClick = { onSelectTab(4) },
                 icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
@@ -1123,7 +1142,7 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("الحسابات", "Finance"),
+                label = neoLiteral("مستحقات العمل", "Salary"),
                 selected = selectedTab == 2,
                 onClick = { onSelectTab(2) },
                 icon = {
@@ -1347,12 +1366,12 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                 listOf(
                         Triple(
                             1,
-                            neoLabel("كاش بوك", "Cash Book"),
+                            neoLabel("الإدارة المالية", "Cash Book"),
                             if (outlined) Icons.Outlined.DateRange else Icons.Rounded.DateRange,
                         ),
                         Triple(
                             4,
-                            neoLabel(neoLiteral("المهام", "Tasks"), "Tasks"),
+                            neoLabel(neoLiteral("المهام والملاحظات", "Tasks & Notes"), "Tasks"),
                             Icons.Outlined.CheckBox,
                         ),
                         Triple(
@@ -1363,7 +1382,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         ),
                         Triple(
                             2,
-                            neoLabel(neoLiteral("الحسابات", "Finance"), "Finance"),
+                            neoLabel(neoLiteral("مستحقات العمل", "Salary"), "Finance"),
                             Icons.Outlined.Storage,
                         ),
                         Triple(
@@ -1372,7 +1391,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                             if (outlined) Icons.Outlined.Settings else Icons.Rounded.Settings,
                         ),
                     )
-                    .sortedBy { listOf(0, 1, 4, 2, 3).indexOf(it.first) }
+                    .sortedBy { listOf(0, 4, 2, 1, 3).indexOf(it.first) }
                     .forEach { (index, label, icon) ->
                         NavigationBarItem(
                             selected = selectedTab == index,

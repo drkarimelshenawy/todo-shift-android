@@ -1,0 +1,14 @@
+package com.todoshift.app.v11
+
+import android.content.Context
+
+/** Destination preferences never change record IDs or shortcut requests. */
+class NeoLaunchPreferences(context: Context) {
+    private val prefs = context.applicationContext.getSharedPreferences("todo_shift_launch_v44", Context.MODE_PRIVATE)
+    var landingTab: Int
+        get() = prefs.getInt("landing", 0).takeIf { it in 0..4 } ?: 0
+        set(value) { require(value in 0..4); check(prefs.edit().putInt("landing", value).commit()) }
+    var openNotes: Boolean
+        get() = prefs.getBoolean("notes", false)
+        set(value) { check(prefs.edit().putBoolean("notes", value).commit()) }
+}

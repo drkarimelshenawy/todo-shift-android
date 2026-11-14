@@ -14,8 +14,8 @@ assert 'implementation(project(":cashbook-feature"))' in app
 assert 'lifecycle-viewmodel-compose' in app
 assert 'CashBookRoute(vm = vm' in host
 assert 'com.todoshift.app.integration.EmbeddedCashBookScreen(' in home
-assert 'neoLiteral("كاش بوك", "Cash Book")' in home
-assert 'neoLabel("كاش بوك", "Cash Book")' in home
+assert 'neoLiteral("الإدارة المالية", "Cash Book")' in home
+assert 'neoLabel("الإدارة المالية", "Cash Book")' in home
 
 # Require the Cash Book destination to use the same unlock policy as finance.
 cashbook_start = home.index('                                    1 ->\n                                        if (\n                                            securitySettings.protectAccounts')

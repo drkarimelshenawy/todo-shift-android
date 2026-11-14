@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--expected-sha', required=True)
     parser.add_argument('--expected-branch', help='Explicit reviewed build branch; defaults to candidate target branch')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--require-release', action='store_true', help='Reject debuggable APKs')
     args = parser.parse_args()
     expected = json.loads((ROOT / 'tools/PREMIUM_CANDIDATE.json').read_text())
     sha = run('git', '-C', ROOT, 'rev-parse', 'HEAD').strip()
@@ -33,6 +34,8 @@ def main():
     if not re.fullmatch('[a-fA-F0-9]{64}', args.expected_certificate):
         raise SystemExit('STOP: invalid expected certificate fingerprint')
     badging = run(args.build_tools / 'aapt', 'dump', 'badging', args.apk)
+    if args.require_release and 'application-debuggable' in badging:
+        raise SystemExit('STOP: release APK must not be debuggable')
     match = re.search(r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'", badging)
     actual = dict(zip(('applicationId', 'versionCode', 'versionName'), match.groups())) if match else {}
     if actual != {k: str(expected[k]) for k in actual} or len(actual) != 3:
@@ -47,7 +50,7 @@ def main():
                   certificateSHA256=certs[0].lower(), apkSHA256=hashlib.sha256(args.apk.read_bytes()).hexdigest(),
                   apkBytes=args.apk.stat().st_size, signatureVerification='PASS', zipalign='PASS',
                   installedCertificate='NOT VERIFIED', releaseGate='HOLD',
-                  classification=expected['classification'])
+                  classification=expected['classification'], debuggable='application-debuggable' in badging)
     for name, content in [('APK-BADGING.txt', badging), ('APK-SIGNATURE.txt', signature), ('ZIPALIGN.txt', alignment)]:
         (args.output / name).write_text(content)
     (args.output / 'BUILD-IDENTITY.json').write_text(json.dumps(result, indent=2) + '\n')

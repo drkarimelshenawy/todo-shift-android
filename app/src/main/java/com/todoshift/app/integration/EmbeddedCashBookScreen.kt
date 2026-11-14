@@ -25,5 +25,11 @@ fun EmbeddedCashBookScreen(
         factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app)
     )
     LaunchedEffect(vm) { vm.reload() }
-    CashBookRoute(vm = vm, weekStart = weekStart, salaryContent = salaryContent)
+    val appearance = com.todoshift.app.v11.ui.LocalNeoAppearance.current
+    val hostLocale = when (appearance.language) {
+        com.todoshift.app.v11.NeoLanguage.ARABIC -> java.util.Locale("ar")
+        com.todoshift.app.v11.NeoLanguage.ENGLISH -> java.util.Locale.ENGLISH
+        else -> LocalContext.current.resources.configuration.locales[0]
+    }
+    CashBookRoute(vm = vm, weekStart = weekStart, hostLocale = hostLocale, salaryContent = salaryContent)
 }

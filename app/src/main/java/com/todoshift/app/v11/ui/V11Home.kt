@@ -892,6 +892,7 @@ fun V11Home(
                                             },
                                             { navigation.back() },
                                             initialSection = navigation.feature,
+                                            searchScope = when(navigation.tab) { 4 -> "TASKS"; 2 -> "SALARY"; 1 -> "CASHBOOK"; 3 -> "SETTINGS"; else -> "CALENDAR" },
                                             focused = true,
                                             initialOwner = navigation.owner,
                                         )
@@ -963,6 +964,7 @@ fun V11Home(
                                             )
                                         } else {
                                             com.todoshift.app.integration.EmbeddedCashBookScreen(
+                                                weekStart = java.time.DayOfWeek.of(neoAppearance.firstWeekday),
                                                 salaryContent = {
                                                     V11FinanceScreen(
                                                         month = month,

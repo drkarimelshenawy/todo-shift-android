@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.todoshift.cashbook.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.Locale
-/** Module language override; AUTO uses the host context locale. Geometry stays LTR. */
+/** Module language override; AUTO uses the host context locale. Layout follows the selected language. */
 object CashBookText{
  private lateinit var app:Context
  val language=MutableStateFlow("AUTO")

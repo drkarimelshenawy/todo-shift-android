@@ -125,7 +125,7 @@ fun NeoAppearanceStudio(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Neo4ThemePreview(draft, saved.fontScale)
+            Neo4ThemePreview(draft, draft.fontScale)
             val sections = listOf(
                     NeoStudioSection.THEMES to neoLabel("الهوية", "Identity"),
                     NeoStudioSection.COLORS to neoLabel("الألوان", "Colors"),

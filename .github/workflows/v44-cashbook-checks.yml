@@ -59,16 +59,31 @@ jobs:
           TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
         run: |
           test -n "$TODOSHIFT_SIGNING_PASSWORD"
-          gradle --no-daemon -I tools/premium_qa.init.gradle :cashbook-core:runSalaryIncomeIdempotencyTest :app:testDebugUnitTest --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest' :app:assembleDebug --stacktrace
+          gradle --no-daemon -I tools/premium_qa.init.gradle :cashbook-core:check :app:testDebugUnitTest \
+            --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest' \
+            --tests 'com.todoshift.app.v11.SalaryReceiptOperationsTest' \
+            --tests 'com.todoshift.app.v11.FixedSalaryIntegrityTest' \
+            --tests 'com.todoshift.app.v11.NeoRatePolicyTest' \
+            --tests 'com.todoshift.app.v11.FinanceCalendarFilterTest' \
+            --tests 'com.todoshift.app.v11.NeoCalendarPresentationTest' \
+            --tests 'com.todoshift.app.v11.ReminderDeliveryPolicyTest' \
+            --tests 'com.todoshift.app.v11.SecurityAttemptLimitTest' \
+            --tests 'com.todoshift.app.v11.NoteTransactionTest' \
+            --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
+            --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \
+            --tests 'com.todoshift.app.backup.MigrationTransactionTest' \
+            --tests 'com.todoshift.app.backup.BackupRecoveryTest' \
+            --tests 'com.todoshift.app.storage.SafePersistenceTest' \
+            :app:assembleRelease --stacktrace
       - name: Verify APK signature and identity
         run: |
-          python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk \
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/release/app-release.apk \
             --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
             --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
             --expected-sha "$GITHUB_SHA" \
-            --expected-branch feat/v44-cashbook-integration \
+            --expected-branch feat/v44-cashbook-integration --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-v44-CashBook.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v44-CashBook.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
@@ -81,7 +96,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v44-cashbook-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v44-CashBook.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v44 Cash Book" --notes "Signed test APK. Source: $GITHUB_SHA. Cash Book receipt integration with durable idempotent posting."
+          gh release create "$TAG" delivery/ToDoShift-v44-CashBook.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v44 Cash Book" --notes "Signed release-variant APK; physical-device acceptance pending. Source: $GITHUB_SHA. Cash Book receipt integration with durable idempotent posting."
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

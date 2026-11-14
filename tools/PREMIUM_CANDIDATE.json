@@ -1,9 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
   "versionCode": 44,
-  "versionName": "4.6.1-reference-calendar-vc44-test",
-  "branch": "feat/premium-complete-ui-vc43",
-  "baseline": "e178b134658afad04d645b044f24d236594cbe33",
-  "classification": "PERSISTENT-SIGNED UI TEST CANDIDATE — not a release; device acceptance pending"
+  "versionName": "4.6.1-premium-v44",
+  "branch": "feat/v44-cashbook-integration",
+  "baseline": "21b1eaa240df33da59c23e205ec9fb97a1abaa9b",
+  "classification": "PERSISTENT-SIGNED RELEASE VARIANT \u2014 physical-device acceptance pending"
 }
-

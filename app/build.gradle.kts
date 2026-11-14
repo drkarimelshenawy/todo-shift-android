@@ -7,13 +7,14 @@ plugins {
 android {
     namespace = "com.todoshift.app"
     compileSdk = 35
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 44
-        versionName = "4.6.1-reference-calendar-vc44-test"
+        versionName = "4.6.1-premium-v44"
     }
 
 
@@ -33,6 +34,10 @@ android {
     }
 
     buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("persistentDebug")
+            isDebuggable = false
+        }
         getByName("debug") {
             signingConfig = signingConfigs.getByName("persistentDebug")
         }

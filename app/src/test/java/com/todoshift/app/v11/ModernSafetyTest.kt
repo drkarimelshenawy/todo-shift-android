@@ -19,13 +19,8 @@ class ModernSafetyTest {
         get() = RuntimeEnvironment.getApplication()
 
     @Test
-    fun rebootRescheduleKeepsDeferredQuietHourReminderAfterOriginalTimePassed() {
-        val now =
-            java.time.LocalDate.now()
-                .atTime(23, 45)
-                .atZone(java.time.ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli()
+    fun rebootRescheduleDoesNotReplayMissedQuietHourReminder() {
+        val now = System.currentTimeMillis()
         val original = now - 30 * 60 * 1000
         assertTrue(now > original)
         NeoSmartStore(context).update { it.put("quietHours", true).put("notify_tasks", true) }
@@ -50,8 +45,8 @@ class ModernSafetyTest {
                     .savedIntent
                     .getStringExtra("reminder_id") == task.id
             }
-        assertNotNull(alarm)
-        assertEquals(NeoNotificationPolicy.deliveryTime(context, original), alarm!!.triggerAtTime)
+        assertNull(alarm)
+        assertEquals(original, NeoNotificationPolicy.deliveryTime(context, original))
     }
 
     @Test
@@ -78,7 +73,7 @@ class ModernSafetyTest {
     }
 
     @Test
-    fun quietHoursDeferDeliveryWithoutChangingStoredReminderOrPerformancePreference() {
+    fun quietHoursKeepScheduledTimeStoredReminderAndPerformancePreference() {
         NeoSmartStore(context).update { it.put("quietHours", true).put("notify_tasks", true) }
         NeoAppearanceStore(context).save(NeoAppearance(performance = NeoPerformance.LIGHTWEIGHT))
         val original =
@@ -92,8 +87,11 @@ class ModernSafetyTest {
         val delivered =
             java.time.Instant.ofEpochMilli(NeoNotificationPolicy.deliveryTime(context, original))
                 .atZone(ZoneId.systemDefault())
-        assertEquals(11, delivered.dayOfMonth)
-        assertEquals(7, delivered.hour)
+        assertEquals(10, delivered.dayOfMonth)
+        assertEquals(23, delivered.hour)
+        assertEquals(30, delivered.minute)
+        assertTrue(NeoNotificationPolicy.quiet(context,original))
+        assertEquals(NeoPerformance.LIGHTWEIGHT, NeoAppearanceStore(context).load().performance)
         assertTrue(NeoNotificationPolicy.enabled(context, "tasks"))
         assertEquals(original, V11Storage(context).load().tasks.single().reminderAt)
     }

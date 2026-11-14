@@ -62,7 +62,7 @@ object ToDoShiftReminder {
         })
     }
 
-    fun schedule(context: Context, item: DayItemV11) {
+    fun schedule(context: Context, item: DayItemV11, nowMillis:Long = System.currentTimeMillis()) {
         if (!item.noteVisible || item.noteTrashed) { cancel(context,item.id); return }
         if (
             !com.todoshift.app.v11.NeoNotificationPolicy.enabled(
@@ -72,14 +72,14 @@ object ToDoShiftReminder {
         )
             return
         val whenMs =
-            ReminderPolicy(context).next(item.id,item.reminderAt ?: return) ?: return
+            ReminderPolicy(context).next(item.id,item.reminderAt ?: return,now=nowMillis) ?: return
 
         if (item.completed) {
             cancel(context, item.id)
             return
         }
 
-        if (whenMs <= System.currentTimeMillis()) {
+        if (whenMs <= nowMillis) {
             return
         }
 
@@ -117,20 +117,20 @@ object ToDoShiftReminder {
         }
     }
 
-    fun schedule(context: Context, task: TaskV11) {
+    fun schedule(context: Context, task: TaskV11, nowMillis:Long = System.currentTimeMillis()) {
         val privateSource=task.linkedNoteId?.let {
             runCatching { task.linkedNotePrivateV11(V11Runtime(context).start()) }.getOrDefault(true)
         } ?: false
         if (!com.todoshift.app.v11.NeoNotificationPolicy.enabled(context, "tasks")) return
         val whenMs =
-            ReminderPolicy(context).next(task.id,task.reminderAt ?: return,task.repeat.name) ?: return
+            ReminderPolicy(context).next(task.id,task.reminderAt ?: return,task.repeat.name,nowMillis) ?: return
 
         if (task.status == TaskStatusV11.COMPLETED) {
             cancel(context, task.id)
             return
         }
 
-        if (whenMs <= System.currentTimeMillis()) {
+        if (whenMs <= nowMillis) {
             return
         }
 
@@ -222,12 +222,13 @@ object ToDoShiftReminder {
                             title = "ToDo Shift • ${shift.segment.kind}",
                             reminderAt = whenMs,
                         ),
+                        nowMillis,
                     )
             }
         }
 
-        db.dayItems.forEach { schedule(context,it) }
-        db.tasks.forEach { schedule(context,it) }
+        db.dayItems.forEach { schedule(context,it,nowMillis) }
+        db.tasks.forEach { schedule(context,it,nowMillis) }
     }
 
     private fun protected(context: Context): Boolean = runCatching {

@@ -1,28 +1,13 @@
-# v44 Cash Book / Salary integration checkpoint
+# v44 execution checkpoint
 
-Branch: `feat/v44-cashbook-integration` (do not merge into main until verified).
+Branch: `feat/v44-cashbook-integration`. Current commit: see `git rev-parse HEAD` (this checkpoint is updated alongside focused commits).
 
-## Implemented in this branch
-- Cash Book v0.13 core and Compose feature imported as Gradle modules.
-- Cash Book tab wired to host navigation, protected by the existing finance unlock gate.
-- `SalaryIncomeLedgerBridge.accounts()` returns non-archived EGP Cash Book accounts.
-- `SalaryIncomeLedgerBridge.post(paymentId, accountId, amountMinor, date)` delegates to an idempotent, ledger-atomic receipt entry.
-- The persisted marker `[salary-receipt:<paymentId>]` is embedded in the income entry, so the marker and financial entry share one atomic ledger snapshot.
-- Normal ledger posting cannot create that reserved marker. Editing, deleting or destructive backup restoration of salary-linked entries is rejected.
-- Core regression suite includes retries, restart, amount/date conflict, failed snapshot write and parallel Ledger instances.
+Completed source changes: five-section navigation and shared Salary screen; default landing/Notes preferences; six horizontal Theme Studio sections; weekly rows/columns and direct record opening; monthly compensation history; versioned durable receipt correction/reversal reconciliation; account/debt separation; rich Markdown Notes, encrypted drafts, organization and note protection; completion history; optional app/section security; original-time silent Quiet Hours, recurrence/snooze, private and independent widgets, shortcuts.
 
-## Critical integration contract — not yet implemented
-1. The **Salary subsystem must first durably record the receipt** with a stable payment ID and selected Cash Book account.
-2. Mark the receipt as pending and call `SalaryIncomeLedgerBridge.post` on an IO dispatcher.
-3. After the ledger write succeeds, mark the Salary receipt as linked with the returned transaction ID.
-4. On startup, retry pending receipts with the **same payment ID, account, amount and date**.
-5. Do not allow changing or deleting a linked receipt without a defined reversal/adjustment workflow.
-6. Ensure full-app backup/restore reconciles Salary and Cash Book together. Cash Book-only restore currently rejects removal of recorded salary entries, but full-app restore coordination is still missing.
+In progress: selective backup/restore with inspected preview, financial dependency protection and recovery journal; integrated Android compilation and focused critical regression tests.
 
-## Verification required
-- Confirm GitHub Actions workflow `v44-cashbook-checks.yml` actually passes. A workflow file alone is not a passing build.
-- Run the Android app on a device: finance lock, Cash Book CRUD, backup/restore, process death, navigation, and RTL.
-- Verify existing host calendar/shift features and migrations remain intact.
-- Produce and verify an APK with a valid signing key compatible with intended update installations.
+Last checks: static Cash Book integration guard PASS; all nine Java core suites PASS (including durable receipt lifecycle). Actions #25 exposed existing CashBookRoute selector compilation error, fixed in afaa37e. Existing persistent signing secret restored successfully in CI. No signed APK built for the new integrated changes yet.
 
-**Do not enable automatic Salary-to-Cash posting or distribute a production APK until the pending-receipt recovery contract and end-to-end tests are complete.**
+Remaining: finish integrated compile; run selected persistence/migration/financial/security/reminder/note tests; fix failures; final existing signing workflow; verify APK signature/package/version and direct release asset. Physical-device behavior remains untested. Do not call this mission complete merely because the build passes.
+
+Environment: JDK17, Gradle8.9, SDK35 installed under `/workspace/android-tools`; local build cache `/workspace/android-tools/gradle-home`. No emulator. Compile log `/tmp/v44-compile2.log`.

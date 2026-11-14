@@ -260,14 +260,6 @@ fun V11Home(
         else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         onDispose { }
     }
-    if (securitySettings.protectApplication &&
-        (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled) &&
-        !accountsUnlocked) {
-        V11AccountsUnlockScreen(settings = securitySettings, securityStore = securityStore,
-            onUnlocked = { accountsUnlocked = true })
-        return
-    }
-
     var db by remember { mutableStateOf(loaded.database) }
     var cashSyncError by remember { mutableStateOf<String?>(null) }
     var cashSyncAttempt by remember { mutableIntStateOf(0) }
@@ -735,7 +727,12 @@ fun V11Home(
                             androidx.compose.ui.unit.LayoutDirection.Rtl,
                         LocalNeoRuntimeReduced.current || temporaryFocus,
                     )
-                Scaffold(
+                if (securitySettings.protectApplication &&
+                    (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled) &&
+                    !accountsUnlocked) {
+                    V11AccountsUnlockScreen(settings = securitySettings, securityStore = securityStore,
+                        onUnlocked = { accountsUnlocked = true })
+                } else Scaffold(
                     containerColor =
                         if (uiSettings.experience == V11Experience.PREMIUM) Color.Transparent
                         else MaterialTheme.colorScheme.background,

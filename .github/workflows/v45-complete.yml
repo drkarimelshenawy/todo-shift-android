@@ -2,7 +2,7 @@ name: v45 specification completion signed APK
 
 on:
   push:
-    branches: [feat/v45-complete-specification]
+    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/feat/v45-complete-specification'
+    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -30,7 +30,7 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
       - name: Pin source branch
-        run: git checkout -B feat/v45-complete-specification "$GITHUB_SHA"
+        run: git checkout -B "$GITHUB_REF_NAME" "$GITHUB_SHA"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -85,13 +85,13 @@ jobs:
             --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
             --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
             --expected-sha "$GITHUB_SHA" \
-            --expected-branch feat/v45-complete-specification --require-release \
+            --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v45-r2.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v45-calendar-fix.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-v45-signed-APK
+          name: ToDoShift-v45-calendar-fix-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -99,17 +99,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v45-complete-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v45-r2.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 completed revision" --notes "Signed v45 revision with calendar, workplace, notes, recovery and restore completion. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+          TAG="v45-calendar-fix-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v45-calendar-fix.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 completed revision" --notes "Signed v45 revision with calendar, workplace, notes, recovery and restore completion. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v45-complete-${GITHUB_SHA:0:12}"
+          TAG="v45-calendar-fix-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ToDoShift-v45-r2.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ToDoShift-v45-r2.apk "$RUNNER_TEMP/published/ToDoShift-v45-r2.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v45-r2.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ToDoShift-v45-calendar-fix.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v45-calendar-fix.apk "$RUNNER_TEMP/published/ToDoShift-v45-calendar-fix.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v45-calendar-fix.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

@@ -53,6 +53,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         }
     }
     var notesTab by rememberSaveable { mutableStateOf(NeoLaunchPreferences(context).openNotes) }
+    LaunchedEffect(Unit) {if(initialAction==null) notesTab=NeoLaunchPreferences(context).openNotes}
     LaunchedEffect(initialAction,initialTaskId) {
         if(initialAction=="tasks" || (initialAction=="open" && db.tasks.any {it.id==initialTaskId})) notesTab=false
         if(initialAction=="notes") notesTab=true
@@ -82,6 +83,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var noteSearch by rememberSaveable { mutableStateOf("") }
     var noteFolder by rememberSaveable { mutableStateOf("active") }
     var noteTag by rememberSaveable {mutableStateOf<String?>(null)}
+    var noteSelectionMode by remember {mutableStateOf(false)}
     var selectedNotes by remember {mutableStateOf(setOf<String>())}
     var confirmTrash by remember {mutableStateOf(false)}
     var noteSort by rememberSaveable { mutableStateOf("updated") }
@@ -108,7 +110,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         db.tasks.filter { it.calendarId==null || it.calendarId in ids }
     }
     val tasks=remember(visible,db.dayItems,period,status,search,priority,calendar,options,date) {
-        NeoTaskQueries.select(visible.filter {search.isBlank() || !it.linkedNotePrivateV11(db)},date,period,status,search,priority,calendar,options)
+        NeoTaskQueries.select(visible.filter {search.isBlank() || (!it.linkedNotePrivateV11(db) && !(noteSecuritySettings.protectNotes&&it.linkedNoteId!=null))},date,period,status,search,priority,calendar,options)
     }
     fun open(id: String?=null) { editingId=id;editor=true }
     LaunchedEffect(initialAction,initialTaskId) {
@@ -136,6 +138,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             var sharedMenu by remember {mutableStateOf(false)}
                             IconButton(onClick={sharedMenu=true}) {Icon(Icons.Rounded.MoreVert,neoLabel("خيارات","Options"))}
                             DropdownMenu(sharedMenu,{sharedMenu=false}) {
+                                if(notesTab) DropdownMenuItem(text={Text(neoLabel("تحديد الملاحظات","Select notes"))},onClick={sharedMenu=false;noteSelectionMode=!noteSelectionMode;selectedNotes=emptySet()})
                                 DropdownMenuItem(text={Text(neoLabel("القسم الافتراضي وألوان الملاحظات","Default section and note colors"))},onClick={sharedMenu=false;preferencesOpen=true})
                             }
                         }
@@ -175,7 +178,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     (if(options.sort==NeoTaskSort.MANUAL) linkedMapOf("" to tasks) else tasks.groupBy {it.date}).forEach { (day,group) ->
                         item(key="heading-$day") {Text((if(day.isEmpty()) neoLabel("ترتيب يدوي","Manual order") else if(day==date) neoLabel("مهام اليوم","Today") else day)+" · "+group.size,Modifier.padding(top=8.dp),style=MaterialTheme.typography.titleMedium)}
                         items(group,key={it.id}) {task ->
-                            TaskCardV11(task,privateSource=task.linkedNotePrivateV11(db),onToggleComplete={
+                            TaskCardV11(task,privateSource=task.linkedNotePrivateV11(db)||(noteSecuritySettings.protectNotes&&task.linkedNoteId!=null),onToggleComplete={
                                 val complete=task.status!=TaskStatusV11.COMPLETED;val now=System.currentTimeMillis()
                                 changed(db.copy(tasks=db.tasks.map {if(it.id==task.id) it.withCompletionV11(complete,now) else it}),neoLiteral("تم تحديث المهمة","Task updated"))
                             },onEdit={open(task.id)},onDelete={deleteId=task.id})
@@ -195,7 +198,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             TextButton(enabled=!write.pending,onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(notePinned=true) else it}),neoLiteral("تم التثبيت","Pinned"));selectedNotes=emptySet()}) {Text(neoLabel("تثبيت","Pin"))}
                             TextButton(enabled=!write.pending,onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteArchived=noteFolder!="archive",noteTrashed=false) else it}),neoLiteral("تم التحديث","Updated"));selectedNotes=emptySet()}) {Text(if(noteFolder=="archive"||noteFolder=="trash") neoLabel("استعادة","Restore") else neoLabel("أرشفة","Archive"))}
                             TextButton(enabled=!write.pending,onClick={confirmTrash=true}) {Text(neoLabel("مهملات","Trash"))}
-                            TextButton(onClick={selectedNotes=emptySet()}) {Text(neoLabel("إلغاء التحديد","Clear selection"))}
+                            TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {Text(neoLabel("إلغاء التحديد","Clear selection"))}
                         }
                         Row {
                             FilterChip(noteSort=="updated",{noteSort="updated"},label={Text(neoLabel("آخر تعديل","Updated"))})
@@ -215,7 +218,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
                         Card(onClick={noteId=note.id;noteEditor=true},colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
                             Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                                if(!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
+                                if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
                                 if(note.noteLocked) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium)
                                 else {
                                     Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {noteDisplayText(note.details).lineSequence().firstOrNull {it.isNotBlank()}?.take(100) ?: neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium)

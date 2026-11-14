@@ -634,10 +634,7 @@ class Neo4LocalBackup(context: Context) :
                 writeAtomic(quarantine, journalBytes)
             }
             if (!recovery && oldDatabase != null) {
-                val safetyDirectory = File(app.filesDir, "safety-copies")
-                check(safetyDirectory.isDirectory || safetyDirectory.mkdirs()) { "Cannot create safety snapshot" }
-                val safetyFile = File(safetyDirectory, "before-restore-${java.util.UUID.randomUUID()}.zip")
-                safetyFile.outputStream().use { export(oldDatabase, it) }
+                createNeoSafetyCopy(app,oldDatabase)
             }
             writeAtomic(journal, journalBytes)
             try {

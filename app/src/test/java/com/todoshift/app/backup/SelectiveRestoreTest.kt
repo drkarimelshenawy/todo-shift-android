@@ -30,7 +30,7 @@ class SelectiveRestoreTest {
         val prepared = archive(before, setOf(BackupSection.SETTINGS))
         assertEquals(setOf(BackupSection.SETTINGS), prepared.preview.availableSections)
         assertEquals(before, backup.restore(prepared, prepared.token, setOf(BackupSection.SETTINGS), RestoreMode.REPLACE).database)
-        assertTrue(java.io.File(context.filesDir, "safety-copies").listFiles().orEmpty().any { it.extension == "zip" })
+        assertTrue(java.io.File(context.filesDir, "safety-copies").listFiles().orEmpty().any { it.extension == "sealed" })
     }
     @Test fun taskMergeIsIdempotentAndDoesNotReplacePayments() {
         val original = V11Runtime(context).start()

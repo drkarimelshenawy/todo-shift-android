@@ -11,12 +11,14 @@ class V11Runtime internal constructor(
     private val recover: () -> Unit,
     private val refreshWidgets: () -> Unit,
     private val migrateLegacy: ((com.todoshift.app.data.AppData, String) -> V11Database)? = null,
+    private val protectSafetyCopies: (() -> Unit)? = null,
 ) {
     constructor(context: Context) : this(
         AppStorage(context.applicationContext), V11Storage(context.applicationContext),
         { com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).recoverIfNeeded() },
         { com.todoshift.app.widget.Neo4WidgetRefresh.schedule(context.applicationContext) },
         { old, date -> com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).migrateLegacy(old, date) },
+        {com.todoshift.app.backup.protectNeoSafetyCopies(context.applicationContext)},
     )
 
     fun start(): V11Database {
@@ -24,7 +26,7 @@ class V11Runtime internal constructor(
             recover()
 
             when (val result = storage.read()) {
-                is StorageRead.Loaded -> {storage.protectLegacyNotes(result.data);return@synchronized result.data}
+                is StorageRead.Loaded -> {storage.protectLegacyNotes(result.data);protectSafetyCopies?.invoke();return@synchronized result.data}
                 is StorageRead.Failed -> throw IllegalStateException("V11 load failed; no initialization allowed", result.cause)
                 StorageRead.Missing -> check(!storage.wasMigrated()) {
                     "Previously migrated V11 database is missing; refusing to recreate it"

@@ -56,7 +56,7 @@ class ModernSafetyTest {
         val name = createNeoSafetyCopy(context, db)
         val copy = File(context.filesDir, "safety-copies/$name")
         assertTrue(copy.isFile)
-        val prepared = Neo4LocalBackup(context).preview(copy.inputStream())
+        val prepared = Neo4LocalBackup(context).preview(com.todoshift.app.backup.openNeoSafetyCopy(copy))
         assertTrue(prepared.token.isNotEmpty())
         assertEquals(db, V11Storage(context).load())
     }

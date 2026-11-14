@@ -250,7 +250,7 @@ fun Neo4AccountBackupPage(
             java.io
                 .File(app.filesDir, "safety-copies")
                 .listFiles()
-                ?.filter { it.extension == "zip" }
+                ?.filter { it.extension in setOf("zip","sealed") }
                 ?.sortedByDescending { it.lastModified() }
                 .orEmpty()
         }
@@ -268,7 +268,7 @@ fun Neo4AccountBackupPage(
                             try {
                                 prepared =
                                     withContext(Dispatchers.IO) {
-                                        file.inputStream().use { backup.preview(it) }
+                                        openNeoSafetyCopy(file).use { backup.preview(it) }
                                     }
                             } catch (e: Exception) {
                                 failed = true

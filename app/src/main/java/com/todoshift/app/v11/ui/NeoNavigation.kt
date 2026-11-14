@@ -186,7 +186,7 @@ data class NeoEntry(
         fun parse(intent: Intent, token: Long): NeoEntry {
             val action =
                 intent.getStringExtra("todo_shift_task_action")?.takeIf {
-                    it in listOf("add", "open", "notes")
+                    it in listOf("add", "open", "notes", "tasks")
                 }
             val date =
                 intent.getStringExtra("todo_shift_open_date")?.let {

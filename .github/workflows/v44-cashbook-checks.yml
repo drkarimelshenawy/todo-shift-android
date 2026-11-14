@@ -7,6 +7,7 @@ on:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
       - 'app/**'
+      - 'scripts/check_v44_cashbook_integration.py'
       - 'settings.gradle.kts'
       - 'build.gradle.kts'
       - '.github/workflows/v44-cashbook-checks.yml'
@@ -29,6 +30,8 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Verify Cash Book navigation and finance lock invariants
+        run: python3 scripts/check_v44_cashbook_integration.py
       - name: Compile imported Cash Book and host app
         run: |
           chmod +x ./gradlew

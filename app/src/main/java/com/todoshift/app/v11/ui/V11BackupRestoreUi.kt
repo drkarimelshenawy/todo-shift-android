@@ -43,6 +43,8 @@ fun V11BackupRestoreDialog(
     var legacyExport by rememberSaveable { mutableStateOf(false) }
     var prepared by remember { mutableStateOf<Neo4PreparedRestore?>(null) }
     var expected by remember { mutableStateOf<V11Database?>(null) }
+    var pendingExport by remember { mutableStateOf<Uri?>(null) }
+    var pendingImport by remember { mutableStateOf<Uri?>(null) }
 
     val privateNotes = db.dayItems.any { it.notePrivate }
     var notesAuthorized by remember(privateNotes) { mutableStateOf(!privateNotes) }
@@ -144,12 +146,18 @@ fun V11BackupRestoreDialog(
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/octet-stream")
         ) {
-            if (it != null) export(it)
+            if (it != null) pendingExport = it
         }
     val importLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-            if (it != null) inspect(it)
+            if (it != null) pendingImport = it
         }
+    LaunchedEffect(pendingExport, pendingImport, financeAuthorized, notesAuthorized) {
+        if (canAccess() && !busy) {
+            pendingExport?.let { pendingExport = null; export(it) }
+            pendingImport?.let { pendingImport = null; inspect(it) }
+        }
+    }
     fun startExport(legacy: Boolean) {
         legacyExport = legacy
         val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))

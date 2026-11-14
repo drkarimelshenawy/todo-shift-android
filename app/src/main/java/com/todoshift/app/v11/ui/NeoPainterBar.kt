@@ -208,21 +208,16 @@ fun NeoPainterBar(
             } catch (failure: Exception) { error = failure.message }
         }
     }
-    if(selectorVisible) Surface(
+    if (selectorVisible) Surface(
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(24.dp),
         shadowElevation = 5.dp,
     ) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        Column(Modifier.width((androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp - 12).coerceAtLeast(280).dp).padding(vertical = 2.dp)) {
             // Shift types are a transient overlay ABOVE the calendar's lower edge.
             // They do not consume height in the permanently reserved workplace slot.
             if (typesOpen)
-                Popup(
-                    alignment = Alignment.TopCenter,
-                    offset = IntOffset(0, -with(LocalDensity.current) { 148.dp.roundToPx() }),
-                    onDismissRequest = { typesOpen = false },
-                ) {
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                         shape = RoundedCornerShape(22.dp),
@@ -285,7 +280,6 @@ fun NeoPainterBar(
                             }
                         }
                     }
-                }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Row(
                     Modifier.weight(1f).horizontalScroll(rememberScrollState()),

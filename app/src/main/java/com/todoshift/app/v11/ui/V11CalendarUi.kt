@@ -420,9 +420,10 @@ fun V11CalendarScreen(
                     }
                     if(paintMode) androidx.compose.ui.window.Popup(
                         alignment=Alignment.BottomCenter,
-                        offset=androidx.compose.ui.unit.IntOffset(0,-with(androidx.compose.ui.platform.LocalDensity.current){56.dp.roundToPx()}),
-                        onDismissRequest={selectorVisible=false},
-                        properties=androidx.compose.ui.window.PopupProperties(focusable=false,dismissOnClickOutside=selectorVisible),
+                        // Anchor the workplace strip in the reserved space below the calendar.
+                        offset=androidx.compose.ui.unit.IntOffset(0,0),
+                        onDismissRequest={},
+                        properties=androidx.compose.ui.window.PopupProperties(focusable=false,dismissOnClickOutside=false),
                     ) {
                         NeoPainterBar(db,workplaces,activeCalendar?.id,paintDates,selectedDate,modernPaintRequest,bulkPaint,
                             {bulkPaint=it},{paintDates=emptySet()},onDatabaseChange,

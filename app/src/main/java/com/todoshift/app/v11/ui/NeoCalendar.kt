@@ -99,8 +99,8 @@ fun NeoCalendarArea(
     val update = LocalNeoOnChange.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val securityStore = remember(context) { V11SecurityStore(context.applicationContext) }
-    val includeTaskContent = !securityStore.load().protectTasks
-    val includeNoteContent = includeTaskContent && !securityStore.load().protectNotes
+    val includeTaskContent = securityStore.load().let {!it.protectTasks&&!it.protectTasksOnly}
+    val includeNoteContent = securityStore.load().let {!it.protectTasks&&!it.protectNotes}
     val cellMetrics = neoCellMetrics()
     val locale = if (LocalNeoEnglish.current) Locale.ENGLISH else Locale.forLanguageTag("ar")
     val presentation =
@@ -124,7 +124,7 @@ fun NeoCalendarArea(
         remember(db.dayItems, visibleCalendarIds, includeTaskContent, includeNoteContent) {
             db.dayItems
                 .filter {
-                    !it.completed && (includeTaskContent || (it.type != DayItemTypeV11.NOTE && it.type != DayItemTypeV11.TASK)) && (it.type != DayItemTypeV11.NOTE || (includeNoteContent && it.noteVisible && !it.notePrivate)) && (it.calendarId == null || it.calendarId in visibleCalendarIds)
+                    !it.completed && (when(it.type) {DayItemTypeV11.NOTE -> includeNoteContent;DayItemTypeV11.TASK -> includeTaskContent;else -> true}) && (it.type != DayItemTypeV11.NOTE || (includeNoteContent && it.noteCalendarLinked && it.noteVisible && !it.notePrivate)) && (it.calendarId == null || it.calendarId in visibleCalendarIds)
                 }
                 .groupBy { it.date }
         }

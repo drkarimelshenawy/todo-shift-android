@@ -346,6 +346,7 @@ fun V11SecuritySettingsDialog(
                 )
 
                 listOf(
+                    Triple(neoLiteral("قفل المهام فقط","Protect Tasks only"),settings.protectTasksOnly,{value:Boolean->settings=settings.copy(protectTasksOnly=value)}),
                     Triple(neoLiteral("قفل التقويم","Protect Calendar"),settings.protectCalendar,{value:Boolean->settings=settings.copy(protectCalendar=value)}),
                     Triple(neoLiteral("قفل الملاحظات","Protect Notes"),settings.protectNotes,{value:Boolean->settings=settings.copy(protectNotes=value)}),
                     Triple(neoLiteral("قفل المستحقات","Protect Salary"),settings.protectSalary,{value:Boolean->settings=settings.copy(protectSalary=value)}),
@@ -438,6 +439,7 @@ fun V11SecuritySettingsDialog(
                                 protectApplication = false,
                                 protectTasks = false,
                                 protectCalendar = false,
+                                protectTasksOnly = false,
                                 protectNotes = false,
                                 protectSalary = false,
                                 protectCashBook = false,

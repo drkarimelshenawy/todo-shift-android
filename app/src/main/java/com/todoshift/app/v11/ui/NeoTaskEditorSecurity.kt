@@ -18,7 +18,7 @@ internal fun NeoTaskEditorGate(onDismiss:()->Unit, sourceProtected:Boolean=false
     val context=LocalContext.current
     val security=remember {V11SecurityStore(context.applicationContext)}
     val settings=security.load()
-    val required=settings.protectTasks||settings.protectApplication||sourceProtected
+    val required=settings.protectTasks||settings.protectTasksOnly||settings.protectApplication||sourceProtected
     val inherited=LocalTaskEditorAuthorized.current
     var authorized by remember(required) {mutableStateOf(!required||inherited)}
     val state=rememberSaveableStateHolder()
@@ -42,5 +42,5 @@ internal fun NeoTaskEditorGate(onDismiss:()->Unit, sourceProtected:Boolean=false
 @Composable
 internal fun neoTaskDialogProperties(sourceProtected:Boolean=false):DialogProperties {
     val security=V11SecurityStore(LocalContext.current.applicationContext).load()
-    return DialogProperties(securePolicy=if(security.protectTasks||security.protectApplication||sourceProtected) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)
+    return DialogProperties(securePolicy=if(security.protectTasks||security.protectTasksOnly||security.protectApplication||sourceProtected) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)
 }

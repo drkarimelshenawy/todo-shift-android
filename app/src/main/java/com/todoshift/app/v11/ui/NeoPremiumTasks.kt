@@ -56,19 +56,27 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     LaunchedEffect(Unit) {if(initialAction==null) notesTab=NeoLaunchPreferences(context).openNotes}
     LaunchedEffect(initialAction,initialTaskId) {
         if(initialAction=="tasks" || (initialAction=="open" && db.tasks.any {it.id==initialTaskId})) notesTab=false
-        if(initialAction=="notes") notesTab=true
+        if(initialAction=="notes" || (initialAction=="open" && db.dayItems.any {it.id==initialTaskId && it.type==DayItemTypeV11.NOTE})) notesTab=true
     }
     val noteSecurity=remember {V11SecurityStore(context.applicationContext)}
     val noteSecuritySettings=noteSecurity.load()
+    var taskSectionUnlocked by remember {mutableStateOf(false)}
     var noteSectionUnlocked by remember {mutableStateOf(false)}
     val securityLifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     var noteBackgroundAt by remember {mutableLongStateOf(0L)}
     DisposableEffect(securityLifecycle,noteSecuritySettings) {
         val observer=androidx.lifecycle.LifecycleEventObserver {_,event ->
-            if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP) {noteBackgroundAt=System.currentTimeMillis();if(noteSecuritySettings.autoLockMinutes==0) noteSectionUnlocked=false}
-            if(event==androidx.lifecycle.Lifecycle.Event.ON_START && noteBackgroundAt>0 && System.currentTimeMillis()-noteBackgroundAt>=noteSecuritySettings.autoLockMinutes*60000L) noteSectionUnlocked=false
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP) {noteBackgroundAt=System.currentTimeMillis();if(noteSecuritySettings.autoLockMinutes==0) {noteSectionUnlocked=false;taskSectionUnlocked=false}}
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_START && noteBackgroundAt>0 && System.currentTimeMillis()-noteBackgroundAt>=noteSecuritySettings.autoLockMinutes*60000L) {noteSectionUnlocked=false;taskSectionUnlocked=false}
         }
         securityLifecycle.addObserver(observer);onDispose {securityLifecycle.removeObserver(observer)}
+    }
+    if(!notesTab&&noteSecuritySettings.protectTasksOnly&&!taskSectionUnlocked) {
+        Column {
+            TextButton(onClick={notesTab=true}) {Text(neoLabel("الملاحظات","Notes"))}
+            V11AccountsUnlockScreen(noteSecuritySettings,noteSecurity) {taskSectionUnlocked=true}
+        }
+        return
     }
     if(notesTab&&noteSecuritySettings.protectNotes&&!noteSectionUnlocked) {
         Column {

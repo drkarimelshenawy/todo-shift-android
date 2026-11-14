@@ -15,13 +15,14 @@ Approved later decisions override older handoff text: receipts automatically lin
 | Locked note/linked-task contents at rest | NoteContentCipher, V11Storage | Existing NoteTransactionTest extended; emulator Keystore migration |
 | Hide independent from lock | NeoDayNoteDialog, NeoPremiumTasks | Code inspection; device privacy acceptance remains necessary |
 | Note colors/default, tags, pinned/archive/trash/bulk | NeoPremiumTasks, NeoLaunchPreferencesUi | Compilation; not an exhaustive gesture acceptance |
+| Optional note calendar/date link | DayItemV11.noteCalendarLinked, NeoDayNoteDialog, calendar projections | NoteTransactionTest: unlink retains ID, text and reminder after reload |
 | Stable checklist task identity, existing-task link/unlink | NeoDayNoteDialog, Neo4LocalBackup.saveNote | NoteTransactionTest extended |
 | Full/partial/multi-month receipts and actual date | NeoReceiveEntitlements, NeoPaymentForm | SalaryReceiptOperationsTest |
 | Workplace statement receive above CSV | V11FinanceUi, NeoModernHub | Compilation; financial remaining calculation test |
 | Cash Book idempotency/corrections/reversals | SalaryCashSync, Ledger, SalaryIncomeLedgerBridge | Core suites and SalaryReceiptOperationsTest |
 | Accounts vs debts | CashBookRoute | Preserved v44 behavior; not device-wide acceptance |
 | Theme Studio / language / directions | NeoAppearanceStudio, NeoLanguageSettings | Existing code preserved; emulator Arabic small-screen capture |
-| Optional independent section security / relock | V11SecurityStore, V11Home, note/task gates | Compilation; biometrics and all entry paths not physically accepted |
+| Optional independent section security, including Tasks-only / relock | V11SecurityStore, V11Home, note/task gates | Compilation; biometrics and all entry paths not physically accepted |
 | Weekly selected days / quiet interval / category controls | ReminderPolicy, NeoNotificationPolicy, NeoRuntimeControls | ReminderDeliveryPolicyTest extended |
 | Independent widgets, finance destination, live refresh | Neo4WidgetSettings, Neo4SummaryWidgets, EmbeddedCashBookScreen | Existing widget suites; launcher resizing remains device acceptance |
 | Contextual search / default Tasks-Notes / launcher requests | NeoModernHub, NeoNavigation, NeoLaunchPreferencesUi, NeoShortcutControls | Compilation; launcher pinning depends on launcher |

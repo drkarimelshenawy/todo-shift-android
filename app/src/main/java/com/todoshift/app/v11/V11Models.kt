@@ -110,6 +110,7 @@ data class DayItemV11(
     val noteLocked: Boolean = false,
     val noteTags: String = "",
     val noteBackground: String? = null,
+    val noteCalendarLinked:Boolean = true,
 ) {
     val notePrivate: Boolean get() = type == DayItemTypeV11.NOTE && (noteLocked || noteHidden)
     val noteVisible: Boolean get() = type != DayItemTypeV11.NOTE || (!noteArchived && !noteTrashed && !noteHidden)

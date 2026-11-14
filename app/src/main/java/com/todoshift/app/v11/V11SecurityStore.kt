@@ -20,12 +20,13 @@ data class V11SecuritySettings(
     val autoLockMinutes: Int = 0,
     val protectApplication: Boolean = false,
     val protectTasks: Boolean = false,
+    val protectTasksOnly:Boolean = false,
     val protectCalendar: Boolean = false,
     val protectNotes: Boolean = false,
     val protectSalary: Boolean = false,
     val protectCashBook: Boolean = false,
 ) {
-    val anyProtection:Boolean get()=protectApplication||protectAccounts||protectTasks||protectCalendar||protectNotes||protectSalary||protectCashBook
+    val anyProtection:Boolean get()=protectApplication||protectAccounts||protectTasks||protectTasksOnly||protectCalendar||protectNotes||protectSalary||protectCashBook
 }
 
 class V11SecurityStore internal constructor(
@@ -140,6 +141,7 @@ class V11SecurityStore internal constructor(
 
             protectApplication = prefs.getBoolean("protect_application", false),
             protectTasks = prefs.getBoolean("protect_tasks", false),
+            protectTasksOnly = prefs.getBoolean("protect_tasks_only",false),
             protectCalendar = prefs.getBoolean("protect_calendar", false),
             protectNotes = prefs.getBoolean("protect_notes", false),
             protectSalary = prefs.getBoolean("protect_salary", false),
@@ -159,6 +161,7 @@ class V11SecurityStore internal constructor(
             .putBoolean("protect_application", settings.protectApplication)
             .putBoolean("protect_tasks", settings.protectTasks)
             .putBoolean("protect_calendar", settings.protectCalendar)
+            .putBoolean("protect_tasks_only",settings.protectTasksOnly)
             .putBoolean("protect_notes", settings.protectNotes)
             .putBoolean("protect_salary", settings.protectSalary)
             .putBoolean("protect_cashbook", settings.protectCashBook)

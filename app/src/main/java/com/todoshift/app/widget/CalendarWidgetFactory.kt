@@ -50,7 +50,7 @@ class CalendarWidgetFactory(private val context: Context, intent: Intent) : Remo
             val dayNotes = db.days.filter { it.calendarId in visible && it.note.isNotBlank() }.groupBy { it.date }
                 .mapValues { (_,v) -> v.map { it.note } }
             val independentNotes = db.dayItems.filter {
-                !com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && it.type == DayItemTypeV11.NOTE && it.noteVisible && !it.notePrivate && (it.calendarId == null || it.calendarId in visible)
+                !com.todoshift.app.v11.V11SecurityStore(context).load().protectNotes && it.type == DayItemTypeV11.NOTE && it.noteCalendarLinked && it.noteVisible && !it.notePrivate && (it.calendarId == null || it.calendarId in visible)
             }.groupBy { it.date }.mapValues { (_, entries) -> entries.map { it.title } }
             notes = (independentNotes.keys + dayNotes.keys).associateWith { date ->
                 dayNotes[date].orEmpty() + independentNotes[date].orEmpty()

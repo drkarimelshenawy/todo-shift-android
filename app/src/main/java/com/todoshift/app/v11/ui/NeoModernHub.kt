@@ -45,7 +45,7 @@ fun NeoModernHub(
     val searchSecurity = remember { V11SecurityStore(context.applicationContext) }
     val searchSettings = remember { searchSecurity.load() }
     var searchUnlocked by remember { mutableStateOf(false) }
-    if (section == "SEARCH" && searchScope == "TASKS" && (searchSettings.protectTasks||searchSettings.protectNotes) && !financeAuthorized && !searchUnlocked) {
+    if (section == "SEARCH" && searchScope == "TASKS" && (searchSettings.protectTasks||searchSettings.protectTasksOnly||searchSettings.protectNotes) && !searchUnlocked) {
         V11AccountsUnlockScreen(searchSettings, searchSecurity) { searchUnlocked = true }
         return
     }
@@ -113,9 +113,9 @@ fun NeoModernHub(
             }
         }
     val owners =
-        remember(db.tasks, db.dayItems) {
-            db.tasks.filterNot {it.linkedNotePrivateV11(db)}.map { it.id to it.title } +
-                db.dayItems.filter { it.type == DayItemTypeV11.NOTE && !it.notePrivate && it.noteVisible }.map { it.id to it.title }
+        remember(db.tasks, db.dayItems,searchSettings,searchUnlocked) {
+            db.tasks.filter { !it.linkedNotePrivateV11(db) && (searchUnlocked || (!searchSettings.protectTasks && !searchSettings.protectTasksOnly && !(searchSettings.protectNotes&&it.linkedNoteId!=null))) }.map { it.id to it.title } +
+                db.dayItems.filter { it.type == DayItemTypeV11.NOTE && !it.notePrivate && it.noteVisible && (searchUnlocked || (!searchSettings.protectTasks&&!searchSettings.protectNotes)) }.map { it.id to it.title }
         }
     var owner by rememberSaveable { mutableStateOf(initialOwner ?: owners.firstOrNull()?.first) }
     val attachments = remember { NeoAttachmentStore(context.applicationContext) }
@@ -289,7 +289,11 @@ fun NeoModernHub(
                 }
                 val result =
                     ModernOperations.search(db, query, financial).filter { row ->
-                        (row.type !in setOf("TASK", "NOTE") || !searchSettings.protectTasks || financeAuthorized || searchUnlocked) && row.type in when (searchScope) {
+                        (!when(row.type) {
+                            "TASK" -> searchSettings.protectTasks || searchSettings.protectTasksOnly || (searchSettings.protectNotes && db.tasks.firstOrNull {it.id==row.id}?.linkedNoteId!=null)
+                            "NOTE" -> searchSettings.protectTasks || searchSettings.protectNotes
+                            else -> false
+                        } || searchUnlocked) && (searchScope!="CALENDAR" || row.type!="NOTE" || db.dayItems.firstOrNull {it.id==row.id}?.noteCalendarLinked==true) && row.type in when (searchScope) {
                             "TASKS" -> setOf("TASK", "NOTE")
                             "SALARY" -> setOf("PAYMENT")
                             "CASHBOOK" -> emptySet()

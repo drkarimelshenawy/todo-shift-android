@@ -252,5 +252,5 @@ object Neo4WidgetPrivacy {
 fun neoWidgetProtected(context: Context, tasks: Boolean = false, calendar:Boolean = false): Boolean = runCatching {
     val security = V11SecurityStore(context).load()
     (security.mode != V11LockMode.NONE || security.biometricEnabled) &&
-        (security.protectApplication || (tasks && security.protectTasks) || (calendar && security.protectCalendar))
+        (security.protectApplication || (tasks && (security.protectTasks||security.protectTasksOnly)) || (calendar && security.protectCalendar))
 }.getOrDefault(true)

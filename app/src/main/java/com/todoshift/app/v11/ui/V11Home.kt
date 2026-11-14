@@ -307,6 +307,7 @@ fun V11Home(
     var neoAppearance by remember { mutableStateOf(loaded.appearance) }
     val navigation = rememberSaveable(saver = NeoNavigator.saver) { NeoNavigator(if (entry != null || initialTab != 0) initialTab else NeoLaunchPreferences(context).landingTab) }
     val leaveGate = remember { NeoLeaveGate() }
+    val financialAccess = accountsUnlocked || !(securitySettings.protectApplication || securitySettings.protectAccounts || if(navigation.tab==1) securitySettings.protectCashBook else securitySettings.protectSalary)
     val routeState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     fun go(action: () -> Unit) {
         if (!writeBusy && writeFailure == null) leaveGate.request(action)
@@ -653,7 +654,7 @@ fun V11Home(
                         if (undoHistory.size > 20) undoHistory.removeAt(0)
                         db = next
                     },
-                LocalNeoFinanceAccess provides { accountsUnlocked },
+                LocalNeoFinanceAccess provides { accountsUnlocked || !(securitySettings.protectApplication || securitySettings.protectAccounts || if(navigation.tab==1) securitySettings.protectCashBook else securitySettings.protectSalary) },
                 LocalNeoRestoreCommitted provides { state -> adoptRestore(state) },
                 LocalNeoWorkplaceCommitRequest provides
                     { places, completed ->
@@ -693,11 +694,11 @@ fun V11Home(
                     NeoUndoAction(
                         undoHistory.isNotEmpty() &&
                             !writeBusy &&
-                            ModernOperations.canUndo(db, undoHistory.last(), accountsUnlocked)
+                            ModernOperations.canUndo(db, undoHistory.last(), financialAccess)
                     ) {
                         if (
                             undoHistory.isNotEmpty() &&
-                                ModernOperations.canUndo(db, undoHistory.last(), accountsUnlocked)
+                                ModernOperations.canUndo(db, undoHistory.last(), financialAccess)
                         ) {
                             val audit =
                                 AuditEntryV11(
@@ -849,7 +850,7 @@ fun V11Home(
                                 key(navigation.feature, navigation.owner) {
                                     if (navigation.feature == "WORK_SUMMARY") {
                                         V11SchedulesScreen(month, db, oldData.workplaces, { saveDb(it) },
-                                            onMonthChange = { month = it }, financeAuthorized = accountsUnlocked,
+                                            onMonthChange = { month = it }, financeAuthorized = financialAccess,
                                             financeAmountsVisible = moneyVisible, initialSection = 1)
                                     } else if (
                                         navigation.feature in
@@ -889,7 +890,7 @@ fun V11Home(
                                         NeoModernHub(
                                             db,
                                             oldData.workplaces,
-                                            accountsUnlocked,
+                                            financialAccess,
                                             moneyVisible,
                                             { saveDb(it) },
                                             { date ->
@@ -932,7 +933,7 @@ fun V11Home(
                                                     onOpenWorkplaces = {
                                                         navigation.openWorkplaces()
                                                     },
-                                                    financeAuthorized = accountsUnlocked,
+                                                    financeAuthorized = financialAccess,
                                                     financeAmountsVisible = moneyVisible,
                                                     quickAction = calendarAction,
                                                     quickActionId = calendarActionId,
@@ -1022,7 +1023,7 @@ fun V11Home(
                                     3 ->
                                         V11MoreScreen(
                                             workplaces = oldData.workplaces,
-                                            financeAuthorized = accountsUnlocked,
+                                            financeAuthorized = financialAccess,
                                             onAccountsUnlocked = { accountsUnlocked = true },
                                             onNeoRestored = { state -> adoptRestore(state) },
                                             db = db,
@@ -1053,7 +1054,7 @@ fun V11Home(
                                             V11AccountsUnlockScreen(settings = securitySettings, securityStore = securityStore,
                                                 onUnlocked = { accountsUnlocked = true })
                                         } else V11TasksScreen(
-                                            financeAuthorized = accountsUnlocked,
+                                            financeAuthorized = financialAccess,
                                             moneyVisible = moneyVisible,
                                             onQuickAction = { action ->
                                                 navigation.selectTab(0)
@@ -1079,7 +1080,7 @@ fun V11Home(
                                                 if (navigation.hasParent) navigation.back()
                                             },
                                             onOpenWorkplaces = { navigation.openWorkplaces() },
-                                            financeAuthorized = accountsUnlocked,
+                                            financeAuthorized = financialAccess,
                                             financeAmountsVisible = moneyVisible,
                                             month = month,
                                             initialDate = launchDate,

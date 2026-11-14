@@ -11,6 +11,18 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class NoteTransactionTest {
+    @Test fun unlinkingNoteFromCalendarPreservesItsTextIdentityAndReminder() {
+        val note=DayItemV11("optional-date","2026-11-14",type=DayItemTypeV11.NOTE,title="Keep",details="Body",reminderAt=1234L)
+        val unlinked=note.copy(noteCalendarLinked=false)
+        val db=V11Database(dayItems=listOf(unlinked))
+        assertFalse(neoVisibleDays(db,emptySet()).values.any {it.notes.any {n->n.id==note.id}})
+        assertEquals(note.id,unlinked.id);assertEquals(note.details,unlinked.details);assertEquals(note.reminderAt,unlinked.reminderAt)
+        assertEquals(note,unlinked.copy(noteCalendarLinked=true))
+        val context=RuntimeEnvironment.getApplication();val base=V11Runtime(context).start()
+        Neo4LocalBackup(context).saveNote(base,NeoSmartStore(context).snapshot().toString(),unlinked,"#00A4B8",false)
+        assertEquals(unlinked,V11Runtime(context).start().dayItems.single {it.id==note.id})
+    }
+
     @Test fun blockFormattingAppliesToTheCurrentParagraphAndPreservesOtherParagraphs() {
         val value=androidx.compose.ui.text.input.TextFieldValue("first\nعربي text\nlast",androidx.compose.ui.text.TextRange(9))
         val heading=com.todoshift.app.v11.ui.noteFormat(value,"## ")

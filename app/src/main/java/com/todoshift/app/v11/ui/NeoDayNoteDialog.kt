@@ -82,9 +82,15 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var trashed by rememberSaveable { mutableStateOf(existing?.noteTrashed ?: false) }
     var locked by rememberSaveable { mutableStateOf(existing?.noteLocked ?: false) }
     var hidden by rememberSaveable { mutableStateOf(existing?.noteHidden ?: false) }
+    var calendarLinked by rememberSaveable {mutableStateOf(existing?.noteCalendarLinked ?: true)}
+    var linkedDate by rememberSaveable {mutableStateOf(existing?.date ?: date.toString())}
+    var linkedCalendar by rememberSaveable {mutableStateOf(existing?.calendarId ?: calendarId)}
     var background by rememberSaveable { mutableStateOf(existing?.noteBackground.orEmpty()) }
     var detachedTasks by rememberSaveable {mutableStateOf(listOf<String>())}
     var existingTaskLinks by rememberSaveable {mutableStateOf(listOf<String>())}
+    val linkedTaskSecurity=remember {V11SecurityStore(context.applicationContext)}
+    var linkedTasksAuthorized by remember {mutableStateOf(!linkedTaskSecurity.load().protectTasksOnly)}
+    var verifyLinkedTasks by remember {mutableStateOf(false)}
     var selectedTaskLink by remember {mutableStateOf<String?>(null)}
     var taskSpecs by rememberSaveable { mutableStateOf(listOf<String>()) }
     var reminder by rememberSaveable { mutableStateOf(existing?.reminderAt?.let {java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(it),java.time.ZoneId.systemDefault()).toString()}.orEmpty()) }
@@ -105,10 +111,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         try {
             val recovered=withContext(Dispatchers.IO) { drafts.read(draftKey) }
             if(recovered!=null) {
-                if(recovered.optString("source")==sourceRevision || recovered.optString("source")==expectedDatabase.dayItems.firstOrNull {it.id==recovered.optString("id")}?.toString()) {
+                val currentSource=expectedDatabase.dayItems.firstOrNull {it.id==recovered.optString("id")}?.toString()
+                val savedSource=recovered.optString("source")
+                if(savedSource==sourceRevision || savedSource==currentSource || (currentSource!=null && savedSource==currentSource.replace(", noteCalendarLinked=true",""))) {
                     sourceRevision=recovered.optString("source",sourceRevision)
                     id=recovered.optString("id",id); title=recovered.optString("title",title)
                     body=TextFieldValue(recovered.optString("details",body.text)); tags=recovered.optString("tags",tags)
+                    calendarLinked=recovered.optBoolean("calendarLinked",calendarLinked);linkedDate=recovered.optString("linkedDate",linkedDate)
+                    linkedCalendar=if(recovered.has("linkedCalendar")) recovered.optString("linkedCalendar").takeIf {it.isNotBlank()} else linkedCalendar
                     pinned=recovered.optBoolean("pinned",pinned); archived=recovered.optBoolean("archived",archived)
                     trashed=recovered.optBoolean("trashed",trashed); locked=recovered.optBoolean("locked",locked);hidden=recovered.optBoolean("hidden",hidden)
                     detachedTasks=recovered.optJSONArray("detachedTasks")?.let {a->(0 until a.length()).map {a.getString(it)}} ?: emptyList()
@@ -130,13 +140,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         if(!color.matches(Regex("#[0-9a-fA-F]{6}")) || (background.isNotBlank() && !background.matches(Regex("#[0-9a-fA-F]{6}")))) {
             error="اختر لونًا صحيحًا / Choose a valid color";return false
         }
+        if(runCatching {LocalDate.parse(linkedDate)}.isFailure) {error="تاريخ الملاحظة غير صحيح / Invalid note date";return false}
         val reminderAt=if(reminder.isBlank()) null else try {java.time.LocalDateTime.parse(reminder).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()} catch(_:Exception) {error="تاريخ التذكير غير صحيح / Invalid reminder date";return false}
         val note=(expected.dayItems.firstOrNull {it.id==id} ?: DayItemV11(id,date.toString(),calendarId,DayItemTypeV11.NOTE,""))
-            .copy(title=title.trim(),details=body.text,reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,noteBackground=background.takeIf {it.isNotBlank()})
+            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=body.text,reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,noteBackground=background.takeIf {it.isNotBlank()})
         val linkedTasks=taskSpecs.map {spec ->
             val key=spec.substringBefore('\n'); val label=spec.substringAfter('\n')
             val taskId=UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString()
-            expected.tasks.firstOrNull {(it.id==taskId||it.id==key)&&it.linkedNoteId==id} ?: TaskV11(id=taskId,title=label,date=date.toString(),calendarId=calendarId,linkedNoteId=id)
+            expected.tasks.firstOrNull {(it.id==taskId||it.id==key)&&it.linkedNoteId==id} ?: TaskV11(id=taskId,title=label,date=linkedDate,calendarId=linkedCalendar,linkedNoteId=id)
         }
         val linkedExisting=existingTaskLinks.mapNotNull {key->expected.tasks.firstOrNull {it.id==key}?.copy(linkedNoteId=id)}
         pending=true
@@ -155,12 +166,12 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     suspend fun keepDraft() {
       try {
         val value=JSONObject().put("id",id).put("source",sourceRevision).put("title",title).put("details",body.text).put("tags",tags)
-            .put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden)
+            .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }
       } catch(_:Exception) {error="تعذر حفظ المسودة؛ لن تُحذف التعديلات / Draft save failed; edits retained"}
     }
-    LaunchedEffect(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,draftReady) {
+    LaunchedEffect(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady) {
         if(!draftReady || pending) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
@@ -169,15 +180,24 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     }
     val latestFlush by rememberUpdatedState<suspend () -> Unit>({if(draftReady) {keepDraft();persistNote(false)}})
     val lifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var linkedTasksBackgroundAt by remember {mutableLongStateOf(0L)}
     DisposableEffect(lifecycle) {
         val observer=androidx.lifecycle.LifecycleEventObserver {_,event ->
-            if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP) scope.launch(NonCancellable) { latestFlush() }
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                linkedTasksBackgroundAt=System.currentTimeMillis()
+                if(linkedTaskSecurity.load().protectTasksOnly&&linkedTaskSecurity.load().autoLockMinutes==0) linkedTasksAuthorized=false
+                scope.launch(NonCancellable) { latestFlush() }
+            }
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_START && linkedTaskSecurity.load().protectTasksOnly && linkedTasksBackgroundAt>0 && System.currentTimeMillis()-linkedTasksBackgroundAt>=linkedTaskSecurity.load().autoLockMinutes*60000L) linkedTasksAuthorized=false
         }
         lifecycle.addObserver(observer)
         onDispose {lifecycle.removeObserver(observer)}
     }
     val gate=LocalNeoLeaveGate.current
     val leave=rememberNeoEditorExit(listOf(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs),onDismiss,pending)
+    if(verifyLinkedTasks) Dialog(onDismissRequest={verifyLinkedTasks=false},properties=DialogProperties(securePolicy=SecureFlagPolicy.SecureOn)) {
+        V11AccountsUnlockScreen(linkedTaskSecurity.load(),linkedTaskSecurity) {linkedTasksAuthorized=true;verifyLinkedTasks=false}
+    }
     if(confirmTrashNote) AlertDialog(onDismissRequest={confirmTrashNote=false},title={Text(neoLabel("نقل الملاحظة للمهملات؟","Move note to Trash?"))},text={Text(neoLabel("يمكن استعادتها لاحقًا","You can restore it later"))},confirmButton={TextButton(onClick={trashed=true;confirmTrashNote=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrashNote=false}) {Text(neoLabel("إلغاء","Cancel"))}})
     val effectiveBackground=(background.ifBlank {NeoLaunchPreferences(context).defaultNoteBackground}).takeIf {it.isNotBlank()}?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
     val baseScheme=MaterialTheme.colorScheme
@@ -191,7 +211,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         textContentColor=effectiveBackground?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface,
         onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
         properties=DialogProperties(securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit),
-        title={Text(neoLabel("ملاحظة", "Note")+" • $date")},
+        title={Text(neoLabel("ملاحظة", "Note")+(if(calendarLinked) " • $linkedDate" else ""))},
         text={Column(Modifier.heightIn(max=560.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
             OutlinedTextField(title,{if(!pending) title=it},label={Text(neoLabel("عنوان اختياري","Optional title"))},modifier=Modifier.fillMaxWidth())
             NeoNoteFormatting(body,{if(!pending) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!pending,canRedo=redo.isNotEmpty()&&!pending)
@@ -219,7 +239,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             val openTask=LocalNeoOpenNoteTask.current
             expected.tasks.filter {it.linkedNoteId==id && it.id !in detachedTasks}.forEach {task ->
                 Row {
-                    TextButton(enabled=openTask!=null&&!pending,onClick={scope.launch {keepDraft();if(persistNote(false)) openTask?.invoke(task.id)}}) {Text(neoLabel("فتح المهمة: ","Open task: ")+task.title)}
+                    TextButton(enabled=openTask!=null&&!pending,onClick={scope.launch {keepDraft();if(persistNote(false)) openTask?.invoke(task.id)}}) {Text(if(linkedTasksAuthorized) neoLabel("فتح المهمة: ","Open task: ")+task.title else neoLabel("فتح مهمة محمية","Open protected task"))}
                     TextButton(enabled=!pending,onClick={
                         detachedTasks=detachedTasks+task.id
                         val tokens=Regex("<!--task:([A-Za-z0-9_-]+)-->").findAll(body.text).filter {match ->
@@ -231,7 +251,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 }
             }
             if(options) {
-                val linkable=expected.tasks.filter {it.linkedNoteId==null && it.id !in existingTaskLinks}
+                NeoSwitch(neoLabel("إظهار الملاحظة في التقويم","Show note in calendar"),calendarLinked){calendarLinked=it}
+                if(calendarLinked) {
+                    NeoDateInput(neoLabel("تاريخ التقويم","Calendar date"),linkedDate){linkedDate=it}
+                    NeoChoice(neoLabel("التقويم","Calendar"),listOf<String?>(null)+expected.calendars.map {it.id},linkedCalendar,{key->expected.calendars.firstOrNull {it.id==key}?.name ?: neoLabel("بدون تخصيص","Unassigned")},{linkedCalendar=it})
+                }
+                if(!linkedTasksAuthorized) TextButton(onClick={verifyLinkedTasks=true}) {Text(neoLabel("التحقق لربط مهمة محمية","Verify to link a protected task"))}
+                val linkable=if(!linkedTasksAuthorized) emptyList() else expected.tasks.filter {it.linkedNoteId==null && it.id !in existingTaskLinks}
                 if(linkable.isNotEmpty()) {
                     NeoChoice(neoLabel("ربط مهمة موجودة","Link existing task"),listOf<String?>(null)+linkable.map {it.id},selectedTaskLink,{key->linkable.firstOrNull {it.id==key}?.title ?: neoLabel("اختر مهمة","Choose task")},{selectedTaskLink=it})
                     TextButton(enabled=selectedTaskLink!=null,onClick={existingTaskLinks=existingTaskLinks+requireNotNull(selectedTaskLink);selectedTaskLink=null}) {Text(neoLabel("ربط","Link"))}

@@ -419,6 +419,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
                         put("noteLocked", item.noteLocked)
                         put("noteTags", item.noteTags)
                         put("noteBackground", item.noteBackground ?: JSONObject.NULL)
+                        put("noteCalendarLinked",item.noteCalendarLinked)
                     })
                 }
             })
@@ -927,7 +928,8 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
                 noteHidden = o.optBoolean("noteHidden", false),
                 noteLocked = o.optBoolean("noteLocked", false),
                 noteTags = o.optString("noteTags", ""),
-                noteBackground = nullableString(o, "noteBackground")
+                noteBackground = nullableString(o, "noteBackground"),
+                noteCalendarLinked = o.optBoolean("noteCalendarLinked",true)
             )
         }
 

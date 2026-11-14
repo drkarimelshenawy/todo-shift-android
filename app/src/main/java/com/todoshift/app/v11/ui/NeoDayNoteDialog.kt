@@ -229,12 +229,19 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     val linked=expected.tasks.firstOrNull {(it.id==taskId||it.id==key)&&it.linkedNoteId==id}
                     if(found!=null && linked!=null && openChecklistTask!=null) {
                         scope.launch {keepDraft();if(persistNote(false)) openChecklistTask(linked.id)}
+                    } else if(found!=null && linked==null && taskSpecs.none {it.substringBefore('\n')==key}) {
+                        error=neoLiteral("المهمة المرتبطة لم تعد موجودة؛ أزل الربط قبل إنشاء مهمة جديدة","The linked task no longer exists; unlink it before creating another task")
                     } else {
                         if(found==null) {lines[line]+=" <!--task:$key-->";edit(TextFieldValue(lines.joinToString("\n")))}
                         val spec="$key\n$label";taskSpecs=taskSpecs.filterNot {it.substringBefore('\n')==key}+spec
                     }
                 }
             }) else OutlinedTextField(body,{if(!pending) edit(it)},label={Text(neoLabel("النص والتنسيق","Text and formatting"))},visualTransformation=remember {NeoNoteVisualTransformation()},minLines=6,maxLines=16,modifier=Modifier.fillMaxWidth())
+            Regex("<!--task:([A-Za-z0-9_-]+)-->").findAll(body.text).map {it.groupValues[1]}.distinct().filter {key ->
+                taskSpecs.none {it.substringBefore('\n')==key} && expected.tasks.none {it.linkedNoteId==id && (it.id==key || it.id==UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString())}
+            }.toList().forEach {key ->
+                TextButton(enabled=!pending,onClick={edit(TextFieldValue(body.text.replace("<!--task:$key-->","")))}) {Text(neoLabel("إزالة ربط مهمة غير متاحة","Unlink unavailable task"))}
+            }
             if(taskSpecs.isNotEmpty()) Text(neoLabel("${taskSpecs.size} بنود مرتبطة بمهام عند الحفظ","${taskSpecs.size} checklist links to save"),style=MaterialTheme.typography.labelSmall)
             val openTask=LocalNeoOpenNoteTask.current
             expected.tasks.filter {it.linkedNoteId==id && it.id !in detachedTasks}.forEach {task ->

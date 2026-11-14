@@ -47,4 +47,13 @@ class ReminderDeliveryPolicyTest {
         assertFalse(second.load(Neo4WidgetKind.TASKS).showDetails)
         assertEquals(.2f,first.load(Neo4WidgetKind.TASKS).backgroundOpacity,0.001f)
     }
+    @Test fun widgetTaskProjectionExcludesProtectedAndMissingNoteSources() {
+        val task=TaskV11("linked","Private fixture",date="2026-11-14",linkedNoteId="note")
+        val locked=DayItemV11("note","2026-11-14",type=DayItemTypeV11.NOTE,title="Private fixture",noteLocked=true)
+        val db=V11Database(tasks=listOf(task),dayItems=listOf(locked))
+        assertTrue(NeoWidgetContentModel.tasks(db,java.time.LocalDate.parse("2026-11-14")).isEmpty())
+        assertTrue(NeoWidgetContentModel.tasks(db.copy(dayItems=emptyList()),java.time.LocalDate.parse("2026-11-14")).isEmpty())
+        assertEquals(1,NeoWidgetContentModel.tasks(db.copy(dayItems=listOf(locked.copy(noteLocked=false))),java.time.LocalDate.parse("2026-11-14")).size)
+    }
+
 }

@@ -10,6 +10,10 @@ import kotlinx.coroutines.*
 @Composable
 fun NeoReminderRecurrenceControls(db:V11Database) {
     val context=LocalContext.current
+    if(com.todoshift.app.widget.neoWidgetProtected(context,true)) {
+        Text(neoLabel("افتح قسم المهام المحمي لإدارة تذكيراته","Open the protected Tasks section to manage its reminders"))
+        return
+    }
     val scope=rememberCoroutineScope()
     val rules=remember {ReminderPolicy(context.applicationContext)}
     val records=remember(db) {

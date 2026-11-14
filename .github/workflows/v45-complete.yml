@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: v45-cashbook-signed
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   signed-apk:

@@ -30,16 +30,17 @@ fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V
     val security = remember { V11SecurityStore(context.applicationContext) }
     val editorState=androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     val sectionProtection=security.load().let {it.protectTasks||it.protectNotes||it.protectApplication}
+    var editorLocked by remember(existing?.id) {mutableStateOf(existing?.noteLocked==true)}
     var authorized by remember(existing?.id) { mutableStateOf(existing?.noteLocked != true&&!sectionProtection) }
     val lifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     var backgroundAt by remember {mutableLongStateOf(0L)}
-    DisposableEffect(lifecycle,existing?.id,existing?.noteLocked,sectionProtection) {
+    DisposableEffect(lifecycle,existing?.id,editorLocked,sectionProtection) {
         val observer=androidx.lifecycle.LifecycleEventObserver {_,event ->
             if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP) {
                 backgroundAt=System.currentTimeMillis()
-                if((existing?.noteLocked==true||sectionProtection)&&security.load().autoLockMinutes==0) authorized=false
+                if((editorLocked||sectionProtection)&&security.load().autoLockMinutes==0) authorized=false
             }
-            if(event==androidx.lifecycle.Lifecycle.Event.ON_START && backgroundAt>0 && (existing?.noteLocked==true||sectionProtection) && System.currentTimeMillis()-backgroundAt>=security.load().autoLockMinutes*60000L) authorized=false
+            if(event==androidx.lifecycle.Lifecycle.Event.ON_START && backgroundAt>0 && (editorLocked||sectionProtection) && System.currentTimeMillis()-backgroundAt>=security.load().autoLockMinutes*60000L) authorized=false
         }
         lifecycle.addObserver(observer)
         onDispose {lifecycle.removeObserver(observer)}
@@ -52,11 +53,11 @@ fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V
         }
         return
     }
-    editorState.SaveableStateProvider(existing?.id ?: "new-note") {NeoRichNoteDialog(date, existing, expectedDatabase, calendarId, onDismiss, onSave)}
+    editorState.SaveableStateProvider(existing?.id ?: "new-note") {NeoRichNoteDialog(date, existing, expectedDatabase, calendarId, onDismiss, onSave) {editorLocked=it}}
 }
 
 @Composable
-private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit) {
+private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, onProtectionChanged:(Boolean)->Unit) {
     val context=LocalContext.current
     val styleStore=remember { NeoSmartStore(context.applicationContext) }
     val drafts=remember { NeoNoteDraftStore(context.applicationContext) }
@@ -142,7 +143,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             val next=withContext(Dispatchers.IO) {com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).saveNote(expected,expectedMetadata,note,color,border,linkedTasks=(linkedTasks+linkedExisting).distinctBy {it.id}.filterNot {it.id in detachedTasks},detachedTaskIds=detachedTasks.toSet())}
             expected=next;expectedMetadata=withContext(Dispatchers.IO) {styleStore.snapshot().toString()};sourceRevision=note.toString()
             detachedTasks=emptyList();existingTaskLinks=emptyList()
-            committed(next);draftStatus="تم الحفظ / Saved";error=null
+            onProtectionChanged(note.noteLocked);committed(next);draftStatus="تم الحفظ / Saved";error=null
             withContext(Dispatchers.IO) {drafts.remove(draftKey)}
             if(close) onSave(note)
             true

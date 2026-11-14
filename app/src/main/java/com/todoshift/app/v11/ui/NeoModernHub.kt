@@ -287,7 +287,7 @@ fun NeoModernHub(
                 }
                 val result =
                     ModernOperations.search(db, query, financial).filter { row ->
-                        row.type in when (searchScope) {
+                        (row.type !in setOf("TASK", "NOTE") || !searchSettings.protectTasks || financeAuthorized || searchUnlocked) && row.type in when (searchScope) {
                             "TASKS" -> setOf("TASK", "NOTE")
                             "SALARY" -> setOf("PAYMENT")
                             "CASHBOOK" -> emptySet()
@@ -302,7 +302,7 @@ fun NeoModernHub(
                 result.take(100).forEach { row ->
                     TextButton(
                         onClick = {
-                            if (row.type == "TASK") navigator.open("TASK_DETAIL", row.id)
+                            if (row.type in setOf("TASK", "NOTE")) navigator.open("TASK_DETAIL", row.id)
                             else if (row.type == "WORKPLACE") navigator.open("WORKPLACES")
                             else if (row.type == "PAYMENT") navigator.open("PAYMENTS", row.id)
                             else row.date?.let { onOpenDate(LocalDate.parse(it)) }

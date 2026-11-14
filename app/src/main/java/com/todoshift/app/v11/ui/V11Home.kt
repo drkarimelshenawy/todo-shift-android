@@ -623,10 +623,10 @@ fun V11Home(
             when {
                 navigation.workplacesOpen -> "أماكن العمل"
                 navigation.tab == 0 -> "التقويم"
-                navigation.tab == 1 -> "جداولي"
-                navigation.tab == 2 -> "الحسابات"
+                navigation.tab == 1 -> neoLabel("الإدارة المالية", "Cash Book")
+                navigation.tab == 2 -> neoLabel("مستحقات العمل", "Salary")
                 navigation.tab == 3 -> "الإعدادات"
-                navigation.tab == 4 -> "المهام"
+                navigation.tab == 4 -> neoLabel("المهام والملاحظات", "Tasks & Notes")
                 else -> "التقويم"
             }
         }
@@ -1374,7 +1374,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         ),
                         Triple(
                             4,
-                            neoLabel(neoLiteral("المهام والملاحظات", "Tasks & Notes"), "Tasks"),
+                            neoLabel("المهام والملاحظات", "Tasks & Notes"),
                             Icons.Outlined.CheckBox,
                         ),
                         Triple(
@@ -1385,7 +1385,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         ),
                         Triple(
                             2,
-                            neoLabel(neoLiteral("مستحقات العمل", "Salary"), "Finance"),
+                            neoLabel("مستحقات العمل", "Salary"),
                             Icons.Outlined.Storage,
                         ),
                         Triple(

@@ -70,4 +70,31 @@ class SelectiveRestoreTest {
         try { backup.restore(prepared, prepared.token, setOf(BackupSection.TASKS), RestoreMode.MERGE); fail("Merge must reject conflicts") } catch (_: IllegalArgumentException) { }
         assertEquals(changed, storage.load())
     }
+
+    @Test fun taskOnlyExportCarriesReferencedShiftAndPreservesCalendarEvents() {
+        val original = V11Runtime(context).start()
+        val day = DayEntryV11("d", "2026-11-14", original.calendars.first().id,
+            listOf(ShiftSegmentV11("s", ShiftKind.FULL_DAY)))
+        val task = TaskV11("t", "shift task", date = "2026-11-14", linkedShiftId = "s")
+        val note = DayItemV11("n", "2026-11-14", type = DayItemTypeV11.NOTE, title = "note")
+        val event = DayItemV11("e", "2026-11-14", type = DayItemTypeV11.REMINDER, title = "keep event")
+        storage.save(original.copy(days = listOf(day), tasks = listOf(task), dayItems = listOf(note, event)))
+        val prepared = archive(storage.load(), setOf(BackupSection.TASKS))
+        storage.save(original.copy(dayItems = listOf(event)))
+        val result = Neo4LocalBackup(context).restore(prepared, prepared.token, setOf(BackupSection.TASKS), RestoreMode.REPLACE).database
+        assertEquals(listOf(day), result.days)
+        assertEquals(listOf(task), result.tasks)
+        assertEquals(setOf("e", "n"), result.dayItems.map { it.id }.toSet())
+    }
+
+    @Test fun staleInspectedStateCannotAuthorizeAnotherRestore() {
+        val original = V11Runtime(context).start()
+        val prepared = archive(original, setOf(BackupSection.SETTINGS))
+        val backup = Neo4LocalBackup(context)
+        val preview = backup.inspect(prepared, setOf(BackupSection.SETTINGS), RestoreMode.REPLACE)
+        val changed = original.copy(tasks = listOf(TaskV11("new", "added after preview", date = "2026-11-14")))
+        storage.save(changed)
+        try { backup.restore(prepared, prepared.token, setOf(BackupSection.SETTINGS), RestoreMode.REPLACE, preview.currentFingerprint); fail("Expected stale preview rejection") } catch (_: IllegalStateException) { }
+        assertEquals(changed, storage.load())
+    }
 }

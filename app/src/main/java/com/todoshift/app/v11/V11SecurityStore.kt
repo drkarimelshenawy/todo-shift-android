@@ -291,6 +291,23 @@ class V11SecurityStore internal constructor(
     // SECURE SECRET STORAGE
     // ========================================================
 
+    fun hasRecoveryCode():Boolean=prefs.contains("recovery_hash")
+    /** Only expose this after the settings authentication gate. Shown once, never logged. */
+    fun createRecoveryCode():String {
+        val code=ByteArray(24).also {SecureRandom().nextBytes(it)}.joinToString("") {"%02x".format(it)}
+        check(setSecret(code,"recovery_salt","recovery_hash")) {"Recovery code could not be saved"}
+        return code.chunked(6).joinToString("-")
+    }
+    fun recoverPin(code:String,newPin:String):Boolean=synchronized(verificationGate) {
+        if(newPin.length !in 6..12 || !newPin.all(Char::isDigit)) return@synchronized false
+        val normalized=code.replace("-","").replace(" ","").lowercase(java.util.Locale.ROOT)
+        if(!verifySecret(normalized,"recovery_salt","recovery_hash")) return@synchronized false
+        val salt=ByteArray(16).also {SecureRandom().nextBytes(it)}
+        val hash=hashSecret(newPin,salt)
+        prefs.edit().putString(KEY_PIN_SALT,Base64.encodeToString(salt,Base64.NO_WRAP))
+            .putString(KEY_PIN_HASH,Base64.encodeToString(hash,Base64.NO_WRAP)).putString(KEY_MODE,V11LockMode.PIN.name).commit()
+    }
+
     private fun setSecret(
         value: String,
         saltKey: String,

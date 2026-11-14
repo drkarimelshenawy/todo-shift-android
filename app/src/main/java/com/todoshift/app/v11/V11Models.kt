@@ -187,7 +187,7 @@ enum class IncomeSourceTypeV11 {
 }
 
 /** A monthly compensation amount effective from an earning month, retained on rate changes. */
-data class FixedSalaryPeriodV11(val effectiveMonth: String, val amount: Double)
+data class FixedSalaryPeriodV11(val effectiveMonth: String, val amount: Double, val shiftBased:Boolean=false)
 
 data class IncomeSourceV11(
     val id: String,

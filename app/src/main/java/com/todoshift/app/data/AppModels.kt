@@ -8,7 +8,10 @@ data class Workplace(
     val longRate: Double = 0.0,
     val nightRate: Double = 0.0,
     val morningRate: Double = 0.0,
-    val eveningRate: Double = 0.0
+    val eveningRate: Double = 0.0,
+    val enabledShiftKinds: Set<String> = setOf("FULL_DAY","LONG","NIGHT","MORNING","EVENING","OFF"),
+    val shiftNames: Map<String,String> = emptyMap(),
+    val shiftColors: Map<String,String> = emptyMap()
 )
 
 enum class ShiftType {

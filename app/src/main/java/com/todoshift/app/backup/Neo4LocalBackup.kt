@@ -215,6 +215,7 @@ class Neo4LocalBackup(context: Context) :
                     database.payments.size,
                     0,
                     true,
+                    notes=database.dayItems.count {it.type==DayItemTypeV11.NOTE},shifts=database.days.sumOf {it.segments.size},events=database.dayItems.count {it.type!=DayItemTypeV11.NOTE},
                 ),
             )
         }
@@ -380,6 +381,7 @@ class Neo4LocalBackup(context: Context) :
                 false,
                 manifest.optJSONArray("selectedSections")?.let { a -> (0 until a.length()).map { BackupSection.valueOf(a.getString(it)) }.toSet() }
                     ?: BackupSection.entries.filter { it != BackupSection.CASHBOOK || "data/cashbook.bin" in all }.toSet(),
+                notes=database.dayItems.count {it.type==DayItemTypeV11.NOTE},shifts=database.days.sumOf {it.segments.size},events=database.dayItems.count {it.type!=DayItemTypeV11.NOTE},
             ),
         )
     }
@@ -703,6 +705,7 @@ class Neo4LocalBackup(context: Context) :
         expectedLegacy: com.todoshift.app.data.AppData,
         expected: V11Database,
         workplaces: List<com.todoshift.app.data.Workplace>,
+        proposed: V11Database? = null,
     ): Pair<com.todoshift.app.data.AppData, V11Database> =
         dataGate {
             recoverIfNeeded()
@@ -718,7 +721,7 @@ class Neo4LocalBackup(context: Context) :
             val newPlaces =
                 workplaces.filter { place -> expectedLegacy.workplaces.none { it.id == place.id } }
             val updated =
-                NeoWorkplaceSources.ensure(NeoRatePolicy.reconcile(expected, workplaces), newPlaces)
+                NeoWorkplaceSources.ensure(NeoRatePolicy.reconcile(proposed ?: expected, workplaces), newPlaces)
             FinancialDataValidation.validate(updated)
             val previous =
                 JSONObject()

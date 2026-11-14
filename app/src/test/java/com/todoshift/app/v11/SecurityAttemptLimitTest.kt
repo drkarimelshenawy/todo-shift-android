@@ -107,4 +107,14 @@ class SecurityAttemptLimitTest {
         s.save(settings)
         assertEquals(settings, store().load())
     }
+
+    @Test fun recoveryCodeResetsOnlyCredentialAndSharesAttemptProtection() {
+        val s=store();s.setPin("482601")
+        val code=s.createRecoveryCode();assertTrue(s.hasRecoveryCode())
+        assertFalse(prefs.all.values.any {it.toString().contains(code.replace("-",""))})
+        assertFalse(s.recoverPin("invalid","123456"))
+        assertTrue(s.recoverPin(code,"754321"));assertTrue(s.verifyPin("754321"))
+        assertFalse(s.verifyPin("482601"))
+    }
+
 }

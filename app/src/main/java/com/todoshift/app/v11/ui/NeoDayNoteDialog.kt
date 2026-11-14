@@ -222,10 +222,11 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             OutlinedTextField(title,{if(!closing) title=it},enabled=!closing,label={Text(neoLabel("عنوان اختياري","Optional title"))},modifier=Modifier.fillMaxWidth())
             NeoNoteFormatting(body,{if(!closing) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!closing,canRedo=redo.isNotEmpty()&&!closing)
             Row {
-                FilterChip(preview,{preview=!preview},label={Text(neoLabel("معاينة وتحديد القوائم","Preview / checklists"))})
+                FilterChip(preview,{preview=!preview},label={Text(neoLabel("معاينة التنسيق","Formatted preview"))})
                 TextButton(onClick={options=!options}) {Text(neoLabel("تنظيم ومظهر","Organize / style"))}
             }
-            if(preview) NeoNotePreview(body.text, onChecklist={ line ->
+            OutlinedTextField(body,{if(!closing) edit(it)},enabled=!closing,label={Text(neoLabel("النص والتنسيق","Text and formatting"))},visualTransformation=remember {NeoNoteVisualTransformation()},minLines=6,maxLines=16,modifier=Modifier.fillMaxWidth())
+            if(preview || body.text.lines().any {it.trimStart().startsWith("- [")}) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
                 if(!pending) { val lines=body.text.lines().toMutableList();val old=lines[line]; lines[line]=if(old.contains("[ ]")) old.replaceFirst("[ ]","[x]") else old.replaceFirst(Regex("\\[[xX]\\]"),"[ ]");edit(TextFieldValue(lines.joinToString("\n"))) }
             },onCreateTask={line,label->
                 if(!pending) {val lines=body.text.lines().toMutableList()
@@ -242,7 +243,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         val spec="$key\n$label";taskSpecs=taskSpecs.filterNot {it.substringBefore('\n')==key}+spec
                     }
                 }
-            }) else OutlinedTextField(body,{if(!closing) edit(it)},enabled=!closing,label={Text(neoLabel("النص والتنسيق","Text and formatting"))},visualTransformation=remember {NeoNoteVisualTransformation()},minLines=6,maxLines=16,modifier=Modifier.fillMaxWidth())
+            })
             Regex("<!--task:([A-Za-z0-9_-]+)-->").findAll(body.text).map {it.groupValues[1]}.distinct().filter {key ->
                 taskSpecs.none {it.substringBefore('\n')==key} && expected.tasks.none {it.linkedNoteId==id && (it.id==key || it.id==UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString())}
             }.toList().forEach {key ->

@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.data.Workplace
+import com.todoshift.app.v11.*
 import com.todoshift.app.v11.ShiftKind
 import com.todoshift.app.v11.toMoneyOrNull
 import java.util.UUID
@@ -57,6 +58,8 @@ fun V11WorkplacesScreen(
     workplaces: List<Workplace>,
     onBack: () -> Unit,
     onSaveWorkplaces: (List<Workplace>) -> Unit,
+    database: V11Database? = null,
+    saveDetails: ((List<Workplace>,V11Database,()->Unit)->Unit)? = null,
     datedRateKeys: Set<String> = emptySet(),
     protectedWorkplaceIds: Set<String> = emptySet(),
 ) {
@@ -178,15 +181,16 @@ fun V11WorkplacesScreen(
     if (adding) {
         V11WorkplaceEditor(
             initial = null,
+            database = database,
             onDismiss = { adding = false },
-            onSave = { value ->
+            onSave = { value,monthly,effective ->
                 if (workplaces.any { it.id == value.id }) {
                     reject(
                         "Workplace request already saved; review the stored workplace before opening a new entry."
                     )
                     return@V11WorkplaceEditor
                 }
-                commit(workplaces + value) { adding = false }
+                if(database!=null&&saveDetails!=null) saveDetails(workplaces+value,NeoWorkplaceEdit.apply(database,null,value,monthly,effective)) {adding=false} else commit(workplaces + value) { adding = false }
             },
         )
     }
@@ -195,15 +199,16 @@ fun V11WorkplacesScreen(
         val unchanged = rememberNeoDraftUnchanged(workplace.id, workplace)
         V11WorkplaceEditor(
             initial = workplace,
+            database = database,
             lockedKinds =
                 ShiftKind.entries.filter { "${workplace.id}|${it.name}" in datedRateKeys }.toSet(),
             onDismiss = { editingId = null },
-            onSave = { value ->
+            onSave = { value,monthly,effective ->
                 if (!unchanged) {
                     reject("Workplace changed. Draft retained; review before reopening.")
                     return@V11WorkplaceEditor
                 }
-                commit(workplaces.map { if (it.id == value.id) value else it }) { editingId = null }
+                if(database!=null&&saveDetails!=null) saveDetails(workplaces.map {if(it.id==value.id)value else it},NeoWorkplaceEdit.apply(database,workplace,value,monthly,effective)) {editingId=null} else commit(workplaces.map { if (it.id == value.id) value else it }) { editingId = null }
             },
         )
     }
@@ -244,10 +249,21 @@ fun V11WorkplacesScreen(
 @Composable
 private fun V11WorkplaceEditor(
     initial: Workplace?,
+    database: V11Database? = null,
     lockedKinds: Set<ShiftKind> = emptySet(),
     onDismiss: () -> Unit,
-    onSave: (Workplace) -> Unit,
+    onSave: (Workplace,Double?,String) -> Unit,
 ) {
+    val source=database?.incomeSources?.firstOrNull {it.workplaceId==initial?.id}
+    var monthly by rememberSaveable(initial?.id) {mutableStateOf(source?.fixedMonthlyAmount!=null)}
+    var salary by rememberSaveable(initial?.id) {mutableStateOf(source?.fixedMonthlyAmount?.toString() ?: "")}
+    var effective by rememberSaveable(initial?.id) {mutableStateOf(java.time.LocalDate.now().toString())}
+    var periodsOpen by rememberSaveable {mutableStateOf(false)}
+    var enabledKinds by remember {mutableStateOf(initial?.enabledShiftKinds ?: ShiftKind.entries.map {it.name}.toSet())}
+    var names by remember {mutableStateOf(initial?.shiftNames ?: emptyMap())}
+    var colors by remember {mutableStateOf(initial?.shiftColors ?: emptyMap())}
+    var kindsOpen by rememberSaveable {mutableStateOf(false)}
+    var editError by remember {mutableStateOf<String?>(null)}
     val recordId = rememberSaveable(initial?.id) { initial?.id ?: UUID.randomUUID().toString() }
     var name by rememberSaveable(initial?.id) { mutableStateOf(initial?.name ?: "") }
 
@@ -279,7 +295,7 @@ private fun V11WorkplaceEditor(
 
     val leave =
         rememberNeoEditorExit(
-            listOf(name, colorHex, fullDay, longRate, night, morning, evening),
+            listOf(name, colorHex, fullDay, longRate, night, morning, evening, monthly,salary,effective,enabledKinds,names,colors),
             onDismiss,
         )
     AlertDialog(
@@ -341,16 +357,31 @@ private fun V11WorkplaceEditor(
 
                 Spacer(Modifier.height(8.dp))
 
-                if (lockedKinds.isNotEmpty())
-                    Text(
-                        neoLiteral(
-                            "الأسعار المؤرخة تُعدّل من الأدوات ← أسعار مؤرخة",
-                            "Manage dated rates in Tools → Dated rates",
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                if(database!=null) {
+                    NeoChoice(neoLabel("طريقة احتساب المستحقات","Compensation model"),listOf(false,true),monthly,{if(it) neoLabel("راتب شهري ثابت","Fixed monthly salary") else neoLabel("بالوردية","Per shift")},{monthly=it})
+                    if(monthly) RateField(neoLabel("الراتب الشهري","Monthly salary"),value=salary,onValueChange={salary=it})
+                    NeoDateInput(neoLabel("سريان التغيير؛ الفترات السابقة محفوظة","Effective date; previous periods retained"),effective){effective=it}
+                    TextButton(onClick={periodsOpen=!periodsOpen}) {Text(if(monthly) neoLabel("فترات الرواتب","Salary periods") else neoLabel("فترات الأسعار","Rate periods"))}
+                    if(periodsOpen) {
+                        source?.compensationHistory?.sortedByDescending {it.effectiveMonth}?.forEach {Text("${it.effectiveMonth} • "+if(it.shiftBased) neoLabel("بالوردية","Per shift") else it.amount.toString())}
+                        database.rates.filter {it.workplaceId==initial?.id}.groupBy {it.effectiveFrom}.toSortedMap(reverseOrder()).forEach {(date,periods)->
+                            Text(date,style=MaterialTheme.typography.titleSmall)
+                            Text(periods.joinToString(" • "){neoShiftLabel(it.shiftKind)+": "+it.amount})
+                            TextButton(onClick={fullDay=(periods.firstOrNull {it.shiftKind==ShiftKind.FULL_DAY}?.amount ?: fullDay.toMoneyOrNull() ?: 0.0).toString();longRate=(periods.firstOrNull {it.shiftKind==ShiftKind.LONG}?.amount ?: longRate.toMoneyOrNull() ?: 0.0).toString();night=(periods.firstOrNull {it.shiftKind==ShiftKind.NIGHT}?.amount ?: night.toMoneyOrNull() ?: 0.0).toString();morning=(periods.firstOrNull {it.shiftKind==ShiftKind.MORNING}?.amount ?: morning.toMoneyOrNull() ?: 0.0).toString();evening=(periods.firstOrNull {it.shiftKind==ShiftKind.EVENING}?.amount ?: evening.toMoneyOrNull() ?: 0.0).toString()}) {Text(neoLabel("نسخ أسعار الفترة","Copy period rates"))}
+                        }
+                    }
+                }
+                TextButton(onClick={kindsOpen=!kindsOpen}) {Text(neoLabel("أنواع الورديات وألوانها","Shift types and colors"))}
+                if(kindsOpen) ShiftKind.entries.forEach {kind->
+                    NeoSwitch(neoShiftLabel(kind),kind.name in enabledKinds){on->enabledKinds=if(on)enabledKinds+kind.name else enabledKinds-kind.name}
+                    if(kind.name in enabledKinds) {
+                        OutlinedTextField(names[kind.name].orEmpty(),{names=names+(kind.name to it)},label={Text(neoLabel("اسم مخصص (اختياري)","Custom name (optional)"))})
+                        OutlinedTextField(colors[kind.name].orEmpty(),{colors=colors+(kind.name to it)},label={Text(neoLabel("لون النوع #RRGGBB (اختياري)","Type color #RRGGBB (optional)"))})
+                    }
+                }
+                editError?.let {Text(it,color=MaterialTheme.colorScheme.error)}
                 RateField(
-                    enabled = ShiftKind.FULL_DAY !in lockedKinds,
+                    enabled = true,
                     label = neoLiteral("24 ساعة", "24 hours"),
                     value = fullDay,
                     onValueChange = { fullDay = it },
@@ -358,28 +389,28 @@ private fun V11WorkplaceEditor(
 
                 RateField(
                     label = "Long",
-                    enabled = ShiftKind.LONG !in lockedKinds,
+                    enabled = true,
                     value = longRate,
                     onValueChange = { longRate = it },
                 )
 
                 RateField(
                     label = "Night",
-                    enabled = ShiftKind.NIGHT !in lockedKinds,
+                    enabled = true,
                     value = night,
                     onValueChange = { night = it },
                 )
 
                 RateField(
                     label = "Morning",
-                    enabled = ShiftKind.MORNING !in lockedKinds,
+                    enabled = true,
                     value = morning,
                     onValueChange = { morning = it },
                 )
 
                 RateField(
                     label = "Evening",
-                    enabled = ShiftKind.EVENING !in lockedKinds,
+                    enabled = true,
                     value = evening,
                     onValueChange = { evening = it },
                 )
@@ -388,12 +419,12 @@ private fun V11WorkplaceEditor(
         confirmButton = {
             leave.SaveButton(
                 enabled =
-                    name.trim().isNotEmpty() &&
+                    name.trim().isNotEmpty() && enabledKinds.isNotEmpty() && colors.values.all {it.isBlank()||it.matches(Regex("#[0-9a-fA-F]{6}"))} && (!monthly||salary.toMoneyOrNull()!=null) && runCatching {java.time.LocalDate.parse(effective)}.isSuccess &&
                         listOf(fullDay, longRate, night, morning, evening).all {
                             it.toMoneyOrNull() != null
                         },
                 onClick = {
-                    onSave(
+                    try {onSave(
                         Workplace(
                             id = recordId,
                             name = name.trim(),
@@ -403,8 +434,9 @@ private fun V11WorkplaceEditor(
                             nightRate = night.toMoneyOrNull() ?: 0.0,
                             morningRate = morning.toMoneyOrNull() ?: 0.0,
                             eveningRate = evening.toMoneyOrNull() ?: 0.0,
-                        )
-                    )
+                            enabledShiftKinds=enabledKinds,shiftNames=names.filterValues {it.isNotBlank()},shiftColors=colors.filterValues {it.isNotBlank()},
+                        ),if(monthly) salary.toMoneyOrNull() else null,effective
+                    )} catch(failure:Exception) {editError=failure.message}
                 },
             ) {
                 Text(neoLiteral("حفظ", "Save"))

@@ -31,3 +31,9 @@ Approved later decisions override older handoff text: receipts automatically lin
 | Signed release APK | .github/workflows/v45-complete.yml | Actual signature, package/version/alignment checks |
 
 Code presence, passing unit tests, emulator acceptance, and physical-device acceptance are different states. Do not present this document or an APK build as proof that every gesture, launcher, biometric sensor or Android version has been validated. No new features outside the supplied specification are introduced.
+
+## Completion revision (v45-r2)
+
+Remaining audited gaps addressed in-place: journaled workplace compensation with dated shift/monthly transitions; per-workplace enabled shift types, labels and colors; transfer-before-calendar-deletion with conflict rejection; direct calendar item targets; compact contextual menus and in-section search; standalone operational work summary; combined calendar appearance; section-local studio reset and collapsible preview; interactive note checklists alongside editing; rate-limited recovery code; restore note/shift/event counts and per-record inspection; APK CRC and published-byte comparison.
+
+No emulator is run for this revision, by user request. Compilation, existing focused JVM suites and signed APK archive verification are the release checks. No claim of zero defects or physical-device verification. Attached archives do not contain the original interactive prototype assets; only their written decisions are available.

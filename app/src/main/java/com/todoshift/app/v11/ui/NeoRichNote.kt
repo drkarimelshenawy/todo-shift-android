@@ -15,6 +15,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = ""): TextFieldValue {
     val start = value.selection.min; val end = value.selection.max
@@ -45,7 +46,7 @@ internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -
     }
 }
 
-private fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
+internal fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
     val matches = Regex("\\*\\*(.+?)\\*\\*|\\*([^*]+)\\*").findAll(text)
     var end = 0
     for (match in matches) {
@@ -58,7 +59,7 @@ private fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
 }
 
 @Composable
-internal fun NeoNotePreview(text: String, onChecklist: ((Int) -> Unit)? = null, onCreateTask: ((Int, String) -> Unit)? = null) {
+internal fun NeoNotePreview(text: String, checklistsOnly:Boolean=false, onChecklist: ((Int) -> Unit)? = null, onCreateTask: ((Int, String) -> Unit)? = null) {
     Column(verticalArrangement=Arrangement.spacedBy(2.dp)) {
         text.lines().forEachIndexed { index, rawLine ->
             val line=noteDisplayText(rawLine)
@@ -67,9 +68,9 @@ internal fun NeoNotePreview(text: String, onChecklist: ((Int) -> Unit)? = null, 
                 Checkbox(checked.groupValues[1] != " ", onCheckedChange=onChecklist?.let { callback -> { _: Boolean -> callback(index) } })
                 Text(noteInline(checked.groupValues[2]), Modifier.weight(1f).padding(top=12.dp))
                 if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checked.groupValues[2])}) {Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))}
-            } else {
+            } else if(!checklistsOnly) {
                 val heading = line.startsWith("# ") || line.startsWith("## ")
-                Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=if(heading) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium)
+                Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=if(line.startsWith("# ")) MaterialTheme.typography.titleLarge else if(heading) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -94,7 +95,7 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         Regex("(?m)^#{1,3} ").findAll(source).forEach {
             hide(it.range.first,it.range.last+1)
             val end=source.indexOf('\n',it.range.last+1).takeIf {p->p>=0} ?: source.length
-            spans+=Triple(it.range.last+1,end,SpanStyle(fontWeight=FontWeight.Bold))
+            spans+=Triple(it.range.last+1,end,SpanStyle(fontWeight=FontWeight.Bold,fontSize=if(source[it.range.first+1]=='#') 18.sp else 22.sp))
         }
         val original=IntArray(source.length+1)
         val visible=StringBuilder()

@@ -53,6 +53,7 @@ fun NeoAppearanceStudio(
     var section by rememberSaveable { mutableStateOf<NeoStudioSection?>(initialSection) }
     var accent by rememberSaveable(saved.accentHex) { mutableStateOf(saved.accentHex) }
     var discard by remember { mutableStateOf(false) }
+    var previewVisible by rememberSaveable {mutableStateOf(true)}
     val valid = accent.isEmpty() || accent.matches(Regex("#[0-9a-fA-F]{6}"))
     var pendingLeave by remember { mutableStateOf<(() -> Unit)?>(null) }
     val commitAppearance = LocalNeoAppearanceCommit.current
@@ -125,22 +126,24 @@ fun NeoAppearanceStudio(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Neo4ThemePreview(draft, draft.fontScale)
+            TextButton(onClick={previewVisible=!previewVisible}) {Text(if(previewVisible) neoLabel("إخفاء المعاينة","Hide preview") else neoLabel("إظهار المعاينة","Show preview"))}
+            if(previewVisible) Neo4ThemePreview(draft, saved.fontScale)
             val sections = listOf(
                     NeoStudioSection.THEMES to neoLabel("الهوية", "Identity"),
                     NeoStudioSection.COLORS to neoLabel("الألوان", "Colors"),
                     NeoStudioSection.BACKGROUND to neoLabel("الخلفية", "Background"),
-                    NeoStudioSection.TYPE to neoLabel("الخط والكثافة", "Fonts and density"),
+                    NeoStudioSection.TYPE to neoLabel("الخط", "Type"),
                     NeoStudioSection.MOTION to
-                        neoLabel("الحركة والانتقالات", "Motion and transitions"),
+                        neoLabel("الحركة", "Motion"),
                     NeoStudioSection.PROFILES to
-                        neoLabel("المظاهر المحفوظة", "Saved appearance profiles"),
+                        neoLabel("المحفوظة", "Saved"),
                 )
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 sections.forEach { (id, title) ->
                     FilterChip(selected = section == id, onClick = { section = id }, label = { Text(title) })
                 }
             }
+            TextButton(onClick={draft=resetStudioSection(draft,section ?: NeoStudioSection.THEMES);accent=draft.accentHex}) {Text(neoLabel("استعادة افتراضي القسم","Reset this section"))}
             sections.filter { it.first == section }.forEach { (id, _) ->
                     if (section == id)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -534,3 +537,17 @@ fun neoEnumLabel(value: Any): String =
             }
         else -> value.toString()
     }
+
+internal fun resetStudioSection(p:NeoAppearance,section:NeoStudioSection):NeoAppearance {
+    val keys=when(section) {
+        NeoStudioSection.THEMES->listOf("brightness","palette","showBrand")
+        NeoStudioSection.COLORS->listOf("palette","accentHex","intensity")
+        NeoStudioSection.BACKGROUND->listOf("background","imageTheme","customImageFile","imagePositionX","imagePositionY","imageDim","cardOpacity","glass","glassStrength")
+        NeoStudioSection.TYPE->listOf("layoutPreset","typeface","fontScale","density","cardStyle","cornerRadius","iconStyle","glow","showEffects","showOptionalInfo","showSecondaryIndicators","showDescriptions")
+        NeoStudioSection.MOTION->listOf("transition","transitionSpeed","motion","reduceMotion","optionalTransitions")
+        else->emptyList()
+    }
+    val result=Neo4AppearanceCodec.encode(p);val defaults=Neo4AppearanceCodec.encode(NeoAppearance())
+    keys.forEach {result.put(it,defaults.get(it))}
+    return Neo4AppearanceCodec.decode(result,p)
+}

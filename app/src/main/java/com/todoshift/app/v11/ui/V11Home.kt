@@ -457,6 +457,7 @@ fun V11Home(
     fun saveWorkplaces(
         workplaces: List<com.todoshift.app.data.Workplace>,
         completed: (Boolean) -> Unit = {},
+        proposed: V11Database? = null,
     ) {
         if (writeBusy || writeFailure != null) {
             completed(false)
@@ -472,7 +473,7 @@ fun V11Home(
                     withContext(Dispatchers.IO) {
                         com.todoshift.app.backup
                             .Neo4LocalBackup(context.applicationContext)
-                            .updateWorkplaces(expectedLegacy, expected, workplaces)
+                            .updateWorkplaces(expectedLegacy, expected, workplaces, proposed)
                     }
                 committed = true
                 oldData = savedLegacy
@@ -849,9 +850,7 @@ fun V11Home(
                                 BackHandler { navigation.back() }
                                 key(navigation.feature, navigation.owner) {
                                     if (navigation.feature == "WORK_SUMMARY") {
-                                        V11SchedulesScreen(month, db, oldData.workplaces, { saveDb(it) },
-                                            onMonthChange = { month = it }, financeAuthorized = financialAccess,
-                                            financeAmountsVisible = moneyVisible, initialSection = 1)
+                                        NeoOperationalWorkSummary(db, oldData.workplaces, month, {month=it})
                                     } else if (
                                         navigation.feature in
                                             NeoFeatureCatalog.entries
@@ -910,6 +909,8 @@ fun V11Home(
                             } else if (navigation.workplacesOpen) {
                                 V11WorkplacesScreen(
                                     workplaces = NeoRatePolicy.display(db, oldData.workplaces),
+                                    database = db,
+                                    saveDetails = {places,next,done->saveWorkplaces(places,{ok->if(ok)done()},next)},
                                     datedRateKeys = NeoRatePolicy.ownedKeys(db),
                                     protectedWorkplaceIds =
                                         (db.days
@@ -1290,7 +1291,7 @@ private fun V11GlobalHeader(
             onToday,
             onAdd,
             onManage,
-            featureDestination != "Cash Book",
+            false,
             onOverview,
             featureDestination,
             onBack,
@@ -1392,7 +1393,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                         ),
                         Triple(
                             2,
-                            neoLabel("مستحقات العمل", "Salary"),
+                            neoLabel("المستحقات", "Salary"),
                             Icons.Outlined.Storage,
                         ),
                         Triple(

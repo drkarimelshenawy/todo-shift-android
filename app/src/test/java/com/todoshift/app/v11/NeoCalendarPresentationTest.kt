@@ -112,4 +112,15 @@ class NeoCalendarPresentationTest {
         val db = V11Database(calendars = listOf(AppCalendarV11("a", "A", "#123456"), AppCalendarV11("b", "B", "#123456")), days = listOf(entry("a", "a", ShiftKind.OFF)))
         assertEquals(db, V11CalendarController.deleteCalendar(db, "a"))
     }
+
+    @Test fun calendarTransferRetainsRecordIdsAndRejectsAmbiguousTargetDates() {
+        val original=entry("a","from",ShiftKind.MORNING)
+        val db=V11Database(calendars=listOf(AppCalendarV11("from","From","#112233"),AppCalendarV11("to","To","#334455")),days=listOf(original),tasks=listOf(TaskV11("t","Task",date=date,calendarId="from")))
+        val moved=V11CalendarController.transferAndDelete(db,"from","to")
+        assertEquals(original.copy(calendarId="to"),moved.days.single())
+        assertEquals("t",moved.tasks.single().id);assertEquals("to",moved.tasks.single().calendarId)
+        assertEquals(listOf("to"),moved.calendars.map {it.id})
+        assertThrows(IllegalArgumentException::class.java) {V11CalendarController.transferAndDelete(db.copy(days=db.days+entry("b","to",ShiftKind.NIGHT)),"from","to")}
+    }
+
 }

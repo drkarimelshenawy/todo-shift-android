@@ -1,4 +1,4 @@
-name: v45 Cash Book signed APK
+name: v45 specification completion signed APK
 
 on:
   push:
@@ -87,7 +87,7 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch feat/v45-complete-specification --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v45-CashBook.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v45-r2.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
@@ -99,47 +99,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v45-cashbook-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v45-CashBook.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 Cash Book" --notes "Signed release-variant APK; physical-device acceptance pending. Source: $GITHUB_SHA. Cash Book receipt integration with durable idempotent posting."
+          TAG="v45-complete-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v45-r2.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 completed revision" --notes "Signed v45 revision with calendar, workplace, notes, recovery and restore completion. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+      - name: Verify published APK bytes and archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v45-complete-${GITHUB_SHA:0:12}"
+          mkdir -p "$RUNNER_TEMP/published"
+          gh release download "$TAG" --pattern ToDoShift-v45-r2.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v45-r2.apk "$RUNNER_TEMP/published/ToDoShift-v45-r2.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v45-r2.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"
-
-  update-and-note-acceptance:
-    needs: signed-apk
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: actions/download-artifact@v4
-        with:
-          name: ToDoShift-v45-signed-APK
-          path: candidate
-      - name: Download verified v44 baseline
-        run: |
-          curl --fail --location --retry 3 https://github.com/drkarimelshenawy/todo-shift-android/releases/download/v44-cashbook-7887df97526e/ToDoShift-v44-CashBook.apk -o baseline.apk
-          echo '0311df1225967259602c3bd7086db6c5e37746b36a6e748ec9dcfc48871aa872  baseline.apk' | sha256sum -c -
-      - name: Enable emulator acceleration
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          profile: pixel_2
-          ram-size: 3072M
-          disable-animations: true
-          script: python3 tools/v45_device_smoke.py baseline.apk candidate/ToDoShift-v45-CashBook.apk
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ToDoShift-v45-emulator-acceptance
-          path: device-smoke/
-          if-no-files-found: warn

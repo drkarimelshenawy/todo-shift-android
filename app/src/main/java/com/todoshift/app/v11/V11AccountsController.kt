@@ -108,7 +108,7 @@ object V11AccountsController {
                 "A later compensation period exists; review it before changing this month"
             }
             source.copy(compensationHistory = history.filterNot { it.effectiveMonth == effectiveMonth } +
-                FixedSalaryPeriodV11(effectiveMonth, source.fixedMonthlyAmount ?: 0.0))
+                FixedSalaryPeriodV11(effectiveMonth, source.fixedMonthlyAmount ?: 0.0,source.fixedMonthlyAmount==null))
         }
         require(updated.fixedMonthlyAmount == null || (updated.fixedMonthlyAmount.isFinite() && updated.fixedMonthlyAmount >= 0.0))
         return db.copy(

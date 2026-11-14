@@ -5,7 +5,7 @@ import com.todoshift.app.data.AppData
 import java.io.InputStream
 import java.io.OutputStream
 
-data class Neo4RestorePreview(val createdAt: String, val appVersion: String, val calendars: Int, val days: Int, val tasks: Int, val payments: Int, val images: Int, val legacyJson: Boolean, val availableSections: Set<BackupSection> = BackupSection.entries.toSet())
+data class Neo4RestorePreview(val createdAt: String, val appVersion: String, val calendars: Int, val days: Int, val tasks: Int, val payments: Int, val images: Int, val legacyJson: Boolean, val availableSections: Set<BackupSection> = BackupSection.entries.toSet(), val notes:Int=0, val shifts:Int=0, val events:Int=0)
 class Neo4PreparedRestore internal constructor(val token: String, val preview: Neo4RestorePreview, internal val bytes: ByteArray)
 data class Neo4RestoredState(val database: V11Database, val legacy: AppData, val ui: V11UiSettings, val appearance: NeoAppearance, val activeCalendarId: String?, val warnings: List<String>)
 interface BackupExport { fun export(database: V11Database, output: OutputStream) }

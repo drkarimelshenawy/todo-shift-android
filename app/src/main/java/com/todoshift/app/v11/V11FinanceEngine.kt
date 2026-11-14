@@ -54,7 +54,7 @@ object V11FinanceEngine {
         // Keep every recorded shift in operational counts; only compensation changes here.
         val monthlySources = db.incomeSources.filter {
             included(it.calendarId) && (it.fixedMonthlyAmount != null || it.compensationHistory.isNotEmpty()) &&
-                (it.compensationHistory.isEmpty() || it.compensationHistory.any { period -> !YearMonth.parse(period.effectiveMonth).isAfter(month) })
+                (if(it.compensationHistory.isEmpty()) it.active else it.compensationHistory.filter {period->!YearMonth.parse(period.effectiveMonth).isAfter(month)}.maxByOrNull {period->period.effectiveMonth}?.shiftBased==false)
         }
         val salariedWorkplaces = monthlySources.mapNotNull { it.workplaceId }.toSet()
         val payableSegments = segments.filter { (_, segment) ->

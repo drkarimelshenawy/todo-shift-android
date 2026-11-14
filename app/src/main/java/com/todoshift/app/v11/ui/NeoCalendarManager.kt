@@ -29,6 +29,8 @@ fun NeoCalendarManagerDialog(
     var color by rememberSaveable { mutableStateOf("#00A4B8") }
     var form by rememberSaveable { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var deleting by remember { mutableStateOf<String?>(null) }
+    var destination by remember { mutableStateOf<String?>(null) }
     val original = db.calendars.firstOrNull { it.id == editing }
     val leave =
         rememberNeoEditorExit(
@@ -182,22 +184,10 @@ fun NeoCalendarManagerDialog(
                                 Text(neoLabel("أسفل", "Down"))
                             }
                             TextButton(
-                                enabled =
-                                    db.calendars.size > 1 &&
-                                        db.days.none { it.calendarId == id } &&
-                                        db.tasks.none { it.calendarId == id } &&
-                                        db.dayItems.none { it.calendarId == id } &&
-                                        db.incomeSources.none { it.calendarId == id } &&
-                                        db.settlements.none { it.calendarId == id },
-                                onClick = {
-                                    onChange(V11CalendarController.deleteCalendar(db, id))
-                                    form = false
-                                    name = ""
-                                    color = "#00A4B8"
-                                    editing = null
-                                },
+                                enabled = db.calendars.size > 1,
+                                onClick = {deleting=id;destination=null},
                             ) {
-                                Text(neoLabel("حذف الفارغ", "Delete empty"))
+                                Text(neoLabel("حذف أو نقل السجلات", "Delete or transfer records"))
                             }
                         }
                     }
@@ -217,4 +207,17 @@ fun NeoCalendarManagerDialog(
         },
         confirmButton = { TextButton(onClick = leave) { Text(neoLabel("تم", "Done")) } },
     )
+    deleting?.let {id ->
+        val referenced=db.days.any {it.calendarId==id}||db.tasks.any {it.calendarId==id}||db.dayItems.any {it.calendarId==id}||db.incomeSources.any {it.calendarId==id}||db.settlements.any {it.calendarId==id}
+        val targets=db.calendars.filter {it.id!=id && it.financial==db.calendars.first {c->c.id==id}.financial}
+        AlertDialog(onDismissRequest={deleting=null},title={Text(neoLabel("حذف التقويم","Delete calendar"))},text={Column {
+            Text(if(referenced) neoLabel("انقل السجلات إلى تقويم آخر؛ لن تُحذف بياناتك. اختر تقويمًا بلا أيام عمل متعارضة.","Move all records to another calendar. Existing IDs and history are preserved; select a calendar without matching work dates.") else neoLabel("التقويم فارغ. تأكيد الحذف؟","This calendar is empty. Delete it?"))
+            if(referenced) NeoChoice(neoLabel("التقويم المستلم","Destination calendar"),listOf<String?>(null)+targets.map {it.id},destination,{key->targets.firstOrNull {it.id==key}?.name ?: neoLabel("اختر تقويمًا","Select calendar")},{destination=it})
+            error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
+        }},confirmButton={TextButton(enabled=!referenced||destination!=null,onClick={try {
+            val next=if(referenced) V11CalendarController.transferAndDelete(db,id,requireNotNull(destination)) else V11CalendarController.deleteCalendar(db,id)
+            commit(next) {if(primary==id) next.calendars.firstOrNull {it.id==destination}?.let {onPrimary(it.id)};deleting=null;editing=null;form=false}
+        } catch(failure:Exception) {error=failure.message}}){Text(neoLabel("تأكيد","Confirm"))}},dismissButton={TextButton(onClick={deleting=null;error=null}){Text(neoLabel("إلغاء","Cancel"))}})
+    }
+
 }

@@ -700,7 +700,7 @@ private fun V11WorkplaceDueDetailsDialog(
     val groups = rows.groupBy { it.second.kind }
 
     val total=V11FinanceEngine.month(db,month).byWorkplace.firstOrNull {it.workplaceId==workplaceId}?.amount ?: 0.0
-    val monthlySalary=db.incomeSources.any {it.workplaceId==workplaceId && (it.fixedMonthlyAmount!=null || it.compensationHistory.isNotEmpty())}
+    val monthlySalary=db.incomeSources.any {it.workplaceId==workplaceId && (if(it.compensationHistory.isEmpty()) it.fixedMonthlyAmount!=null else it.compensationHistory.filter {p->p.effectiveMonth<=month.toString()}.maxByOrNull {p->p.effectiveMonth}?.shiftBased==false)}
     val remaining=workplaceId?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
 
     AlertDialog(

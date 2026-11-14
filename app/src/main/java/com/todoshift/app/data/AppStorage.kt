@@ -103,6 +103,9 @@ class AppStorage internal constructor(private val prefs: SharedPreferences) {
                         put("nightRate", place.nightRate)
                         put("morningRate", place.morningRate)
                         put("eveningRate", place.eveningRate)
+                        put("enabledShiftKinds", JSONArray(place.enabledShiftKinds.toList()))
+                        put("shiftNames", JSONObject(place.shiftNames))
+                        put("shiftColors", JSONObject(place.shiftColors))
                     })
                 }
             })
@@ -250,7 +253,10 @@ class AppStorage internal constructor(private val prefs: SharedPreferences) {
                 eveningRate = obj.optDouble(
                     "eveningRate",
                     0.0
-                )
+                ),
+                enabledShiftKinds = obj.optJSONArray("enabledShiftKinds")?.let {a->(0 until a.length()).map {a.getString(it)}.toSet()} ?: setOf("FULL_DAY","LONG","NIGHT","MORNING","EVENING","OFF"),
+                shiftNames = obj.optJSONObject("shiftNames")?.let {o->o.keys().asSequence().associateWith {o.getString(it)}} ?: emptyMap(),
+                shiftColors = obj.optJSONObject("shiftColors")?.let {o->o.keys().asSequence().associateWith {o.getString(it)}} ?: emptyMap()
             )
         }
 

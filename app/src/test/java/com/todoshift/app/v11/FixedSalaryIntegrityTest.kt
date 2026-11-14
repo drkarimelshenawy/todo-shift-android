@@ -59,4 +59,18 @@ class FixedSalaryIntegrityTest {
         assertEquals(3000.0, V11FinanceEngine.month(archived, YearMonth.now()).expected, 0.0)
         assertEquals(0.0, V11FinanceEngine.month(archived, YearMonth.now().plusMonths(1)).expected, 0.0)
     }
+
+    @Test fun switchingBetweenShiftAndMonthlyPayKeepsHistoricalEarningsAndReceipts() {
+        val place=com.todoshift.app.data.Workplace("hospital","Hospital","#112233",fullDayRate=500.0)
+        val old=database(1).copy(incomeSources=listOf(source.copy(type=IncomeSourceTypeV11.SHIFT_BASED,fixedMonthlyAmount=null)),payments=listOf(PaymentV11("p",100.0,"2026-11-20","2026-11",sourceId="salary")))
+        val monthly=NeoWorkplaceEdit.apply(old,place,place,3000.0,"2026-12-01")
+        assertEquals(500.0,V11FinanceEngine.month(monthly,month).expected,0.0)
+        assertEquals(3000.0,V11FinanceEngine.month(monthly,month.plusMonths(1)).expected,0.0)
+        val future=monthly.copy(days=monthly.days+DayEntryV11("jan","2027-01-04","work",listOf(ShiftSegmentV11("jan-shift",ShiftKind.FULL_DAY,"hospital"))))
+        val perShift=NeoWorkplaceEdit.apply(future,place,place,null,"2027-01-01")
+        assertEquals(3000.0,V11FinanceEngine.month(perShift,month.plusMonths(1)).expected,0.0)
+        assertEquals(500.0,V11FinanceEngine.month(perShift,month.plusMonths(2)).expected,0.0)
+        assertEquals(old.payments,perShift.payments)
+    }
+
 }

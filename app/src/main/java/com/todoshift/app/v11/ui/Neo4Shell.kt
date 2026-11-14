@@ -44,13 +44,13 @@ fun Neo4CompactHeader(
     val p = LocalNeoAppearance.current
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Surface(
-        color = NeoPremium.Navy,
-        contentColor = NeoPremium.Cream,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         shadowElevation = 3.dp,
     ) {
         Row(
             Modifier.fillMaxWidth()
-                .background(Brush.linearGradient(listOf(NeoPremium.NavyLight, NeoPremium.Navy)))
+                .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.surface)))
                 .statusBarsPadding()
                 .heightIn(min = 48.dp)
                 .padding(horizontal = 10.dp),
@@ -76,7 +76,7 @@ fun Neo4CompactHeader(
                 Text(
                     buildAnnotatedString {
                         if (p.showBrand && onBack == null) {
-                            withStyle(SpanStyle(color = Color.White)) { append("ToDo ") }
+                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.onPrimaryContainer)) { append("ToDo ") }
                             withStyle(SpanStyle(color = NeoPremium.Gold)) { append("Shift") }
                         } else append(title)
                     },

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -33,6 +34,12 @@ def main():
         raise SystemExit('STOP: candidate source commit or branch mismatch')
     if not re.fullmatch('[a-fA-F0-9]{64}', args.expected_certificate):
         raise SystemExit('STOP: invalid expected certificate fingerprint')
+    with zipfile.ZipFile(args.apk) as archive:
+        corrupt = archive.testzip()
+        if corrupt:
+            raise SystemExit('STOP: corrupted APK entry: ' + corrupt)
+        if not {'AndroidManifest.xml','classes.dex'}.issubset(archive.namelist()):
+            raise SystemExit('STOP: incomplete APK')
     badging = run(args.build_tools / 'aapt', 'dump', 'badging', args.apk)
     if args.require_release and 'application-debuggable' in badging:
         raise SystemExit('STOP: release APK must not be debuggable')
@@ -48,7 +55,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     result = dict(actual, sourceCommit=sha, branch=branch,
                   certificateSHA256=certs[0].lower(), apkSHA256=hashlib.sha256(args.apk.read_bytes()).hexdigest(),
-                  apkBytes=args.apk.stat().st_size, signatureVerification='PASS', zipalign='PASS',
+                  apkBytes=args.apk.stat().st_size, signatureVerification='PASS', zipalign='PASS', archiveIntegrity='PASS',
                   installedCertificate='NOT VERIFIED', releaseGate='HOLD',
                   classification=expected['classification'], debuggable='application-debuggable' in badging)
     for name, content in [('APK-BADGING.txt', badging), ('APK-SIGNATURE.txt', signature), ('ZIPALIGN.txt', alignment)]:

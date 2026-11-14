@@ -106,6 +106,7 @@ fun V11CalendarScreen(
     var selectedWorkplace by remember { mutableStateOf<Workplace?>(null) }
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by rememberSaveable { mutableStateOf(false) }
+    var selectorVisible by rememberSaveable {mutableStateOf(false)}
     var painterRequestedWorkplace by rememberSaveable { mutableStateOf<String?>(null) }
     var modernPaintRequest by remember { mutableIntStateOf(0) }
     var paintPreview by remember { mutableStateOf<V11Database?>(null) }
@@ -143,6 +144,7 @@ fun V11CalendarScreen(
             when (quickAction) {
                 NeoQuickAction.ADD_SHIFT -> {
                     paintMode = true
+                selectorVisible = true
                     paletteOpen = false
                     paintDates = emptySet()
                     modernPaintRequest = 0
@@ -194,6 +196,7 @@ fun V11CalendarScreen(
                                 selectedPaintKind = kind
                                 paintDates = emptySet()
                                 paintMode = true
+                selectorVisible = true
                                 paletteOpen = false
                             },
                             onAddWorkplace =
@@ -406,66 +409,25 @@ fun V11CalendarScreen(
 
             // This slot is ALWAYS reserved, even while the workplace painter is closed.
             // Opening the bar cannot resize the calendar or cover its final week.
-            if (uiSettings.experience == V11Experience.PREMIUM) {
-                Box(
-                    Modifier.fillMaxWidth().height(if (bulkPaint) 116.dp else 68.dp)
-                        .padding(top = 2.dp, bottom = 2.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (paintMode || paletteOpen) {
-                        LaunchedEffect(Unit) {
-                            paintMode = true
-                            paletteOpen = false
-                        }
-                        Column(Modifier.fillMaxSize()) {
-                            NeoPainterBar(
-                    db,
-                    workplaces,
-                    activeCalendar?.id,
-                    paintDates,
-                    selectedDate,
-                    modernPaintRequest,
-                    bulkPaint,
-                    { bulkPaint = it },
-                    { paintDates = emptySet() },
-                    onDatabaseChange,
-                    {
-                        paintMode = false
-                        paletteOpen = false
-                        paintDates = emptySet()
-                        modernPaintRequest = 0
-                        bulkPaint = false
-                        paintPreview = null
-                        painterRequestedWorkplace = null
-                    },
-                    onPreview = { paintPreview = it },
-                    initialWorkplaceId = painterRequestedWorkplace,
-                            )
-                        }
-                    } else {
-                        Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface,
-                            shadowElevation = 5.dp, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.surface)) {
-                            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(neoLabel("أماكن العمل", "Workplaces"),style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold)
-                                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
-                                    workplaces.forEach { place ->
-                                        AssistChip(onClick = { painterRequestedWorkplace = place.id; paintMode = true },
-                                            shape = RoundedCornerShape(18.dp),
-                                            colors = AssistChipDefaults.assistChipColors(containerColor = neoHexColor(place.colorHex).copy(alpha = .16f)),
-                                            border = androidx.compose.foundation.BorderStroke(1.dp, neoHexColor(place.colorHex).copy(alpha = .35f)),
-                                            label = { Text(place.name, maxLines = 1) }, leadingIcon = {
-                                            Box(Modifier.size(10.dp).background(neoHexColor(place.colorHex), androidx.compose.foundation.shape.CircleShape))
-                                        })
-                                    }
-                                    if (workplaces.isEmpty()) TextButton(onClick = { showCalendarManager = true }) { Text(neoLabel("إدارة التقاويم", "Manage calendars")) }
-                                }
-                                FilledTonalIconButton(onClick={paintDates=emptySet();bulkPaint=false;paintMode=true;paletteOpen=false},
-                                    modifier=Modifier.size(48.dp).testTag("calendar-paint-fab")) {
-                                    Icon(Icons.Default.Add,neoLabel("رسم الورديات","Paint shifts"))
-                                }
-                            }
-                        }
+            if (LocalV11NeoEnabled.current) {
+                Box(Modifier.fillMaxWidth().height(56.dp)) {
+                    FloatingActionButton(onClick={
+                        if(paintMode) {paintMode=false;selectorVisible=false;paintDates=emptySet();paintPreview=null;modernPaintRequest=0}
+                        else {paintMode=true;selectorVisible=true;paintDates=emptySet();bulkPaint=false}
+                    },modifier=Modifier.align(Alignment.CenterEnd).size(48.dp).testTag("calendar-paint-fab")) {
+                        Icon(if(paintMode) Icons.Default.Check else Icons.Default.Add,neoLabel("إضافة وردية / إنهاء الرسم","Add shift / finish painting"))
+                    }
+                    if(paintMode) androidx.compose.ui.window.Popup(
+                        alignment=Alignment.BottomCenter,
+                        offset=androidx.compose.ui.unit.IntOffset(0,-with(androidx.compose.ui.platform.LocalDensity.current){56.dp.roundToPx()}),
+                        onDismissRequest={selectorVisible=false},
+                        properties=androidx.compose.ui.window.PopupProperties(focusable=false,dismissOnClickOutside=selectorVisible),
+                    ) {
+                        NeoPainterBar(db,workplaces,activeCalendar?.id,paintDates,selectedDate,modernPaintRequest,bulkPaint,
+                            {bulkPaint=it},{paintDates=emptySet()},onDatabaseChange,
+                            {paintMode=false;selectorVisible=false;paintDates=emptySet();modernPaintRequest=0;paintPreview=null},
+                            onPreview={paintPreview=it},initialWorkplaceId=painterRequestedWorkplace,
+                            selectorVisible=selectorVisible,onTypeChosen={selectorVisible=false})
                     }
                 }
             } else if (paintMode) {

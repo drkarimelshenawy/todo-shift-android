@@ -95,6 +95,22 @@ object V11CalendarController {
         )
     }
 
+    /** Move every reference in one database commit; ambiguous same-day merges are rejected. */
+    fun transferAndDelete(db:V11Database, source:String, target:String):V11Database {
+        require(source!=target && db.calendars.size>1)
+        val from=db.calendars.single {it.id==source};val to=db.calendars.single {it.id==target}
+        require(from.financial==to.financial) {"Choose a calendar with the same financial setting"}
+        val dates=db.days.filter {it.calendarId==source}.map {it.date}.toSet()
+        require(db.days.none {it.calendarId==target && it.date in dates}) {"Target contains matching work dates; choose an empty calendar to preserve all historical records"}
+        return db.copy(calendars=db.calendars.filterNot {it.id==source},
+            days=db.days.map {if(it.calendarId==source)it.copy(calendarId=target) else it},
+            tasks=db.tasks.map {if(it.calendarId==source)it.copy(calendarId=target) else it},
+            dayItems=db.dayItems.map {if(it.calendarId==source)it.copy(calendarId=target) else it},
+            incomeSources=db.incomeSources.map {if(it.calendarId==source)it.copy(calendarId=target) else it},
+            settlements=db.settlements.map {if(it.calendarId==source)it.copy(calendarId=target) else it},
+            auditLog=db.auditLog+AuditEntryV11(UUID.randomUUID().toString(),"CALENDAR_TRANSFER","CALENDAR",source,"All references moved to $target; record identities retained"))
+    }
+
     fun deleteCalendar(
         db: V11Database,
         calendarId: String

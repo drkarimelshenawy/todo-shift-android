@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Today
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -232,6 +233,7 @@ fun NeoCalendarArea(
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
+                IconButton(onClick={noteNavigator.open("SEARCH")}) {Icon(androidx.compose.material.icons.Icons.Rounded.Search,neoLabel("بحث في التقويم","Search calendar"))}
                 FilledTonalIconButton(onClick = { move(1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next"))
                 }
@@ -460,6 +462,9 @@ fun NeoCalendarArea(
                                                     editingNoteId = note.id
                                                     noteDate = cellDate.toString()
                                                 },
+                                                onOpenShift = if(paintMode) null else {segment->selectedShiftId=segment.id},
+                                                onOpenTasks = if(paintMode) null else { {val items=tasks[key].orEmpty();if(items.size==1) noteNavigator.open("TASK_DETAIL",items.first().id) else {onSelectedDate(cellDate);sheetDate=key}} },
+                                                onOpenEvents = if(paintMode) null else { {val items=events[key].orEmpty();if(items.size==1) selectedEventId=items.first().id else {onSelectedDate(cellDate);sheetDate=key}} },
                                                 onLongClick = {
                                                     if (!paintMode) {
                                                         onSelectedDate(cellDate)
@@ -663,8 +668,13 @@ internal fun NeoCalendarCell(
     metrics: NeoCellMetrics? = null,
     weekdayLabel: String? = null,
     onOpenNote: ((DayItemV11) -> Unit)? = null,
+    onOpenShift: ((ShiftSegmentV11)->Unit)? = null,
+    onOpenTasks: (()->Unit)? = null,
+    onOpenEvents: (()->Unit)? = null,
     onClick: () -> Unit,
 ) {
+    var pickedShifts by remember {mutableStateOf(emptyList<ShiftSegmentV11>())}
+    if(pickedShifts.isNotEmpty()) AlertDialog(onDismissRequest={pickedShifts=emptyList()},title={Text(neoLabel("الورديات","Shifts"))},text={Column {pickedShifts.forEach {shift->TextButton(onClick={pickedShifts=emptyList();onOpenShift?.invoke(shift)}) {Text(neoShiftLabel(shift.kind)+" • "+workplaces.firstOrNull {it.id==shift.workplaceId}?.name.orEmpty())}}}},confirmButton={TextButton(onClick={pickedShifts=emptyList()}){Text(neoLabel("إغلاق","Close"))}})
     val p = LocalNeoAppearance.current
     val c = MaterialTheme.colorScheme
     val measured = metrics ?: neoCellMetrics()
@@ -677,7 +687,7 @@ internal fun NeoCalendarCell(
     val names = segments.map { neoShiftLabel(it.kind) }.distinct().joinToString(" / ")
     val fillColor = segments.firstOrNull()?.let { segment ->
         val custom = p.shiftPaints[segment.kind]?.takeIf { p.showShiftPaint && it.mode != NeoPaintMode.INHERIT }?.first
-        neoHexColor(custom ?: workplaces.firstOrNull { it.id == segment.workplaceId }?.colorHex ?: "#8BBACB")
+        neoHexColor(workplaces.firstOrNull {it.id==segment.workplaceId}?.shiftColors?.get(segment.kind.name) ?: custom ?: workplaces.firstOrNull { it.id == segment.workplaceId }?.colorHex ?: "#8BBACB")
     }
     val dateInk = fillColor?.let { if(it.luminance() > .179f) Color.Black else Color.White } ?: c.onSurface
     val description =
@@ -730,12 +740,13 @@ internal fun NeoCalendarCell(
                 workplaces,
                 Modifier.fillMaxSize(),
                 appearance = if (p.showShiftPaint) p else p.copy(shiftPaints = emptyMap()),
+                onSegments=if(onOpenShift==null) null else {items->if(items.size==1) onOpenShift(items.first()) else pickedShifts=items},onEmpty=onClick,
             )
             NeoTodayDecoration(today, date == LocalDate.now().plusDays(1), p)
             Text(
                 listOfNotNull(weekdayLabel, date.dayOfMonth.toString()).joinToString(" • "),
                 modifier =
-                    Modifier.align(Alignment.TopStart)
+                    Modifier.align(Alignment.TopStart).clickable(onClick=onClick)
                         .fillMaxWidth()
                         .padding(2.dp)
                         .padding(vertical = 1.dp)
@@ -837,19 +848,12 @@ internal fun NeoCalendarCell(
                             style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp), color = c.onSurface,
                             modifier = Modifier.background(c.surface.copy(alpha = .85f), RoundedCornerShape(3.dp)))
                     }
-                    if (p.showShiftNames && segments.any { it.kind != ShiftKind.OFF })
-                        Text(
-                            names,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
-                            color = c.onSurface,
-                            modifier =
-                                Modifier.background(
-                                    c.surface.copy(alpha = .9f),
-                                    RoundedCornerShape(3.dp),
-                                ),
-                        )
+                    if(p.showShiftNames) segments.filter {it.kind!=ShiftKind.OFF}.take(2).forEach {segment ->
+                        Text(workplaces.firstOrNull {it.id==segment.workplaceId}?.shiftNames?.get(segment.kind.name) ?: neoShiftLabel(segment.kind),maxLines=1,overflow=TextOverflow.Ellipsis,
+                            style=MaterialTheme.typography.labelSmall,color=c.onSurface,
+                            modifier=Modifier.background(c.surface.copy(alpha=.9f),RoundedCornerShape(3.dp)).then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier))
+                    }
+
                 }
             if (compactCell && notes.isNotEmpty() && (p.showNotes || p.showNoteIcons))
                 Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(4.dp).background(NeoPremium.Gold, CircleShape))
@@ -871,7 +875,7 @@ internal fun NeoCalendarCell(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier =
-                                Modifier.background(
+                                Modifier.then(if(onOpenTasks!=null) Modifier.clickable {onOpenTasks()} else Modifier).background(
                                     c.surface.copy(alpha = .95f),
                                     RoundedCornerShape(3.dp),
                                 ),
@@ -884,7 +888,7 @@ internal fun NeoCalendarCell(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier =
-                                Modifier.background(
+                                Modifier.then(if(onOpenEvents!=null) Modifier.clickable {onOpenEvents()} else Modifier).background(
                                     c.surface.copy(alpha = .95f),
                                     RoundedCornerShape(3.dp),
                                 ),

@@ -276,32 +276,17 @@ fun NeoContextActions(destination: String) {
             Icon(Icons.Rounded.MoreVert, neoLabel("خيارات $destination", "$destination actions"))
         }
         DropdownMenu(open, { open = false }) {
-            if (destination != "Settings")
-                DropdownMenuItem(
-                    text = {
-                        Column {
-                            Text(neoLabel("تراجع عن آخر تعديل", "Undo last change"))
-                            Text(
-                                neoLabel("لهذه الجلسة فقط", "This session only"),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        }
-                    },
-                    enabled = undo.enabled,
-                    onClick = {
-                        open = false
-                        undo.perform()
-                    },
-                )
             if (destination == "Calendar") {
                 val appearance = LocalNeoAppearance.current
                 val update = LocalNeoOnChange.current
-                DropdownMenuItem(text = { Text(neoLabel("أماكن العمل", "Workplaces")) }, onClick = { open = false; nav.open("WORKPLACES") })
-                DropdownMenuItem(text = { Text(if (appearance.weeklyRows) neoLabel("الأسبوع: ٧ أعمدة", "Week: 7 columns") else neoLabel("الأسبوع: ٧ صفوف", "Week: 7 rows")) },
-                    onClick = { open = false; update(appearance.copy(weeklyRows = !appearance.weeklyRows)) })
+                DropdownMenuItem(text = { Text(neoLabel("ملخص العمل", "Work summary")) }, onClick = { open = false; nav.open("WORK_SUMMARY") })
+                DropdownMenuItem(text = { Text(neoLabel("إدارة أماكن العمل", "Manage workplaces")) }, onClick = { open = false; nav.open("WORKPLACES") })
+                if (appearance.calendarView == com.todoshift.app.v11.NeoCalendarView.WEEK)
+                    DropdownMenuItem(text = { Text(if (appearance.weeklyRows) neoLabel("الأسبوع: ٧ أعمدة", "Week: 7 columns") else neoLabel("الأسبوع: ٧ صفوف", "Week: 7 rows")) },
+                        onClick = { open = false; update(appearance.copy(weeklyRows = !appearance.weeklyRows)) })
             }
             NeoFeatureCatalog.entries
-                .filter { it.destination == destination }
+                .filter { it.destination == destination && destination != "Calendar" }
                 .forEach { feature ->
                     DropdownMenuItem(
                         text = { Text(neoLabel(feature.ar, feature.en)) },

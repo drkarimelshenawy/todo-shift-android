@@ -1,5 +1,8 @@
 package com.todoshift.app.v11.ui
 
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -86,21 +89,27 @@ fun Neo4Atmosphere(modifier: Modifier = Modifier, appearance: NeoAppearance = Lo
 
 @Composable
 fun Neo4ShiftFill(segments: List<ShiftSegmentV11>, workplaces: List<com.todoshift.app.data.Workplace>, modifier: Modifier = Modifier,
-    appearance: NeoAppearance = LocalNeoAppearance.current) {
+    appearance: NeoAppearance = LocalNeoAppearance.current,
+    onSegments:((List<ShiftSegmentV11>)->Unit)?=null,onEmpty:(()->Unit)?=null) {
     val bands = remember(segments) { neo4PaintBands(segments.map { it.kind }) }
     val brushes = remember(segments, workplaces, appearance.shiftPaints) { segments.map { segment ->
         val style = appearance.shiftPaints[segment.kind] ?: NeoShiftPaint()
-        val old = workplaces.firstOrNull { it.id == segment.workplaceId }?.colorHex ?: "#8BBACB"
-        val first = neoHexColor(if (style.mode == NeoPaintMode.INHERIT) old else style.first)
+        val place=workplaces.firstOrNull {it.id==segment.workplaceId}
+        val own=place?.shiftColors?.get(segment.kind.name)
+        val old = own ?: place?.colorHex ?: "#8BBACB"
+        val first = neoHexColor(if (own!=null || style.mode == NeoPaintMode.INHERIT) old else style.first)
         val rawSecond = neoHexColor(style.second)
         val second = lerp(first, rawSecond, when(style.strength) { NeoGradientStrength.SOFT -> 0.35f; NeoGradientStrength.MEDIUM -> 0.7f; NeoGradientStrength.STRONG -> 1f })
-        if (style.mode != NeoPaintMode.GRADIENT) Brush.linearGradient(listOf(first, first)) else when (style.direction) {
+        if (own!=null || style.mode != NeoPaintMode.GRADIENT) Brush.linearGradient(listOf(first, first)) else when (style.direction) {
             NeoGradientDirection.VERTICAL -> Brush.verticalGradient(listOf(first, second))
             NeoGradientDirection.HORIZONTAL -> Brush.horizontalGradient(listOf(first, second))
             NeoGradientDirection.DIAGONAL -> Brush.linearGradient(listOf(first, second))
         }
     } }
-    androidx.compose.foundation.Canvas(modifier) {
+    val interaction=if(onSegments==null) Modifier else Modifier.pointerInput(segments,onSegments) {
+        detectTapGestures(onTap={point->val at=point.y/size.height.coerceAtLeast(1);val band=bands.firstOrNull {at>=it.top&&at<it.bottom};if(band!=null) onSegments(band.owners.map {segments[it]}) else onEmpty?.invoke()})
+    }
+    androidx.compose.foundation.Canvas(modifier.then(interaction)) {
         bands.forEach { band ->
             val top = band.top * size.height; val bottom = band.bottom * size.height
             if (band.owners.size == 1) drawRect(brushes[band.owners[0]], Offset(0f, top), androidx.compose.ui.geometry.Size(size.width, bottom - top))

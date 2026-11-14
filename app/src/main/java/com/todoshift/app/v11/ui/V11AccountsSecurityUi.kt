@@ -29,6 +29,8 @@ fun V11AccountsUnlockScreen(
     securityStore: V11SecurityStore,
     onUnlocked: () -> Unit
 ) {
+    var recovery by remember {mutableStateOf(false)}
+    if(recovery) NeoRecoveryUnlock(securityStore,{recovery=false},onUnlocked)
     val verifier = rememberNeoSecurityVerifier()
     val context =
         LocalContext.current
@@ -205,7 +207,8 @@ fun V11AccountsUnlockScreen(
                     )
                 )
 
-                when (settings.mode) {
+                if(securityStore.hasRecoveryCode()) TextButton(onClick={recovery=true}) {Text(neoLiteral("نسيت رمز القفل؟","Forgot your lock code?"))}
+                when (securityStore.load().mode) {
                     V11LockMode.PIN -> {
                         OutlinedTextField(
                             value = pin,

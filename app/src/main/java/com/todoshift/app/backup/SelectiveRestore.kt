@@ -11,6 +11,7 @@ data class RestoreInspection(
     val dependencies: Int,
     val cashAccounts: Int = 0, val cashTransactions: Int = 0, val cashDebts: Int = 0,
     val currentFingerprint: String = "",
+    val details:List<String> = emptyList(),
 )
 
 /** Stable IDs are the merge key. Partial replacement never replaces shared dependencies. */
@@ -75,6 +76,7 @@ internal object SelectiveRestore {
         require(scope.isNotEmpty()) { "Select at least one section" }
         val next = JSONObject(current.toString())
         val scopedIncoming = filtered(incoming, scope)
+        val details=mutableListOf<String>()
         var total = 0; var additions = 0; var duplicates = 0; var conflicts = 0; var replacements = 0; var dependencies = 0
         arrays.filter { selected(it, scope) }.forEach { key ->
             fun records(o: JSONObject): List<JSONObject> = o.getJSONArray(key).let { a -> (0 until a.length()).map { a.getJSONObject(it) } }
@@ -93,13 +95,18 @@ internal object SelectiveRestore {
                 if (previous == null) additions++
                 else if (same(previous, record)) duplicates++
                 else conflicts++
+                val status=if(previous==null) "ADD" else if(same(previous,record)) "DUPLICATE" else if(sharedDependency) "CONFLICT / KEEP SHARED" else if(mode==RestoreMode.REPLACE) "CONFLICT / REPLACE" else "CONFLICT / KEEP CURRENT"
+                details+="$key / $id: $status"
                 // Existing shared identities always win: restoring tasks cannot change historical compensation.
                 if (previous == null || (!sharedDependency && mode == RestoreMode.REPLACE)) merged[id] = record
 
             }
-            if (mode == RestoreMode.REPLACE && !sharedDependency) replacements += old.size - retained.size
+            if (mode == RestoreMode.REPLACE && !sharedDependency) {
+                replacements += old.size - retained.size
+                old.keys.filter {it !in retained && fresh.none {n->n.getString("id")==it}}.forEach {details+="$key / $it: REMOVE FROM SELECTED SCOPE"}
+            }
             next.put(key, JSONArray(merged.values.toList()))
         }
-        return next to RestoreInspection(scope, total, additions, duplicates, conflicts, replacements, dependencies)
+        return next to RestoreInspection(scope, total, additions, duplicates, conflicts, replacements, dependencies,details=details)
     }
 }

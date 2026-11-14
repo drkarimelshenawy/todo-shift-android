@@ -102,6 +102,7 @@ fun NeoRescueSettings(
                 query,
                 { query = it },
                 label = { Text(neoLabel("بحث في الإعدادات", "Search settings")) },
+                trailingIcon = { if(query.isNotEmpty()) IconButton(onClick={query=""}) {Icon(Icons.Rounded.Close,neoLabel("مسح البحث","Clear search"))} },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -165,7 +166,7 @@ fun NeoRescueSettings(
             )
             if (page.endsWith("_GROUP")) {
                 NeoFeatureCatalog.entries
-                    .filter { it.group == groupId }
+                    .filter { it.group == groupId && it.id !in setOf("TODAY_STYLE", "PAINT_STYLE") }
                     .forEach { row ->
                         NeoSettingsRow(neoLabel(row.ar, row.en)) { nav.open(row.id) }
                     }
@@ -180,6 +181,7 @@ fun NeoRescueSettings(
                             { update(p.copy(calendarView = it)) },
                         )
                         NeoCalendarPreferences(p, update)
+                        NeoTodayPreferences(p, update)
                         NeoSwitch(
                             neoLabel("دليل الألوان", "Calendar legend"),
                             p.showCalendarLegend,

@@ -294,8 +294,8 @@ fun Neo4AccountBackupPage(
         TextButton(onClick = { cloudExpanded = !cloudExpanded }) {
             Text(
                 neoLabel(
-                    "خدمات Google الاختيارية (غير متاحة)",
-                    "Optional Google services (unavailable)",
+                    "Google Drive — غير متاح حاليًا",
+                    "Google Drive — currently unavailable",
                 )
             )
         }
@@ -326,6 +326,7 @@ fun Neo4AccountBackupPage(
                         RestoreMode.entries.forEach { mode -> FilterChip(selected = restoreMode == mode, onClick = { restoreMode = mode }, label = { Text(if (mode == RestoreMode.MERGE) neoLabel("دمج", "Merge") else neoLabel("استبدال", "Replace")) }) }
                     }
                     Text("${pending.preview.createdAt} • ${pending.preview.appVersion}")
+                    Text(neoLabel("ملاحظات: ${pending.preview.notes} • ورديات: ${pending.preview.shifts} • أحداث: ${pending.preview.events}","Notes: ${pending.preview.notes} • shifts: ${pending.preview.shifts} • events: ${pending.preview.events}"))
                     Text(
                         neoLabel(
                             "تقاويم: ${pending.preview.calendars} • أيام: ${pending.preview.days} • مهام: ${pending.preview.tasks} • دفعات: ${pending.preview.payments} • صور: ${pending.preview.images}",
@@ -339,6 +340,10 @@ fun Neo4AccountBackupPage(
                         )
                     )
                     inspection?.let { plan ->
+                        if(plan.details.isNotEmpty()) {
+                            Text(neoLabel("تفاصيل الفحص (أول ٢٠٠ سجل من ${plan.details.size})","Inspection details (first 200 of ${plan.details.size} records)"),style=MaterialTheme.typography.titleSmall)
+                            plan.details.take(200).forEach {Text(it,style=MaterialTheme.typography.labelSmall)}
+                        }
                         Text(neoLabel("إضافات: ${plan.additions} • متطابق: ${plan.duplicates} • تعارضات: ${plan.conflicts} • استبدال: ${plan.replacements} • تبعيات مشتركة: ${plan.dependencies}", "Additions: ${plan.additions} • duplicates: ${plan.duplicates} • conflicts: ${plan.conflicts} • replacements: ${plan.replacements} • shared dependencies: ${plan.dependencies}"))
                         if (BackupSection.CASHBOOK in restoreScope) Text(neoLabel("حسابات: ${plan.cashAccounts} • قيود: ${plan.cashTransactions} • مديونيات: ${plan.cashDebts}", "Accounts: ${plan.cashAccounts} • transactions: ${plan.cashTransactions} • debts: ${plan.cashDebts}"))
                         if (BackupSection.CASHBOOK in restoreScope) Text(neoLabel("تُفحص قيود كاش بوك قبل الحفظ؛ يُرفض تعارض المعرفات والدفعات المرتبطة.", "Cash Book identifiers and linked receipts are validated before writing; conflicts are rejected."))
@@ -371,8 +376,8 @@ fun Neo4AccountBackupPage(
                                     failed = false
                                     message =
                                         neoLiteral(
-                                            "تمت الاستعادة المحلية",
-                                            "Local restore completed",
+                                            "تمت الاستعادة المحلية والتحقق من الحفظ. إضافات: ${inspection?.additions ?: 0} • استبدالات: ${inspection?.replacements ?: 0} • متطابق: ${inspection?.duplicates ?: 0}",
+                                            "Restore committed and validated. Additions: ${inspection?.additions ?: 0} • replacements: ${inspection?.replacements ?: 0} • duplicates: ${inspection?.duplicates ?: 0}",
                                         ) +
                                             if (value.warnings.isEmpty()) ""
                                             else " • " + value.warnings.joinToString()

@@ -160,6 +160,7 @@ fun V11SecuritySettingsDialog(
                         rememberScrollState()
                     )
             ) {
+                NeoRecoverySetup(store)
                 SecuritySectionTitle(
                     neoLiteral("طريقة الحماية الأساسية", "Primary authentication method")
                 )

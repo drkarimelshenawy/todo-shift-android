@@ -240,7 +240,8 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
 
                         put("compensationHistory", JSONArray().apply {
                             source.compensationHistory.forEach { period ->
-                                put(JSONObject().put("effectiveMonth", period.effectiveMonth).put("amount", period.amount))
+                                put(JSONObject().put("effectiveMonth", period.effectiveMonth).put("amount", period.amount)
+                                put("shiftBased",period.shiftBased))
                             }
                         })
                         put("order", source.order)
@@ -730,7 +731,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
                 compensationHistory = (o.optJSONArray("compensationHistory") ?: JSONArray()).let { periods ->
                     (0 until periods.length()).map { index ->
                         val period = periods.getJSONObject(index)
-                        FixedSalaryPeriodV11(period.getString("effectiveMonth"), period.getDouble("amount"))
+                        FixedSalaryPeriodV11(period.getString("effectiveMonth"), period.getDouble("amount"),period.optBoolean("shiftBased",false))
                     }
                 }
             )

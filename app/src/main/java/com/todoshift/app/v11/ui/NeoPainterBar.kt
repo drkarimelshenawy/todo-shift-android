@@ -51,6 +51,8 @@ fun NeoPainterBar(
     onExit: () -> Unit,
     onPreview: (V11Database?) -> Unit = {},
     initialWorkplaceId: String? = null,
+    selectorVisible:Boolean=true,
+    onTypeChosen:()->Unit={},
 ) {
     val commit = rememberNeoCommit(onCommit)
     val context = LocalContext.current
@@ -202,7 +204,7 @@ fun NeoPainterBar(
             } catch (failure: Exception) { error = failure.message }
         }
     }
-    Surface(
+    if(selectorVisible) Surface(
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(24.dp),
@@ -227,14 +229,14 @@ fun NeoPainterBar(
                     ) {
                         Column(Modifier.background(Brush.linearGradient(listOf(NeoPremium.NavyLight, NeoPremium.Navy))).padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text(neoLabel("اختر نوع الشيفت", "Choose shift type"),Modifier.weight(1f),style=MaterialTheme.typography.labelMedium,color=Color.White)
+                                Spacer(Modifier.weight(1f))
                                 IconButton(onClick={typesOpen=false}) {Icon(androidx.compose.material.icons.Icons.Rounded.Close,neoLabel("إغلاق أنواع الشيفتات","Close shift types"))}
                             }
                             Row(
                                 Modifier.horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
-                    ShiftKind.entries.forEach { type ->
+                    ShiftKind.entries.filter {it.name in (workplaces.firstOrNull {p->p.id==workplace}?.enabledShiftKinds ?: ShiftKind.entries.map {k->k.name}.toSet())}.forEach { type ->
                         FilterChip(
                             modifier = Modifier.shadow(3.dp, RoundedCornerShape(14.dp)),
                             shape = RoundedCornerShape(14.dp),
@@ -244,6 +246,7 @@ fun NeoPainterBar(
                                 kind = type
                                 erase = false
                                 typesOpen = false
+                                onTypeChosen()
                                 runCatching { store.update { it.put("paintKind", type.name) } }
                                     .onFailure { error = it.message }
                             },
@@ -266,11 +269,11 @@ fun NeoPainterBar(
                                         )
                                 )
                             },
-                            label = { Text(premiumShiftLabel(type)) },
+                            label = { Text(workplaces.firstOrNull {it.id==workplace}?.shiftNames?.get(type.name) ?: premiumShiftLabel(type)) },
                             colors = FilterChipDefaults.filterChipColors(
-                                containerColor = premiumShiftTint(type),
+                                containerColor = MaterialTheme.colorScheme.surface,
                                 labelColor = Color(0xFF143455),
-                                selectedContainerColor = premiumShiftTint(type),
+                                selectedContainerColor = neoHexColor(workplaces.firstOrNull {it.id==workplace}?.let {it.shiftColors[type.name] ?: it.colorHex} ?: "#D9B46A"),
                                 selectedLabelColor = Color(0xFF102D4B),
                             ),
                         )

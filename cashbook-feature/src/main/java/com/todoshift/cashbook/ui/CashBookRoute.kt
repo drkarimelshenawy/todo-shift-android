@@ -77,7 +77,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     val selectableAccounts = allAccounts.filter { !it.archived }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var mainSection by rememberSaveable { mutableStateOf("accounts") }
-    val active = selected?.takeIf { id -> selectableAccounts.any { it.id == id } && (mainSection == "debts" || it !in debtIds) }
+    val active = selected?.takeIf { id -> selectableAccounts.any { it.id == id } && (mainSection == "debts" || id !in debtIds) }
         ?: (if (mainSection == "debts") selectableAccounts.firstOrNull { it.id in debtIds }?.id else accounts.firstOrNull()?.id)
     val activeAccount = selectableAccounts.find { it.id == active }
     val activeDebt=snapshot?.debts?.find{it.accountId==active}

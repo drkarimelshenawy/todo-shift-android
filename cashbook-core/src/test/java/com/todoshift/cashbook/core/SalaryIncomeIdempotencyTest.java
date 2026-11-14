@@ -1,7 +1,5 @@
 package com.todoshift.cashbook.core;
 
-import java.io.IOException;
-import java.util.Arrays;
 
 /** Executable integrity test: java ...SalaryIncomeIdempotencyTest */
 public final class SalaryIncomeIdempotencyTest {
@@ -30,9 +28,19 @@ public final class SalaryIncomeIdempotencyTest {
         expectFailure(() -> restarted.postSalaryIncomeOnce("payment-1", account, 12000, "2026-11-14"));
         expectFailure(() -> restarted.postSalaryIncomeOnce("payment-1", account, 12500, "2026-11-15"));
         expectFailure(() -> restarted.postSalaryIncomeOnce("bad]id", account, 12500, "2026-11-14"));
-        restarted.setDeleted(first, true);
-        expectFailure(() -> restarted.postSalaryIncomeOnce("payment-1", account, 12500, "2026-11-14"));
-        if (restarted.snapshot().entries.size() != 1) throw new AssertionError("Deleted entry duplicated");
+        expectFailure(() -> restarted.setDeleted(first, true));
+        expectFailure(() -> restarted.edit(first, Ledger.Kind.EXPENSE, account, null, 12500, "modified", "2026-11-14", ""));
+        expectFailure(() -> restarted.post(Ledger.Kind.INCOME, account, null, 12500, "[salary-receipt:payment-2]", "2026-11-14"));
+        byte[] protectedSnapshot = restarted.backup();
+        Ledger empty = new Ledger(new Memory());
+        empty.load();
+        byte[] emptyBackup = empty.backup();
+        expectFailure(() -> restarted.restore(emptyBackup));
+        if (restarted.snapshot().entries.size() != 1) throw new AssertionError("Protected entry lost");
+        restarted.restore(protectedSnapshot);
+        if (!first.equals(restarted.postSalaryIncomeOnce("payment-1", account, 12500, "2026-11-14")))
+            throw new AssertionError("Backup restore changed receipt");
+        if (restarted.snapshot().entries.size() != 1) throw new AssertionError("Duplicate receipt after restore");
         System.out.println("PASS: salary income retry, restart, conflict and deleted-entry protection");
     }
 }

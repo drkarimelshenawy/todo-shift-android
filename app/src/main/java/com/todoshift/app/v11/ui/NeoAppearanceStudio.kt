@@ -143,7 +143,7 @@ fun NeoAppearanceStudio(
                     FilterChip(selected = section == id, onClick = { section = id }, label = { Text(title) },leadingIcon={Icon(when(id){NeoStudioSection.THEMES->Icons.Rounded.Palette;NeoStudioSection.COLORS->Icons.Rounded.ColorLens;NeoStudioSection.BACKGROUND->Icons.Rounded.Image;NeoStudioSection.TYPE->Icons.Rounded.TextFields;NeoStudioSection.MOTION->Icons.Rounded.Animation;else->Icons.Rounded.Bookmarks},null,Modifier.size(16.dp))})
                 }
             }
-            TextButton(onClick={draft=resetStudioSection(draft,section ?: NeoStudioSection.THEMES);accent=draft.accentHex}) {Text(neoLabel("استعادة افتراضي القسم","Reset this section"))}
+            if(section!=NeoStudioSection.PROFILES) TextButton(onClick={draft=resetStudioSection(draft,section ?: NeoStudioSection.THEMES);accent=draft.accentHex}) {Text(neoLabel("استعادة افتراضي القسم","Reset this section"))}
             sections.filter { it.first == section }.forEach { (id, _) ->
                     if (section == id)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

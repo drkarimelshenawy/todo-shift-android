@@ -18,7 +18,7 @@ val neoSettingsGroups =
     listOf(
         Triple("APPEARANCE", "المظهر والتصميم", "Appearance & Design"),
         Triple("LANGUAGE", "اللغة والاتجاه", "Language & Direction"),
-        Triple("CALENDAR", "التقويم والورديات", "Calendar & Shifts"),
+        Triple("CALENDAR", "التقويم وإدارة العمل", "Calendar & Work"),
         Triple("NOTIFICATIONS", "التنبيهات والويدجت", "Notifications & Widgets"),
         Triple("PRIVACY", "الخصوصية والبيانات", "Privacy & Data"),
         Triple("ADVANCED", "الخيارات المتقدمة", "Advanced"),
@@ -173,6 +173,7 @@ fun NeoRescueSettings(
             } else
                 when (page) {
                     "CALENDAR_DISPLAY" -> {
+                        Neo4ThemePreview(p,p.fontScale)
                         NeoChoice(
                             neoLabel("العرض الافتراضي", "Default view"),
                             NeoCalendarView.entries,

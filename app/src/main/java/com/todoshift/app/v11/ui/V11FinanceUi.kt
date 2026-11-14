@@ -67,6 +67,8 @@ fun V11FinanceScreen(
     var pendingProtectedAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     var financeSection by rememberSaveable { mutableIntStateOf(0) }
+    var salaryQuery by rememberSaveable {mutableStateOf("")}
+    val visibleWorkplaces=result.byWorkplace.filter {row->salaryQuery.isBlank()||month.toString().contains(salaryQuery)||workplaces.firstOrNull {it.id==row.workplaceId}?.name?.contains(salaryQuery,true)==true}
     val obligationDue = V11AccountsController.monthObligationDue(db, month)
 
     Column(
@@ -81,7 +83,10 @@ fun V11FinanceScreen(
                 neoLabel("الحسابات والمدفوعات • $month", "Income and payments • $month"),
             )
         }
-        if (LocalV11NeoEnabled.current) NeoPremiumMonth(neoMonthTitle(month, LocalNeoEnglish.current), onPrevious, onNext)
+        if (LocalV11NeoEnabled.current) Column {
+            NeoPremiumMonth(neoMonthTitle(month, LocalNeoEnglish.current), onPrevious, onNext)
+            OutlinedTextField(salaryQuery,{salaryQuery=it},label={Text(neoLabel("بحث في أماكن العمل والفترات والدفعات","Search workplaces, periods and payments"))},singleLine=true,modifier=Modifier.fillMaxWidth())
+        }
         else {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -197,7 +202,7 @@ fun V11FinanceScreen(
                 Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Text(neoLabel("المستحق حسب مكان العمل","Expected by workplace"),style=MaterialTheme.typography.titleMedium)
                     if(result.byWorkplace.isEmpty()) NeoEmptyState(neoLabel("لا توجد مستحقات","No expected income"),neoLabel("تظهر هنا مستحقات الورديات المسجلة","Recorded shift income appears here"))
-                    result.byWorkplace.forEach { summary ->
+                    visibleWorkplaces.forEach { summary ->
                         val place=workplaces.firstOrNull {it.id==summary.workplaceId}
                         val count=summary.count
                         Surface(onClick={workplaceDetailsId=summary.workplaceId},shape=MaterialTheme.shapes.medium,color=MaterialTheme.colorScheme.surfaceVariant) {
@@ -252,7 +257,7 @@ fun V11FinanceScreen(
                 fontSize = 17.sp,
             )
 
-            result.byWorkplace.forEach { summary ->
+            visibleWorkplaces.forEach { summary ->
                 val name =
                     workplaces.firstOrNull { it.id == summary.workplaceId }?.name
                         ?: neoLiteral("غير محدد", "Unspecified")
@@ -286,8 +291,8 @@ fun V11FinanceScreen(
 
             val monthPayments =
                 db.payments.filter { payment ->
-                    payment.accrualMonth == month.toString() ||
-                        payment.allocations.any { it.accrualMonth == month.toString() }
+                    (payment.accrualMonth == month.toString() || payment.allocations.any {it.accrualMonth==month.toString()}) &&
+                        (salaryQuery.isBlank() || listOf(payment.receivedDate,payment.accrualMonth,payment.note,db.incomeSources.firstOrNull {it.id==payment.sourceId}?.name.orEmpty()).any {it.contains(salaryQuery,true)} || payment.allocations.any {a->a.accrualMonth.contains(salaryQuery)||db.incomeSources.firstOrNull {it.id==a.sourceId}?.name?.contains(salaryQuery,true)==true})
                 }
 
             if (monthPayments.isEmpty()) {

@@ -59,6 +59,16 @@ fun V11BackupRestoreDialog(
     val latestAuthorized by rememberUpdatedState(financeAuthorized)
     val rootAccess = LocalNeoFinanceAccess.current
     fun canAccess() = latestAuthorized && notesAuthorized && (rootAccess?.invoke() ?: true)
+    val exportLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/octet-stream")
+        ) {
+            if (it != null) pendingExport = it
+        }
+    val importLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
+            if (it != null) pendingImport = it
+        }
     if (!canAccess()) {
         if (security != null && securityStore != null && (!privateNotes || security.mode != V11LockMode.NONE || security.biometricEnabled)) {
             V11FinancialVerificationDialog(
@@ -142,16 +152,6 @@ fun V11BackupRestoreDialog(
         }
     }
 
-    val exportLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/octet-stream")
-        ) {
-            if (it != null) pendingExport = it
-        }
-    val importLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-            if (it != null) pendingImport = it
-        }
     LaunchedEffect(pendingExport, pendingImport, financeAuthorized, notesAuthorized) {
         if (canAccess() && !busy) {
             pendingExport?.let { pendingExport = null; export(it) }

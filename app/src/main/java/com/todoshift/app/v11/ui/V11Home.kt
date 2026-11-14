@@ -951,7 +951,22 @@ fun V11Home(
                                                 onUnlocked = { accountsUnlocked = true },
                                             )
                                         } else {
-                                            com.todoshift.app.integration.EmbeddedCashBookScreen()
+                                            com.todoshift.app.integration.EmbeddedCashBookScreen(
+                                                salaryContent = {
+                                                    V11FinanceScreen(
+                                                        month = month,
+                                                        db = db,
+                                                        workplaces = oldData.workplaces,
+                                                        moneyVisible = moneyVisible,
+                                                        onPrevious = { month = month.minusMonths(1) },
+                                                        onNext = { month = month.plusMonths(1) },
+                                                        onToggleMoney = { moneyVisible = !moneyVisible },
+                                                        securitySettings = securitySettings,
+                                                        securityStore = securityStore,
+                                                        onDatabaseChange = { saveDb(it) },
+                                                    )
+                                                },
+                                            )
                                         }
 
                                     2 ->

@@ -46,6 +46,7 @@ object Neo4AppearanceCodec {
         put("typeface", p.typeface.name)
         put("iconStyle", p.iconStyle.name)
         put("calendarView", p.calendarView.name)
+        put("weeklyRows", p.weeklyRows)
         put("calendarDensity", p.calendarDensity.name)
         put("language", p.language.name)
         put("dashboardExpanded", p.dashboardExpanded)
@@ -118,6 +119,7 @@ object Neo4AppearanceCodec {
             typeface = enumOrNull<NeoTypeface>(o.optString("typeface")) ?: defaults.typeface,
             iconStyle = enumOrNull<NeoIconStyle>(o.optString("iconStyle")) ?: defaults.iconStyle,
             calendarView = enumOrNull<NeoCalendarView>(o.optString("calendarView")) ?: defaults.calendarView,
+            weeklyRows = o.optBoolean("weeklyRows", defaults.weeklyRows),
             calendarDensity = enumOrNull<NeoDensity>(o.optString("calendarDensity")) ?: defaults.calendarDensity,
             language = enumOrNull<NeoLanguage>(o.optString("language")) ?: defaults.language,
             dashboardExpanded = o.optBoolean("dashboardExpanded", defaults.dashboardExpanded),

@@ -30,7 +30,7 @@ class PremiumP01UiTest {
         compose.setContent {
             NeoEnvironment(NeoAppearance(language = NeoLanguage.ENGLISH), true, {}) {
                 V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
-                    V11EditIncomeSourceDialog(source, {}) { updated ->
+                    V11EditIncomeSourceDialog(source, {}) { updated, _ ->
                         runtime.saveIfCurrent(db, db.copy(incomeSources = listOf(updated)))
                     }
                 }

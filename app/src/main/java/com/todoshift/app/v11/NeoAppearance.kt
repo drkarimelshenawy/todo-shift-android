@@ -198,6 +198,7 @@ data class NeoAppearance(
     val typeface: NeoTypeface = NeoTypeface.SYSTEM,
     val iconStyle: NeoIconStyle = NeoIconStyle.ROUNDED,
     val calendarView: NeoCalendarView = NeoCalendarView.MONTH,
+    val weeklyRows: Boolean = false,
     val calendarDensity: NeoDensity = NeoDensity.BALANCED,
     val language: NeoLanguage = NeoLanguage.SYSTEM,
     val dashboardExpanded: Boolean = false,

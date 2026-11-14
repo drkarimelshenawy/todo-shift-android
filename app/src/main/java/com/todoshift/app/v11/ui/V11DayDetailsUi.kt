@@ -75,7 +75,7 @@ fun V11DayDetailsScreen(
 
     val items =
         db.dayItems
-            .filter { it.date == date.toString() }
+            .filter { it.date == date.toString() && (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) }
             .sortedWith(
                 compareByDescending<DayItemV11> { it.title.startsWith("📌") }
                     .thenBy { it.createdAt }
@@ -344,7 +344,9 @@ fun V11DayDetailsScreen(
                             onClick = {
                                 // Reminder effects follow a confirmed database commit in V11Home.
 
-                                onDatabaseChange(V11DayOrganizerController.delete(db, item.id))
+                                onDatabaseChange(if (item.type == DayItemTypeV11.NOTE)
+                                    db.copy(dayItems = db.dayItems.map { if (it.id == item.id) it.copy(noteTrashed = true) else it })
+                                else V11DayOrganizerController.delete(db, item.id))
                             }
                         ) {
                             Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))

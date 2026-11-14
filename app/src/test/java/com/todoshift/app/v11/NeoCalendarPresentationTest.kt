@@ -34,6 +34,15 @@ class NeoCalendarPresentationTest {
         val day = neoVisibleDays(db, setOf("a")).getValue(date)
         assertEquals(2, day.tasks); assertEquals(0, day.events); assertEquals(1, day.notes.size)
     }
+    @Test fun privateArchivedAndTrashedNotesNeverLeakIntoCalendarProjection() {
+        val note = DayItemV11("public", date, type = DayItemTypeV11.NOTE, title = "Visible")
+        val db = V11Database(dayItems = listOf(note,
+            note.copy(id = "locked", title = "Secret", noteLocked = true),
+            note.copy(id = "hidden", title = "Secret", noteHidden = true),
+            note.copy(id = "archived", noteArchived = true),
+            note.copy(id = "trashed", noteTrashed = true)))
+        assertEquals(listOf("public"), neoVisibleDays(db, emptySet()).getValue(date).notes.map { it.id })
+    }
     @Test fun everyNonOffShiftProducesPaint() {
         ShiftKind.entries.filter { it != ShiftKind.OFF }.forEach { assertTrue(neo4PaintBands(listOf(it)).isNotEmpty()) }
     }

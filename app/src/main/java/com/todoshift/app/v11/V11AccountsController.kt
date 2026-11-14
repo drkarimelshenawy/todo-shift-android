@@ -62,11 +62,14 @@ object V11AccountsController {
         type: IncomeSourceTypeV11,
         fixedAmount: Double?,
         recordId: String = UUID.randomUUID().toString(),
+        workplaceId: String? = null,
+        calendarId: String? = null,
     ): V11Database {
         check(db.incomeSources.none { it.id == recordId }) {
             "This request was already saved. Review the stored record before opening a new entry."
         }
         if (name.isBlank()) return db
+        require(fixedAmount == null || (fixedAmount.isFinite() && fixedAmount >= 0.0))
 
         return db.copy(
             incomeSources =
@@ -74,15 +77,46 @@ object V11AccountsController {
                     IncomeSourceV11(
                         id = recordId,
                         name = name.trim(),
-                        type = type,
+                        type = if (fixedAmount != null) IncomeSourceTypeV11.FIXED_SALARY else type,
+                        workplaceId = workplaceId,
+                        calendarId = calendarId,
                         fixedMonthlyAmount = fixedAmount,
                         order = db.incomeSources.size,
+                        compensationHistory = fixedAmount?.let { listOf(FixedSalaryPeriodV11(YearMonth.now().toString(), it)) } ?: emptyList(),
                     )
         )
     }
 
-    fun updateIncomeSource(db: V11Database, source: IncomeSourceV11): V11Database =
-        db.copy(incomeSources = db.incomeSources.map { if (it.id == source.id) source else it })
+    fun updateIncomeSource(
+        db: V11Database,
+        source: IncomeSourceV11,
+        effectiveMonth: String = YearMonth.now().toString(),
+    ): V11Database {
+        val original = db.incomeSources.firstOrNull { it.id == source.id } ?: return db
+        val updated = if (original.fixedMonthlyAmount == source.fixedMonthlyAmount) {
+            // History is owned by the controller, never by a stale editor copy.
+            source.copy(compensationHistory = original.compensationHistory)
+        } else {
+            YearMonth.parse(effectiveMonth)
+            require(db.monthSnapshots.none { it.reopenedAt == null && it.month >= effectiveMonth }) {
+                "Historical closed month is protected"
+            }
+            val history = original.compensationHistory.ifEmpty {
+                original.fixedMonthlyAmount?.let { listOf(FixedSalaryPeriodV11("0001-01", it)) } ?: emptyList()
+            }
+            require(history.none { it.effectiveMonth > effectiveMonth }) {
+                "A later compensation period exists; review it before changing this month"
+            }
+            source.copy(compensationHistory = history.filterNot { it.effectiveMonth == effectiveMonth } +
+                FixedSalaryPeriodV11(effectiveMonth, source.fixedMonthlyAmount ?: 0.0))
+        }
+        require(updated.fixedMonthlyAmount == null || (updated.fixedMonthlyAmount.isFinite() && updated.fixedMonthlyAmount >= 0.0))
+        return db.copy(
+            incomeSources = db.incomeSources.map { if (it.id == source.id) updated else it },
+            auditLog = db.auditLog + AuditEntryV11(UUID.randomUUID().toString(), "INCOME_SOURCE_UPDATED", "INCOME_SOURCE", source.id,
+                "Compensation effective $effectiveMonth; previous periods retained"),
+        )
+    }
 
     fun moveIncomeSource(db: V11Database, id: String, direction: Int): V11Database {
         val items = db.incomeSources.sortedBy { it.order }.toMutableList()
@@ -102,8 +136,23 @@ object V11AccountsController {
         return db.copy(incomeSources = items.mapIndexed { order, item -> item.copy(order = order) })
     }
 
-    fun deleteIncomeSource(db: V11Database, id: String): V11Database =
-        db.copy(incomeSources = db.incomeSources.filterNot { it.id == id })
+    fun deleteIncomeSource(db: V11Database, id: String): V11Database {
+        val referenced = db.payments.any { it.sourceId == id || it.allocations.any { a -> a.sourceId == id } } ||
+            db.settlements.any { it.sourceId == id } ||
+            db.incomeSources.any { it.id == id && (it.fixedMonthlyAmount != null || it.compensationHistory.isNotEmpty()) }
+        if (!referenced) return db.copy(incomeSources = db.incomeSources.filterNot { it.id == id })
+        val source = db.incomeSources.first { it.id == id }
+        // End future accrual from next month without altering this or any closed earning period.
+        val stopMonth = YearMonth.now().plusMonths(1).toString()
+        val history = source.compensationHistory.ifEmpty {
+            source.fixedMonthlyAmount?.let { listOf(FixedSalaryPeriodV11("0001-01", it)) } ?: emptyList()
+        }
+        return db.copy(incomeSources = db.incomeSources.map {
+            if (it.id == id) it.copy(active = false, compensationHistory =
+                if (history.isEmpty()) history else history.filter { period -> period.effectiveMonth < stopMonth } + FixedSalaryPeriodV11(stopMonth, 0.0))
+            else it
+        })
+    }
 
     fun addPaymentMethod(
         db: V11Database,

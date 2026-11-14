@@ -7,6 +7,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -119,7 +120,7 @@ fun NeoCalendarArea(
         remember(db.dayItems, visibleCalendarIds) {
             db.dayItems
                 .filter {
-                    !it.completed && (it.calendarId == null || it.calendarId in visibleCalendarIds)
+                    !it.completed && (it.type != DayItemTypeV11.NOTE || (it.noteVisible && !it.notePrivate)) && (it.calendarId == null || it.calendarId in visibleCalendarIds)
                 }
                 .groupBy { it.date }
         }
@@ -146,7 +147,7 @@ fun NeoCalendarArea(
                         if (db.dayItems.firstOrNull { it.id == note.id } != note)
                             reject("Note changed; review again before deleting")
                         else
-                            commit(db.copy(dayItems = db.dayItems.filterNot { it.id == note.id })) {
+                            commit(db.copy(dayItems = db.dayItems.map { if (it.id == note.id) it.copy(noteTrashed = true) else it })) {
                                 deletingNote = null
                             }
                     },
@@ -160,6 +161,8 @@ fun NeoCalendarArea(
         )
     }
     var sheetDate by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedShiftId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedEventId by rememberSaveable { mutableStateOf<String?>(null) }
     val view = if (paintMode) NeoCalendarView.MONTH else p.calendarView
     var tappedDate by rememberSaveable(month.toString(), view) { mutableStateOf<String?>(null) }
     fun move(step: Long) {
@@ -277,6 +280,13 @@ fun NeoCalendarArea(
             }
         }
         var distance by remember { mutableFloatStateOf(0f) }
+        if (view == NeoCalendarView.WEEK && !paintMode) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { update(p.copy(weeklyRows = !p.weeklyRows)) }) {
+                    Text(if (p.weeklyRows) neoLabel("عرض ٧ أعمدة", "Show 7 columns") else neoLabel("عرض ٧ صفوف", "Show 7 rows"))
+                }
+            }
+        }
         val swipeThreshold =
             with(androidx.compose.ui.platform.LocalDensity.current) { 64.dp.toPx() }
         val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
@@ -335,8 +345,9 @@ fun NeoCalendarArea(
                     neoWeekStart(shownMonth.atDay(1), p.firstWeekday)
                 else if (shownView == NeoCalendarView.WEEK) neoWeekStart(date, p.firstWeekday)
                 else date
-            val columns = if (shownView == NeoCalendarView.DAY) 1 else 7
-            val rows = if(shownView == NeoCalendarView.MONTH) NeoMonthGrid.dates(shownMonth,p.firstWeekday).size/7 else 1
+            val weeklyRows = shownView == NeoCalendarView.WEEK && p.weeklyRows
+            val columns = if (shownView == NeoCalendarView.DAY || weeklyRows) 1 else 7
+            val rows = if(shownView == NeoCalendarView.MONTH) NeoMonthGrid.dates(shownMonth,p.firstWeekday).size/7 else if (weeklyRows) 7 else 1
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val fontScale =
                     androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
@@ -440,6 +451,12 @@ fun NeoCalendarArea(
                                                         }
                                                     },
                                                 metrics = cellMetrics,
+                                                weekdayLabel = if (weeklyRows) cellDate.format(DateTimeFormatter.ofPattern("EEEE", locale)) else null,
+                                                onOpenNote = if (paintMode) null else { note ->
+                                                    onSelectedDate(cellDate)
+                                                    editingNoteId = note.id
+                                                    noteDate = cellDate.toString()
+                                                },
                                                 onLongClick = {
                                                     if (!paintMode) {
                                                         onSelectedDate(cellDate)
@@ -465,6 +482,36 @@ fun NeoCalendarArea(
                 }
             }
         }
+    }
+    selectedShiftId?.let { id ->
+        val shift = neoShiftOccurrences(db, visibleCalendarIds).firstOrNull { it.segment.id == id }
+        if (shift != null) AlertDialog(
+            onDismissRequest = { selectedShiftId = null },
+            title = { Text(neoShiftLabel(shift.segment.kind)) },
+            text = { Column {
+                NeoShiftSummary(shift, workplaces)
+                if (shift.segment.note.isNotBlank()) Text(shift.segment.note)
+            } },
+            confirmButton = { TextButton(onClick = {
+                selectedShiftId = null
+                sheetDate = null
+                onSelectedDate(LocalDate.parse(shift.entry.date))
+                onOpenDay()
+            }) { Text(neoLabel("تعديل", "Edit")) } },
+            dismissButton = { TextButton(onClick = { selectedShiftId = null }) { Text(neoLabel("إغلاق", "Close")) } },
+        )
+    }
+    selectedEventId?.let { id ->
+        val event = db.dayItems.firstOrNull { it.id == id && it.type != DayItemTypeV11.NOTE }
+        if (event != null) AlertDialog(
+            onDismissRequest = { selectedEventId = null },
+            title = { Text(event.title) },
+            text = { Text(listOf(event.date, event.details).filter { it.isNotBlank() }.joinToString("\n")) },
+            confirmButton = { TextButton(enabled = !LocalNeoEditorWriteState.current.pending, onClick = {
+                commit(V11DayOrganizerController.toggle(db, event.id)) { selectedEventId = null }
+            }) { Text(if (event.completed) neoLabel("إعادة فتح", "Reopen") else neoLabel("إكمال", "Complete")) } },
+            dismissButton = { TextButton(onClick = { selectedEventId = null }) { Text(neoLabel("إغلاق", "Close")) } },
+        )
     }
     noteDate?.let { date ->
         NeoDayNoteDialog(
@@ -516,16 +563,24 @@ fun NeoCalendarArea(
                         Text(
                             neoLabel("لا توجد عناصر في هذا اليوم", "Nothing scheduled for this day")
                         )
-                    shifts.forEach {
-                        NeoShiftSummary(it, workplaces)
+                    shifts.forEach { shift ->
+                        Column(Modifier.fillMaxWidth().clickable { selectedShiftId = shift.segment.id }.padding(vertical = 6.dp)) {
+                            NeoShiftSummary(shift, workplaces)
+                        }
                         HorizontalDivider()
                     }
                     dayEntries
                         .flatMap { it.segments }
                         .filter { it.kind == ShiftKind.OFF }
                         .forEach { Text(neoShiftLabel(it.kind)) }
-                    dayTasks.forEach { Text(neoLabel("مهمة: ", "Task: ") + it.title) }
-                    dayEvents.filter { it.type != DayItemTypeV11.NOTE }.forEach { Text(it.title) }
+                    dayTasks.forEach { task ->
+                        TextButton(onClick = { sheetDate = null; noteNavigator.open("TASK_DETAIL", task.id) }) {
+                            Text(neoLabel("مهمة: ", "Task: ") + task.title)
+                        }
+                    }
+                    dayEvents.filter { it.type != DayItemTypeV11.NOTE }.forEach { event ->
+                        TextButton(onClick = { selectedEventId = event.id }) { Text(event.title) }
+                    }
                     presentation[key]?.notes.orEmpty().forEach { note ->
                         Row(Modifier.fillMaxWidth()) {
                             TextButton(
@@ -603,6 +658,8 @@ internal fun NeoCalendarCell(
     modifier: Modifier,
     onLongClick: () -> Unit,
     metrics: NeoCellMetrics? = null,
+    weekdayLabel: String? = null,
+    onOpenNote: ((DayItemV11) -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     val p = LocalNeoAppearance.current
@@ -673,7 +730,7 @@ internal fun NeoCalendarCell(
             )
             NeoTodayDecoration(today, date == LocalDate.now().plusDays(1), p)
             Text(
-                date.dayOfMonth.toString(),
+                listOfNotNull(weekdayLabel, date.dayOfMonth.toString()).joinToString(" • "),
                 modifier =
                     Modifier.align(Alignment.TopStart)
                         .fillMaxWidth()
@@ -753,6 +810,7 @@ internal fun NeoCalendarCell(
                                     color = c.onSurface,
                                     modifier =
                                         Modifier.weight(1f)
+                                            .then(if (onOpenNote != null) Modifier.clickable { onOpenNote(note) } else Modifier)
                                             .semantics { contentDescription = note.title }
                                             .then(
                                                 if (noteBorder)

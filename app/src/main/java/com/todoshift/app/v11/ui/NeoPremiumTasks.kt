@@ -164,12 +164,14 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.date};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
                     if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات مطابقة","No matching notes"),neoLabel("غيّر البحث أو المجلد، أو أضف ملاحظة","Change search or folder, or add a note"))}
                     items(notes,key={it.id}) {note ->
-                        Card(onClick={noteId=note.id;noteEditor=true},colors=CardDefaults.cardColors(containerColor=if(!note.notePrivate&&note.noteBackground!=null) runCatching {androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(note.noteBackground))}.getOrDefault(MaterialTheme.colorScheme.surface) else MaterialTheme.colorScheme.surface)) {
+                        val customColor=if(note.notePrivate) null else note.noteBackground?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
+                        val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
+                        Card(onClick={noteId=note.id;noteEditor=true},colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
                             Column(Modifier.fillMaxWidth().padding(12.dp)) {
                                 if(note.notePrivate) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium)
                                 else {
                                     Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium)
-                                    Text(note.date,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(note.date,style=MaterialTheme.typography.bodySmall,color=contentColor.copy(alpha=0.75f))
                                     if(note.details.isNotBlank()) Text(note.details,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
                                     if(note.noteTags.isNotBlank()) Text(note.noteTags,style=MaterialTheme.typography.labelSmall)
                                 }

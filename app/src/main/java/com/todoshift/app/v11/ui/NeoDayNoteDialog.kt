@@ -163,7 +163,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             lastSavedEdit=savedEdit
             detachedTasks=emptyList();existingTaskLinks=emptyList()
             onProtectionChanged(note.noteLocked);committed(next);draftStatus="تم الحفظ / Saved";error=null
-            withContext(Dispatchers.IO) {drafts.remove(draftKey)}
+            withContext(Dispatchers.IO) {drafts.removeIfVersion(draftKey,savedEdit)}
             if(close) onSave(note)
             true
         } catch(cancelled:CancellationException) {throw cancelled}
@@ -172,7 +172,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     }
     suspend fun keepDraft() {
       try {
-        val value=JSONObject().put("id",id).put("source",sourceRevision).put("title",title).put("details",body.text).put("tags",tags)
+        val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",body.text).put("tags",tags)
             .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }

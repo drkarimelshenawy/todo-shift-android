@@ -11,6 +11,16 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class NoteTransactionTest {
+    @Test fun lateSaveCleanupCannotDeleteANewerEncryptedDraft() {
+        val context=RuntimeEnvironment.getApplication();val first=NeoNoteDraftStore(context);val reopened=NeoNoteDraftStore(context)
+        first.save("shared-note",org.json.JSONObject().put("editVersion","older").put("details","Old edit"))
+        reopened.save("shared-note",org.json.JSONObject().put("editVersion","newer").put("details","New text retained"))
+        first.removeIfVersion("shared-note","older")
+        assertEquals("New text retained",reopened.read("shared-note")!!.getString("details"))
+        reopened.removeIfVersion("shared-note","newer")
+        assertNull(first.read("shared-note"))
+    }
+
     @Test fun unlinkingNoteFromCalendarPreservesItsTextIdentityAndReminder() {
         val note=DayItemV11("optional-date","2026-11-14",type=DayItemTypeV11.NOTE,title="Keep",details="Body",reminderAt=1234L)
         val unlinked=note.copy(noteCalendarLinked=false)

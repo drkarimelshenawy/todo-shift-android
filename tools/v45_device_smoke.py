@@ -20,8 +20,12 @@ def database():
     root=ET.fromstring(adb('exec-out','cat',PREF))
     return json.loads(next(n.text for n in root if n.get('name')=='database'))
 def dump():
-    shell('uiautomator','dump','/sdcard/v45-smoke.xml')
-    root=ET.fromstring(adb('exec-out','cat','/sdcard/v45-smoke.xml'))
+    def snapshot():
+        shell('rm','-f','/sdcard/v45-smoke.xml')
+        shell('uiautomator','dump','/sdcard/v45-smoke.xml')
+        return ET.fromstring(adb('exec-out','cat','/sdcard/v45-smoke.xml'))
+    # Android accessibility can briefly return a null root during launch/rotation.
+    root=wait(snapshot,seconds=35)
     # Only recover the external launcher ANR observed in the captured system dialog.
     if any(n.get('text')=="Pixel Launcher isn't responding" for n in root.iter('node')):
         close=next((n for n in root.iter('node') if n.get('resource-id')=='android:id/aerr_close'),None)

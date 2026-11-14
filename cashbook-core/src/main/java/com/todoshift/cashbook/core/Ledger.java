@@ -284,6 +284,38 @@ public final class Ledger {
         list.add(new Entry(id,kind,source,target==null?"":target,minor,note.trim(),date,time,false,items,bills));
         commit(new Snapshot(current.accounts,list,current.defaults,current.preferences,current.debts)); return id;
     }
+    /**
+     * Durable, idempotent salary receipt income. The stable external key is
+     * encoded in the persisted entry note, so the key and income are committed
+     * in one AtomicFile snapshot rather than two independent files.
+     *
+     * All writers MUST share the same process-wide lock and reload before
+     * checking. Cross-process posting is not supported.
+     */
+    public String postSalaryIncomeOnce(String paymentId,String accountId,long minor,String date) throws IOException {
+        if(paymentId==null || !paymentId.matches("[A-Za-z0-9_-]{1,120}"))
+            throw new IllegalArgumentException("Invalid payment ID");
+        if(accountId==null || accountId.isEmpty() || minor<=0)
+            throw new IllegalArgumentException("Invalid salary receipt");
+        final String marker="[salary-receipt:"+paymentId+"]";
+        synchronized(Ledger.class) {
+            load();
+            Entry found=null;
+            for(Entry e:current.entries) {
+                if(e.note.equals(marker)) {
+                    if(found!=null)throw new IllegalStateException("Duplicate salary receipt key");
+                    found=e;
+                }
+            }
+            if(found!=null) {
+                if(found.deleted || found.kind!=Kind.INCOME || !found.accountId.equals(accountId)
+                    || found.minor!=minor || !found.date.equals(date))
+                    throw new IllegalStateException("Salary receipt conflicts with existing entry");
+                return found.id;
+            }
+            return post(Kind.INCOME,accountId,null,minor,marker,date);
+        }
+    }
     public synchronized void edit(String id,Kind kind,String source,String target,long minor,String note,String date,String time) throws IOException {
         ready();Entry old=null;for(Entry e:current.entries)if(e.id.equals(id))old=e;
         if(old==null)throw new IllegalArgumentException("Entry not found");

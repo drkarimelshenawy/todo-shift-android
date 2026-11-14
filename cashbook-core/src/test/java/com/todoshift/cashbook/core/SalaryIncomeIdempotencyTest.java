@@ -83,6 +83,33 @@ public final class SalaryIncomeIdempotencyTest {
         Ledger finalLedger = new Ledger(concurrentStore);
         finalLedger.load();
         if(finalLedger.snapshot().entries.size()!=1)throw new AssertionError("Parallel posting duplicated income");
-        System.out.println("PASS: salary retries, restart, conflicts, protected restore, failed write and parallel writers");
+        // Corrections and reversals reuse the original transaction identity and survive restart.
+        String corrected = finalLedger.reconcileSalaryIncome("payment-parallel", concurrentAccount, 900, "2026-11-15", 1, false);
+        if(!corrected.equals(posted.get(0)) || finalLedger.snapshot().balance(concurrentAccount)!=900)
+            throw new AssertionError("Correction changed identity or double-counted cash");
+        Ledger correctedRestart = new Ledger(concurrentStore);
+        correctedRestart.reconcileSalaryIncome("payment-parallel", concurrentAccount, 900, "2026-11-15", 1, false);
+        if(correctedRestart.snapshot().entries.size()!=2)throw new AssertionError("Correction retry duplicated history");
+        expectFailure(() -> correctedRestart.reconcileSalaryIncome("payment-parallel", concurrentAccount, 700, "2026-11-14", 0, false));
+        expectFailure(() -> correctedRestart.reconcileSalaryIncome("payment-parallel", concurrentAccount, 901, "2026-11-15", 1, false));
+        correctedRestart.reconcileSalaryIncome("payment-parallel", concurrentAccount, 900, "2026-11-15", 2, true);
+        correctedRestart.reconcileSalaryIncome("payment-parallel", concurrentAccount, 900, "2026-11-15", 2, true);
+        if(correctedRestart.snapshot().balance(concurrentAccount)!=0 || correctedRestart.snapshot().entries.size()!=3)
+            throw new AssertionError("Reversal did not zero cash exactly once");
+        expectFailure(() -> correctedRestart.reconcileSalaryIncome("payment-parallel", concurrentAccount, 900, "2026-11-15", 3, false));
+        byte[] reversedBackup=correctedRestart.backup();
+        correctedRestart.restore(reversedBackup);
+        correctedRestart.mergeBackup(reversedBackup);
+        if(correctedRestart.snapshot().entries.size()!=3)throw new AssertionError("Merge duplicated financial history");
+        // Failed correction leaves the earlier version durable and can be replayed.
+        Ledger correcting=new Ledger(failedStore);correcting.load();
+        failedStore.failNextWrite=true;
+        try { correcting.reconcileSalaryIncome("payment-crash", account2, 800, "2026-11-16", 1, false);throw new AssertionError("Expected correction write failure"); }
+        catch(java.io.IOException expected) { }
+        Ledger correctionRecovered=new Ledger(failedStore);
+        correctionRecovered.reconcileSalaryIncome("payment-crash", account2, 800, "2026-11-16", 1, false);
+        if(correctionRecovered.snapshot().balance(account2)!=800 || correctionRecovered.snapshot().entries.size()!=2)
+            throw new AssertionError("Failed correction recovery duplicated cash");
+        System.out.println("PASS: salary retries, restart, conflicts, protected restore, failed writes, parallel writers, corrections, reversals and merge");
     }
 }

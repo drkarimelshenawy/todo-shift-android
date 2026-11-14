@@ -32,15 +32,17 @@ class SalaryIncomeLedgerBridge(context: Context) {
         accountId: String,
         amountMinor: Long,
         date: LocalDate,
+        revision: Int = 0,
+        reversed: Boolean = false,
     ): String {
         require(amountMinor > 0L) { "Receipt amount must be positive" }
-        return ledger.postSalaryIncomeOnce(paymentId, accountId, amountMinor, date.toString())
+        return ledger.reconcileSalaryIncome(paymentId, accountId, amountMinor, date.toString(), revision, reversed)
     }
 
     @Throws(IOException::class)
     fun find(paymentId: String): String? = synchronized(Ledger::class.java) {
         require(paymentId.matches(Regex("[A-Za-z0-9_-]{1,120}")))
         val marker = "[salary-receipt:$paymentId]"
-        ledger.load().entries.singleOrNull { it.note == marker && !it.deleted }?.id
+        ledger.load().entries.singleOrNull { (it.note == marker || it.note.startsWith("$marker [revision:")) && !it.deleted }?.id
     }
 }

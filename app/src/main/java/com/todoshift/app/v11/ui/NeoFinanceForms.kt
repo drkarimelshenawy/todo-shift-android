@@ -34,7 +34,6 @@ fun NeoPaymentForm(
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (_: Exception) { cashAccountsFailed = true }
     }
-    val linked = existing?.cashBookAccountId != null
     val recordId = rememberSaveable(existing?.id) { existing?.id ?: UUID.randomUUID().toString() }
     val allocationId = rememberSaveable(existing?.id) { UUID.randomUUID().toString() }
     var amount by
@@ -60,20 +59,17 @@ fun NeoPaymentForm(
                 Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()).imePadding(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                NeoMoneyInput(amount, { if (!linked) amount = it })
-                NeoDateInput(neoLabel("تاريخ الاستلام", "Received date"), date) { if (!linked) date = it }
-                if (linked) Text(neoLabel("الدفعة مرتبطة بكاش بوك؛ المبلغ والتاريخ والحساب محفوظون", "Linked to Cash Book; amount, date and account are locked"))
-                else {
-                    NeoChoice(
-                        neoLabel("حساب كاش بوك", "Cash Book account"),
-                        listOf<String?>(null) + cashAccounts.map { it.id },
-                        cashAccount,
-                        { id -> cashAccounts.firstOrNull { it.id == id }?.name ?: neoLabel("بدون ترحيل", "Do not post") },
-                        { cashAccount = it },
-                    )
-                    if (cashAccountsFailed) Text(neoLabel("تعذر تحميل حسابات كاش بوك", "Could not load Cash Book accounts"))
-                    else if (cashAccounts.isEmpty()) Text(neoLabel("أنشئ حسابًا داخل كاش بوك لتفعيل الربط", "Create a Cash Book account to link receipts"))
-                }
+                NeoMoneyInput(amount, { amount = it })
+                NeoDateInput(neoLabel("تاريخ الاستلام", "Received date"), date) { date = it }
+                NeoChoice(
+                    neoLabel("حساب كاش بوك المستلم", "Receiving Cash Book account"),
+                    listOf<String?>(null) + cashAccounts.map { it.id } + listOfNotNull(existing?.cashBookAccountId).filter { id -> cashAccounts.none { it.id == id } },
+                    cashAccount,
+                    { id -> cashAccounts.firstOrNull { it.id == id }?.name ?: if (id == null) neoLabel("اختر حسابًا", "Select an account") else neoLabel("الحساب المحفوظ", "Saved account") },
+                    { cashAccount = it },
+                )
+                if (cashAccountsFailed) Text(neoLabel("تعذر تحميل حسابات كاش بوك؛ أعد فتح النموذج", "Could not load Cash Book accounts; reopen this form"))
+                else if (cashAccounts.isEmpty()) Text(neoLabel("أنشئ حسابًا داخل كاش بوك لاستلام الدفعة", "Create a Cash Book account to receive payment"))
                 NeoChoice(
                     neoLabel("مكان العمل أو مصدر الدخل", "Workplace or income source"),
                     listOf<String?>(null) +
@@ -117,6 +113,8 @@ fun NeoPaymentForm(
                     !submitted &&
                         !write.pending &&
                         amountInput.positive &&
+                        cashAccount != null && !cashAccountsFailed &&
+                        (cashAccounts.any { it.id == cashAccount } || cashAccount == existing?.cashBookAccountId) &&
                         runCatching { LocalDate.parse(date) }.isSuccess,
                 onClick =
                     neoWriteAction {

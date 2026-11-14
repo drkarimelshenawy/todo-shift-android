@@ -279,7 +279,7 @@ public final class Ledger {
         return post(kind,source,target,minor,note,date,time,Collections.emptyList(),Collections.emptyList());
     }
     public synchronized String post(Kind kind,String source,String target,long minor,String note,String date,String time,List<Item> items,List<Bill> bills) throws IOException {
-        if(isSalaryMarker(note))throw new IllegalArgumentException("Reserved salary receipt marker");
+        if(isSalaryMarker(note) || isSalaryHistory(note))throw new IllegalArgumentException("Reserved salary receipt marker");
         ready();if(account(current,source).archived || (kind==Kind.TRANSFER && account(current,target).archived))throw new IllegalArgumentException("Restore archived account before posting"); String id=UUID.randomUUID().toString();
         List<Entry> list=new ArrayList<>(current.entries);
         list.add(new Entry(id,kind,source,target==null?"":target,minor,note.trim(),date,time,false,items,bills));
@@ -303,7 +303,7 @@ public final class Ledger {
             load();
             Entry found=null;
             for(Entry e:current.entries) {
-                if(e.note.equals(marker)) {
+                if(salaryKey(e.note).equals(marker)) {
                     if(found!=null)throw new IllegalStateException("Duplicate salary receipt key");
                     found=e;
                 }
@@ -326,6 +326,47 @@ public final class Ledger {
             return id;
         }
     }
+    /** Reconcile the durable Salary outbox, retaining superseded values as deleted audit entries.
+     * A revision is monotonic and an equal-revision retry must match all financial fields.
+     * The entry ID remains stable across corrections and reversal; all changes commit atomically.
+     */
+    public String reconcileSalaryIncome(String paymentId,String accountId,long minor,String date,int revision,boolean reversed) throws IOException {
+        if(paymentId==null || !paymentId.matches("[A-Za-z0-9_-]{1,120}") || revision<0 || minor<=0)
+            throw new IllegalArgumentException("Invalid salary receipt revision");
+        final String key="[salary-receipt:"+paymentId+"]";
+        synchronized(Ledger.class) {
+            load();
+            Entry old=null;
+            for(Entry e:current.entries) if(salaryKey(e.note).equals(key)) {
+                if(old!=null)throw new IllegalStateException("Duplicate salary receipt key");
+                old=e;
+            }
+            if(old!=null) {
+                int storedRevision=salaryRevision(old.note);
+                if(revision<storedRevision)throw new IllegalStateException("Stale Salary revision; review restored data");
+                if(revision==storedRevision) {
+                    if(!old.accountId.equals(accountId)||old.minor!=minor||!old.date.equals(date)||old.deleted!=reversed)
+                        throw new IllegalStateException("Conflicting Salary revision");
+                    return old.id;
+                }
+                if(old.deleted)throw new IllegalStateException("Reversed receipt cannot be changed");
+            }
+            Account destination=account(current,accountId);
+            // Existing archived accounts may retain/reverse their historical receipts.
+            if((destination.archived && (old==null || !old.accountId.equals(accountId))) || !"EGP".equals(destination.currency) ||
+                current.debts.stream().anyMatch(d->d.accountId.equals(accountId)))
+                throw new IllegalArgumentException("Select an active EGP money account for salary");
+            String id=old==null?UUID.randomUUID().toString():old.id;
+            List<Entry> entries=new ArrayList<>();
+            for(Entry e:current.entries)if(!e.id.equals(id))entries.add(e);
+            if(old!=null)entries.add(new Entry(UUID.randomUUID().toString(),Kind.INCOME,old.accountId,"",old.minor,
+                "[salary-history:"+paymentId+":"+salaryRevision(old.note)+"]",old.date,old.time,true,Collections.emptyList(),Collections.emptyList()));
+            String note=revision==0?key:key+" [revision:"+revision+"]";
+            entries.add(new Entry(id,Kind.INCOME,accountId,"",minor,note,date,"",reversed,Collections.emptyList(),Collections.emptyList()));
+            commit(new Snapshot(current.accounts,entries,current.defaults,current.preferences,current.debts));
+            return id;
+        }
+    }
     public synchronized void edit(String id,Kind kind,String source,String target,long minor,String note,String date,String time) throws IOException {
         ready();Entry old=null;for(Entry e:current.entries)if(e.id.equals(id))old=e;
         if(old==null)throw new IllegalArgumentException("Entry not found");
@@ -335,8 +376,8 @@ public final class Ledger {
         ready();List<Entry> list=new ArrayList<>();boolean found=false;
         for(Entry e:current.entries) {
             if(e.id.equals(id)) {
-                if(isSalaryMarker(e.note))throw new IllegalStateException("Salary receipt entries cannot be edited directly");
-                if(isSalaryMarker(note))throw new IllegalArgumentException("Reserved salary receipt marker");
+                if(isSalaryMarker(e.note) || isSalaryHistory(e.note))throw new IllegalStateException("Salary receipt entries cannot be edited directly");
+                if(isSalaryMarker(note) || isSalaryHistory(note))throw new IllegalArgumentException("Reserved salary receipt marker");
                 if(e.deleted)throw new IllegalArgumentException("Restore before editing");
                 list.add(new Entry(id,kind,source,target==null?"":target,minor,note.trim(),date,time,false,items,bills,e.installmentIndex,e.earlyCredit));found=true;
             } else list.add(e);
@@ -346,7 +387,7 @@ public final class Ledger {
     }
     public synchronized void setDeleted(String id,boolean deleted) throws IOException {
         ready(); List<Entry> list=new ArrayList<>(); boolean found=false;
-        for(Entry e:current.entries) { if(e.id.equals(id)) { if(isSalaryMarker(e.note))throw new IllegalStateException("Salary receipt entries cannot be deleted directly"); list.add(e.deleted(deleted)); found=true; } else list.add(e); }
+        for(Entry e:current.entries) { if(e.id.equals(id)) { if(isSalaryMarker(e.note) || isSalaryHistory(e.note))throw new IllegalStateException("Salary receipt entries cannot be deleted directly"); list.add(e.deleted(deleted)); found=true; } else list.add(e); }
         if(!found) throw new IllegalArgumentException("Entry not found");
         commit(new Snapshot(current.accounts,list,current.defaults,current.preferences,current.debts));
     }
@@ -354,7 +395,7 @@ public final class Ledger {
     public synchronized void restore(byte[] bytes) throws IOException {
         ready(); Snapshot next=decode(bytes);
         // A backup cannot silently erase a previously recorded salary receipt.
-        for(Entry old:current.entries)if(isSalaryMarker(old.note)) {
+        for(Entry old:current.entries)if(isSalaryMarker(old.note) || isSalaryHistory(old.note)) {
             boolean same=false;
             for(Entry candidate:next.entries)if(candidate.note.equals(old.note)) {
                 same=salaryEquivalent(old,candidate);
@@ -363,6 +404,35 @@ public final class Ledger {
             if(!same)throw new IllegalStateException("Backup would remove or change a salary receipt");
         }
         commit(next);
+    }
+    /** Merge stable IDs without overwriting either side's financial history. Conflicts fail before commit. */
+    public synchronized void mergeBackup(byte[] bytes) throws IOException {
+        ready(); Snapshot incoming=decode(bytes);validate(incoming);
+        List<Account> accounts=new ArrayList<>(current.accounts);
+        List<Entry> entries=new ArrayList<>(current.entries);
+        List<Debt> debts=new ArrayList<>(current.debts);
+        for(Account a:incoming.accounts) {
+            Account old=null;for(Account x:accounts)if(x.id.equals(a.id))old=x;
+            if(old==null)accounts.add(a);
+            else if(!Arrays.equals(encode(new Snapshot(Collections.singletonList(old),Collections.emptyList())),
+                encode(new Snapshot(Collections.singletonList(a),Collections.emptyList()))))
+                throw new IllegalStateException("Conflicting account: "+a.id);
+        }
+        for(Entry e:incoming.entries) {
+            Entry old=null;for(Entry x:entries)if(x.id.equals(e.id))old=x;
+            if(old==null)entries.add(e);
+            else if(!Arrays.equals(encode(new Snapshot(Collections.emptyList(),Collections.singletonList(old))),
+                encode(new Snapshot(Collections.emptyList(),Collections.singletonList(e)))))
+                throw new IllegalStateException("Conflicting transaction: "+e.id);
+        }
+        for(Debt d:incoming.debts) {
+            Debt old=null;for(Debt x:debts)if(x.accountId.equals(d.accountId))old=x;
+            if(old==null)debts.add(d);
+            else if(!Arrays.equals(encode(new Snapshot(Collections.emptyList(),Collections.emptyList(),current.defaults,current.preferences,Collections.singletonList(old))),
+                encode(new Snapshot(Collections.emptyList(),Collections.emptyList(),current.defaults,current.preferences,Collections.singletonList(d)))))
+                throw new IllegalStateException("Conflicting debt: "+d.accountId);
+        }
+        commit(new Snapshot(accounts,entries,current.defaults,current.preferences,debts));
     }
     /** Decimal input only: Arabic and Persian digits supported, grouping is deliberately rejected. */
     public static long parseMoney(String input,boolean allowNegative) {
@@ -380,12 +450,22 @@ public final class Ledger {
     }
     public static String money(long minor) { return BigDecimal.valueOf(minor,2).toPlainString(); }
     private static boolean isSalaryMarker(String note) {
-        return note!=null && note.matches("\\[salary-receipt:[A-Za-z0-9_-]{1,120}\\]");
+        return note!=null && note.matches("\\[salary-receipt:[A-Za-z0-9_-]{1,120}\\]( \\[revision:[1-9][0-9]{0,9}\\])?");
+    }
+    private static boolean isSalaryHistory(String note) {
+        return note!=null && note.matches("\\[salary-history:[A-Za-z0-9_-]{1,120}:[0-9]+\\]");
+    }
+    private static String salaryKey(String note) {
+        return isSalaryMarker(note)?note.substring(0,note.indexOf(']')+1):"";
+    }
+    private static int salaryRevision(String note) {
+        int start=note.indexOf(" [revision:");
+        return start<0?0:Integer.parseInt(note.substring(start+11,note.length()-1));
     }
     private static boolean salaryEquivalent(Entry a,Entry b) {
         return a.id.equals(b.id) && a.kind==b.kind && a.accountId.equals(b.accountId)
             && a.minor==b.minor && a.date.equals(b.date) && a.note.equals(b.note)
-            && a.deleted==b.deleted && !a.deleted;
+            && a.deleted==b.deleted;
     }
     private static Account account(Snapshot s,String id) {
         for(Account a:s.accounts) if(a.id.equals(id)) return a;
@@ -420,9 +500,12 @@ public final class Ledger {
         Set<String> salaryKeys=new HashSet<>();
         for(Entry e:s.entries) {
             if(isSalaryMarker(e.note)) {
-                if(!salaryKeys.add(e.note) || e.deleted || e.kind!=Kind.INCOME || !e.targetId.isEmpty())
+                salaryRevision(e.note);
+                if(!salaryKeys.add(salaryKey(e.note)) || e.kind!=Kind.INCOME || !e.targetId.isEmpty())
                     throw new IllegalArgumentException("Invalid or duplicate salary receipt");
             }
+            if(isSalaryHistory(e.note) && (!salaryKeys.add(e.note) || !e.deleted || e.kind!=Kind.INCOME || !e.targetId.isEmpty()))
+                throw new IllegalArgumentException("Invalid salary receipt history");
             text(e.id,80); text(e.note,2000); text(e.date,10); text(e.time,5);
             if(!e.time.isEmpty() && !e.time.matches("([01][0-9]|2[0-3]):[0-5][0-9]")) throw new IllegalArgumentException("Invalid time");
             if(e.id.isEmpty() || !ids.add(e.id) || e.kind==null || e.minor<=0) throw new IllegalArgumentException("Invalid entry");

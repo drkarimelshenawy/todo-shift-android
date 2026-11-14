@@ -13,6 +13,7 @@ import com.todoshift.app.R
 import com.todoshift.app.reminders.ToDoShiftReminder
 import com.todoshift.app.v11.TaskStatusV11
 import com.todoshift.app.v11.V11Runtime
+import com.todoshift.app.v11.withCompletionV11
 import kotlinx.coroutines.launch
 
 class TasksWidgetProvider : AppWidgetProvider() {
@@ -149,7 +150,8 @@ class TasksWidgetProvider : AppWidgetProvider() {
             views.setPendingIntentTemplate(R.id.tasks_widget_list, template)
 
             applyTasksTheme(context, views)
-            val neoSettings = Neo4WidgetSettings(context)
+            val neoSettings = Neo4WidgetSettings(context,id)
+            neoSettings.initialize(Neo4WidgetKind.TASKS)
             if (neoSettings.modern(Neo4WidgetKind.TASKS)) {
                 val options = neoSettings.load(Neo4WidgetKind.TASKS)
                 neoSettings
@@ -163,9 +165,9 @@ class TasksWidgetProvider : AppWidgetProvider() {
                     )
                 views.setViewVisibility(
                     R.id.tasks_widget_list,
-                    if (options.hideContent) android.view.View.GONE else android.view.View.VISIBLE,
+                    if (options.hideContent || neoWidgetProtected(context,true)) android.view.View.GONE else android.view.View.VISIBLE,
                 )
-                if (options.hideContent) {
+                if (options.hideContent || neoWidgetProtected(context,true)) {
                     views.setViewVisibility(R.id.tasks_widget_empty, android.view.View.VISIBLE)
                     views.setTextViewText(R.id.tasks_widget_count, "")
                     views.setTextViewText(
@@ -197,6 +199,15 @@ class TasksWidgetProvider : AppWidgetProvider() {
                 result?.finish()
             }
         }
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        appWidgetIds.forEach { Neo4WidgetSettings(context,it).delete(Neo4WidgetKind.TASKS) }
+        super.onDeleted(context,appWidgetIds)
+    }
+
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: android.os.Bundle) {
+        onUpdate(context,manager,intArrayOf(appWidgetId))
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -237,6 +248,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
 
     private fun completeTaskOnIo(context: Context, taskId: String, completed: Boolean = true) {
         synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+            if (neoWidgetProtected(context,true)) { context.startActivity(tasksWidgetEntry(context,"open",taskId)); return }
             val runtime = V11Runtime(context)
             val db = runCatching { runtime.start() }.getOrNull() ?: return
 
@@ -253,11 +265,7 @@ class TasksWidgetProvider : AppWidgetProvider() {
                     tasks =
                         db.tasks.map {
                             if (it.id == taskId) {
-                                it.copy(
-                                    status = if(completed) TaskStatusV11.COMPLETED else TaskStatusV11.TODO,
-                                    completedAt = if(completed) now else null,
-                                    updatedAt = now,
-                                )
+                                it.withCompletionV11(completed,now)
                             } else it
                         }
                 )

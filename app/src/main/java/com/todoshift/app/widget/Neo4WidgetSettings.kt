@@ -31,15 +31,35 @@ data class Neo4WidgetOptions(
     val showCompleted: Boolean = true,
 )
 
-class Neo4WidgetSettings(private val context: Context) {
+class Neo4WidgetSettings(private val context: Context, private val widgetId: Int? = null) {
     private val prefs =
         context.getSharedPreferences("todo_shift_neo4_widgets", Context.MODE_PRIVATE)
 
-    fun explicit(kind: Neo4WidgetKind) = prefs.contains(kind.name)
+    private fun key(kind: Neo4WidgetKind): String = widgetId?.takeIf { it >= 0 }?.let { "${kind.name}:$it" } ?: kind.name
+
+    fun explicit(kind: Neo4WidgetKind) = prefs.contains(key(kind))
+
+    /** Freeze the current preset when an instance is added; later preset edits affect new widgets only. */
+    fun initialize(kind: Neo4WidgetKind) {
+        if (widgetId != null && widgetId >= 0 && !explicit(kind)) save(kind, Neo4WidgetSettings(context).load(kind))
+    }
+
+    fun delete(kind: Neo4WidgetKind) { check(prefs.edit().remove(key(kind)).commit()) }
+
+    fun instanceIds(kind: Neo4WidgetKind): List<Int> {
+        val type = when (kind) {
+            Neo4WidgetKind.CALENDAR -> ToDoShiftWidget::class.java
+            Neo4WidgetKind.TASKS -> TasksWidgetProvider::class.java
+            Neo4WidgetKind.FINANCE -> Neo4FinanceWidget::class.java
+            Neo4WidgetKind.TODAY -> Neo4TodayWidget::class.java
+        }
+        return android.appwidget.AppWidgetManager.getInstance(context)
+            .getAppWidgetIds(android.content.ComponentName(context, type)).toList()
+    }
 
     fun load(kind: Neo4WidgetKind): Neo4WidgetOptions =
         runCatching {
-                val o = JSONObject(prefs.getString(kind.name, "{}") ?: "{}")
+                val o = JSONObject(prefs.getString(key(kind), prefs.getString(kind.name, "{}")) ?: "{}")
                 listOf("hideContent", "showAmounts").forEach { key ->
                     if (o.has(key)) require(o.get(key) is Boolean) { "Invalid privacy setting" }
                 }
@@ -73,7 +93,7 @@ class Neo4WidgetSettings(private val context: Context) {
                 prefs
                     .edit()
                     .putString(
-                        kind.name,
+                        key(kind),
                         JSONObject()
                             .put("theme", value.theme.name)
                             .put("accent", value.accent)
@@ -138,7 +158,7 @@ class Neo4WidgetSettings(private val context: Context) {
         }
         return Neo4WidgetSkin(
             if (p.theme == Neo4WidgetTheme.TRANSPARENT) Color.TRANSPARENT
-            else Color.parseColor(if (dark) "#111D29" else "#EDF5F2"),
+            else androidx.core.graphics.ColorUtils.setAlphaComponent(Color.parseColor(if (dark) "#111D29" else "#EDF5F2"),(p.backgroundOpacity*255).toInt()),
             Color.parseColor(if (dark) "#EFF6FC" else "#17303C"),
             Color.parseColor(if (dark) "#B8C9D7" else "#4B6570"),
             accent,
@@ -213,3 +233,10 @@ object Neo4WidgetPrivacy {
     }
 }
 
+
+/** Widget processes never inherit an in-app authentication session. */
+fun neoWidgetProtected(context: Context, tasks: Boolean = false): Boolean = runCatching {
+    val security = V11SecurityStore(context).load()
+    (security.mode != V11LockMode.NONE || security.biometricEnabled) &&
+        (security.protectApplication || (tasks && security.protectTasks))
+}.getOrDefault(true)

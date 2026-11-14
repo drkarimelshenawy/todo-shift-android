@@ -44,8 +44,10 @@ object Neo4WidgetRefresh {
     }
 
     fun render(context: Context, manager: AppWidgetManager, id: Int, kind: Neo4WidgetKind) {
-        val settings = Neo4WidgetSettings(context)
-        val options = settings.load(kind)
+        val settings = Neo4WidgetSettings(context,id)
+        settings.initialize(kind)
+        val rawOptions = settings.load(kind)
+        val options = if(neoWidgetProtected(context,kind==Neo4WidgetKind.TASKS)) rawOptions.copy(hideContent=true) else rawOptions
         val skin = settings.skin(kind)
         val en = settings.english()
         val db = runCatching { V11Runtime(context).start() }.getOrNull()
@@ -110,6 +112,11 @@ abstract class Neo4SummaryWidgetProvider : AppWidgetProvider() {
                 pending.finish()
             }
         }
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        appWidgetIds.forEach { Neo4WidgetSettings(context,it).delete(kind) }
+        super.onDeleted(context,appWidgetIds)
     }
 
     override fun onAppWidgetOptionsChanged(

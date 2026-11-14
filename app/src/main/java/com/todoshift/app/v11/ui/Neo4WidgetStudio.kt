@@ -24,9 +24,10 @@ import java.time.LocalDateTime
 @Composable
 fun Neo4WidgetStudio(onBack: () -> Unit) {
     val context = LocalContext.current
-    val store = remember { Neo4WidgetSettings(context.applicationContext) }
+    var widgetId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val store = remember(widgetId) { Neo4WidgetSettings(context.applicationContext,widgetId) }
     var kind by rememberSaveable { mutableStateOf(Neo4WidgetKind.CALENDAR) }
-    var value by remember(kind) { mutableStateOf(store.load(kind)) }
+    var value by remember(kind,widgetId) { mutableStateOf(store.load(kind)) }
     val scope=rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
     var opacity by remember(kind,value.backgroundOpacity) { mutableStateOf(value.backgroundOpacity) }
@@ -75,9 +76,9 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
         )
     fun save(next: Neo4WidgetOptions) {
         if(saving) return
-        val target=kind;saving=true
+        val target=kind;val targetId=widgetId;saving=true
         scope.launch {
-            try { withContext(Dispatchers.IO) { store.save(target,next) };if(kind==target) value=next;saveError=null }
+            try { withContext(Dispatchers.IO) { store.save(target,next) };if(kind==target && widgetId==targetId) value=next;saveError=null }
             catch(failure: Exception) { saveError=failure.message ?: "Widget settings could not be saved" }
             finally {saving=false}
         }
@@ -129,7 +130,14 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             Neo4WidgetKind.entries,
             kind,
             { neo4Label(it) },
-            { next -> request { kind = next } },
+            { next -> request { kind = next; widgetId = null } },
+        )
+        NeoChoice(
+            neoLabel("النسخة", "Instance"),
+            listOf<Int?>(null) + store.instanceIds(kind),
+            widgetId,
+            { id -> id?.let { neoLabel("ويدجت #$it", "Widget #$it") } ?: neoLabel("إعدادات الإضافة الجديدة", "New widget preset") },
+            { next -> request { widgetId = next } },
         )
         Column(
             Modifier.fillMaxWidth()
@@ -193,7 +201,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             label = { Text("Accent #RRGGBB") },
             modifier = Modifier.fillMaxWidth(),
         )
-        if(kind==Neo4WidgetKind.CALENDAR) {
+        run {
             Text(neoLabel("وضوح خلفية الويدجت", "Background opacity"))
             Slider(value=opacity,onValueChange={opacity=it},valueRange=0f..1f,enabled=!saving,
                 onValueChangeFinished={save(value.copy(backgroundOpacity=opacity))})

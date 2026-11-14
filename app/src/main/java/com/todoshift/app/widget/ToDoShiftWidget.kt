@@ -160,6 +160,7 @@ class ToDoShiftWidget :
         appWidgetIds: IntArray
     ) {
         appWidgetIds.forEach {
+            Neo4WidgetSettings(context,it).delete(Neo4WidgetKind.CALENDAR)
             CalendarWidgetState.delete(
                 context,
                 it

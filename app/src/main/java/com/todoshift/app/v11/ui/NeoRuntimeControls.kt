@@ -65,6 +65,9 @@ fun NeoNotificationControls(db: V11Database) {
             error = e.message
         }
     }
+    NeoSwitch(neoLabel("جميع الإشعارات", "All notifications"), data.optBoolean("notificationsEnabled", true)) {
+        save("notificationsEnabled", it)
+    }
     NeoSwitch(neoLabel("تذكيرات المهام", "Task reminders"), data.optBoolean("notify_tasks", true)) {
         save("notify_tasks", it)
     }
@@ -81,11 +84,23 @@ fun NeoNotificationControls(db: V11Database) {
         save("notify_shifts", it)
     }
     NeoSwitch(
-        neoLabel("هدوء ٢٢:٠٠–٠٧:٠٠؛ يؤجَّل التنبيه", "Quiet 22:00–07:00; defer notifications"),
+        neoLabel("هدوء ٢٢:٠٠–٠٧:٠٠؛ تنبيه صامت في موعده", "Quiet 22:00–07:00; deliver silently on time"),
         data.optBoolean("quietHours", false),
     ) {
         save("quietHours", it)
     }
+    var lead by remember { mutableStateOf(data.optInt("shiftReminderMinutes",30).toString()) }
+    OutlinedTextField(lead, { lead=it.filter(Char::isDigit).take(5) },
+        label={ Text(neoLabel("تذكير الشيفت قبل (دقيقة)","Shift reminder lead (minutes)")) },singleLine=true)
+    TextButton(onClick={
+        val minutes=lead.toIntOrNull()
+        if(minutes == null || minutes !in 0..10080) error=neoLiteral("أدخل ٠ إلى ١٠٠٨٠ دقيقة","Enter 0 to 10080 minutes")
+        else try {
+            store.update {it.put("shiftReminderMinutes",minutes)}
+            revision++
+            scope.launch { withContext(Dispatchers.IO) { com.todoshift.app.reminders.ToDoShiftReminder.rescheduleAll(context,db) } }
+        } catch(failure:Exception) {error=failure.message}
+    }) {Text(neoLabel("حفظ وقت التذكير","Save lead time"))}
     TextButton(
         onClick = {
             context.startActivity(
@@ -120,5 +135,7 @@ fun NeoNotificationControls(db: V11Database) {
             Text(neoLabel("إذن التنبيه الدقيق", "Exact alarm permission"))
         }
     }
+    NeoReminderRecurrenceControls(db)
+    NeoShortcutControls()
     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 }

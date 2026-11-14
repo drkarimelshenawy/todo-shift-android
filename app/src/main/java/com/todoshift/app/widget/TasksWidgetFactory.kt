@@ -12,6 +12,7 @@ import java.time.LocalDate
 class TasksWidgetFactory(private val context: Context, intent: Intent) :
     RemoteViewsService.RemoteViewsFactory {
 
+    private val widgetId = intent.getIntExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
     private var tasks: List<TaskV11> = emptyList()
 
     // RemoteViewsFactory construction may execute on the app main thread.
@@ -23,7 +24,7 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
     }
 
     private fun reload() {
-        if (Neo4WidgetSettings(context).load(Neo4WidgetKind.TASKS).hideContent) {
+        if (Neo4WidgetSettings(context,widgetId).load(Neo4WidgetKind.TASKS).hideContent || neoWidgetProtected(context,true)) {
             tasks = emptyList()
             return
         }
@@ -33,7 +34,7 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
             runCatching {
                     val db = V11Runtime(context).start()
                     NeoWidgetContentModel.tasks(db, LocalDate.now()) +
-                        if(Neo4WidgetSettings(context).load(Neo4WidgetKind.TASKS).showCompleted) {
+                        if(Neo4WidgetSettings(context,widgetId).load(Neo4WidgetKind.TASKS).showCompleted) {
                             val visible=db.calendars.filter {it.visible}.map {it.id}.toSet()
                             db.tasks.filter {it.status==com.todoshift.app.v11.TaskStatusV11.COMPLETED && (it.calendarId==null || it.calendarId in visible)}.sortedByDescending {it.completedAt}
                         } else emptyList()
@@ -42,10 +43,10 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
     }
 
     override fun getCount(): Int =
-        if (Neo4WidgetSettings(context).load(Neo4WidgetKind.TASKS).hideContent) 0 else tasks.size
+        if (Neo4WidgetSettings(context,widgetId).load(Neo4WidgetKind.TASKS).hideContent || neoWidgetProtected(context,true)) 0 else tasks.size
 
     override fun getViewAt(position: Int): RemoteViews? {
-        if (Neo4WidgetSettings(context).load(Neo4WidgetKind.TASKS).hideContent) return null
+        if (Neo4WidgetSettings(context,widgetId).load(Neo4WidgetKind.TASKS).hideContent || neoWidgetProtected(context,true)) return null
         val task = tasks.getOrNull(position) ?: return null
 
         val views = RemoteViews(context.packageName, R.layout.widget_task_row)
@@ -102,7 +103,7 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
             if (dark) android.graphics.Color.LTGRAY else android.graphics.Color.GRAY,
         )
 
-        val neoSettings = Neo4WidgetSettings(context)
+        val neoSettings = Neo4WidgetSettings(context,widgetId)
         if (neoSettings.modern(Neo4WidgetKind.TASKS)) {
             val skin = neoSettings.skin(Neo4WidgetKind.TASKS)
             views.setTextColor(R.id.task_widget_name, skin.text)

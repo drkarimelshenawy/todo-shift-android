@@ -1283,7 +1283,7 @@ private fun V11GlobalHeader(
             onToday,
             onAdd,
             onManage,
-            true,
+            featureDestination != "Cash Book",
             onOverview,
             featureDestination,
             onBack,

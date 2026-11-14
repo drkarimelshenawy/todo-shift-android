@@ -1,15 +1,13 @@
 # v44 execution checkpoint
 
-Branch: `feat/v44-cashbook-integration`. Current commit: see `git rev-parse HEAD` (this checkpoint is updated alongside focused commits).
+Branch: `feat/v44-cashbook-integration`. Implementation commit: `1c25a59` (current HEAD also includes this checkpoint).
 
-Completed source changes: five-section navigation and shared Salary screen; default landing/Notes preferences; six horizontal Theme Studio sections; weekly rows/columns and direct record opening; monthly compensation history; versioned durable receipt correction/reversal reconciliation; account/debt separation; rich Markdown Notes, encrypted drafts, organization and note protection; completion history; optional app/section security; original-time silent Quiet Hours, recurrence/snooze, private and independent widgets, shortcuts.
+Completed: five destinations; Calendar/work locations/history; Tasks and rich Markdown Notes with encrypted autosaved drafts, explicit record Save and protection; unified Salary and idempotent Cash Book receipts/corrections/reversals; ordinary accounts/debt separation; Theme Studio; Arabic/English/RTL; reminders, widgets and shortcuts; optional security; encrypted selective/full backup, inspected merge/replace, safety snapshots and rollback.
 
-Implemented: selective backup/restore with actual conflict/dependency preview, safety snapshots and combined ledger rollback; password-encrypted external backups and legacy import; boot-recovery relock; contextual search and inherited note privacy.
+Last successful checks: Actions [43628815185](https://github.com/drkarimelshenawy/todo-shift-android/actions/runs/43628815185) on `6d7b659` passed all nine core executable suites, selected Android unit suites, release build, signing/package/version/alignment verification and direct APK publication. Application and test Kotlin compilation also passed locally. No emulator used.
 
-In progress: final signed release workflow and focused critical regression tests.
+Next/final execution: build the final HEAD containing the Cash Book toolbar correction, verify its APK and download it. Exact source SHA and signature are recorded in each run's `BUILD-IDENTITY.json` artifact; use the newest passing branch run.
 
-Last checks: application + test Kotlin compilation PASS before final encryption additions; 24 Calendar/monthly-pay tests PASS; static Cash Book integration guard PASS; all nine Java core suites PASS (including durable receipt lifecycle). Actions #25 exposed existing CashBookRoute selector compilation error, fixed in afaa37e. Existing persistent signing secret restored successfully in CI. No signed APK built for the new integrated changes yet.
+Blockers: none for CI/signing. Physical-device acceptance is unverified: update installation/certificate of the user's installed app, RTL/editor behavior, receipt lifecycle UI, biometrics/relock, alarms/snooze, widget resize/instances, launcher pinning, Keystore draft recovery and encrypted restore. No Android-version/device compatibility claim is made.
 
-Remaining: verify final integration; run selected persistence/migration/financial/security/reminder/note tests; fix failures; final existing signing workflow; verify APK signature/package/version and direct release asset. Physical-device behavior remains untested. Do not call this mission complete merely because the build passes.
-
-Environment: JDK17, Gradle8.9, SDK35 installed under `/workspace/android-tools`; local build cache `/workspace/android-tools/gradle-home`. No emulator. Compile log `/tmp/v44-compile5.log`.
+Tools: `/workspace/android-tools` (JDK17/Gradle8.9/SDK35); local compile log `/tmp/v44-compile5.log`.

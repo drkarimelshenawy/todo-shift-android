@@ -14,7 +14,8 @@ internal object SalaryCashSync {
             require(updated != null && updated.cashBookAccountId == old.cashBookAccountId &&
                 LocalizedNumbers.cents(updated.amount) == LocalizedNumbers.cents(old.amount) &&
                 updated.receivedDate == old.receivedDate && updated.cashBookRevision == old.cashBookRevision &&
-                updated.reversedAt == old.reversedAt) {
+                updated.reversedAt == old.reversedAt && updated.allocations == old.allocations &&
+                updated.accrualMonth == old.accrualMonth && updated.sourceId == old.sourceId) {
                 "Restore cannot remove or change a Cash Book linked receipt or revision"
             }
         }
@@ -28,6 +29,7 @@ internal object SalaryCashSync {
     fun validateWrite(previous: V11Database, next: V11Database) {
         previous.payments.filter { it.cashBookAccountId != null }.forEach { old ->
             val updated = requireNotNull(next.payments.singleOrNull { it.id == old.id }) { "Reverse linked receipts instead of deleting them" }
+            require(old.reversedAt == null || updated == old) { "Reversed receipt is immutable" }
             require(updated.cashBookAccountId != null) { "A linked receipt cannot be unlinked" }
             val changed = updated.cashBookAccountId != old.cashBookAccountId ||
                 LocalizedNumbers.cents(updated.amount) != LocalizedNumbers.cents(old.amount) ||

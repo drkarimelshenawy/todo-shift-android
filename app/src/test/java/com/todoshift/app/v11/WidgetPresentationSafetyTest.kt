@@ -135,7 +135,7 @@ class WidgetPresentationSafetyTest {
             store.save(Neo4WidgetKind.TASKS, Neo4WidgetOptions(theme = theme, accent = accent))
             val skin = store.skin(Neo4WidgetKind.TASKS)
             assertTrue(
-                androidx.core.graphics.ColorUtils.calculateContrast(skin.accent, skin.background) >=
+                androidx.core.graphics.ColorUtils.calculateContrast(skin.accent, skin.panelColor) >=
                     4.5
             )
         }

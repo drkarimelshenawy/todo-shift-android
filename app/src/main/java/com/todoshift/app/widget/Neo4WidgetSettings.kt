@@ -200,7 +200,7 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
 data class Neo4WidgetSkin(val background: Int, val text: Int, val secondary: Int, val accent: Int) {
     // Calendar opacity belongs to the panel, independently of text and transparent theme.
     val panelColor: Int get() = if(Color.alpha(background) == 0)
-        Color.parseColor(if(Color.luminance(text) > .5f) "#111D29" else "#EDF5F2") else background
+        Color.parseColor(if(Color.luminance(text) > .5f) "#111D29" else "#EDF5F2") else androidx.core.graphics.ColorUtils.setAlphaComponent(background,255)
     fun apply(views: RemoteViews, root: Int, vararg textIds: Int) {
         views.setInt(root, "setBackgroundColor", background)
         textIds.forEach { views.setTextColor(it, text) }

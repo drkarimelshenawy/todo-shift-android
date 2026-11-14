@@ -5,6 +5,8 @@ import org.junit.Assert.*
 import org.junit.Test
 import java.time.YearMonth
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [28])
 class SalaryReceiptOperationsTest {
     private fun receipt() = PaymentV11(
         id = "receipt-one", amount = 120.0, receivedDate = "2026-11-14", accrualMonth = "2026-11",
@@ -49,4 +51,24 @@ class SalaryReceiptOperationsTest {
         assertThrows(IllegalArgumentException::class.java) { SalaryCashSync.validateWrite(db, db.copy(payments = listOf(payment.copy(amount = 80.0)))) }
         assertThrows(IllegalArgumentException::class.java) { SalaryCashSync.validateTransition(db, SalaryReceiptOperations.reverse(db, payment.id)) }
     }
+    @Test fun multiMonthAllocationAndReversalPersistWithoutAnotherReceipt() {
+        val context = org.robolectric.RuntimeEnvironment.getApplication()
+        val base = V11Runtime(context).start()
+        val payment = receipt()
+        val db = base.copy(payments = listOf(payment))
+        val allocated = ModernOperations.distributePayment(db, payment.id, listOf(YearMonth.of(2026, 11), YearMonth.of(2026, 12)))
+        assertEquals(1, allocated.payments.size)
+        assertEquals(12000L, allocated.payments.single().allocations.sumOf { LocalizedNumbers.cents(it.amount) })
+        assertEquals(60.0, V11FinanceEngine.month(allocated, YearMonth.of(2026, 12)).received, 0.0)
+        val storage = V11Storage(context)
+        storage.save(allocated)
+        assertEquals(allocated, storage.load())
+        val reversed = SalaryReceiptOperations.reverse(storage.load(), payment.id)
+        storage.save(reversed)
+        assertEquals(reversed, storage.load())
+        assertEquals(1, storage.load().payments.single().cashBookRevision)
+        assertEquals(2, storage.load().payments.single().allocations.size)
+        assertEquals(0.0, V11FinanceEngine.month(storage.load(), YearMonth.of(2026, 12)).received, 0.0)
+    }
+
 }

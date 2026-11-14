@@ -38,6 +38,7 @@ class ReminderSnoozeActivity : Activity() {
                 val item=db.dayItems.firstOrNull {it.id==id}
                 require(task!=null || item!=null || id.startsWith("shift-"))
                 ReminderPolicy(applicationContext).snooze(id,whenMs)
+                androidx.core.app.NotificationManagerCompat.from(applicationContext).cancel(id.hashCode() and 0x7fffffff)
                 when {
                     task!=null -> ToDoShiftReminder.schedule(applicationContext,task)
                     item!=null -> ToDoShiftReminder.schedule(applicationContext,item)

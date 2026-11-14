@@ -1,0 +1,52 @@
+name: Import Cash Book v0.13 sources (v44 only)
+
+on:
+  push:
+    branches: [feat/v44-cashbook-integration]
+    paths:
+      - '.github/workflows/import-cashbook-v44.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download pinned Cash Book source
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            "https://raw.githubusercontent.com/drkarimelshenawy/cashbook-androi/6f74fe37021af9e689c9d726aec6dabc30f77714/CashBook-v0.13-source.zip" \
+            -o /tmp/cashbook-source.zip
+          unzip -t /tmp/cashbook-source.zip >/dev/null
+          unzip -q /tmp/cashbook-source.zip -d /tmp/cashbook-source
+          test -f /tmp/cashbook-source/CashBook-Android-Test/cashbook-core/src/main/java/com/todoshift/cashbook/core/Ledger.java
+          test -f /tmp/cashbook-source/CashBook-Android-Test/cashbook-feature/src/main/java/com/todoshift/cashbook/ui/CashBookRoute.kt
+      - name: Copy source and resource trees without overwriting integration build scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir=/tmp/cashbook-source/CashBook-Android-Test
+          cp -a "$source_dir/cashbook-core/src" cashbook-core/
+          cp -a "$source_dir/cashbook-feature/src" cashbook-feature/
+          test -f cashbook-core/src/main/java/com/todoshift/cashbook/core/Ledger.java
+          test -f cashbook-feature/src/main/java/com/todoshift/cashbook/ui/CashBookRoute.kt
+      - name: Commit imported source on isolated v44 branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cashbook-core/src cashbook-feature/src
+          if git diff --cached --quiet; then
+            echo "Source already imported"
+          else
+            git commit -m "feat(v44): import pinned Cash Book v0.13 module sources"
+            git push origin HEAD:feat/v44-cashbook-integration
+          fi

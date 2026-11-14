@@ -1053,7 +1053,7 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         ) {
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("جداولي", "Shifts"),
+                label = neoLiteral("كاش بوك", "Cash Book"),
                 selected = selectedTab == 1,
                 onClick = { onSelectTab(1) },
                 icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
@@ -1299,7 +1299,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                 listOf(
                         Triple(
                             1,
-                            neoLabel("جداولي", "Schedules"),
+                            neoLabel("كاش بوك", "Cash Book"),
                             if (outlined) Icons.Outlined.DateRange else Icons.Rounded.DateRange,
                         ),
                         Triple(

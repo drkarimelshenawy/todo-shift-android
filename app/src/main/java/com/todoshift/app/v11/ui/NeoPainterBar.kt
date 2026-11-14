@@ -53,6 +53,8 @@ fun NeoPainterBar(
     initialWorkplaceId: String? = null,
     selectorVisible:Boolean=true,
     onTypeChosen:()->Unit={},
+    finishRequest:Int=0,
+    onNeedsAttention:()->Unit={},
 ) {
     val commit = rememberNeoCommit(onCommit)
     val context = LocalContext.current
@@ -127,6 +129,8 @@ fun NeoPainterBar(
             next()
         }
     }
+    LaunchedEffect(finishRequest) {if(finishRequest>0) requestExit {}}
+    LaunchedEffect(queuePaused,error) {if(queuePaused||error!=null) onNeedsAttention()}
     neoRegisterLeaveGuard { requestExit(it) }
     BackHandler {
         when {

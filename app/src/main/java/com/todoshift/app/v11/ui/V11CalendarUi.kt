@@ -107,6 +107,7 @@ fun V11CalendarScreen(
     var selectedPaintKind by remember { mutableStateOf<ShiftKind?>(null) }
     var paintMode by rememberSaveable { mutableStateOf(false) }
     var selectorVisible by rememberSaveable {mutableStateOf(false)}
+    var finishPainterRequest by remember {mutableIntStateOf(0)}
     var painterRequestedWorkplace by rememberSaveable { mutableStateOf<String?>(null) }
     var modernPaintRequest by remember { mutableIntStateOf(0) }
     var paintPreview by remember { mutableStateOf<V11Database?>(null) }
@@ -412,7 +413,7 @@ fun V11CalendarScreen(
             if (LocalV11NeoEnabled.current) {
                 Box(Modifier.fillMaxWidth().height(56.dp)) {
                     FloatingActionButton(onClick={
-                        if(paintMode) {paintMode=false;selectorVisible=false;paintDates=emptySet();paintPreview=null;modernPaintRequest=0}
+                        if(paintMode) {finishPainterRequest++}
                         else {paintMode=true;selectorVisible=true;paintDates=emptySet();bulkPaint=false}
                     },modifier=Modifier.align(Alignment.CenterEnd).size(48.dp).testTag("calendar-paint-fab")) {
                         Icon(if(paintMode) Icons.Default.Check else Icons.Default.Add,neoLabel("إضافة وردية / إنهاء الرسم","Add shift / finish painting"))
@@ -425,9 +426,9 @@ fun V11CalendarScreen(
                     ) {
                         NeoPainterBar(db,workplaces,activeCalendar?.id,paintDates,selectedDate,modernPaintRequest,bulkPaint,
                             {bulkPaint=it},{paintDates=emptySet()},onDatabaseChange,
-                            {paintMode=false;selectorVisible=false;paintDates=emptySet();modernPaintRequest=0;paintPreview=null},
+                            {paintMode=false;selectorVisible=false;paintDates=emptySet();modernPaintRequest=0;paintPreview=null;finishPainterRequest=0},
                             onPreview={paintPreview=it},initialWorkplaceId=painterRequestedWorkplace,
-                            selectorVisible=selectorVisible,onTypeChosen={selectorVisible=false})
+                            selectorVisible=selectorVisible,onTypeChosen={selectorVisible=false},finishRequest=finishPainterRequest,onNeedsAttention={selectorVisible=true})
                     }
                 }
             } else if (paintMode) {

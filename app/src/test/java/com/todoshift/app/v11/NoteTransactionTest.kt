@@ -11,6 +11,14 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class NoteTransactionTest {
+    @Test fun blockFormattingAppliesToTheCurrentParagraphAndPreservesOtherParagraphs() {
+        val value=androidx.compose.ui.text.input.TextFieldValue("first\nعربي text\nlast",androidx.compose.ui.text.TextRange(9))
+        val heading=com.todoshift.app.v11.ui.noteFormat(value,"## ")
+        assertEquals("first\n## عربي text\nlast",heading.text)
+        val list=com.todoshift.app.v11.ui.noteFormat(androidx.compose.ui.text.input.TextFieldValue("one\ntwo",androidx.compose.ui.text.TextRange(0,7)),"\n1. ")
+        assertEquals("1. one\n2. two",list.text)
+    }
+
     @Test fun protectedLegacyRecordWithoutOptionalMetadataMigratesWithoutChangingItsFields() {
         val context=RuntimeEnvironment.getApplication();val base=V11Runtime(context).start()
         val storage=V11Storage(context)

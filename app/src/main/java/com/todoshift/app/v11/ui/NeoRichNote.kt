@@ -18,6 +18,16 @@ import androidx.compose.ui.unit.dp
 
 internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = ""): TextFieldValue {
     val start = value.selection.min; val end = value.selection.max
+    if(suffix.isEmpty() && prefix in listOf("# ","## ","\n- ","\n1. ","\n- [ ] ")) {
+        val lineStart=value.text.lastIndexOf('\n',start-1)+1
+        val lineEnd=value.text.indexOf('\n',end).takeIf {it>=0} ?: value.text.length
+        val marker=prefix.removePrefix("\n")
+        val replacement=value.text.substring(lineStart,lineEnd).lines().mapIndexed {index,line ->
+            val clean=line.replaceFirst(Regex("^(#{1,3} |[0-9]+\\. |- (?:\\[[ xX]\\] )?)"),"")
+            (if(marker=="1. ") "${index+1}. " else marker)+clean
+        }.joinToString("\n")
+        return TextFieldValue(value.text.replaceRange(lineStart,lineEnd,replacement),TextRange(lineStart+marker.length,lineStart+replacement.length))
+    }
     val selected = value.text.substring(start, end)
     val replacement = prefix + selected + suffix
     return TextFieldValue(value.text.replaceRange(start, end, replacement), TextRange(start + prefix.length, start + prefix.length + selected.length))
@@ -27,7 +37,7 @@ internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = 
 @Composable
 internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -> Unit, undo: () -> Unit, redo: () -> Unit, canUndo: Boolean, canRedo: Boolean) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        listOf("B" to Pair("**", "**"), "I" to Pair("*", "*"), "H" to Pair("# ", ""), "•" to Pair("\n- ", ""), "1." to Pair("\n1. ", ""), "☐" to Pair("\n- [ ] ", "")).forEach { (label, marks) ->
+        listOf("B" to Pair("**", "**"), "I" to Pair("*", "*"), "H" to Pair("# ", ""), "H2" to Pair("## ", ""), "•" to Pair("\n- ", ""), "1." to Pair("\n1. ", ""), "☐" to Pair("\n- [ ] ", "")).forEach { (label, marks) ->
             TextButton(onClick = { change(noteFormat(value, marks.first, marks.second)) }, contentPadding = PaddingValues(4.dp), modifier = Modifier.widthIn(min=48.dp)) { Text(label, fontWeight = if(label=="B") FontWeight.Bold else null) }
         }
         TextButton(onClick=undo, enabled=canUndo) { Text(neoLabel("تراجع", "Undo")) }
@@ -56,7 +66,7 @@ internal fun NeoNotePreview(text: String, onChecklist: ((Int) -> Unit)? = null, 
             if (checked != null) Row {
                 Checkbox(checked.groupValues[1] != " ", onCheckedChange=onChecklist?.let { callback -> { _: Boolean -> callback(index) } })
                 Text(noteInline(checked.groupValues[2]), Modifier.weight(1f).padding(top=12.dp))
-                if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checked.groupValues[2])}) {Text(neoLabel("إلى مهمة","To task"))}
+                if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checked.groupValues[2])}) {Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))}
             } else {
                 val heading = line.startsWith("# ") || line.startsWith("## ")
                 Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=if(heading) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium)

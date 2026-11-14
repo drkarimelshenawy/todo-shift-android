@@ -180,10 +180,17 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     val leave=rememberNeoEditorExit(listOf(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs),onDismiss,pending)
     if(confirmTrashNote) AlertDialog(onDismissRequest={confirmTrashNote=false},title={Text(neoLabel("نقل الملاحظة للمهملات؟","Move note to Trash?"))},text={Text(neoLabel("يمكن استعادتها لاحقًا","You can restore it later"))},confirmButton={TextButton(onClick={trashed=true;confirmTrashNote=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrashNote=false}) {Text(neoLabel("إلغاء","Cancel"))}})
     val effectiveBackground=(background.ifBlank {NeoLaunchPreferences(context).defaultNoteBackground}).takeIf {it.isNotBlank()}?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
+    val baseScheme=MaterialTheme.colorScheme
+    val contrast=effectiveBackground?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White}
+    val editorScheme=if(contrast==null) baseScheme else baseScheme.copy(
+        surface=androidx.compose.ui.graphics.Color(requireNotNull(effectiveBackground)),onSurface=contrast,onSurfaceVariant=contrast.copy(alpha=.78f),primary=contrast,outline=contrast.copy(alpha=.5f),
+        error=if(contrast==androidx.compose.ui.graphics.Color.Black) androidx.compose.ui.graphics.Color(0xFFB3261E) else androidx.compose.ui.graphics.Color(0xFFF2B8B5))
+    val openChecklistTask=LocalNeoOpenNoteTask.current
+    MaterialTheme(colorScheme=editorScheme) {
     AlertDialog(containerColor=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,
         textContentColor=effectiveBackground?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface,
         onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
-        properties=DialogProperties(securePolicy=SecureFlagPolicy.SecureOn),
+        properties=DialogProperties(securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit),
         title={Text(neoLabel("ملاحظة", "Note")+" • $date")},
         text={Column(Modifier.heightIn(max=560.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
             OutlinedTextField(title,{if(!pending) title=it},label={Text(neoLabel("عنوان اختياري","Optional title"))},modifier=Modifier.fillMaxWidth())
@@ -198,8 +205,15 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 if(!pending) {val lines=body.text.lines().toMutableList()
                     val found=Regex("<!--task:([A-Za-z0-9_-]+)-->").find(lines[line])
                     val key=found?.groupValues?.get(1) ?: expected.tasks.firstOrNull {it.linkedNoteId==id&&it.title==label}?.id ?: UUID.randomUUID().toString()
-                    if(found==null) {lines[line]+=" <!--task:$key-->";edit(TextFieldValue(lines.joinToString("\n")))}
-                    val spec="$key\n$label";taskSpecs=taskSpecs.filterNot {it.substringBefore('\n')==key}+spec}
+                    val taskId=UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString()
+                    val linked=expected.tasks.firstOrNull {(it.id==taskId||it.id==key)&&it.linkedNoteId==id}
+                    if(found!=null && linked!=null && openChecklistTask!=null) {
+                        scope.launch {keepDraft();if(persistNote(false)) openChecklistTask(linked.id)}
+                    } else {
+                        if(found==null) {lines[line]+=" <!--task:$key-->";edit(TextFieldValue(lines.joinToString("\n")))}
+                        val spec="$key\n$label";taskSpecs=taskSpecs.filterNot {it.substringBefore('\n')==key}+spec
+                    }
+                }
             }) else OutlinedTextField(body,{if(!pending) edit(it)},label={Text(neoLabel("النص والتنسيق","Text and formatting"))},visualTransformation=remember {NeoNoteVisualTransformation()},minLines=6,maxLines=16,modifier=Modifier.fillMaxWidth())
             if(taskSpecs.isNotEmpty()) Text(neoLabel("${taskSpecs.size} بنود مرتبطة بمهام عند الحفظ","${taskSpecs.size} checklist links to save"),style=MaterialTheme.typography.labelSmall)
             val openTask=LocalNeoOpenNoteTask.current
@@ -254,4 +268,5 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         }},
         confirmButton={TextButton(enabled=!pending&&!rootWritePending&&draftReady,onClick={scope.launch {keepDraft();if(persistNote(true)) gate?.takeSavedExit()?.invoke()}}) {Text(neoLabel("تم","Done"))}},
         dismissButton={TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(true)) onDismiss()}}) {Text(neoLabel("إغلاق","Close"))}})
+    }
 }

@@ -21,7 +21,17 @@ def database():
     return json.loads(next(n.text for n in root if n.get('name')=='database'))
 def dump():
     shell('uiautomator','dump','/sdcard/v45-smoke.xml')
-    return ET.fromstring(adb('exec-out','cat','/sdcard/v45-smoke.xml'))
+    root=ET.fromstring(adb('exec-out','cat','/sdcard/v45-smoke.xml'))
+    # Only recover the external launcher ANR observed in the captured system dialog.
+    if any(n.get('text')=="Pixel Launcher isn't responding" for n in root.iter('node')):
+        close=next((n for n in root.iter('node') if n.get('resource-id')=='android:id/aerr_close'),None)
+        if close is not None:
+            tap(close)
+            (OUT/'external-launcher-recovery.txt').write_text('Closed the observed Pixel Launcher ANR dialog; application failures are not suppressed.\n')
+            time.sleep(.5)
+            shell('uiautomator','dump','/sdcard/v45-smoke.xml')
+            root=ET.fromstring(adb('exec-out','cat','/sdcard/v45-smoke.xml'))
+    return root
 def capture(name):
     root=dump();(OUT/(name+'.xml')).write_text(ET.tostring(root,encoding='unicode'))
     (OUT/(name+'.png')).write_bytes(adb('exec-out','screencap','-p',binary=True))
@@ -36,6 +46,7 @@ def install(path):assert 'Success' in adb('install','-r',str(path))
 def run():
     baseline,candidate=map(pathlib.Path,sys.argv[1:3])
     adb('root');adb('wait-for-device');adb('logcat','-c')
+    shell('wm','size','720x1280');shell('wm','density','240')
     install(baseline);launch();wait(lambda:database().get('calendars'))
     shell('am','force-stop',APP)
     raw=adb('exec-out','cat',PREF);root=ET.fromstring(raw)

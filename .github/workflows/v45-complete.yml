@@ -135,8 +135,8 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
-          profile: pixel_7_pro
-          ram-size: 2048M
+          profile: pixel_2
+          ram-size: 3072M
           disable-animations: true
           script: python3 tools/v45_device_smoke.py baseline.apk candidate/ToDoShift-v45-CashBook.apk
       - uses: actions/upload-artifact@v4

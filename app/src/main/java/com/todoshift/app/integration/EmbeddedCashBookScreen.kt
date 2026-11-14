@@ -18,11 +18,12 @@ import java.time.DayOfWeek
 @Composable
 fun EmbeddedCashBookScreen(
     weekStart: DayOfWeek = DayOfWeek.SATURDAY,
+    salaryContent: (@Composable () -> Unit)? = null,
 ) {
     val app = LocalContext.current.applicationContext as Application
     val vm: CashBookViewModel = viewModel(
         factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(app)
     )
     LaunchedEffect(vm) { vm.reload() }
-    CashBookRoute(vm = vm, weekStart = weekStart)
+    CashBookRoute(vm = vm, weekStart = weekStart, salaryContent = salaryContent)
 }

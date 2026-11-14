@@ -1,4 +1,4 @@
-name: v44 Cash Book integration compile checks
+name: v44 Cash Book integration checks
 
 on:
   push:
@@ -18,17 +18,25 @@ permissions:
 jobs:
   compile-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
       - uses: android-actions/setup-android@v3
-      - name: Install Android platform
+      - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - name: Compile modules and run core tests
+      - name: Compile imported Cash Book and host app
         run: |
           chmod +x ./gradlew
-          ./gradlew --no-daemon :cashbook-core:check :cashbook-feature:compileDebugKotlin :app:compileDebugKotlin :app:testDebugUnitTest
+          ./gradlew --no-daemon --stacktrace :cashbook-core:check :cashbook-feature:compileDebugKotlin :app:compileDebugKotlin
+      - name: Run salary to cash idempotency tests
+        run: |
+          ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest'
+      - name: Run full host unit test suite (diagnostic)
+        if: success()
+        run: |
+          ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest

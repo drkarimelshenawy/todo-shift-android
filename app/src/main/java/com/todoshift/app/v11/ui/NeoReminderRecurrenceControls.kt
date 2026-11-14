@@ -48,7 +48,7 @@ fun NeoItemReminderRecurrenceControls(id:String) {
     }},{kind=it;saved=false})
     if(kind=="WEEKLY") Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement=Arrangement.spacedBy(4.dp)) {
         java.time.DayOfWeek.entries.forEach { day ->
-            FilterChip(selected=day.value in weekdays,onClick={weekdays=if(day.value in weekdays) weekdays-day.value else weekdays+day.value;saved=false},label={Text(day.getDisplayName(java.time.format.TextStyle.SHORT,java.util.Locale.getDefault()))})
+            FilterChip(selected=day.value in weekdays,onClick={weekdays=if(day.value in weekdays) weekdays-day.value else weekdays+day.value;saved=false},label={Text(day.getDisplayName(java.time.format.TextStyle.SHORT,if(LocalNeoEnglish.current) java.util.Locale.ENGLISH else java.util.Locale("ar")))})
         }
     }
     if(kind=="CUSTOM") OutlinedTextField(days,{days=it.filter(Char::isDigit).take(4);saved=false},label={Text(neoLabel("عدد الأيام","Days"))},singleLine=true)

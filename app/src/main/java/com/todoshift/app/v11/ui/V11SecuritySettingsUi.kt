@@ -473,8 +473,8 @@ fun V11SecuritySettingsDialog(
                     val submitted = finalSettings
                     saveRunner.execute({
                         if (submitted.mode == V11LockMode.NONE && !submitted.biometricEnabled)
-                            check(!V11Storage(context).load().dayItems.any { it.notePrivate }) {
-                                neoLiteral("افتح حماية الملاحظات أولًا قبل إزالة وسيلة التحقق", "Unlock or unhide protected notes before removing the last authentication method")
+                            check(!V11Storage(context).load().dayItems.any { it.noteLocked }) {
+                                neoLiteral("افتح حماية الملاحظات أولًا قبل إزالة وسيلة التحقق", "Unlock protected notes before removing the last authentication method")
                             }
                         store.save(submitted)
                     }) { result ->

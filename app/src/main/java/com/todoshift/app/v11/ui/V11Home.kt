@@ -919,7 +919,20 @@ fun V11Home(
                                         }
 
                                     1 ->
-                                        com.todoshift.app.integration.EmbeddedCashBookScreen()
+                                        if (
+                                            securitySettings.protectAccounts &&
+                                                (securitySettings.mode != V11LockMode.NONE ||
+                                                    securitySettings.biometricEnabled) &&
+                                                !accountsUnlocked
+                                        ) {
+                                            V11AccountsUnlockScreen(
+                                                settings = securitySettings,
+                                                securityStore = securityStore,
+                                                onUnlocked = { accountsUnlocked = true },
+                                            )
+                                        } else {
+                                            com.todoshift.app.integration.EmbeddedCashBookScreen()
+                                        }
 
                                     2 ->
                                         if (

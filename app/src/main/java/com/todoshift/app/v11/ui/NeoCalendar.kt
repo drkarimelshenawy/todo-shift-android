@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Today
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -233,7 +232,6 @@ fun NeoCalendarArea(
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                 )
-                IconButton(onClick={noteNavigator.open("SEARCH")}) {Icon(androidx.compose.material.icons.Icons.Rounded.Search,neoLabel("بحث في التقويم","Search calendar"))}
                 FilledTonalIconButton(onClick = { move(1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next"))
                 }
@@ -295,9 +293,8 @@ fun NeoCalendarArea(
         val swipeThreshold =
             with(androidx.compose.ui.platform.LocalDensity.current) { 64.dp.toPx() }
         val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
-        val allowSwipe =
-            androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >=
-                ((20 * fontScale + 8) * 7 + 18)
+        // Month navigation must remain available at every supported screen width.
+        val allowSwipe = true
         val rtl =
             androidx.compose.ui.platform.LocalLayoutDirection.current ==
                 androidx.compose.ui.unit.LayoutDirection.Rtl
@@ -474,12 +471,13 @@ fun NeoCalendarArea(
                                             ) {
                                                 onSelectedDate(cellDate)
                                                 if (!paintMode) {
+                                                    val secondTap = tappedDate == key
                                                     tappedDate = key
                                                     if (YearMonth.from(cellDate) != month) {
                                                         tappedDate = null
                                                         onMonthChange(YearMonth.from(cellDate))
                                                     }
-                                                    onOpenDay(cellDate)
+                                                    if (secondTap) onOpenDay(cellDate)
                                                 }
                                             }
                                     }

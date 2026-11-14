@@ -31,7 +31,7 @@ object NeoWidgetContentModel {
         val visible = db.calendars.filter { it.visible }.map { it.id }.toSet()
         return db.tasks
             .filter {
-                it.status != TaskStatusV11.COMPLETED &&
+                it.status != TaskStatusV11.COMPLETED && !it.linkedNotePrivateV11(db) &&
                     (it.calendarId == null || it.calendarId in visible)
             }
             .sortedWith(

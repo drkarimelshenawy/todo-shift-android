@@ -15,7 +15,7 @@ fun NeoReminderRecurrenceControls(db:V11Database) {
         return
     }
     val records=remember(db) {
-        db.tasks.filter {it.reminderAt!=null && it.status!=TaskStatusV11.COMPLETED}.map {it.id to it.title} +
+        db.tasks.filter {it.reminderAt!=null && it.status!=TaskStatusV11.COMPLETED && !it.linkedNotePrivateV11(db)}.map {it.id to it.title} +
             db.dayItems.filter {it.reminderAt!=null && !it.completed && it.noteVisible && !it.notePrivate}.map {it.id to it.title}
     }
     if(records.isEmpty()) return

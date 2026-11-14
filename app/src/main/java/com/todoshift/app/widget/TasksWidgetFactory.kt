@@ -7,6 +7,7 @@ import android.widget.RemoteViewsService
 import com.todoshift.app.R
 import com.todoshift.app.v11.TaskV11
 import com.todoshift.app.v11.V11Runtime
+import com.todoshift.app.v11.linkedNotePrivateV11
 import java.time.LocalDate
 
 class TasksWidgetFactory(private val context: Context, intent: Intent) :
@@ -36,7 +37,7 @@ class TasksWidgetFactory(private val context: Context, intent: Intent) :
                     NeoWidgetContentModel.tasks(db, LocalDate.now()) +
                         if(Neo4WidgetSettings(context,widgetId).load(Neo4WidgetKind.TASKS).showCompleted) {
                             val visible=db.calendars.filter {it.visible}.map {it.id}.toSet()
-                            db.tasks.filter {it.status==com.todoshift.app.v11.TaskStatusV11.COMPLETED && (it.calendarId==null || it.calendarId in visible)}.sortedByDescending {it.completedAt}
+                            db.tasks.filter {!it.linkedNotePrivateV11(db) && it.status==com.todoshift.app.v11.TaskStatusV11.COMPLETED && (it.calendarId==null || it.calendarId in visible)}.sortedByDescending {it.completedAt}
                         } else emptyList()
                 }
                 .getOrDefault(emptyList())

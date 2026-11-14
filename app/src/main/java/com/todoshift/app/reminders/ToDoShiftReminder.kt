@@ -17,6 +17,7 @@ import com.todoshift.app.v11.TaskStatusV11
 import com.todoshift.app.v11.TaskV11
 import com.todoshift.app.v11.V11Database
 import com.todoshift.app.v11.V11Runtime
+import com.todoshift.app.v11.linkedNotePrivateV11
 import kotlinx.coroutines.launch
 
 object ToDoShiftReminder {
@@ -117,6 +118,9 @@ object ToDoShiftReminder {
     }
 
     fun schedule(context: Context, task: TaskV11) {
+        val privateSource=task.linkedNoteId?.let {
+            runCatching { task.linkedNotePrivateV11(V11Runtime(context).start()) }.getOrDefault(true)
+        } ?: false
         if (!com.todoshift.app.v11.NeoNotificationPolicy.enabled(context, "tasks")) return
         val whenMs =
             ReminderPolicy(context).next(task.id,task.reminderAt ?: return,task.repeat.name) ?: return
@@ -142,9 +146,9 @@ object ToDoShiftReminder {
 
                 putExtra(EXTRA_SCHEDULED_AT, whenMs)
                 putExtra(EXTRA_SOURCE_AT,task.reminderAt)
-                putExtra(EXTRA_TITLE, if(protected(context)) "ToDo Shift" else task.title)
+                putExtra(EXTRA_TITLE, if(privateSource || protected(context)) "ToDo Shift" else task.title)
 
-                putExtra(EXTRA_DETAILS, if(protected(context)) "" else task.details)
+                putExtra(EXTRA_DETAILS, if(privateSource || protected(context)) "" else task.details)
 
                 putExtra(EXTRA_DATE, task.date)
             }
@@ -333,7 +337,7 @@ class ToDoShiftReminderReceiver : BroadcastReceiver() {
                     when {task!=null->ToDoShiftReminder.schedule(app,task);item!=null->ToDoShiftReminder.schedule(app,item)}
                     // A delayed broadcast must never replay yesterday's reminders in a flood.
                     if(scheduled<=0 || now<scheduled-60_000L || now-scheduled>15*60_000L) return@runCatching
-                    val private=item?.notePrivate==true
+                    val private=item?.notePrivate==true || task?.linkedNotePrivateV11(db)==true
                     ToDoShiftReminder.show(app,id,
                         if(private) "ToDo Shift" else task?.title ?: item?.title ?: "ToDo Shift",
                         if(private) "افتح التطبيق للتفاصيل / Open app for details" else task?.details ?: item?.details ?: "",

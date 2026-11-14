@@ -7,7 +7,8 @@ java {
 
 val integrityTasks = listOf(
     "LedgerTest", "QueryTest", "ExtrasTest", "ReorderTest",
-    "CustomizationTest", "CompactAccountsTest", "DebtTest", "Release12Test"
+    "CustomizationTest", "CompactAccountsTest", "DebtTest", "Release12Test",
+    "SalaryIncomeIdempotencyTest"
 ).map { suite ->
     tasks.register<JavaExec>("run$suite") {
         dependsOn(tasks.testClasses)

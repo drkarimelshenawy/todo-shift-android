@@ -8,7 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -140,7 +140,7 @@ fun NeoAppearanceStudio(
                 )
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 sections.forEach { (id, title) ->
-                    FilterChip(selected = section == id, onClick = { section = id }, label = { Text(title) })
+                    FilterChip(selected = section == id, onClick = { section = id }, label = { Text(title) },leadingIcon={Icon(when(id){NeoStudioSection.THEMES->Icons.Rounded.Palette;NeoStudioSection.COLORS->Icons.Rounded.ColorLens;NeoStudioSection.BACKGROUND->Icons.Rounded.Image;NeoStudioSection.TYPE->Icons.Rounded.TextFields;NeoStudioSection.MOTION->Icons.Rounded.Animation;else->Icons.Rounded.Bookmarks},null,Modifier.size(16.dp))})
                 }
             }
             TextButton(onClick={draft=resetStudioSection(draft,section ?: NeoStudioSection.THEMES);accent=draft.accentHex}) {Text(neoLabel("استعادة افتراضي القسم","Reset this section"))}

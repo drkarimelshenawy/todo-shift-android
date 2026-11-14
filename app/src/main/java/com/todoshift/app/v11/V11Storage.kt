@@ -240,8 +240,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
 
                         put("compensationHistory", JSONArray().apply {
                             source.compensationHistory.forEach { period ->
-                                put(JSONObject().put("effectiveMonth", period.effectiveMonth).put("amount", period.amount)
-                                put("shiftBased",period.shiftBased))
+                                put(JSONObject().put("effectiveMonth", period.effectiveMonth).put("amount", period.amount).put("shiftBased",period.shiftBased))
                             }
                         })
                         put("order", source.order)

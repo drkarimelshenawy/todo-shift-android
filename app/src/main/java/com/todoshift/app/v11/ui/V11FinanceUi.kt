@@ -790,7 +790,7 @@ internal fun V11EditPaymentDialog(
     onDismiss: () -> Unit,
     onSave: (PaymentV11) -> Unit,
 ) {
-    if (LocalV11NeoEnabled.current) {
+    if (true) {
         NeoPaymentForm(
             db,
             java.time.YearMonth.parse(payment.accrualMonth),
@@ -1129,7 +1129,7 @@ internal fun V11PaymentDialog(
     onDismiss: () -> Unit,
     onSave: (V11Database) -> Unit,
 ) {
-    if (LocalV11NeoEnabled.current) {
+    if (true) {
         NeoPaymentForm(db, month, null, onDismiss) { payment ->
             check(db.payments.none { it.id == payment.id }) {
                 "This payment request was already saved. Review the stored record before opening a new entry."

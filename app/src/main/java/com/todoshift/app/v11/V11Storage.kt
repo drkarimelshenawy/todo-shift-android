@@ -249,6 +249,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                         put("id", payment.id)
                         put("amount", payment.amount)
                         put("receivedDate", payment.receivedDate)
+                        put("cashBookAccountId", payment.cashBookAccountId ?: JSONObject.NULL)
                         put("accrualMonth", payment.accrualMonth)
 
                         if (payment.sourceId == null)
@@ -756,6 +757,7 @@ class V11Storage internal constructor(private val prefs: SharedPreferences) {
                 id = o.optString("id"),
                 amount = o.optDouble("amount", 0.0),
                 receivedDate = o.optString("receivedDate"),
+                cashBookAccountId = nullableString(o, "cashBookAccountId"),
                 accrualMonth = o.optString("accrualMonth"),
                 sourceId = nullableString(o, "sourceId"),
                 paymentMethodId =

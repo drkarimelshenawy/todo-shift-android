@@ -1,4 +1,4 @@
-name: v44 Cash Book integration checks
+name: v44 Cash Book signed APK
 
 on:
   push:
@@ -14,32 +14,74 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: v44-cashbook-signed
+  cancel-in-progress: false
 
 jobs:
-  compile-and-test:
+  signed-apk:
+    if: github.ref == 'refs/heads/feat/v44-cashbook-integration'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Pin source branch
+        run: git checkout -B feat/v44-cashbook-integration "$GITHUB_SHA"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - name: Verify Cash Book navigation and finance lock invariants
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify integration structure
         run: python3 scripts/check_v44_cashbook_integration.py
-      - name: Compile imported Cash Book and host app
+      - name: Restore persistent signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
         run: |
-          chmod +x ./gradlew
-          ./gradlew --no-daemon --stacktrace :cashbook-core:check :cashbook-feature:compileDebugKotlin :app:compileDebugKotlin
-      - name: Run salary to cash idempotency tests
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Verify financial idempotency and build signed APK
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
         run: |
-          ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest'
-      - name: Run full host unit test suite (diagnostic)
-        if: success()
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          gradle --no-daemon -I tools/premium_qa.init.gradle :cashbook-core:runSalaryIncomeIdempotencyTest :app:testDebugUnitTest --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest' :app:assembleDebug --stacktrace
+      - name: Verify APK signature and identity
         run: |
-          ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/debug/app-debug.apk \
+            --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
+            --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
+            --expected-sha "$GITHUB_SHA" \
+            --expected-branch feat/v44-cashbook-integration \
+            --output delivery/identity
+          cp app/build/outputs/apk/debug/app-debug.apk delivery/ToDoShift-v44-CashBook.apk
+          (cd delivery && sha256sum *.apk > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ToDoShift-v44-signed-APK
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v44-cashbook-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v44-CashBook.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v44 Cash Book" --notes "Signed test APK. Source: $GITHUB_SHA. Cash Book receipt integration with durable idempotent posting."
+      - name: Remove private signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

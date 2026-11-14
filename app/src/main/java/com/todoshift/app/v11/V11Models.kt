@@ -210,7 +210,8 @@ data class PaymentV11(
     val paymentMethodId: String? = null,
     val note: String = "",
     val linkedShiftIds: List<String> = emptyList(),
-    val allocations: List<PaymentAllocationV11> = emptyList()
+    val allocations: List<PaymentAllocationV11> = emptyList(),
+    val cashBookAccountId: String? = null
 )
 
 enum class ObligationTypeV11 {

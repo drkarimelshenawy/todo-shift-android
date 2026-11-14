@@ -255,6 +255,26 @@ fun V11Home(
     }
 
     var db by remember { mutableStateOf(loaded.database) }
+    var cashSyncError by remember { mutableStateOf<String?>(null) }
+    var cashSyncAttempt by remember { mutableIntStateOf(0) }
+    LaunchedEffect(db.payments, cashSyncAttempt) {
+        try {
+            withContext(Dispatchers.IO) {
+                com.todoshift.app.integration.SalaryCashSync.reconcile(context.applicationContext, db)
+            }
+            cashSyncError = null
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            cashSyncError = "تم حفظ الدفعة. تعذر ترحيلها إلى كاش بوك؛ أعد المحاولة دون تسجيلها مرة أخرى. / Receipt saved. Cash Book posting pending; retry without adding another receipt."
+        }
+    }
+    cashSyncError?.let { message ->
+        AlertDialog(onDismissRequest = { cashSyncError = null },
+            title = { Text("Cash Book") }, text = { Text(message) },
+            confirmButton = { TextButton(onClick = { cashSyncAttempt++ }) { Text("إعادة المحاولة / Retry") } },
+            dismissButton = { TextButton(onClick = { cashSyncError = null }) { Text("إغلاق / Close") } })
+    }
 
     var oldData by remember { mutableStateOf(loaded.legacy) }
 

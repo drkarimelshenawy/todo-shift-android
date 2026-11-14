@@ -632,6 +632,7 @@ class Neo4LocalBackup(context: Context) :
                 legacy.load().workplaces.map { it.id }.toSet()
             }
             FinancialDataValidation.validate(next)
+            com.todoshift.app.integration.SalaryCashSync.validateTransition(expected, next)
             val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
             previous.put(
                 NeoCommittedEffects.STORE_NAME,

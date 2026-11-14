@@ -168,7 +168,7 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
                 )
         }
         return Neo4WidgetSkin(
-            if (p.theme == Neo4WidgetTheme.TRANSPARENT) Color.TRANSPARENT
+            if (p.theme == Neo4WidgetTheme.TRANSPARENT && p.backgroundOpacity == 0f) Color.TRANSPARENT
             else androidx.core.graphics.ColorUtils.setAlphaComponent(Color.parseColor(if (dark) "#111D29" else "#EDF5F2"),(p.backgroundOpacity*255).toInt()),
             Color.parseColor(if (dark) "#EFF6FC" else "#17303C"),
             Color.parseColor(if (dark) "#B8C9D7" else "#4B6570"),

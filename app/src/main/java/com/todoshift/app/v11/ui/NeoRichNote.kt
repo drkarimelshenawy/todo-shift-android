@@ -53,7 +53,7 @@ internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -
 }
 
 internal fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
-    val matches = Regex("""<font color="(#[0-9A-Fa-f]{6})">([\\s\\S]*?)</font>|\\*\\*(.+?)\\*\\*|\\*([^*]+)\\*""").findAll(text)
+    val matches = Regex("""<font color="(#[0-9A-Fa-f]{6})">([\s\S]*?)</font>|\*\*(.+?)\*\*|\*([^*]+)\*""").findAll(text)
     var end = 0
     for(match in matches) {
         append(text.substring(end,match.range.first))

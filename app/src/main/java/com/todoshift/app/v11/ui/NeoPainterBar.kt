@@ -77,7 +77,7 @@ fun NeoPainterBar(
         )
     }
     var erase by rememberSaveable { mutableStateOf(false) }
-    var typesOpen by rememberSaveable { mutableStateOf(initialWorkplaceId != null) }
+    var typesOpen by rememberSaveable { mutableStateOf(true) }
     var review by remember { mutableStateOf<NeoPaintReview?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val write = LocalNeoEditorWriteState.current
@@ -317,7 +317,7 @@ fun NeoPainterBar(
                             onClick = {
                                 workplace = place.id
                                 erase = false
-                                typesOpen = true
+                                typesOpen = false
                                 runCatching { store.update { it.put("paintWorkplace", place.id) } }
                                     .onFailure { error = it.message }
                             },

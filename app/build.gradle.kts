@@ -15,6 +15,7 @@ android {
         targetSdk = 35
         versionCode = 48
         versionName = "4.7.3-premium-v45-lined-notes"
+        // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 
 

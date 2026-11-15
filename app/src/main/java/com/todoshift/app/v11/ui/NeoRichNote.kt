@@ -87,7 +87,7 @@ internal fun NeoNotePreview(text: String, checklistsOnly:Boolean=false, onCheckl
                 if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checked.groupValues[2])}) {Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))}
             } else if(!checklistsOnly) {
                 val heading = line.startsWith("# ") || line.startsWith("## ") || line.startsWith("### ")
-                Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=if(line.startsWith("# ")) MaterialTheme.typography.titleLarge else if(heading) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium)
+                Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=when {line.startsWith("# ") -> MaterialTheme.typography.titleLarge; line.startsWith("## ") -> MaterialTheme.typography.titleMedium; line.startsWith("### ") -> MaterialTheme.typography.titleSmall; else -> MaterialTheme.typography.bodyMedium})
             }
         }
     }
@@ -112,7 +112,7 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         Regex("(?m)^#{1,3} ").findAll(source).forEach {
             hide(it.range.first,it.range.last+1)
             val end=source.indexOf('\n',it.range.last+1).takeIf {p->p>=0} ?: source.length
-            spans+=Triple(it.range.last+1,end,SpanStyle(fontWeight=FontWeight.Bold,fontSize=if(source[it.range.first+1]=='#') 18.sp else 22.sp))
+            spans+=Triple(it.range.last+1,end,SpanStyle(fontWeight=FontWeight.Bold,fontSize=when(it.value.count { char -> char == '#' }) {1 -> 22.sp; 2 -> 18.sp; else -> 16.sp}))
         }
         val original=IntArray(source.length+1)
         val visible=StringBuilder()

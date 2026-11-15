@@ -184,4 +184,69 @@ class NoteTransactionTest {
         assertEquals(before, V11Runtime(c).start())
         assertEquals("#6C3A9B", NeoSmartStore(c).noteColor("unrelated"))
     }
+
+    @Test fun nativeRichFormattingUsesSelectionAndPreservesNestedStylesAndPlainText() {
+        val original=androidx.compose.ui.text.input.TextFieldValue("عربي English",androidx.compose.ui.text.TextRange(0,4))
+        val under=com.todoshift.app.v11.ui.noteFormat(original,"<u>","</u>")
+        val bold=com.todoshift.app.v11.ui.noteFormat(under,"**","**")
+        val document=com.todoshift.app.v11.ui.NeoRichTextCodec.parse(bold.text)
+        assertEquals("عربي English",document.text.toString())
+        assertEquals(0,document.visible(bold.selection.start));assertEquals(4,document.visible(bold.selection.end))
+        assertEquals(1,document.text.getSpans(0,4,android.text.style.UnderlineSpan::class.java).size)
+        assertTrue(document.text.getSpans(0,4,android.text.style.StyleSpan::class.java).any {it.style==android.graphics.Typeface.BOLD})
+        assertTrue(document.text.getSpans(5,12,android.text.style.UnderlineSpan::class.java).isEmpty())
+    }
+
+    @Test fun editingVisibleTextCannotDeleteHalfOfAFormattingTag() {
+        val doc=com.todoshift.app.v11.ui.NeoRichTextCodec.parse("<u><s>abc</s></u>")
+        doc.text.delete(2,3)
+        val saved=com.todoshift.app.v11.ui.NeoRichTextCodec.encode(doc.text)
+        val reloaded=com.todoshift.app.v11.ui.NeoRichTextCodec.parse(saved)
+        assertEquals("ab",reloaded.text.toString())
+        assertEquals(1,reloaded.text.getSpans(0,2,android.text.style.UnderlineSpan::class.java).size)
+        assertEquals(1,reloaded.text.getSpans(0,2,android.text.style.StrikethroughSpan::class.java).size)
+        assertFalse(reloaded.text.contains("<u>"))
+    }
+
+    @Test fun fontColorsSplitAtTheExactSelectionInsteadOfOverwritingTheWholeParagraph() {
+        val codec=com.todoshift.app.v11.ui.NeoRichTextCodec
+        val red="<font color=\"#C62828\">abc</font>"
+        val parsed=codec.parse(red)
+        val selected=androidx.compose.ui.text.input.TextFieldValue(red,androidx.compose.ui.text.TextRange(parsed.source(1),parsed.source(2)))
+        val blue=com.todoshift.app.v11.ui.noteFormat(selected,"<font color=\"#1565C0\">","</font>")
+        val doc=codec.parse(blue.text).text
+        fun color(at:Int)=doc.getSpans(at,at+1,android.text.style.ForegroundColorSpan::class.java).first {doc.getSpanStart(it)<=at&&doc.getSpanEnd(it)>at}.foregroundColor
+        assertEquals(android.graphics.Color.parseColor("#C62828"),color(0));assertEquals(android.graphics.Color.parseColor("#1565C0"),color(1));assertEquals(android.graphics.Color.parseColor("#C62828"),color(2))
+    }
+
+    @Test fun checkboxCompletionAndStableTaskTokenSurviveFormattingAndEditing() {
+        val codec=com.todoshift.app.v11.ui.NeoRichTextCodec
+        val doc=codec.parse("- [ ] <u>Work</u> <!--task:stable-123-->")
+        val box=doc.text.getSpans(0,1,com.todoshift.app.v11.ui.NoteList::class.java).single();box.checked=true
+        doc.text.append(" today")
+        val saved=codec.encode(doc.text)
+        assertTrue(saved.startsWith("- [x] "));assertEquals(1,Regex("<!--task:stable-123-->").findAll(saved).count())
+        assertTrue(codec.parse(saved).text.toString().contains("Work today"))
+    }
+
+    @Test fun legacyNestedTagsLinksAndEscapedLiteralTextRoundTripWithoutLeaks() {
+        val codec=com.todoshift.app.v11.ui.NeoRichTextCodec
+        val raw="### <u>**Title**</u>\n<font color=\"#C62828\">red <font color=\"#1565C0\">blue</font> red</font>\n[Details](https://example.org)\n2 * 3 <literal> & text"
+        val first=codec.parse(raw);val second=codec.parse(codec.encode(first.text))
+        assertEquals(first.text.toString(),second.text.toString())
+        assertFalse(second.text.toString().contains("<u>"))
+        assertEquals("https://example.org",second.text.getSpans(0,second.text.length,android.text.style.URLSpan::class.java).single().url)
+        assertEquals(3,second.text.getSpans(0,second.text.length,com.todoshift.app.v11.ui.NoteHeading::class.java).single().level)
+        for(offset in 0..raw.length) assertTrue(first.visible(offset) in 0..first.text.length)
+    }
+
+    @Test fun emptyHeadingAndNestedFontColorArePreservedByTheNativeModel() {
+        val codec=com.todoshift.app.v11.ui.NeoRichTextCodec
+        val value=com.todoshift.app.v11.ui.noteFormat(androidx.compose.ui.text.input.TextFieldValue(""),"# ")
+        val heading=codec.parse(value.text)
+        heading.text.append("Title")
+        assertTrue(codec.encode(heading.text).startsWith("# "))
+        val nested=codec.parse("<font color=\"#C62828\">a<font color=\"#1565C0\">b</font>c</font>").text
+        assertEquals(android.graphics.Color.parseColor("#1565C0"),nested.getSpans(1,2,android.text.style.ForegroundColorSpan::class.java).single {nested.getSpanStart(it)==1}.foregroundColor)
+    }
 }

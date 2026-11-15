@@ -493,6 +493,7 @@ internal fun TaskCardV11(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     privateSource: Boolean = false,
+    categoryLabel:String?=null,
 ) {
     if(privateSource) {
         Card(onClick=onEdit,modifier=Modifier.fillMaxWidth()) {Text(neoLabel("🔒 مهمة مرتبطة بملاحظة محمية","🔒 Task linked to a protected note"),Modifier.padding(16.dp))}
@@ -565,13 +566,13 @@ internal fun TaskCardV11(
                     maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
 
-                if (!compact && task.details.isNotBlank()) {
+                if (task.details.isNotBlank()) {
                     Spacer(Modifier.height(2.dp))
                     Text(
                         task.details,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        maxLines = if(compact) 1 else 2,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
                 }
 
@@ -580,6 +581,7 @@ internal fun TaskCardV11(
                 Text(
                     buildString {
                         append(task.date)
+                        categoryLabel?.let {append(" • ");append(it)}
 
                         task.time?.let {
                             append(" • ")

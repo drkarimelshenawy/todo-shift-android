@@ -2,7 +2,7 @@ name: v45 specification completion signed APK
 
 on:
   push:
-    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115]
+    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -16,12 +16,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: v45-cashbook-signed
+  group: v45-cashbook-signed-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115'
+    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

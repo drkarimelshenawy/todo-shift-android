@@ -47,7 +47,7 @@ internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -
     }
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
         listOf("أحمر" to "#C62828", "أزرق" to "#1565C0", "أخضر" to "#2E7D32", "ذهبي" to "#9B6A12").forEach { (label,hex) ->
-            FilterChip(selected=false,onClick={change(noteFormat(value,"<font color=\\"$hex\\">","</font>"))},label={Text(label,color=Color(android.graphics.Color.parseColor(hex)))})
+            FilterChip(selected=false,onClick={change(noteFormat(value,"<font color=\"$hex\">","</font>"))},label={Text(label,color=Color(android.graphics.Color.parseColor(hex)))})
         }
     }
 }

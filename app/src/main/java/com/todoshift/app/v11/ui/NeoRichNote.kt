@@ -53,13 +53,20 @@ internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -
 }
 
 internal fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
-    val matches = Regex("\\*\\*(.+?)\\*\\*|\\*([^*]+)\\*").findAll(text)
+    val matches = Regex("""<font color="(#[0-9A-Fa-f]{6})">([\\s\\S]*?)</font>|\\*\\*(.+?)\\*\\*|\\*([^*]+)\\*""").findAll(text)
     var end = 0
-    for (match in matches) {
-        append(text.substring(end, match.range.first))
-        val bold = match.groupValues[1].isNotEmpty()
-        withStyle(SpanStyle(fontWeight=if(bold) FontWeight.Bold else null, fontStyle=if(bold) null else FontStyle.Italic)) { append(if(bold) match.groupValues[1] else match.groupValues[2]) }
-        end = match.range.last + 1
+    for(match in matches) {
+        append(text.substring(end,match.range.first))
+        when {
+            match.groupValues[1].isNotEmpty() -> {
+                val ink=Color(android.graphics.Color.parseColor(match.groupValues[1]))
+                withStyle(SpanStyle(color=ink)) {append(match.groupValues[2])}
+            }
+            match.groupValues[3].isNotEmpty() ->
+                withStyle(SpanStyle(fontWeight=FontWeight.Bold)) {append(match.groupValues[3])}
+            else -> withStyle(SpanStyle(fontStyle=FontStyle.Italic)) {append(match.groupValues[4])}
+        }
+        end=match.range.last+1
     }
     append(text.substring(end))
 }

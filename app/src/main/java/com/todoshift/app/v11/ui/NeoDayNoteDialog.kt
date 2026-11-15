@@ -233,16 +233,16 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             }
             OutlinedTextField(title,{if(!closing) title=it},enabled=!closing,placeholder={Text(neoLabel("عنوان الملاحظة…","Note title…"))},singleLine=true,modifier=Modifier.fillMaxWidth())
             // Lines are decorative: the original note text and cursor stay in the same editable field.
-            Box(Modifier.fillMaxWidth().heightIn(min=380.dp).weight(1f,fill=false).border(1.dp,MaterialTheme.colorScheme.outlineVariant,androidx.compose.foundation.shape.RoundedCornerShape(12.dp))) {
+            Box(Modifier.fillMaxWidth().heightIn(min=240.dp).border(1.dp,MaterialTheme.colorScheme.outlineVariant,androidx.compose.foundation.shape.RoundedCornerShape(12.dp))) {
                 androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
-                    val lineStep=34.dp.toPx()
-                    var y=48.dp.toPx()
+                    val lineStep=34.sp.toPx()
+                    var y=46.sp.toPx()
                     while(y<size.height) {
                         drawLine(androidx.compose.ui.graphics.Color(0xFFB7D1F5),androidx.compose.ui.geometry.Offset(12.dp.toPx(),y),androidx.compose.ui.geometry.Offset(size.width-12.dp.toPx(),y),strokeWidth=1.dp.toPx())
                         y+=lineStep
                     }
                 }
-                androidx.compose.material3.TextField(body,{if(!closing) edit(it)},enabled=!closing,placeholder={Text(neoLabel("اكتب ملاحظتك هنا…","Write your note here…"))},visualTransformation=remember {NeoNoteVisualTransformation()},modifier=Modifier.fillMaxSize(),colors=TextFieldDefaults.colors(focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,disabledContainerColor=androidx.compose.ui.graphics.Color.Transparent,focusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent))
+                androidx.compose.material3.TextField(body,{if(!closing) edit(it)},enabled=!closing,placeholder={Text(neoLabel("اكتب ملاحظتك هنا…","Write your note here…"))},visualTransformation=remember {NeoNoteVisualTransformation()},textStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp),modifier=Modifier.fillMaxSize(),colors=TextFieldDefaults.colors(focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,disabledContainerColor=androidx.compose.ui.graphics.Color.Transparent,focusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent))
             }
             if(preview || body.text.lines().any {it.trimStart().startsWith("- [")}) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
                 if(!pending) { val lines=body.text.lines().toMutableList();val old=lines[line]; lines[line]=if(old.contains("[ ]")) old.replaceFirst("[ ]","[x]") else old.replaceFirst(Regex("\\[[xX]\\]"),"[ ]");edit(TextFieldValue(lines.joinToString("\n"))) }

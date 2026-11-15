@@ -1009,7 +1009,7 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
                                     append(
                                         when (segment.kind) {
                                             ShiftKind.FULL_DAY -> neoLiteral("يوم كامل", "Full day")
-                                            ShiftKind.LONG -> neoLiteral("طويل", "Long")
+                                            ShiftKind.LONG -> neoLiteral("لونج", "Long")
                                             ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
                                             ShiftKind.MORNING -> neoLiteral("صباحي", "Morning")
                                             ShiftKind.EVENING -> neoLiteral("مسائي", "Evening")

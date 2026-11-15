@@ -1010,9 +1010,9 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
                                         when (segment.kind) {
                                             ShiftKind.FULL_DAY -> neoLiteral("يوم كامل", "Full day")
                                             ShiftKind.LONG -> neoLiteral("لونج", "Long")
-                                            ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
-                                            ShiftKind.MORNING -> neoLiteral("صباحي", "Morning")
-                                            ShiftKind.EVENING -> neoLiteral("مسائي", "Evening")
+                                            ShiftKind.NIGHT -> neoLiteral("نايت", "Night")
+                                            ShiftKind.MORNING -> neoLiteral("مورننج", "Morning")
+                                            ShiftKind.EVENING -> neoLiteral("إيفننج", "Evening")
                                             ShiftKind.OFF -> neoLiteral("إجازة", "Off")
                                         }
                                     )
@@ -1046,12 +1046,12 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
                                                 when (segment.kind) {
                                                     ShiftKind.FULL_DAY ->
                                                         neoLiteral("يوم كامل", "Full day")
-                                                    ShiftKind.LONG -> neoLiteral("طويل", "Long")
-                                                    ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
+                                                    ShiftKind.LONG -> neoLiteral("لونج", "Long")
+                                                    ShiftKind.NIGHT -> neoLiteral("نايت", "Night")
                                                     ShiftKind.MORNING ->
-                                                        neoLiteral("صباحي", "Morning")
+                                                        neoLiteral("مورننج", "Morning")
                                                     ShiftKind.EVENING ->
-                                                        neoLiteral("مسائي", "Evening")
+                                                        neoLiteral("إيفننج", "Evening")
                                                     ShiftKind.OFF -> neoLiteral("إجازة", "Off")
                                                 }
                                             )

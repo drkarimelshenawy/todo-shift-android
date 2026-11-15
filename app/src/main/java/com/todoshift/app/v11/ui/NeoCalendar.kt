@@ -720,25 +720,31 @@ internal fun NeoCalendarCell(
                     style=if(roomy) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelMedium,
                     fontWeight=FontWeight.Bold,maxLines=1)
                 val cardText=if(roomy) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelSmall
-                segments.take(if(roomy) 8 else 3).forEach {segment ->
+                val shiftCards: @Composable () -> Unit = {
+                    segments.take(if(roomy) 8 else 3).forEach {segment ->
                     val place=workplaces.firstOrNull {it.id==segment.workplaceId}
                     val shiftHex=place?.shiftColors?.get(segment.kind.name) ?: place?.colorHex ?: "#8BBACB"
                     val shade=neoHexColor(shiftHex)
                     Surface(shape=RoundedCornerShape(6.dp),color=shade.copy(alpha=.75f),
-                        modifier=Modifier.fillMaxWidth().then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier)) {
+                        modifier=(if(weekRowMode) Modifier.widthIn(min=100.dp,max=180.dp) else Modifier.fillMaxWidth()).then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier)) {
                         Text(neoShiftLabel(segment.kind)+(if(roomy && place!=null) " • "+place.name else ""),
                             modifier=Modifier.padding(if(roomy) 12.dp else 4.dp),
                             style=cardText,maxLines=2,overflow=TextOverflow.Ellipsis,
                             color=if(shade.luminance()>.35f) Color.Black else Color.White)
                     }
+                    }
                 }
-                notes.take(if(roomy) 8 else 2).forEach {note ->
+                if(weekRowMode) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {shiftCards()} else shiftCards()
+                val noteCards: @Composable () -> Unit = {
+                    notes.take(if(roomy) 8 else 2).forEach {note ->
                     Surface(shape=RoundedCornerShape(6.dp),color=c.secondaryContainer,
-                        modifier=Modifier.fillMaxWidth().then(if(onOpenNote!=null) Modifier.clickable {onOpenNote(note)} else Modifier)) {
+                        modifier=(if(weekRowMode) Modifier.widthIn(min=110.dp,max=220.dp) else Modifier.fillMaxWidth()).then(if(onOpenNote!=null) Modifier.clickable {onOpenNote(note)} else Modifier)) {
                         Text(note.title.ifBlank {neoLabel("ملاحظة","Note")},Modifier.padding(if(roomy) 12.dp else 4.dp),
                             style=cardText,maxLines=if(roomy) 3 else 2,overflow=TextOverflow.Ellipsis)
                     }
+                    }
                 }
+                if(weekRowMode) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {noteCards()} else noteCards()
                 if(tasks>0) Surface(shape=RoundedCornerShape(6.dp),color=c.tertiaryContainer,
                     modifier=Modifier.fillMaxWidth().then(if(onOpenTasks!=null) Modifier.clickable {onOpenTasks()} else Modifier)) {
                     Text(neoLabel("المهام: $tasks","Tasks: $tasks"),Modifier.padding(if(roomy) 12.dp else 4.dp),style=cardText)

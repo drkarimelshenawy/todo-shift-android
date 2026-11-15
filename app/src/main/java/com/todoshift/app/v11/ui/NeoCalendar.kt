@@ -720,18 +720,21 @@ internal fun NeoCalendarCell(
                     style=if(roomy) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelMedium,
                     fontWeight=FontWeight.Bold,maxLines=1)
                 val cardText=if(roomy) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelSmall
-                segments.take(if(roomy) 8 else 3).forEach {segment ->
+                val shiftCards: @Composable () -> Unit = {
+                    segments.take(if(roomy) 8 else 3).forEach {segment ->
                     val place=workplaces.firstOrNull {it.id==segment.workplaceId}
                     val shiftHex=place?.shiftColors?.get(segment.kind.name) ?: place?.colorHex ?: "#8BBACB"
                     val shade=neoHexColor(shiftHex)
                     Surface(shape=RoundedCornerShape(6.dp),color=shade.copy(alpha=.75f),
-                        modifier=Modifier.fillMaxWidth().then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier)) {
+                        modifier=(if(weekRowMode) Modifier.widthIn(min=100.dp,max=180.dp) else Modifier.fillMaxWidth()).then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier)) {
                         Text(neoShiftLabel(segment.kind)+(if(roomy && place!=null) " • "+place.name else ""),
                             modifier=Modifier.padding(if(roomy) 12.dp else 4.dp),
                             style=cardText,maxLines=2,overflow=TextOverflow.Ellipsis,
                             color=if(shade.luminance()>.35f) Color.Black else Color.White)
                     }
+                    }
                 }
+                if(weekRowMode) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {shiftCards()} else shiftCards()
                 notes.take(if(roomy) 8 else 2).forEach {note ->
                     Surface(shape=RoundedCornerShape(6.dp),color=c.secondaryContainer,
                         modifier=Modifier.fillMaxWidth().then(if(onOpenNote!=null) Modifier.clickable {onOpenNote(note)} else Modifier)) {

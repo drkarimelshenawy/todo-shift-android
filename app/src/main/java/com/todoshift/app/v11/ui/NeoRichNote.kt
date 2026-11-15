@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 
 internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = ""): TextFieldValue {
     val start = value.selection.min; val end = value.selection.max
-    if(suffix.isEmpty() && prefix in listOf("# ","## ","\n- ","\n1. ","\n- [ ] ")) {
+    if(suffix.isEmpty() && prefix in listOf("# ","## ","### ","\n- ","\n1. ","\n- [ ] ")) {
         val lineStart=value.text.lastIndexOf('\n',start-1)+1
         val lineEnd=value.text.indexOf('\n',end).takeIf {it>=0} ?: value.text.length
         val marker=prefix.removePrefix("\n")
@@ -82,7 +82,7 @@ internal fun NeoNotePreview(text: String, checklistsOnly:Boolean=false, onCheckl
                 Text(noteInline(checked.groupValues[2]), Modifier.weight(1f).padding(top=12.dp))
                 if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checked.groupValues[2])}) {Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))}
             } else if(!checklistsOnly) {
-                val heading = line.startsWith("# ") || line.startsWith("## ")
+                val heading = line.startsWith("# ") || line.startsWith("## ") || line.startsWith("### ")
                 Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=if(line.startsWith("# ")) MaterialTheme.typography.titleLarge else if(heading) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium)
             }
         }

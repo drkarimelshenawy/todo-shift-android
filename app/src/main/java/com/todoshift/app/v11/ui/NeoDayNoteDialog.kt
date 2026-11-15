@@ -108,6 +108,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         body=next
     }
     var sourceRevision by rememberSaveable { mutableStateOf(expectedDatabase.dayItems.firstOrNull {it.id==id}?.toString() ?: "<new>") }
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
     LaunchedEffect(draftKey) {
         val resumed=draftReady
         draftReady=false
@@ -138,9 +139,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 }
             }
             draftReady=error==null
+            if(draftReady&&recovered==null&&!resumed) lastSavedEdit=editVersion()
         } catch(failure: Exception) { error="Unable to recover note draft: ${failure.message}" }
     }
-    fun editVersion():String = org.json.JSONArray(listOf(id,title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
         while(pending) delay(10)
         if(rootWritePending || !draftReady || conflictingDraft!=null) return false

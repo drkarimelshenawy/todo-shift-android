@@ -72,7 +72,7 @@ internal fun noteInline(raw:String):AnnotatedString {
                 is ForegroundColorSpan->addStyle(SpanStyle(color=Color(span.foregroundColor)),start,end)
                 is BackgroundColorSpan->addStyle(SpanStyle(background=Color(span.backgroundColor)),start,end)
                 is RelativeSizeSpan->addStyle(SpanStyle(fontSize=(16*span.sizeChange).sp),start,end)
-                is AlignmentSpan->addStyle(ParagraphStyle(textAlign=when(span.alignment){android.text.Layout.Alignment.ALIGN_CENTER->TextAlign.Center;android.text.Layout.Alignment.ALIGN_OPPOSITE->TextAlign.End;else->TextAlign.Start}),start,end)
+                is AlignmentSpan->addStyle(androidx.compose.ui.text.ParagraphStyle(textAlign=when(span.alignment){android.text.Layout.Alignment.ALIGN_CENTER->TextAlign.Center;android.text.Layout.Alignment.ALIGN_OPPOSITE->TextAlign.End;else->TextAlign.Start}),start,end)
                 is URLSpan->if(NeoRichTextCodec.safeLink(span.url)){addStringAnnotation("URL",span.url,start,end);addStyle(SpanStyle(color=Color(0xFF1565C0),textDecoration=TextDecoration.Underline),start,end)}
             }
         }

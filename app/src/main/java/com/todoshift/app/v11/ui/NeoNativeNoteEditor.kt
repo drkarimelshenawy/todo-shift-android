@@ -44,27 +44,40 @@ internal class NativeNoteEditText(context:Context):EditText(context) {
                             updating=true;s.insert(at+1,"\uFFFC ");s.setSpan(NoteList(list.kind,list.number+1,false),at+1,at+2,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);setSelection(at+3);updating=false
                         }
                     }
+                    s.getSpans(0,s.length,NoteChecklistDone::class.java).forEach {s.removeSpan(it)}
+                    s.getSpans(0,s.length,NoteList::class.java).filter {it.kind=="check"&&it.checked}.forEach {list->
+                        val from=s.getSpanStart(list)+2;val end=s.toString().indexOf('\n',from).takeIf {it>=0} ?: s.length
+                        if(from<end)s.setSpan(NoteChecklistDone(),from,end,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
                     publish()
                 }
             }
         })
     }
-    fun publish() {
+    fun publish(textChanged:Boolean=true) {
         if(updating)return
         val current=editableText ?: return
-        val value=NeoRichTextCodec.value(current,selectionStart.coerceAtLeast(0),selectionEnd.coerceAtLeast(0))
+        val value=if(textChanged) NeoRichTextCodec.value(current,selectionStart.coerceAtLeast(0),selectionEnd.coerceAtLeast(0)) else {
+            val parsed=NeoRichTextCodec.parse(published.text)
+            published.copy(selection=androidx.compose.ui.text.TextRange(parsed.source(selectionStart.coerceAtLeast(0)),parsed.source(selectionEnd.coerceAtLeast(0))))
+        }
         published=value;change(value)
     }
-    override fun onSelectionChanged(start:Int,end:Int) {super.onSelectionChanged(start,end);if(!updating&&hasFocus()) publish()}
+    override fun onSelectionChanged(start:Int,end:Int) {super.onSelectionChanged(start,end);if(!updating&&hasFocus()) publish(false)}
     override fun onTouchEvent(event:MotionEvent):Boolean {
         if(event.action==MotionEvent.ACTION_UP && isEnabled) {
             val offset=getOffsetForPosition(event.x,event.y)
-            val marker=editableText?.getSpans(offset,(offset+1).coerceAtMost(length()),NoteList::class.java)?.firstOrNull {it.kind=="check"&&editableText.getSpanStart(it)==offset}
+            val marker=editableText?.getSpans((offset-1).coerceAtLeast(0),(offset+1).coerceAtMost(length()),NoteList::class.java)?.firstOrNull {
+                val at=editableText.getSpanStart(it);val a=layout?.getPrimaryHorizontal(at) ?: 0f;val z=layout?.getPrimaryHorizontal(at+1) ?: 0f
+                val x=event.x-totalPaddingLeft+scrollX
+                it.kind=="check"&&x>=minOf(a,z)&&x<=maxOf(a,z)
+            }
             if(marker!=null) {
                 marker.checked=!marker.checked
-                val end=editableText.toString().indexOf('\n',offset).takeIf {it>=0} ?: length()
-                editableText.getSpans(offset,end,NoteChecklistDone::class.java).forEach {editableText.removeSpan(it)}
-                if(marker.checked&&offset+2<end)editableText.setSpan(NoteChecklistDone(),offset+2,end,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                val at=editableText.getSpanStart(marker)
+                val end=editableText.toString().indexOf('\n',at).takeIf {it>=0} ?: length()
+                editableText.getSpans(at,end,NoteChecklistDone::class.java).forEach {editableText.removeSpan(it)}
+                if(marker.checked&&at+2<end)editableText.setSpan(NoteChecklistDone(),at+2,end,android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 invalidate();publish();return true
             }
         }

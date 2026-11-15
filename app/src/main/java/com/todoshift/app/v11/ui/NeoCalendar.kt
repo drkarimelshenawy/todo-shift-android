@@ -454,6 +454,8 @@ fun NeoCalendarArea(
                                                     },
                                                 metrics = cellMetrics,
                                                 weekdayLabel = if (weeklyRows) cellDate.format(DateTimeFormatter.ofPattern("EEEE", locale)) else null,
+                                                detailMode = if(shownView==NeoCalendarView.DAY) 2 else if(shownView==NeoCalendarView.WEEK) 1 else 0,
+                                                weekRowMode = weeklyRows,
                                                 onOpenNote = if (paintMode) null else { note ->
                                                     onSelectedDate(cellDate)
                                                     editingNoteId = note.id
@@ -665,6 +667,8 @@ internal fun NeoCalendarCell(
     onLongClick: () -> Unit,
     metrics: NeoCellMetrics? = null,
     weekdayLabel: String? = null,
+    detailMode: Int = 0,
+    weekRowMode: Boolean = false,
     onOpenNote: ((DayItemV11) -> Unit)? = null,
     onOpenShift: ((ShiftSegmentV11)->Unit)? = null,
     onOpenTasks: (()->Unit)? = null,
@@ -698,6 +702,55 @@ internal fun NeoCalendarCell(
             names +
             " • " +
             notes.joinToString { it.title }
+    if(detailMode>0) {
+        val roomy = detailMode==2
+        Surface(
+            modifier.alpha(if(muted) .38f else 1f)
+                .shadow(if(today||chosen) 3.dp else 1.dp,RoundedCornerShape(9.dp))
+                .combinedClickable(onClick=onClick,onLongClick=onLongClick)
+                .semantics { contentDescription=description;selected=chosen },
+            color=c.surface.copy(alpha=p.cardOpacity),
+            shape=RoundedCornerShape(9.dp),
+            border=BorderStroke(if(chosen||today||painting) 2.dp else .5.dp,
+                if(chosen) c.secondary else if(today) NeoPremium.Gold else c.outlineVariant)
+        ) {
+            Column(Modifier.fillMaxSize().padding(if(roomy) 12.dp else 3.dp),
+                verticalArrangement=Arrangement.spacedBy(if(roomy) 10.dp else 3.dp)) {
+                Text(listOfNotNull(weekdayLabel,date.dayOfMonth.toString()).joinToString(" • "),
+                    style=if(roomy) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelMedium,
+                    fontWeight=FontWeight.Bold,maxLines=1)
+                val cardText=if(roomy) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelSmall
+                segments.take(if(roomy) 8 else 3).forEach {segment ->
+                    val place=workplaces.firstOrNull {it.id==segment.workplaceId}
+                    val shiftHex=place?.shiftColors?.get(segment.kind.name) ?: place?.colorHex ?: "#8BBACB"
+                    val shade=neoHexColor(shiftHex)
+                    Surface(shape=RoundedCornerShape(6.dp),color=shade.copy(alpha=.75f),
+                        modifier=Modifier.fillMaxWidth().then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier)) {
+                        Text(neoShiftLabel(segment.kind)+(if(roomy && place!=null) " • "+place.name else ""),
+                            modifier=Modifier.padding(if(roomy) 12.dp else 4.dp),
+                            style=cardText,maxLines=2,overflow=TextOverflow.Ellipsis,
+                            color=if(shade.luminance()>.35f) Color.Black else Color.White)
+                    }
+                }
+                notes.take(if(roomy) 8 else 2).forEach {note ->
+                    Surface(shape=RoundedCornerShape(6.dp),color=c.secondaryContainer,
+                        modifier=Modifier.fillMaxWidth().then(if(onOpenNote!=null) Modifier.clickable {onOpenNote(note)} else Modifier)) {
+                        Text(note.title.ifBlank {neoLabel("ملاحظة","Note")},Modifier.padding(if(roomy) 12.dp else 4.dp),
+                            style=cardText,maxLines=if(roomy) 3 else 2,overflow=TextOverflow.Ellipsis)
+                    }
+                }
+                if(tasks>0) Surface(shape=RoundedCornerShape(6.dp),color=c.tertiaryContainer,
+                    modifier=Modifier.fillMaxWidth().then(if(onOpenTasks!=null) Modifier.clickable {onOpenTasks()} else Modifier)) {
+                    Text(neoLabel("المهام: $tasks","Tasks: $tasks"),Modifier.padding(if(roomy) 12.dp else 4.dp),style=cardText)
+                }
+                if(events>0) Surface(shape=RoundedCornerShape(6.dp),color=c.surfaceVariant,
+                    modifier=Modifier.fillMaxWidth().then(if(onOpenEvents!=null) Modifier.clickable {onOpenEvents()} else Modifier)) {
+                    Text(neoLabel("المواعيد: $events","Events: $events"),Modifier.padding(if(roomy) 12.dp else 4.dp),style=cardText)
+                }
+            }
+        }
+        return
+    }
     Surface(
         modifier
             .alpha(if (muted) .38f else 1f)

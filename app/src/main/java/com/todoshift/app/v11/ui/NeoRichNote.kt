@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -38,22 +39,34 @@ internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = 
 @Composable
 internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -> Unit, undo: () -> Unit, redo: () -> Unit, canUndo: Boolean, canRedo: Boolean) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        listOf("B" to Pair("**", "**"), "I" to Pair("*", "*"), "H" to Pair("# ", ""), "H2" to Pair("## ", ""), "•" to Pair("\n- ", ""), "1." to Pair("\n1. ", ""), "☐" to Pair("\n- [ ] ", "")).forEach { (label, marks) ->
+        listOf("B" to Pair("**", "**"), "I" to Pair("*", "*"), "H" to Pair("# ", ""), "H2" to Pair("## ", ""), "H3" to Pair("### ", ""), "•" to Pair("\n- ", ""), "1." to Pair("\n1. ", ""), "☐" to Pair("\n- [ ] ", ""), "—" to Pair("\n---\n", ""), "🔗" to Pair("[", "](https://)")).forEach { (label, marks) ->
             TextButton(onClick = { change(noteFormat(value, marks.first, marks.second)) }, contentPadding = PaddingValues(4.dp), modifier = Modifier.widthIn(min=48.dp)) { Text(label, fontWeight = if(label=="B") FontWeight.Bold else null) }
         }
         TextButton(onClick=undo, enabled=canUndo) { Text(neoLabel("تراجع", "Undo")) }
         TextButton(onClick=redo, enabled=canRedo) { Text(neoLabel("إعادة", "Redo")) }
     }
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+        listOf("أحمر" to "#C62828", "أزرق" to "#1565C0", "أخضر" to "#2E7D32", "ذهبي" to "#9B6A12").forEach { (label,hex) ->
+            FilterChip(selected=false,onClick={change(noteFormat(value,"<font color=\"$hex\">","</font>"))},label={Text(label,color=Color(android.graphics.Color.parseColor(hex)))})
+        }
+    }
 }
 
 internal fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
-    val matches = Regex("\\*\\*(.+?)\\*\\*|\\*([^*]+)\\*").findAll(text)
+    val matches = Regex("""<font color="(#[0-9A-Fa-f]{6})">([\s\S]*?)</font>|\*\*(.+?)\*\*|\*([^*]+)\*""").findAll(text)
     var end = 0
-    for (match in matches) {
-        append(text.substring(end, match.range.first))
-        val bold = match.groupValues[1].isNotEmpty()
-        withStyle(SpanStyle(fontWeight=if(bold) FontWeight.Bold else null, fontStyle=if(bold) null else FontStyle.Italic)) { append(if(bold) match.groupValues[1] else match.groupValues[2]) }
-        end = match.range.last + 1
+    for(match in matches) {
+        append(text.substring(end,match.range.first))
+        when {
+            match.groupValues[1].isNotEmpty() -> {
+                val ink=Color(android.graphics.Color.parseColor(match.groupValues[1]))
+                withStyle(SpanStyle(color=ink)) {append(match.groupValues[2])}
+            }
+            match.groupValues[3].isNotEmpty() ->
+                withStyle(SpanStyle(fontWeight=FontWeight.Bold)) {append(match.groupValues[3])}
+            else -> withStyle(SpanStyle(fontStyle=FontStyle.Italic)) {append(match.groupValues[4])}
+        }
+        end=match.range.last+1
     }
     append(text.substring(end))
 }

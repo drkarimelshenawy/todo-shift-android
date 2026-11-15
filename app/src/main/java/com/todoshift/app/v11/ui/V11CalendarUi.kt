@@ -429,7 +429,7 @@ fun V11CalendarScreen(
                             {bulkPaint=it},{paintDates=emptySet()},onDatabaseChange,
                             {paintMode=false;selectorVisible=false;paintDates=emptySet();modernPaintRequest=0;paintPreview=null;finishPainterRequest=0},
                             onPreview={paintPreview=it},initialWorkplaceId=painterRequestedWorkplace,
-                            selectorVisible=selectorVisible,onTypeChosen={selectorVisible=false},finishRequest=finishPainterRequest,onNeedsAttention={selectorVisible=true})
+                            selectorVisible=selectorVisible,onTypeChosen={/* Keep workplace controls visible; NeoPainterBar closes only the type chooser. */},finishRequest=finishPainterRequest,onNeedsAttention={selectorVisible=true})
                     }
                 }
             } else if (paintMode) {

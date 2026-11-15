@@ -1,132 +1,122 @@
 package com.todoshift.app.v11.ui
 
+import android.graphics.Typeface
+import android.text.style.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = ""): TextFieldValue {
-    val start = value.selection.min; val end = value.selection.max
-    if(suffix.isEmpty() && prefix in listOf("# ","## ","### ","\n- ","\n1. ","\n- [ ] ")) {
-        val lineStart=value.text.lastIndexOf('\n',start-1)+1
-        val lineEnd=value.text.indexOf('\n',end).takeIf {it>=0} ?: value.text.length
-        val marker=prefix.removePrefix("\n")
-        val replacement=value.text.substring(lineStart,lineEnd).lines().mapIndexed {index,line ->
-            val clean=line.replaceFirst(Regex("^(#{1,3} |[0-9]+\\. |- (?:\\[[ xX]\\] )?)"),"")
-            (if(marker=="1. ") "${index+1}. " else marker)+clean
-        }.joinToString("\n")
-        return TextFieldValue(value.text.replaceRange(lineStart,lineEnd,replacement),TextRange(lineStart+marker.length,lineStart+replacement.length))
-    }
-    val selected = value.text.substring(start, end)
-    val replacement = prefix + selected + suffix
-    return TextFieldValue(value.text.replaceRange(start, end, replacement), TextRange(start + prefix.length, start + prefix.length + selected.length))
-}
+internal fun noteFormat(value:TextFieldValue,prefix:String,suffix:String=""):TextFieldValue=NeoRichTextCodec.format(value,prefix,suffix)
 
-/** Portable Markdown is persisted in the original details field; no lossy HTML migration. */
 @Composable
-internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -> Unit, undo: () -> Unit, redo: () -> Unit, canUndo: Boolean, canRedo: Boolean) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        listOf("B" to Pair("**", "**"), "I" to Pair("*", "*"), "U" to Pair("<u>", "</u>"), "S̶" to Pair("<s>", "</s>"), "H" to Pair("# ", ""), "H2" to Pair("## ", ""), "H3" to Pair("### ", ""), "•" to Pair("\n- ", ""), "1." to Pair("\n1. ", ""), "☐" to Pair("\n- [ ] ", ""), "—" to Pair("\n---\n", ""), "🔗" to Pair("[", "](https://)")).forEach { (label, marks) ->
-            TextButton(onClick = { change(noteFormat(value, marks.first, marks.second)) }, contentPadding = PaddingValues(4.dp), modifier = Modifier.widthIn(min=48.dp)) { Text(label, fontWeight = if(label=="B") FontWeight.Bold else null) }
-        }
-        TextButton(onClick=undo, enabled=canUndo) { Text(neoLabel("تراجع", "Undo")) }
-        TextButton(onClick=redo, enabled=canRedo) { Text(neoLabel("إعادة", "Redo")) }
+internal fun NeoNoteFormatting(value:TextFieldValue,change:(TextFieldValue)->Unit,undo:()->Unit,redo:()->Unit,canUndo:Boolean,canRedo:Boolean) {
+    var link by remember {mutableStateOf<TextFieldValue?>(null)}
+    var url by remember {mutableStateOf("https://")}
+    var colors by remember {mutableStateOf(false)}
+    var highlight by remember {mutableStateOf(false)}
+    var message by remember {mutableStateOf<String?>(null)}
+    val selectMessage=neoLabel("حدد النص أولًا","Select text first")
+    fun apply(prefix:String,suffix:String="") {
+        if(value.selection.collapsed&&!prefix.startsWith("#")&&!prefix.startsWith("\n")&&!prefix.startsWith("<align:")) {message=selectMessage;return}
+        change(noteFormat(value,prefix,suffix));message=null
     }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-        listOf("أحمر" to "#C62828", "أزرق" to "#1565C0", "أخضر" to "#2E7D32", "ذهبي" to "#9B6A12").forEach { (label,hex) ->
-            FilterChip(selected=false,onClick={change(noteFormat(value,"<font color=\"$hex\">","</font>"))},label={Text(label,color=Color(android.graphics.Color.parseColor(hex)))})
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+        TextButton(enabled=canUndo,onClick=undo,contentPadding=PaddingValues(4.dp)){Text("↶",fontSize=22.sp)}
+        TextButton(enabled=canRedo,onClick=redo,contentPadding=PaddingValues(4.dp)){Text("↷",fontSize=22.sp)}
+        listOf("B" to ("**" to "**"),"I" to ("*" to "*"),"U" to ("<u>" to "</u>"),"S̶" to ("<s>" to "</s>"),"H1" to ("# " to ""),"H2" to ("## " to ""),"H3" to ("### " to ""),"•" to ("\n- " to ""),"1." to ("\n1. " to ""),"☐" to ("\n- [ ] " to ""),"—" to ("\n---\n" to "")).forEach {(label,marks)->
+            TextButton(onClick={apply(marks.first,marks.second)},contentPadding=PaddingValues(4.dp),modifier=Modifier.widthIn(min=44.dp)){Text(label,fontWeight=if(label=="B")FontWeight.Bold else null)}
         }
     }
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+        TextButton(onClick={if(value.selection.collapsed)message=selectMessage else {link=value;url="https://"}}){Text(neoLabel("رابط","Link"))}
+        TextButton(onClick={colors=!colors;highlight=false}){Text(neoLabel("لون الخط","Text color"))}
+        TextButton(onClick={colors=!colors;highlight=true}){Text(neoLabel("تمييز","Highlight"))}
+        listOf("start" to neoLabel("بداية","Start"),"center" to neoLabel("وسط","Center"),"end" to neoLabel("نهاية","End")).forEach {(alignment,label)->TextButton(onClick={apply("<align:$alignment>")}){Text(label)}}
+    }
+    if(colors) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+        listOf("#202124","#C62828","#1565C0","#2E7D32","#7B1FA2","#FBC02D","#FFFFFF").forEach {hex->
+            FilterChip(selected=false,onClick={apply(if(highlight)"<mark color=\"$hex\">" else "<font color=\"$hex\">",if(highlight)"</mark>" else "</font>")},label={Text("●",color=Color(hex.removePrefix("#").toLong(16) or 0xFF000000L),fontSize=22.sp)})
+        }
+    }
+    message?.let {Text(it,style=MaterialTheme.typography.labelSmall)}
+    link?.let {selected->AlertDialog(onDismissRequest={link=null},title={Text(neoLabel("رابط للنص المحدد","Link selected text"))},text={OutlinedTextField(url,{url=it},label={Text("https:// / mailto:")},singleLine=true)},confirmButton={TextButton(enabled=NeoRichTextCodec.safeLink(url)&&url.substringAfter(":").trim('/').isNotBlank(),onClick={change(noteFormat(selected,"[","]($url)"));link=null}){Text(neoLabel("تطبيق","Apply"))}},dismissButton={TextButton(onClick={link=null}){Text(neoLabel("إلغاء","Cancel"))}})}
 }
 
-internal fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
-    val matches = Regex("""<font color="(#[0-9A-Fa-f]{6})">([\s\S]*?)</font>|<u>([\s\S]*?)</u>|<s>([\s\S]*?)</s>|\*\*(.+?)\*\*|\*([^*]+)\*""").findAll(text)
-    var end = 0
-    for(match in matches) {
-        append(text.substring(end,match.range.first))
-        when {
-            match.groupValues[1].isNotEmpty() -> {
-                val ink=Color(android.graphics.Color.parseColor(match.groupValues[1]))
-                withStyle(SpanStyle(color=ink)) {append(match.groupValues[2])}
+/** Shared native-span projection: editor, preview and cards interpret the same formatting. */
+private data class RenderedNote(val annotated:AnnotatedString,val positions:IntArray)
+private fun renderNote(parsed:ParsedRichNote):RenderedNote {
+    val text=parsed.text;val positions=IntArray(text.length+1);val visible=StringBuilder()
+    val lists=text.getSpans(0,text.length,NoteList::class.java).associateBy {text.getSpanStart(it)}
+    for(index in 0 until text.length) {
+        positions[index]=visible.length
+        val list=lists[index]
+        if(list!=null&&text[index]=='\uFFFC') visible.append(when(list.kind){"check"->if(list.checked)"☑" else "☐";"number"->"${list.number}.";else->"•"}) else visible.append(text[index])
+    }
+    positions[text.length]=visible.length
+    val annotated=buildAnnotatedString {
+        append(visible.toString())
+        text.getSpans(0,text.length,Any::class.java).forEach {span->
+            val start=positions[text.getSpanStart(span).coerceIn(0,text.length)];val end=positions[text.getSpanEnd(span).coerceIn(0,text.length)].coerceAtLeast(start)
+            if(end>start) when(span) {
+                is StyleSpan->addStyle(SpanStyle(fontWeight=if(span.style and Typeface.BOLD!=0)FontWeight.Bold else null,fontStyle=if(span.style and Typeface.ITALIC!=0)FontStyle.Italic else null),start,end)
+                is UnderlineSpan->addStyle(SpanStyle(textDecoration=TextDecoration.Underline),start,end)
+                is StrikethroughSpan->addStyle(SpanStyle(textDecoration=TextDecoration.LineThrough),start,end)
+                is ForegroundColorSpan->addStyle(SpanStyle(color=Color(span.foregroundColor)),start,end)
+                is BackgroundColorSpan->addStyle(SpanStyle(background=Color(span.backgroundColor)),start,end)
+                is RelativeSizeSpan->addStyle(SpanStyle(fontSize=(16*span.sizeChange).sp),start,end)
+                is AlignmentSpan->addStyle(androidx.compose.ui.text.ParagraphStyle(textAlign=when(span.alignment){android.text.Layout.Alignment.ALIGN_CENTER->TextAlign.Center;android.text.Layout.Alignment.ALIGN_OPPOSITE->TextAlign.End;else->TextAlign.Start}),start,end)
+                is URLSpan->if(NeoRichTextCodec.safeLink(span.url)){addStringAnnotation("URL",span.url,start,end);addStyle(SpanStyle(color=Color(0xFF1565C0),textDecoration=TextDecoration.Underline),start,end)}
             }
-            match.groupValues[3].isNotEmpty() ->
-                withStyle(SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.Underline)) {append(match.groupValues[3])}
-            match.groupValues[4].isNotEmpty() ->
-                withStyle(SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.LineThrough)) {append(match.groupValues[4])}
-            match.groupValues[5].isNotEmpty() ->
-                withStyle(SpanStyle(fontWeight=FontWeight.Bold)) {append(match.groupValues[5])}
-            else -> withStyle(SpanStyle(fontStyle=FontStyle.Italic)) {append(match.groupValues[6])}
         }
-        end=match.range.last+1
     }
-    append(text.substring(end))
+    return RenderedNote(annotated,positions)
 }
+internal fun noteInline(raw:String):AnnotatedString=renderNote(NeoRichTextCodec.parse(raw)).annotated
+internal fun notePlainText(raw:String):String=noteInline(raw).text
+/** Strip only private linkage tokens. Markup is interpreted by the shared renderer. */
+internal fun noteDisplayText(text:String):String=text.replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
 
 @Composable
-internal fun NeoNotePreview(text: String, checklistsOnly:Boolean=false, onChecklist: ((Int) -> Unit)? = null, onCreateTask: ((Int, String) -> Unit)? = null) {
+internal fun NeoNotePreview(text:String,checklistsOnly:Boolean=false,onChecklist:((Int)->Unit)?=null,onCreateTask:((Int,String)->Unit)?=null) {
+    val uri=LocalUriHandler.current
     Column(verticalArrangement=Arrangement.spacedBy(2.dp)) {
-        text.lines().forEachIndexed { index, rawLine ->
-            val line=noteDisplayText(rawLine)
-            val checked = Regex("^\\s*- \\[([ xX])\\] (.*)$").matchEntire(line)
-            if (checked != null) Row {
-                Checkbox(checked.groupValues[1] != " ", onCheckedChange=onChecklist?.let { callback -> { _: Boolean -> callback(index) } })
-                Text(noteInline(checked.groupValues[2]), Modifier.weight(1f).padding(top=12.dp))
-                if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checked.groupValues[2])}) {Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))}
+        text.lines().forEachIndexed {index,line->
+            val checklistLine=line.replaceFirst(Regex("^<div align=\"(?:start|center|end)\">"),"").removeSuffix("</div>")
+            val checked=Regex("^\\s*- \\[([ xX])\\] (.*)$").matchEntire(checklistLine)
+            if(checked!=null) Row {
+                Checkbox(checked.groupValues[1]!=" ",onCheckedChange=onChecklist?.let {callback->{_:Boolean->callback(index)}})
+                Text(noteInline(checked.groupValues[2]),Modifier.weight(1f).padding(top=12.dp),textDecoration=if(checked.groupValues[1]!=" ")TextDecoration.LineThrough else null)
+                if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,notePlainText(checked.groupValues[2]))}){Text(if(line.contains("<!--task:"))neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))}
             } else if(!checklistsOnly) {
-                val heading = line.startsWith("# ") || line.startsWith("## ") || line.startsWith("### ")
-                Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=when {line.startsWith("# ") -> MaterialTheme.typography.titleLarge; line.startsWith("## ") -> MaterialTheme.typography.titleMedium; line.startsWith("### ") -> MaterialTheme.typography.titleSmall; else -> MaterialTheme.typography.bodyMedium})
+                val rendered=noteInline(line)
+                ClickableText(rendered,style=MaterialTheme.typography.bodyMedium.copy(color=MaterialTheme.colorScheme.onSurface),onClick={offset->rendered.getStringAnnotations("URL",offset,offset).firstOrNull()?.let {runCatching {uri.openUri(it.item)}}})
             }
         }
     }
 }
 
-/** A stable token travels with its checklist line, but is never shown or shared. */
-internal fun noteDisplayText(text:String):String = text.replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
-
-/** Selection offsets map to the portable source while editing displays formatted text. */
-internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.VisualTransformation {
+/** Kept for inherited read-only projections; editing uses the native buffer above. */
+internal class NeoNoteVisualTransformation:androidx.compose.ui.text.input.VisualTransformation {
     override fun filter(text:AnnotatedString):androidx.compose.ui.text.input.TransformedText {
-        val source=text.text
-        val hidden=BooleanArray(source.length)
-        val spans=mutableListOf<Triple<Int,Int,SpanStyle>>()
-        fun hide(start:Int,end:Int) {for(i in start until end) hidden[i]=true}
-        Regex(" ?<!--task:[A-Za-z0-9_-]+-->").findAll(source).forEach {hide(it.range.first,it.range.last+1)}
-        Regex("\\*\\*([^\\n]+?)\\*\\*|(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)").findAll(source).forEach {
-            val bold=it.groupValues[1].isNotEmpty();val count=if(bold) 2 else 1
-            hide(it.range.first,it.range.first+count);hide(it.range.last-count+1,it.range.last+1)
-            spans+=Triple(it.range.first+count,it.range.last-count+1,SpanStyle(fontWeight=if(bold) FontWeight.Bold else null,fontStyle=if(bold) null else FontStyle.Italic))
-        }
-        Regex("(?m)^#{1,3} ").findAll(source).forEach {
-            hide(it.range.first,it.range.last+1)
-            val end=source.indexOf('\n',it.range.last+1).takeIf {p->p>=0} ?: source.length
-            spans+=Triple(it.range.last+1,end,SpanStyle(fontWeight=FontWeight.Bold,fontSize=when(it.value.count { char -> char == '#' }) {1 -> 22.sp; 2 -> 18.sp; else -> 16.sp}))
-        }
-        val original=IntArray(source.length+1)
-        val visible=StringBuilder()
-        for(i in source.indices) {original[i]=visible.length;if(!hidden[i]) visible.append(source[i])}
-        original[source.length]=visible.length
-        val reverse=IntArray(visible.length+1)
-        for(i in original.indices) reverse[original[i]]=i
-        val result=buildAnnotatedString {
-            append(visible.toString())
-            spans.forEach {(start,end,style)->if(original[start]<original[end])addStyle(style,original[start],original[end])}
-        }
-        return androidx.compose.ui.text.input.TransformedText(result,object:androidx.compose.ui.text.input.OffsetMapping {
-            override fun originalToTransformed(offset:Int)=original[offset.coerceIn(original.indices)]
-            override fun transformedToOriginal(offset:Int)=reverse[offset.coerceIn(reverse.indices)]
+        val parsed=NeoRichTextCodec.parse(text.text)
+        val rendered=renderNote(parsed)
+        return androidx.compose.ui.text.input.TransformedText(rendered.annotated,object:androidx.compose.ui.text.input.OffsetMapping {
+            override fun originalToTransformed(offset:Int)=rendered.positions[parsed.visible(offset)]
+            override fun transformedToOriginal(offset:Int)=parsed.source(rendered.positions.indexOfLast {it<=offset}.coerceAtLeast(0))
         })
     }
 }

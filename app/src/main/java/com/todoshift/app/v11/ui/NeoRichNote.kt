@@ -57,14 +57,20 @@ internal fun NeoNoteFormatting(value:TextFieldValue,change:(TextFieldValue)->Uni
 }
 
 /** Shared native-span projection: editor, preview and cards interpret the same formatting. */
-internal fun noteInline(raw:String):AnnotatedString {
-    val parsed=NeoRichTextCodec.parse(raw);val text=parsed.text
-    val visible=StringBuilder(text.toString())
-    text.getSpans(0,text.length,NoteList::class.java).forEach {span->val at=text.getSpanStart(span);if(at in visible.indices)visible.setCharAt(at,when(span.kind){"check"->if(span.checked)'☑' else '☐';"number"->('0'.code+(span.number%10)).toChar();else->'•'})}
-    return buildAnnotatedString {
+private data class RenderedNote(val annotated:AnnotatedString,val positions:IntArray)
+private fun renderNote(parsed:ParsedRichNote):RenderedNote {
+    val text=parsed.text;val positions=IntArray(text.length+1);val visible=StringBuilder()
+    val lists=text.getSpans(0,text.length,NoteList::class.java).associateBy {text.getSpanStart(it)}
+    for(index in 0 until text.length) {
+        positions[index]=visible.length
+        val list=lists[index]
+        if(list!=null&&text[index]=='\uFFFC') visible.append(when(list.kind){"check"->if(list.checked)"☑" else "☐";"number"->"${list.number}.";else->"•"}) else visible.append(text[index])
+    }
+    positions[text.length]=visible.length
+    val annotated=buildAnnotatedString {
         append(visible.toString())
         text.getSpans(0,text.length,Any::class.java).forEach {span->
-            val start=text.getSpanStart(span).coerceIn(0,length);val end=text.getSpanEnd(span).coerceIn(start,length)
+            val start=positions[text.getSpanStart(span).coerceIn(0,text.length)];val end=positions[text.getSpanEnd(span).coerceIn(0,text.length)].coerceAtLeast(start)
             if(end>start) when(span) {
                 is StyleSpan->addStyle(SpanStyle(fontWeight=if(span.style and Typeface.BOLD!=0)FontWeight.Bold else null,fontStyle=if(span.style and Typeface.ITALIC!=0)FontStyle.Italic else null),start,end)
                 is UnderlineSpan->addStyle(SpanStyle(textDecoration=TextDecoration.Underline),start,end)
@@ -77,7 +83,9 @@ internal fun noteInline(raw:String):AnnotatedString {
             }
         }
     }
+    return RenderedNote(annotated,positions)
 }
+internal fun noteInline(raw:String):AnnotatedString=renderNote(NeoRichTextCodec.parse(raw)).annotated
 internal fun notePlainText(raw:String):String=noteInline(raw).text
 /** Strip only private linkage tokens. Markup is interpreted by the shared renderer. */
 internal fun noteDisplayText(text:String):String=text.replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
@@ -105,9 +113,10 @@ internal fun NeoNotePreview(text:String,checklistsOnly:Boolean=false,onChecklist
 internal class NeoNoteVisualTransformation:androidx.compose.ui.text.input.VisualTransformation {
     override fun filter(text:AnnotatedString):androidx.compose.ui.text.input.TransformedText {
         val parsed=NeoRichTextCodec.parse(text.text)
-        return androidx.compose.ui.text.input.TransformedText(noteInline(text.text),object:androidx.compose.ui.text.input.OffsetMapping {
-            override fun originalToTransformed(offset:Int)=parsed.visible(offset)
-            override fun transformedToOriginal(offset:Int)=parsed.source(offset)
+        val rendered=renderNote(parsed)
+        return androidx.compose.ui.text.input.TransformedText(rendered.annotated,object:androidx.compose.ui.text.input.OffsetMapping {
+            override fun originalToTransformed(offset:Int)=rendered.positions[parsed.visible(offset)]
+            override fun transformedToOriginal(offset:Int)=parsed.source(rendered.positions.indexOfLast {it<=offset}.coerceAtLeast(0))
         })
     }
 }

@@ -249,4 +249,8 @@ class NoteTransactionTest {
         val nested=codec.parse("<font color=\"#C62828\">a<font color=\"#1565C0\">b</font>c</font>").text
         assertEquals(android.graphics.Color.parseColor("#1565C0"),nested.getSpans(1,2,android.text.style.ForegroundColorSpan::class.java).single {nested.getSpanStart(it)==1}.foregroundColor)
     }
+    @Test fun previewKeepsMultiDigitListNumbersAndHidesAllFormattingSyntax() {
+        val rendered=com.todoshift.app.v11.ui.noteInline("10. <u>Item</u>\n11. <s>Next</s>")
+        assertEquals("10. Item\n11. Next",rendered.text)
+    }
 }

@@ -328,4 +328,5 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             }
         }
     }
+    }
 }

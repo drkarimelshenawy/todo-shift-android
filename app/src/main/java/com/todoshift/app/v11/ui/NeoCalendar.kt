@@ -735,13 +735,16 @@ internal fun NeoCalendarCell(
                     }
                 }
                 if(weekRowMode) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {shiftCards()} else shiftCards()
-                notes.take(if(roomy) 8 else 2).forEach {note ->
+                val noteCards: @Composable () -> Unit = {
+                    notes.take(if(roomy) 8 else 2).forEach {note ->
                     Surface(shape=RoundedCornerShape(6.dp),color=c.secondaryContainer,
-                        modifier=Modifier.fillMaxWidth().then(if(onOpenNote!=null) Modifier.clickable {onOpenNote(note)} else Modifier)) {
+                        modifier=(if(weekRowMode) Modifier.widthIn(min=110.dp,max=220.dp) else Modifier.fillMaxWidth()).then(if(onOpenNote!=null) Modifier.clickable {onOpenNote(note)} else Modifier)) {
                         Text(note.title.ifBlank {neoLabel("ملاحظة","Note")},Modifier.padding(if(roomy) 12.dp else 4.dp),
                             style=cardText,maxLines=if(roomy) 3 else 2,overflow=TextOverflow.Ellipsis)
                     }
+                    }
                 }
+                if(weekRowMode) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {noteCards()} else noteCards()
                 if(tasks>0) Surface(shape=RoundedCornerShape(6.dp),color=c.tertiaryContainer,
                     modifier=Modifier.fillMaxWidth().then(if(onOpenTasks!=null) Modifier.clickable {onOpenTasks()} else Modifier)) {
                     Text(neoLabel("المهام: $tasks","Tasks: $tasks"),Modifier.padding(if(roomy) 12.dp else 4.dp),style=cardText)

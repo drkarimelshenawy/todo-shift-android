@@ -72,6 +72,7 @@ jobs:
             --tests 'com.todoshift.app.v11.WidgetPresentationSafetyTest' \
             --tests 'com.todoshift.app.v11.SecurityAttemptLimitTest' \
             --tests 'com.todoshift.app.v11.NoteTransactionTest' \
+            --tests 'com.todoshift.app.v11.NeoRichNoteEditingTest' \
             --tests 'com.todoshift.app.backup.EncryptedBackupTest' \
             --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
             --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \

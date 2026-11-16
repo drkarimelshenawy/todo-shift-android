@@ -11,6 +11,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.FormatPaint
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -121,6 +124,17 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     fun edit(next: TextFieldValue) {
         if(next.text!=body.text) { undo.add(body); if(undo.size>50) undo.removeAt(0); redo.clear() }
         body=next
+    }
+    // Keep persisted source separate from the styled, visible IME buffer.
+    var rich by remember(existing?.id) {mutableStateOf(NeoRichEditorState.open(body.text))}
+    fun editRich(next:NeoRichEditorState) {
+        rich=next
+        val stored=next.stored()
+        if(stored!=body.text) edit(TextFieldValue(stored))
+    }
+    // Restored drafts, undo/redo and linked checklist edits can replace the source.
+    LaunchedEffect(body.text) {
+        if(rich.stored()!=body.text) rich=NeoRichEditorState.open(body.text)
     }
     var sourceRevision by remember { mutableStateOf(expectedDatabase.dayItems.firstOrNull {it.id==id}?.toString() ?: "<new>") }
     LaunchedEffect(draftKey) {
@@ -320,15 +334,22 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
-                    // In reading mode, the formatting icon enters editing and opens the ribbon.
+                    // Different, accessible actions: edit pencil when reading, format when editing.
                     IconButton(
                         modifier=Modifier.size(44.dp),
                         onClick={
-                            if(!editing) {editing=true;floatingFormat=true}
+                            if(!editing) {editing=true;floatingFormat=false}
                             else floatingFormat=!floatingFormat
                             options=false
                         }
-                    ) {Text("🖌",style=MaterialTheme.typography.titleMedium)}
+                    ) {
+                        Icon(
+                            if(editing) androidx.compose.material.icons.Icons.Rounded.FormatPaint
+                            else androidx.compose.material.icons.Icons.Rounded.Edit,
+                            if(editing) neoLabel("تنسيق النص","Text formatting")
+                            else neoLabel("تعديل الملاحظة","Edit note")
+                        )
+                    }
                     Box {
                         IconButton(modifier=Modifier.size(44.dp),onClick={noteMoreMenu=true}) {
                             Text("⋮",style=MaterialTheme.typography.headlineSmall)
@@ -399,8 +420,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         tonalElevation=2.dp
                     ) {
                         NeoNoteFormatting(
-                            body,
-                            {next->if(!closing){edit(next);noteInputFocus.requestFocus()}},
+                            rich,
+                            {next->if(!closing){editRich(next);noteInputFocus.requestFocus()}},
                             undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},
                             redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},
                             canUndo=undo.isNotEmpty()&&!closing,
@@ -414,12 +435,25 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     val direction=when(noteDirection) {
                         "rtl" -> androidx.compose.ui.text.style.TextDirection.Rtl
                         "ltr" -> androidx.compose.ui.text.style.TextDirection.Ltr
-                        else -> androidx.compose.ui.text.style.TextDirection.ContentOrRtl
+                        else -> {
+                            val first=rich.value.text.firstOrNull {
+                                val kind=Character.getDirectionality(it)
+                                kind==Character.DIRECTIONALITY_LEFT_TO_RIGHT ||
+                                    kind==Character.DIRECTIONALITY_RIGHT_TO_LEFT ||
+                                    kind==Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
+                            }
+                            val kind=first?.let {Character.getDirectionality(it)}
+                            if(kind==Character.DIRECTIONALITY_RIGHT_TO_LEFT ||
+                                kind==Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC ||
+                                (kind==null && neoLabel("ar","en")=="ar"))
+                                androidx.compose.ui.text.style.TextDirection.Rtl
+                            else androidx.compose.ui.text.style.TextDirection.Ltr
+                        }
                     }
                     if(editing) {
                         NeoRuledNoteEditor(
-                            value=body,
-                            onValueChange={if(!closing) edit(it)},
+                            value=rich.value,
+                            onValueChange={if(!closing) editRich(rich.input(it))},
                             textDirection=direction,
                             focusRequester=noteInputFocus,
                             modifier=Modifier.fillMaxSize()
@@ -530,7 +564,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 NeoSwitch(neoLabel("حد حول النص","Text border"),border){border=it}
             }
             if(editing) Row {
-                TextButton(onClick={val content=noteDisplayText(body.text);(context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(title,content))}) {Text(neoLabel("نسخ","Copy"))}
+                TextButton(onClick={val content=rich.value.text;(context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(title,content))}) {Text(neoLabel("نسخ","Copy"))}
                 TextButton(onClick={context.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT,listOf(title,noteDisplayText(body.text)).filter {it.isNotBlank()}.joinToString("\n")),null))}) {Text(neoLabel("مشاركة","Share"))}
             }
             Text(if(pending) neoLabel("جارٍ الحفظ…","Saving…") else if(editVersion()!=lastSavedEdit) neoLabel("تعديلات قيد الحفظ","Changes pending save") else draftStatus,style=MaterialTheme.typography.labelSmall)

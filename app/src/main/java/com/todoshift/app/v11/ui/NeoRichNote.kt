@@ -58,28 +58,14 @@ internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -
     }
 }
 
-internal fun noteInline(text: String): AnnotatedString = buildAnnotatedString {
-    val matches = Regex("""<font color="(#[0-9A-Fa-f]{6})">([\s\S]*?)</font>|<u>([\s\S]*?)</u>|<s>([\s\S]*?)</s>|\*\*(.+?)\*\*|\*([^*]+)\*""").findAll(text)
-    var end = 0
-    for(match in matches) {
-        append(text.substring(end,match.range.first))
-        when {
-            match.groupValues[1].isNotEmpty() -> {
-                val ink=Color(android.graphics.Color.parseColor(match.groupValues[1]))
-                withStyle(SpanStyle(color=ink)) {append(match.groupValues[2])}
-            }
-            match.groupValues[3].isNotEmpty() ->
-                withStyle(SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.Underline)) {append(match.groupValues[3])}
-            match.groupValues[4].isNotEmpty() ->
-                withStyle(SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.LineThrough)) {append(match.groupValues[4])}
-            match.groupValues[5].isNotEmpty() ->
-                withStyle(SpanStyle(fontWeight=FontWeight.Bold)) {append(match.groupValues[5])}
-            else -> withStyle(SpanStyle(fontStyle=FontStyle.Italic)) {append(match.groupValues[6])}
-        }
-        end=match.range.last+1
-    }
-    append(text.substring(end))
-}
+/**
+ * Rendering must use the same nested-style parser as the editing transformation.
+ * The old single-regex preview exposed <font>, <u>, and <s> markup when
+ * formatting ranges overlapped (especially in mixed Arabic/English notes).
+ * No stored note text is changed by this read-only transformation.
+ */
+internal fun noteInline(text: String): AnnotatedString =
+    NeoNoteVisualTransformation().filter(AnnotatedString(text)).text
 
 @Composable
 internal fun NeoNotePreview(text: String, checklistsOnly:Boolean=false, onChecklist: ((Int) -> Unit)? = null, onCreateTask: ((Int, String) -> Unit)? = null) {

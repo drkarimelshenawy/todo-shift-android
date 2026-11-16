@@ -243,7 +243,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             modifier=Modifier.size(40.dp),
                             onClick={floatingFormat=true;formatTab="appearance";options=false}
                         ) { Text("🎨",style=MaterialTheme.typography.titleMedium) }
-                        TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(false)){editing=false;floatingFormat=false}}}) {Text(neoLabel("تم","Done"))}
+                        TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(false)){editing=false;floatingFormat=false;options=false}}}) {Text(neoLabel("تم","Done"))}
                     } else {
                         Text(title.ifBlank {neoLabel("ملاحظة","Note")},modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,maxLines=1)
                         IconButton(onClick={editing=true}) {Text("✎",style=MaterialTheme.typography.titleLarge)}
@@ -273,7 +273,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         TextField(body,{if(!closing) edit(it)},enabled=!closing,placeholder={Text(neoLabel("اكتب ملاحظتك هنا…","Write your note here…"))},visualTransformation=remember {NeoNoteVisualTransformation()},textStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,textDirection=direction),modifier=Modifier.fillMaxSize(),colors=TextFieldDefaults.colors(focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,disabledContainerColor=androidx.compose.ui.graphics.Color.Transparent,focusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent))
                     } else {
                         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=16.dp,vertical=6.dp)) {
-                            NeoNotePreview(body.text)
+                            NeoNotePreview(body.text, textDirection=direction)
                         }
                     }
                 }

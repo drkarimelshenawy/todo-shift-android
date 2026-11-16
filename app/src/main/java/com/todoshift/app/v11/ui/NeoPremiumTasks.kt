@@ -96,8 +96,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var noteSelectionMode by remember {mutableStateOf(false)}
     var selectedNotes by remember {mutableStateOf(setOf<String>())}
     var confirmTrash by remember {mutableStateOf(false)}
-    var noteSort by rememberSaveable { mutableStateOf("updated") }
-    var noteLayout by rememberSaveable { mutableStateOf("details") }
+    val noteViewPrefs=remember(context) { context.applicationContext.getSharedPreferences("neo_note_view_v45",android.content.Context.MODE_PRIVATE) }
+    var noteSort by rememberSaveable { mutableStateOf(noteViewPrefs.getString("sort","updated")?.takeIf { it in setOf("updated","title","date") } ?: "updated") }
+    var noteLayout by rememberSaveable { mutableStateOf(noteViewPrefs.getString("layout","details")?.takeIf { it in setOf("list","details","grid","large") } ?: "details") }
     var hiddenAuthorized by remember { mutableStateOf(false) }
     var hiddenUnlock by remember { mutableStateOf(false) }
     val noteLifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
@@ -219,13 +220,13 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {Text(neoLabel("إلغاء التحديد","Clear selection"))}
                         }
                         Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                            FilterChip(noteSort=="updated",{noteSort="updated"},label={Text(neoLabel("آخر تعديل","Updated"))})
-                            FilterChip(noteSort=="title",{noteSort="title"},label={Text(neoLabel("العنوان","Title"))})
-                            FilterChip(noteSort=="date",{noteSort="date"},label={Text(neoLabel("تاريخ الإنشاء","Created"))})
+                            FilterChip(noteSort=="updated",{noteSort="updated";noteViewPrefs.edit().putString("sort","updated").apply()},label={Text(neoLabel("آخر تعديل","Updated"))})
+                            FilterChip(noteSort=="title",{noteSort="title";noteViewPrefs.edit().putString("sort","title").apply()},label={Text(neoLabel("العنوان","Title"))})
+                            FilterChip(noteSort=="date",{noteSort="date";noteViewPrefs.edit().putString("sort","date").apply()},label={Text(neoLabel("تاريخ الإنشاء","Created"))})
                         }
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                             listOf("list" to neoLabel("قائمة","List"),"details" to neoLabel("تفاصيل","Details"),"grid" to neoLabel("شبكة","Grid"),"large" to neoLabel("شبكة كبيرة","Large grid")).forEach { (key,label) ->
-                                FilterChip(selected=noteLayout==key,onClick={noteLayout=key},label={Text(label)})
+                                FilterChip(selected=noteLayout==key,onClick={noteLayout=key;noteViewPrefs.edit().putString("layout",key).apply()},label={Text(label)})
                             }
                         }
                         }

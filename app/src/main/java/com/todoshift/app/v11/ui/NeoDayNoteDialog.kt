@@ -99,6 +99,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var taskSpecs by rememberSaveable { mutableStateOf(listOf<String>()) }
     var reminder by rememberSaveable { mutableStateOf(existing?.reminderAt?.let {java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(it),java.time.ZoneId.systemDefault()).toString()}.orEmpty()) }
     var preview by rememberSaveable { mutableStateOf(false) }
+    var editing by rememberSaveable(existing?.id) { mutableStateOf(existing == null) }
+    var noteDirection by rememberSaveable(existing?.id) { mutableStateOf("auto") }
     var options by rememberSaveable { mutableStateOf(false) }
     var draftReady by rememberSaveable { mutableStateOf(false) }
     var draftStatus by remember { mutableStateOf("") }
@@ -219,22 +221,28 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         properties=DialogProperties(usePlatformDefaultWidth=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
         Surface(modifier=Modifier.fillMaxSize(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
             Column(Modifier.fillMaxSize().padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-                    Text(neoLabel("ملاحظة","Note")+(if(calendarLinked) " • $linkedDate" else ""),style=MaterialTheme.typography.titleMedium)
-                    Row {
-                        TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(true)) onDismiss()}}) {Text(neoLabel("إغلاق","Close"))}
-                        Button(enabled=!pending&&!rootWritePending&&draftReady,onClick={scope.launch {keepDraft();persistNote(true)}}) {Text(neoLabel("حفظ","Save"))}
-                    }
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(if(title.isNotBlank()&&!editing) title else neoLabel("ملاحظة","Note"),style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f),maxLines=1)
+                    if(!editing) IconButton(onClick={editing=true}) { Icon(androidx.compose.material.icons.Icons.Default.Edit,contentDescription=neoLabel("تعديل","Edit")) }
+                    else TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(false)) editing=false}}) {Text(neoLabel("تم","Done"))}
+                    TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(true)) onDismiss()}}) {Text(neoLabel("إغلاق","Close"))}
                 }
                 Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-            NeoNoteFormatting(body,{if(!closing) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!closing,canRedo=redo.isNotEmpty()&&!closing)
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            if(editing) NeoNoteFormatting(body,{if(!closing) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!closing,canRedo=redo.isNotEmpty()&&!closing)
+            if(editing) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 FilterChip(preview,{preview=!preview},label={Text(neoLabel("معاينة","Preview"))})
                 TextButton(onClick={options=!options}) {Text(neoLabel("تنظيم ومظهر","Organize / style"))}
             }
-            OutlinedTextField(title,{if(!closing) title=it},enabled=!closing,placeholder={Text(neoLabel("عنوان الملاحظة…","Note title…"))},singleLine=true,modifier=Modifier.fillMaxWidth())
+            if(editing) {
+                Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                    listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR").forEach { (key,label) ->
+                        FilterChip(selected=noteDirection==key,onClick={noteDirection=key},label={Text(label)})
+                    }
+                }
+                OutlinedTextField(title,{if(!closing) title=it},enabled=!closing,placeholder={Text(neoLabel("عنوان الملاحظة…","Note title…"))},singleLine=true,modifier=Modifier.fillMaxWidth())
+            }
             // Lines are decorative: the original note text and cursor stay in the same editable field.
-            Box(Modifier.fillMaxWidth().heightIn(min=240.dp).border(1.dp,MaterialTheme.colorScheme.outlineVariant,androidx.compose.foundation.shape.RoundedCornerShape(12.dp))) {
+            Box(Modifier.fillMaxWidth().heightIn(min=440.dp).border(1.dp,MaterialTheme.colorScheme.outlineVariant,androidx.compose.foundation.shape.RoundedCornerShape(12.dp))) {
                 androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
                     val lineStep=34.sp.toPx()
                     var y=46.sp.toPx()
@@ -243,9 +251,20 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         y+=lineStep
                     }
                 }
-                androidx.compose.material3.TextField(body,{if(!closing) edit(it)},enabled=!closing,placeholder={Text(neoLabel("اكتب ملاحظتك هنا…","Write your note here…"))},visualTransformation=remember {NeoNoteVisualTransformation()},textStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp),modifier=Modifier.fillMaxSize(),colors=TextFieldDefaults.colors(focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,disabledContainerColor=androidx.compose.ui.graphics.Color.Transparent,focusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent))
+                val direction=when(noteDirection) {
+                    "rtl" -> androidx.compose.ui.text.style.TextDirection.Rtl
+                    "ltr" -> androidx.compose.ui.text.style.TextDirection.Ltr
+                    else -> androidx.compose.ui.text.style.TextDirection.ContentOrRtl
+                }
+                if(editing) {
+                androidx.compose.material3.TextField(body,{if(!closing) edit(it)},enabled=!closing,placeholder={Text(neoLabel("اكتب ملاحظتك هنا…","Write your note here…"))},visualTransformation=remember {NeoNoteVisualTransformation()},textStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,textDirection=direction),modifier=Modifier.fillMaxSize(),colors=TextFieldDefaults.colors(focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,disabledContainerColor=androidx.compose.ui.graphics.Color.Transparent,focusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent))
+                } else {
+                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=16.dp,vertical=10.dp)) {
+                        NeoNotePreview(body.text)
+                    }
+                }
             }
-            if(preview || body.text.lines().any {it.trimStart().startsWith("- [")}) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
+            if(editing && (preview || body.text.lines().any {it.trimStart().startsWith("- [")})) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
                 if(!pending) { val lines=body.text.lines().toMutableList();val old=lines[line]; lines[line]=if(old.contains("[ ]")) old.replaceFirst("[ ]","[x]") else old.replaceFirst(Regex("\\[[xX]\\]"),"[ ]");edit(TextFieldValue(lines.joinToString("\n"))) }
             },onCreateTask={line,label->
                 if(!pending) {val lines=body.text.lines().toMutableList()
@@ -283,7 +302,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     }) {Text(neoLabel("إزالة الربط","Unlink"))}
                 }
             }
-            if(options) {
+            if(editing && options) {
                 NeoSwitch(neoLabel("إظهار الملاحظة في التقويم","Show note in calendar"),calendarLinked){calendarLinked=it}
                 if(calendarLinked) {
                     NeoDateInput(neoLabel("تاريخ التقويم","Calendar date"),linkedDate){linkedDate=it}
@@ -312,7 +331,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 OutlinedTextField(color,{color=it},label={Text(neoLabel("لون التقويم #RRGGBB","Calendar color #RRGGBB"))})
                 NeoSwitch(neoLabel("حد حول النص","Text border"),border){border=it}
             }
-            Row {
+            if(editing) Row {
                 TextButton(onClick={val content=noteDisplayText(body.text);(context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(title,content))}) {Text(neoLabel("نسخ","Copy"))}
                 TextButton(onClick={context.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT,listOf(title,noteDisplayText(body.text)).filter {it.isNotBlank()}.joinToString("\n")),null))}) {Text(neoLabel("مشاركة","Share"))}
             }

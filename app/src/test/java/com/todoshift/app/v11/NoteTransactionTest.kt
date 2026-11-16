@@ -2,6 +2,7 @@ package com.todoshift.app.v11
 
 import com.todoshift.app.backup.Neo4LocalBackup
 import org.junit.Assert.*
+import androidx.compose.ui.unit.sp
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -184,4 +185,89 @@ class NoteTransactionTest {
         assertEquals(before, V11Runtime(c).start())
         assertEquals("#6C3A9B", NeoSmartStore(c).noteColor("unrelated"))
     }
+    @Test fun readingModeDoesNotExposeNestedFormattingMarkup() {
+        // This crosses closing-tag boundaries just like notes formatted on the phone.
+        val stored = """نص <u>*<font color="#C62828">الملاحظة</font> <font color="#2E7D32">الجديدة</u>*</font> ختام"""
+        val preview=com.todoshift.app.v11.ui.noteInline(stored)
+        assertEquals("نص الملاحظة الجديدة ختام",preview.text)
+        assertFalse(preview.text.contains("<font"))
+        assertFalse(preview.text.contains("<u>"))
+        assertFalse(preview.text.contains("*"))
+        assertTrue(preview.spanStyles.any {it.item.textDecoration==androidx.compose.ui.text.style.TextDecoration.Underline})
+        assertTrue(preview.spanStyles.any {it.item.color==androidx.compose.ui.graphics.Color(0xFFC62828)})
+        assertTrue(preview.spanStyles.any {it.item.color==androidx.compose.ui.graphics.Color(0xFF2E7D32)})
+        assertTrue(stored.contains("<font color=")) // read-only rendering must not mutate storage
+    }
+
+    @Test fun richNoteSelectionOffsetsStayWithinVisibleTextAfterFormatting() {
+        val source = "## عنوان\n<u>عربي <font color=\"#C62828\">لون</font></u>\n**Bold**"
+        val transformed = com.todoshift.app.v11.ui.NeoNoteVisualTransformation()
+            .filter(androidx.compose.ui.text.AnnotatedString(source))
+        val visible = transformed.text.text
+        assertEquals("عنوان\nعربي لون\nBold",visible)
+        val mapping = transformed.offsetMapping
+        var previous = -1
+        for(offset in 0..source.length) {
+            val visibleOffset = mapping.originalToTransformed(offset)
+            assertTrue(visibleOffset in 0..visible.length)
+            assertTrue("Original-to-visual offsets must be monotonic",visibleOffset>=previous)
+            previous=visibleOffset
+        }
+        for(offset in 0..visible.length) {
+            val originalOffset=mapping.transformedToOriginal(offset)
+            assertTrue(originalOffset in 0..source.length)
+            assertEquals("Cursor must round-trip through hidden formatting marks",
+                offset,mapping.originalToTransformed(originalOffset))
+        }
+        assertTrue(source.contains("<font"))
+        assertTrue(transformed.text.spanStyles.any {it.item.color==androidx.compose.ui.graphics.Color(0xFFC62828)})
+    }
+
+    @Test fun previewPrivacyIsIndependentFromPasswordLockAndPersistsAcrossBackups() {
+        val context=RuntimeEnvironment.getApplication()
+        val storage=V11Storage(context)
+        val note=DayItemV11(
+            id="preview-only",date="2026-11-16",type=DayItemTypeV11.NOTE,
+            title="Visible title",details="Private excerpt",
+            notePreviewHidden=true,noteLocked=false,noteHidden=false
+        )
+        assertTrue(note.noteVisible)
+        assertFalse(note.notePrivate)
+        val payload=storage.exportJson(V11Database(dayItems=listOf(note)))
+        val restored=storage.importJson(payload).dayItems.single()
+        assertEquals(note,restored)
+        assertTrue(restored.notePreviewHidden)
+        assertTrue(restored.noteVisible)
+        assertFalse(restored.noteLocked)
+        val legacy=org.json.JSONObject(payload)
+        legacy.getJSONArray("dayItems").getJSONObject(0).remove("notePreviewHidden")
+        val old=storage.importJson(legacy.toString()).dayItems.single()
+        assertFalse("Older records default to visible excerpts",old.notePreviewHidden)
+        assertEquals("Private excerpt",old.details)
+        val passwordLocked=note.copy(notePreviewHidden=false,noteLocked=true)
+        assertTrue("Password-protected notes remain in the note list",passwordLocked.noteVisible)
+        assertTrue(passwordLocked.notePrivate)
+    }
+
+    @Test fun noteFontSizeIsVisualNotRawMarkupAndLetteredListsWork() {
+        val source=androidx.compose.ui.text.input.TextFieldValue(
+            "عربي English",androidx.compose.ui.text.TextRange(0,12)
+        )
+        val formatted=com.todoshift.app.v11.ui.noteFormat(
+            source,"<size sp=\"20\">","</size>"
+        )
+        val rendered=com.todoshift.app.v11.ui.NeoNoteVisualTransformation()
+            .filter(androidx.compose.ui.text.AnnotatedString(formatted.text)).text
+        assertEquals("عربي English",rendered.text)
+        assertTrue(rendered.spanStyles.any {it.item.fontSize==20.sp})
+        assertTrue(formatted.text.contains("<size sp=\"20\">"))
+        val letters=com.todoshift.app.v11.ui.noteFormat(
+            androidx.compose.ui.text.input.TextFieldValue(
+                "one\ntwo\nthree",androidx.compose.ui.text.TextRange(0,13)
+            ),
+            "\nA. "
+        )
+        assertEquals("A. one\nB. two\nC. three",letters.text)
+    }
+
 }

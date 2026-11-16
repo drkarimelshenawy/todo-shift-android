@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 46,
-  "versionName": "4.7.1-premium-v45-r2",
+  "versionCode": 48,
+  "versionName": "4.7.3-premium-v45-lined-notes",
   "branch": "feat/v45-complete-specification",
   "baseline": "21b1eaa240df33da59c23e205ec9fb97a1abaa9b",
-  "classification": "PERSISTENT-SIGNED RELEASE VARIANT \u2014 physical-device acceptance pending"
+  "classification": "PERSISTENT-SIGNED RELEASE VARIANT — physical-device acceptance pending"
 }

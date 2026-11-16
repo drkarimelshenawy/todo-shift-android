@@ -68,4 +68,18 @@ class PremiumUxUiTest {
         assertEquals(before.height,after.height,.1f)
         compose.onNodeWithText("×1").assertDoesNotExist()
     }
+    @Test fun readingModeRendersOverlappingArabicFormattingWithoutRawTags() {
+        val source = """نص <u>*<font color="#C62828">الملاحظة</font> <font color="#2E7D32">الجديدة</u>*</font> ختام"""
+        val rendered = noteInline(source)
+        assertEquals("نص الملاحظة الجديدة ختام", rendered.text)
+        assertFalse(rendered.text.contains("<font"))
+        assertFalse(rendered.text.contains("</u>"))
+        assertFalse(rendered.text.contains("*"))
+        assertTrue(rendered.spanStyles.any { it.item.textDecoration == TextDecoration.Underline })
+        assertTrue(rendered.spanStyles.any { it.item.color == androidx.compose.ui.graphics.Color(0xFFC62828) })
+        assertTrue(rendered.spanStyles.any { it.item.color == androidx.compose.ui.graphics.Color(0xFF2E7D32) })
+        // Rendering must never rewrite the markup stored in the note.
+        assertTrue(source.contains("<font color="))
+    }
+
 }

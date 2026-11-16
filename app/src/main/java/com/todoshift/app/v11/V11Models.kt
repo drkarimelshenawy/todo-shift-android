@@ -111,6 +111,8 @@ data class DayItemV11(
     val noteTags: String = "",
     val noteBackground: String? = null,
     val noteCalendarLinked:Boolean = true,
+    /** Hide the card excerpt, while keeping the note visible and freely openable. */
+    val notePreviewHidden: Boolean = false,
 ) {
     val notePrivate: Boolean get() = type == DayItemTypeV11.NOTE && (noteLocked || noteHidden)
     val noteVisible: Boolean get() = type != DayItemTypeV11.NOTE || (!noteArchived && !noteTrashed && !noteHidden)

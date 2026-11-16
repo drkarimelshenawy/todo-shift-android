@@ -274,13 +274,6 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                       modifier=Modifier
                           .align(androidx.compose.ui.Alignment.BottomCenter)
                           .offset { androidx.compose.ui.unit.IntOffset(formatX.toInt(),formatY.toInt()) }
-                          .pointerInput(pageWidth,pageHeight) {
-                              detectDragGestures { change,drag ->
-                                  change.consume()
-                                  formatX=(formatX+drag.x).coerceIn(-pageWidth*0.18f,pageWidth*0.18f)
-                                  formatY=(formatY+drag.y).coerceIn(-pageHeight*0.55f,0f)
-                              }
-                          }
                           .padding(bottom=20.dp)
                           .fillMaxWidth(0.94f),
                       shape=androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
@@ -289,7 +282,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                   ) {
                       Column(Modifier.padding(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                           Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                              Text("⠿  "+neoLabel("تنسيق","Formatting"),modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelMedium)
+                              Text("⠿  "+neoLabel("تنسيق","Formatting"),modifier=Modifier.weight(1f).pointerInput(pageWidth,pageHeight) {
+                                   detectDragGestures { change,drag ->
+                                       change.consume()
+                                       formatX=(formatX+drag.x).coerceIn(-pageWidth*0.18f,pageWidth*0.18f)
+                                       formatY=(formatY+drag.y).coerceIn(-pageHeight*0.55f,0f)
+                                   }
+                               },style=MaterialTheme.typography.labelMedium)
                               TextButton(onClick={floatingFormat=false}) {Text("×")}
                           }
                           NeoNoteFormatting(body,{if(!closing) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!closing,canRedo=redo.isNotEmpty()&&!closing)

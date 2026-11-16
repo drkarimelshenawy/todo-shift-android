@@ -225,8 +225,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
         properties=DialogProperties(usePlatformDefaultWidth=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
         Surface(modifier=Modifier.fillMaxSize(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            BoxWithConstraints(Modifier.fillMaxWidth().height((androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp - 24).coerceAtLeast(320).dp)) {
+            Box(Modifier.fillMaxSize()) {
+                Column(Modifier.fillMaxSize()) {
+                    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
               val pageWidth=constraints.maxWidth.toFloat()
               val pageHeight=constraints.maxHeight.toFloat()
               Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(0.dp)) {
@@ -302,6 +303,28 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                   }
               }
             }
+                    Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=2.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                        if(editing) TextButton(onClick={options=true}) {Text(neoLabel("خيارات الملاحظة","Note options"))}
+                        Text(
+                            if(pending) neoLabel("جارٍ الحفظ…","Saving…")
+                            else error ?: if(editVersion()!=lastSavedEdit) neoLabel("تعديلات قيد الحفظ","Changes pending save") else draftStatus,
+                            style=MaterialTheme.typography.labelSmall,
+                            color=if(error!=null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines=1
+                        )
+                    }
+                }
+                if(options && editing) {
+                    Surface(
+                        modifier=Modifier.align(androidx.compose.ui.Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.7f),
+                        shape=androidx.compose.foundation.shape.RoundedCornerShape(topStart=18.dp,topEnd=18.dp),
+                        tonalElevation=8.dp,shadowElevation=10.dp
+                    ) {
+                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                            Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                                Text(neoLabel("خيارات الملاحظة","Note options"),style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
+                                TextButton(onClick={options=false}) {Text(neoLabel("إغلاق","Close"))}
+                            }
             if(editing && (preview || body.text.lines().any {it.trimStart().startsWith("- [")})) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
                 if(!pending) { val lines=body.text.lines().toMutableList();val old=lines[line]; lines[line]=if(old.contains("[ ]")) old.replaceFirst("[ ]","[x]") else old.replaceFirst(Regex("\\[[xX]\\]"),"[ ]");edit(TextFieldValue(lines.joinToString("\n"))) }
             },onCreateTask={line,label->
@@ -382,6 +405,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             }
             error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
 
+                        }
+                    }
                 }
             }
         }

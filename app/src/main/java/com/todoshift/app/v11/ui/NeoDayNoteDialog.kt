@@ -275,7 +275,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                           .align(androidx.compose.ui.Alignment.BottomCenter)
                           .offset { androidx.compose.ui.unit.IntOffset(formatX.toInt(),formatY.toInt()) }
                           .pointerInput(pageWidth,pageHeight) {
-                              androidx.compose.foundation.gestures.detectDragGestures { change,drag ->
+                              detectDragGestures { change,drag ->
                                   change.consume()
                                   formatX=(formatX+drag.x).coerceIn(-pageWidth*0.18f,pageWidth*0.18f)
                                   formatY=(formatY+drag.y).coerceIn(-pageHeight*0.55f,0f)
@@ -386,6 +386,5 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 }
             }
         }
-    }
     }
 }

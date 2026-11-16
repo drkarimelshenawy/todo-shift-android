@@ -97,6 +97,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var selectedNotes by remember {mutableStateOf(setOf<String>())}
     var confirmTrash by remember {mutableStateOf(false)}
     var noteSort by rememberSaveable { mutableStateOf("updated") }
+    var noteLayout by rememberSaveable { mutableStateOf("details") }
     var hiddenAuthorized by remember { mutableStateOf(false) }
     var hiddenUnlock by remember { mutableStateOf(false) }
     val noteLifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
@@ -217,10 +218,15 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             TextButton(enabled=!write.pending,onClick={confirmTrash=true}) {Text(neoLabel("مهملات","Trash"))}
                             TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {Text(neoLabel("إلغاء التحديد","Clear selection"))}
                         }
-                        Row {
+                        Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                             FilterChip(noteSort=="updated",{noteSort="updated"},label={Text(neoLabel("آخر تعديل","Updated"))})
                             FilterChip(noteSort=="title",{noteSort="title"},label={Text(neoLabel("العنوان","Title"))})
                             FilterChip(noteSort=="date",{noteSort="date"},label={Text(neoLabel("تاريخ الإنشاء","Created"))})
+                        }
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                            listOf("list" to neoLabel("قائمة","List"),"details" to neoLabel("تفاصيل","Details"),"grid" to neoLabel("شبكة","Grid"),"large" to neoLabel("شبكة كبيرة","Large grid")).forEach { (key,label) ->
+                                FilterChip(selected=noteLayout==key,onClick={noteLayout=key},label={Text(label)})
+                            }
                         }
                         }
                     }
@@ -231,20 +237,53 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
                     }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.createdAt};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
                     if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات مطابقة","No matching notes"),neoLabel("غيّر البحث أو المجلد، أو أضف ملاحظة","Change search or folder, or add a note"))}
-                    items(notes,key={it.id}) {note ->
-                        val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
-                        val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
-                        Card(onClick={noteId=note.id;noteEditor=true},colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
-                            Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                                if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
-                                if(note.noteLocked) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium)
-                                else {
-                                    Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {noteDisplayText(note.details).lineSequence().firstOrNull {it.isNotBlank()}?.take(100) ?: neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium)
-                                    Text(note.date,style=MaterialTheme.typography.bodySmall,color=contentColor.copy(alpha=0.75f))
-                                    if(note.details.isNotBlank()) Text(noteInline(noteDisplayText(note.details)),maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
-                                    if(note.noteTags.isNotBlank()) Text(note.noteTags,style=MaterialTheme.typography.labelSmall)
+                    if(noteLayout=="grid" || noteLayout=="large") {
+                        val columns=if(noteLayout=="grid") 3 else 2
+                        notes.chunked(columns).forEachIndexed {rowIndex,rowNotes ->
+                            item(key="note-grid-$rowIndex") {
+                                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                    rowNotes.forEach { note ->
+                                        Box(Modifier.weight(1f)) {
+                            val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
+                            val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
+                            Card(onClick={noteId=note.id;noteEditor=true},modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
+                                Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
+                                    if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
+                                    if(note.noteLocked) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium,maxLines=2)
+                                    else {
+                                        Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {noteDisplayText(note.details).lineSequence().firstOrNull {it.isNotBlank()}?.take(100) ?: neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium,maxLines=if(noteLayout=="grid") 2 else 3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                        if(noteLayout!="list") {
+                                            if(note.details.isNotBlank()) Text(noteInline(noteDisplayText(note.details)),maxLines=if(noteLayout=="grid") 3 else 4,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+                                            if(note.noteTags.isNotBlank() && noteLayout=="details") Text(note.noteTags,style=MaterialTheme.typography.labelSmall,maxLines=1)
+                                        }
+                                        Text(note.date,style=MaterialTheme.typography.labelSmall,color=contentColor.copy(alpha=0.75f),maxLines=1)
+                                    }
                                 }
                             }
+                                        }
+                                    }
+                                    repeat(columns-rowNotes.size) { Spacer(Modifier.weight(1f)) }
+                                }
+                            }
+                        }
+                    } else {
+                        items(notes,key={it.id}) {note ->
+                        val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
+                        val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
+                        Card(onClick={noteId=note.id;noteEditor=true},modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
+                            Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
+                                if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
+                                if(note.noteLocked) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium,maxLines=2)
+                                else {
+                                    Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {noteDisplayText(note.details).lineSequence().firstOrNull {it.isNotBlank()}?.take(100) ?: neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium,maxLines=if(noteLayout=="grid") 2 else 3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    if(noteLayout!="list") {
+                                        if(note.details.isNotBlank()) Text(noteInline(noteDisplayText(note.details)),maxLines=if(noteLayout=="grid") 3 else 4,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+                                        if(note.noteTags.isNotBlank() && noteLayout=="details") Text(note.noteTags,style=MaterialTheme.typography.labelSmall,maxLines=1)
+                                    }
+                                    Text(note.date,style=MaterialTheme.typography.labelSmall,color=contentColor.copy(alpha=0.75f),maxLines=1)
+                                }
+                            }
+                        }
                         }
                     }
                 }

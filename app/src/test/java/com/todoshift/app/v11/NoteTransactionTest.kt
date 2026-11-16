@@ -198,4 +198,28 @@ class NoteTransactionTest {
         assertTrue(stored.contains("<font color=")) // read-only rendering must not mutate storage
     }
 
+    @Test fun richNoteSelectionOffsetsStayWithinVisibleTextAfterFormatting() {
+        val source = "## عنوان\\n<u>عربي <font color=\\\"#C62828\\\">لون</font></u>\\n**Bold**"
+        val transformed = com.todoshift.app.v11.ui.NeoNoteVisualTransformation()
+            .filter(androidx.compose.ui.text.AnnotatedString(source))
+        val visible = transformed.text.text
+        assertEquals("عنوان\\nعربي لون\\nBold",visible)
+        val mapping = transformed.offsetMapping
+        var previous = -1
+        for(offset in 0..source.length) {
+            val visibleOffset = mapping.originalToTransformed(offset)
+            assertTrue(visibleOffset in 0..visible.length)
+            assertTrue("Original-to-visual offsets must be monotonic",visibleOffset>=previous)
+            previous=visibleOffset
+        }
+        for(offset in 0..visible.length) {
+            val originalOffset=mapping.transformedToOriginal(offset)
+            assertTrue(originalOffset in 0..source.length)
+            assertEquals("Cursor must round-trip through hidden formatting marks",
+                offset,mapping.originalToTransformed(originalOffset))
+        }
+        assertTrue(source.contains("<font"))
+        assertTrue(transformed.text.spanStyles.any {it.item.color==androidx.compose.ui.graphics.Color(0xFFC62828)})
+    }
+
 }

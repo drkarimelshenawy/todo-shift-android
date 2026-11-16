@@ -223,7 +223,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             Column(Modifier.fillMaxSize().padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                     Text(if(title.isNotBlank()&&!editing) title else neoLabel("ملاحظة","Note"),style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f),maxLines=1)
-                    if(!editing) IconButton(onClick={editing=true}) { Icon(androidx.compose.material.icons.Icons.Default.Create,contentDescription=neoLabel("تعديل","Edit")) }
+                    if(!editing) IconButton(onClick={editing=true}) { Text("✎",style=MaterialTheme.typography.titleLarge) }
                     else TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(false)) editing=false}}) {Text(neoLabel("تم","Done"))}
                     TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(true)) onDismiss()}}) {Text(neoLabel("إغلاق","Close"))}
                 }

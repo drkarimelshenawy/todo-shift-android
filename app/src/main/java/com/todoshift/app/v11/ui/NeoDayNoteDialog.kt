@@ -104,6 +104,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var editing by rememberSaveable(existing?.id) { mutableStateOf(existing == null) }
     var noteDirection by rememberSaveable(existing?.id) { mutableStateOf("auto") }
     var floatingFormat by rememberSaveable { mutableStateOf(false) }
+    var formatTab by rememberSaveable { mutableStateOf("format") }
     var formatX by remember { mutableFloatStateOf(0f) }
     var formatY by remember { mutableFloatStateOf(0f) }
     var options by rememberSaveable { mutableStateOf(false) }
@@ -234,7 +235,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                     if(editing) {
                         TextField(title,{if(!closing) title=it},singleLine=true,placeholder={Text(neoLabel("عنوان اختياري","Optional title"))},modifier=Modifier.weight(1f),colors=TextFieldDefaults.colors(focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,focusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent))
-                        TextButton(onClick={floatingFormat=!floatingFormat}) {Text("🖌")}
+                        IconButton(
+                            modifier=Modifier.size(40.dp),
+                            onClick={floatingFormat=!(floatingFormat&&formatTab=="format");formatTab="format";options=false}
+                        ) { Text("🖌",style=MaterialTheme.typography.titleMedium) }
+                        IconButton(
+                            modifier=Modifier.size(40.dp),
+                            onClick={floatingFormat=true;formatTab="appearance";options=false}
+                        ) { Text("🎨",style=MaterialTheme.typography.titleMedium) }
                         TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(false)){editing=false;floatingFormat=false}}}) {Text(neoLabel("تم","Done"))}
                     } else {
                         Text(title.ifBlank {neoLabel("ملاحظة","Note")},modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,maxLines=1)
@@ -275,29 +283,124 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                       modifier=Modifier
                           .align(androidx.compose.ui.Alignment.BottomCenter)
                           .offset { androidx.compose.ui.unit.IntOffset(formatX.toInt(),formatY.toInt()) }
-                          .padding(bottom=20.dp)
-                          .fillMaxWidth(0.94f),
-                      shape=androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                      tonalElevation=8.dp,
-                      shadowElevation=10.dp
+                          .padding(bottom=12.dp)
+                          .fillMaxWidth(0.96f),
+                      shape=androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                      tonalElevation=6.dp,
+                      shadowElevation=8.dp
                   ) {
-                      Column(Modifier.padding(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                          Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                              Text("⠿  "+neoLabel("تنسيق","Formatting"),modifier=Modifier.weight(1f).pointerInput(pageWidth,pageHeight) {
-                                   detectDragGestures { change,drag ->
-                                       change.consume()
-                                       formatX=(formatX+drag.x).coerceIn(-pageWidth*0.18f,pageWidth*0.18f)
-                                       formatY=(formatY+drag.y).coerceIn(-pageHeight*0.55f,0f)
-                                   }
-                               },style=MaterialTheme.typography.labelMedium)
+                      Column(
+                          Modifier.padding(horizontal=10.dp,vertical=6.dp),
+                          verticalArrangement=Arrangement.spacedBy(3.dp)
+                      ) {
+                          Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                              Text(
+                                  "⠿  "+neoLabel("اسحب لتحريك الشريط","Drag to move"),
+                                  modifier=Modifier.weight(1f).pointerInput(pageWidth,pageHeight) {
+                                      detectDragGestures { change,drag ->
+                                          change.consume()
+                                          formatX=(formatX+drag.x).coerceIn(-pageWidth*0.18f,pageWidth*0.18f)
+                                          formatY=(formatY+drag.y).coerceIn(-pageHeight*0.55f,0f)
+                                      }
+                                  },
+                                  style=MaterialTheme.typography.labelSmall,
+                                  color=MaterialTheme.colorScheme.onSurfaceVariant
+                              )
                               TextButton(onClick={floatingFormat=false}) {Text("×")}
                           }
-                          NeoNoteFormatting(body,{if(!closing) edit(it)},undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},canUndo=undo.isNotEmpty()&&!closing,canRedo=redo.isNotEmpty()&&!closing)
-                          Row(horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                              listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR").forEach { (key,label) ->
-                                  FilterChip(selected=noteDirection==key,onClick={noteDirection=key},label={Text(label)})
+                          Row(
+                              Modifier.fillMaxWidth(),
+                              horizontalArrangement=Arrangement.spacedBy(6.dp)
+                          ) {
+                              FilterChip(
+                                  selected=formatTab=="format",
+                                  onClick={formatTab="format"},
+                                  label={Text(neoLabel("تنسيق النص","Format text"))},
+                                  modifier=Modifier.weight(1f)
+                              )
+                              FilterChip(
+                                  selected=formatTab=="appearance",
+                                  onClick={formatTab="appearance"},
+                                  label={Text(neoLabel("🎨 المظهر","🎨 Appearance"))},
+                                  modifier=Modifier.weight(1f)
+                              )
+                          }
+                          if(formatTab=="format") {
+                              NeoNoteFormatting(
+                                  body,{if(!closing) edit(it)},
+                                  undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},
+                                  redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},
+                                  canUndo=undo.isNotEmpty()&&!closing,
+                                  canRedo=redo.isNotEmpty()&&!closing
+                              )
+                              Row(
+                                  Modifier.fillMaxWidth(),
+                                  horizontalArrangement=Arrangement.spacedBy(4.dp),
+                                  verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
+                              ) {
+                                  listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR").forEach { (key,label) ->
+                                      FilterChip(selected=noteDirection==key,onClick={noteDirection=key},label={Text(label)})
+                                  }
                               }
-                              TextButton(onClick={options=!options;floatingFormat=false}) {Text(neoLabel("مظهر","Style"))}
+                          } else {
+                              Row(
+                                  Modifier.fillMaxWidth(),
+                                  verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
+                                  horizontalArrangement=Arrangement.spacedBy(6.dp)
+                              ) {
+                                  Text(neoLabel("الخلفية","Paper"),style=MaterialTheme.typography.labelMedium)
+                                  Row(
+                                      Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                                      horizontalArrangement=Arrangement.spacedBy(7.dp)
+                                  ) {
+                                      listOf(
+                                          "" to neoLabel("افتراضي","Default"),
+                                          "#FFF4B8" to neoLabel("أصفر","Yellow"),
+                                          "#D9EFDA" to neoLabel("أخضر","Green"),
+                                          "#D6E9FF" to neoLabel("أزرق","Blue"),
+                                          "#F9DCE9" to neoLabel("وردي","Pink"),
+                                          "#E8DDF5" to neoLabel("بنفسجي","Purple"),
+                                          "#FFE1C3" to neoLabel("برتقالي","Orange"),
+                                          "#E3E6EB" to neoLabel("رمادي","Gray")
+                                      ).forEach { (hex,label) ->
+                                          val swatch=if(hex.isBlank()) MaterialTheme.colorScheme.surface
+                                              else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
+                                          Surface(
+                                              onClick={background=hex},
+                                              modifier=Modifier.size(36.dp),
+                                              shape=androidx.compose.foundation.shape.CircleShape,
+                                              color=swatch,
+                                              border=androidx.compose.foundation.BorderStroke(
+                                                  if(background==hex) 2.dp else 1.dp,
+                                                  if(background==hex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                                              )
+                                          ) {
+                                              Box(Modifier.fillMaxSize(),contentAlignment=androidx.compose.ui.Alignment.Center) {
+                                                  if(background==hex) Text("✓",color=MaterialTheme.colorScheme.onSurface)
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                              Row(
+                                  Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                  horizontalArrangement=Arrangement.spacedBy(6.dp)
+                              ) {
+                                  FilterChip(selected=pinned,onClick={pinned=!pinned},label={Text(neoLabel("تثبيت","Pin"))})
+                                  FilterChip(selected=archived,onClick={archived=!archived},label={Text(neoLabel("أرشفة","Archive"))})
+                                  FilterChip(selected=calendarLinked,onClick={calendarLinked=!calendarLinked},label={Text(neoLabel("التقويم","Calendar"))})
+                                  FilterChip(selected=locked,onClick={
+                                      if(locked) locked=false
+                                      else {
+                                          val settings=V11SecurityStore(context.applicationContext).load()
+                                          if(settings.mode!=V11LockMode.NONE || settings.biometricEnabled) locked=true
+                                          else error=neoLabel("فعّل PIN أو البصمة أولًا من الإعدادات","Set up PIN or biometrics first")
+                                      }
+                                  },label={Text(neoLabel("قفل","Lock"))})
+                              }
+                              TextButton(onClick={options=true;floatingFormat=false}) {
+                                  Text(neoLabel("المزيد من الخيارات والتذكيرات","More options and reminders"))
+                              }
                           }
                       }
                   }

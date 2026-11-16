@@ -167,6 +167,15 @@ internal fun NeoRuledNoteEditor(
             }.coerceIn(0f,viewportScroll.maxValue.toFloat())
             if(kotlin.math.abs(desired-current)>1f) viewportScroll.scrollTo(desired.toInt())
         }
+        // BasicTextField uses its parent's layout direction for the editable
+        // text layout. An RTL TextStyle by itself does not anchor its internal
+        // text box to the right edge of the full-width ruled paper.
+        val writingFromRight=textDirection!=androidx.compose.ui.text.style.TextDirection.Ltr
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides
+                if(writingFromRight) androidx.compose.ui.unit.LayoutDirection.Rtl
+                else androidx.compose.ui.unit.LayoutDirection.Ltr
+        ) {
         Column(Modifier.fillMaxSize().verticalScroll(viewportScroll).padding(horizontal=16.dp)) {
             androidx.compose.foundation.text.BasicTextField(
                 value=value,
@@ -201,9 +210,18 @@ internal fun NeoRuledNoteEditor(
                     if(cursorBottom!=rect.bottom) cursorBottom=rect.bottom
                 },
                 decorationBox={inner->
-                    Box {
+                    // The inner text box must occupy the entire page width.
+                    // Otherwise short Arabic lines appear left/centered and jump
+                    // as the line grows, despite TextAlign.Right in TextStyle.
+                    Box(
+                        modifier=Modifier.fillMaxWidth(),
+                        contentAlignment=if(writingFromRight)
+                            androidx.compose.ui.Alignment.TopEnd
+                        else androidx.compose.ui.Alignment.TopStart
+                    ) {
                         if(value.text.isEmpty()) Text(
                             neoLabel("اكتب ملاحظتك هنا…","Write your note here…"),
+                            modifier=Modifier.fillMaxWidth(),
                             color=MaterialTheme.colorScheme.onSurfaceVariant,
                             style=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,
                                 textDirection=textDirection,
@@ -216,6 +234,7 @@ internal fun NeoRuledNoteEditor(
                 }
             )
             Spacer(Modifier.height(196.dp))
+        }
         }
     }
 }

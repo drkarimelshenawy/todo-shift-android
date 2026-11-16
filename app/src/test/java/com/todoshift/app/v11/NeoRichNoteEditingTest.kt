@@ -68,4 +68,33 @@ class NeoRichNoteEditingTest {
         assertTrue(state.characters.all{it.bold})
         assertEquals("<b>abc</b>",state.stored())
     }
+    @Test fun arabicImeCompositionSurvivesBoldTypingAndCommit() {
+        var state=NeoRichEditorState.open("").toggle("bold")
+        val initial=TextFieldValue("مر",TextRange(2),TextRange(0,2))
+        state=state.input(initial)
+        assertEquals(initial.annotatedString,state.value.annotatedString)
+        assertEquals(TextRange(0,2),state.value.composition)
+        assertTrue(state.characters.all{it.bold})
+        val replacing=TextFieldValue("مرحبا",TextRange(5),TextRange(0,5))
+        state=state.input(replacing)
+        assertEquals("مرحبا",state.value.text)
+        assertEquals(TextRange(0,5),state.value.composition)
+        state=state.input(TextFieldValue("مرحبا",TextRange(5)))
+        assertNull(state.value.composition)
+        assertTrue(state.characters.all{it.bold})
+        assertEquals("<b>مرحبا</b>",state.stored())
+        assertFalse(state.value.text.contains("<b>"))
+    }
+
+    @Test fun independentStyleSegmentsRemainStableWhenArabicCaretMoves() {
+        var note=NeoRichEditorState.open("هنا سطر عربي")
+        note=note.input(TextFieldValue(note.value.annotatedString,TextRange(1)))
+        note=note.toggle("italic")
+        val exported=note.stored()
+        assertEquals("هنا سطر عربي",note.value.text)
+        assertEquals("هنا سطر عربي",NeoRichEditorState.open(exported).value.text)
+        assertTrue(note.characters.take(3).all{it.italic})
+        assertTrue(note.characters.drop(3).all{!it.italic})
+    }
+
 }

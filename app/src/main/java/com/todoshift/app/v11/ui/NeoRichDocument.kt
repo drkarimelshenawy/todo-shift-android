@@ -68,10 +68,19 @@ internal data class NeoRichEditorState(
 
     /** Diff an IME edit and move its style ranges and linked-checklist anchors. */
     fun input(next:TextFieldValue):NeoRichEditorState {
-        if(next.text==value.text) return copy(
-            value=TextFieldValue(value.annotatedString,next.selection,next.composition),
-            pending=if(next.selection==value.selection) pending else null
-        )
+        if(next.text==value.text) {
+            val typing=if(value.composition==null && next.composition==null &&
+                next.selection!=value.selection) null else pending
+            // When an Arabic IME commits its composing word without a text
+            // change, apply the chosen styles only after composition finishes.
+            return if(value.composition!=null && next.composition==null)
+                withValue(value.text,characters,next.selection,typing=typing)
+            else copy(
+                value=if(next.composition!=null) next
+                    else TextFieldValue(value.annotatedString,next.selection,next.composition),
+                pending=typing
+            )
+        }
         val before=value.text;val after=next.text
         var start=0
         while(start<before.length && start<after.length && before[start]==after[start]) start++
@@ -88,6 +97,12 @@ internal data class NeoRichEditorState(
                 else -> newEnd
             }).coerceIn(0,after.length)
         )}
+        // Preserve the exact IME-supplied editing buffer while composing.
+        // Replacing it with a newly serialized AnnotatedString on every Arabic
+        // keystroke can invalidate composing spans and move the cursor.
+        if(next.composition!=null) return copy(
+            value=next,characters=styles,hidden=tokens,pending=pending
+        )
         return withValue(after,styles,next.selection,tokens,pending,next.composition)
     }
 

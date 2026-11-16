@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -58,80 +60,128 @@ internal fun NeoNoteFormatting(
         androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
         Column(Modifier.fillMaxWidth()) {
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
-                listOf("B" to "bold","I" to "italic","U" to "underline","S̶" to "strike")
-                    .forEach{(label,mark)->
-                        FilterChip(
-                            selected=state.active(mark),onClick={change(state.toggle(mark))},
-                            modifier=Modifier.weight(1f).height(42.dp),
-                            label={Text(label,modifier=Modifier.fillMaxWidth(),
-                                textAlign=androidx.compose.ui.text.style.TextAlign.Center,
-                                fontWeight=if(mark=="bold") FontWeight.Bold else null)}
-                        )
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+                listOf("B" to "bold","I" to "italic","U̲" to "underline","S̶" to "strike")
+                    .forEach { (symbol,mark) ->
+                        val selected=state.active(mark)
+                        NeoFormatAction(symbol,selected=selected,
+                            description=mark,action={change(state.toggle(mark))},
+                            modifier=Modifier.weight(1f))
                     }
-                Box(Modifier.weight(1.2f)) {
-                    FilterChip(
-                        selected=state.effective().size!=null,
-                        onClick={sizes=true},modifier=Modifier.fillMaxWidth().height(42.dp),
-                        label={Text("${state.effective().size ?: "Aa"} ▾",
-                            modifier=Modifier.fillMaxWidth(),
-                            textAlign=androidx.compose.ui.text.style.TextAlign.Center,maxLines=1)}
+                Box(Modifier.weight(1.25f)) {
+                    val selected=state.effective().size!=null
+                    NeoFormatAction(
+                        (state.effective().size?.toString() ?: "Aa")+"⌄",
+                        selected=selected,
+                        description=neoLabel("حجم الخط","Font size"),
+                        action={sizes=true}
                     )
                     DropdownMenu(expanded=sizes,onDismissRequest={sizes=false}) {
-                        listOf(14,16,18,20,24,28).forEach{points->
+                        listOf(14,16,18,20,24,28).forEach {points ->
                             DropdownMenuItem(text={Text("$points sp",fontSize=points.sp)},
                                 onClick={sizes=false;change(state.fontSize(points))})
                         }
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
                 Box(Modifier.weight(1f)) {
-                    TextButton(onClick={lists=true},modifier=Modifier.fillMaxWidth().height(44.dp),
-                        contentPadding=PaddingValues(0.dp)){Text("☷ ▾",maxLines=1)}
-                    DropdownMenu(expanded=lists,onDismissRequest={lists=false}){
-                        listOf("• " to "- ","☐ " to "- [ ] ","1. " to "1. ","A. " to "A. ")
-                            .forEach{(label,marker)->
-                                DropdownMenuItem(text={Text(label)},onClick={lists=false;change(state.list(marker))})
+                    NeoFormatAction("≡",description=neoLabel("قوائم وترقيم","Lists"),
+                        action={lists=true})
+                    DropdownMenu(expanded=lists,onDismissRequest={lists=false}) {
+                        listOf("•" to "- ","☐" to "- [ ] ","1." to "1. ","A." to "A. ")
+                            .forEach {(label,marker) ->
+                                DropdownMenuItem(text={Text(label)},onClick={
+                                    lists=false;change(state.list(marker))
+                                })
                             }
                     }
                 }
                 Box(Modifier.weight(1f)) {
-                    TextButton(onClick={directions=true},modifier=Modifier.fillMaxWidth().height(44.dp),
-                        contentPadding=PaddingValues(0.dp)){Text("⇄")}
-                    DropdownMenu(expanded=directions,onDismissRequest={directions=false}){
+                    NeoFormatAction(
+                        if(direction=="rtl") "⇤" else if(direction=="ltr") "⇥" else "⇄",
+                        description=neoLabel("اتجاه الكتابة","Text direction"),
+                        action={directions=true}
+                    )
+                    DropdownMenu(expanded=directions,onDismissRequest={directions=false}) {
                         listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR")
-                            .forEach{(key,label)->
-                                DropdownMenuItem(text={Text(label+(if(direction==key)" ✓" else ""))},
-                                    onClick={directions=false;onDirectionChange(key)})
+                            .forEach {(key,label) ->
+                                DropdownMenuItem(
+                                    text={Text(label+(if(direction==key)" ✓" else ""))},
+                                    onClick={directions=false;onDirectionChange(key)}
+                                )
                             }
                     }
                 }
                 Box(Modifier.weight(1f)) {
-                    TextButton(onClick={colors=true},modifier=Modifier.fillMaxWidth().height(44.dp),
-                        contentPadding=PaddingValues(0.dp)) {
-                        Text("●",fontSize=24.sp,color=state.effective().color?.let{
-                            runCatching{Color(android.graphics.Color.parseColor(it))}.getOrNull()
-                        } ?: MaterialTheme.colorScheme.primary)
+                    val hex=state.effective().color
+                    val chipColor=hex?.let{
+                        runCatching{Color(android.graphics.Color.parseColor(it))}.getOrNull()
+                    } ?: MaterialTheme.colorScheme.primary
+                    Surface(
+                        onClick={colors=true},
+                        modifier=Modifier.fillMaxWidth().height(42.dp),
+                        shape=androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                        color=MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.32f)
+                    ) {
+                        Box(Modifier.fillMaxSize(),contentAlignment=androidx.compose.ui.Alignment.Center) {
+                            Surface(
+                                modifier=Modifier.size(18.dp),
+                                shape=androidx.compose.foundation.shape.CircleShape,
+                                color=chipColor
+                            ) {}
+                        }
                     }
                     DropdownMenu(expanded=colors,onDismissRequest={colors=false}) {
-                        listOf("أحمر" to "#C62828","أزرق" to "#1565C0","أخضر" to "#2E7D32",
-                            "ذهبي" to "#9B6A12","بنفسجي" to "#7B1FA2","أسود" to "#222222")
-                            .forEach{(label,hex)->
-                                DropdownMenuItem(text={
-                                    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                                        Text("●",color=Color(android.graphics.Color.parseColor(hex)))
+                        listOf("أحمر" to "#C62828","أزرق" to "#1565C0",
+                            "أخضر" to "#2E7D32","ذهبي" to "#9B6A12",
+                            "بنفسجي" to "#7B1FA2","أسود" to "#222222")
+                            .forEach {(label,color) ->
+                                DropdownMenuItem(
+                                    text={Row(horizontalArrangement=Arrangement.spacedBy(9.dp)){
+                                        Text("●",color=Color(android.graphics.Color.parseColor(color)))
                                         Text(label)
-                                    }
-                                },onClick={colors=false;change(state.ink(hex))})
+                                    }},
+                                    onClick={colors=false;change(state.ink(color))}
+                                )
                             }
                     }
                 }
-                TextButton(onClick=undo,enabled=canUndo,modifier=Modifier.weight(1f).height(44.dp),
-                    contentPadding=PaddingValues(0.dp)){Text("↶",fontSize=24.sp)}
-                TextButton(onClick=redo,enabled=canRedo,modifier=Modifier.weight(1f).height(44.dp),
-                    contentPadding=PaddingValues(0.dp)){Text("↷",fontSize=24.sp)}
+                NeoFormatAction("↶",description=neoLabel("تراجع","Undo"),
+                    enabled=canUndo,action=undo,modifier=Modifier.weight(1f))
+                NeoFormatAction("↷",description=neoLabel("إعادة","Redo"),
+                    enabled=canRedo,action=redo,modifier=Modifier.weight(1f))
             }
+        }
+    }
+}
+
+@Composable
+private fun NeoFormatAction(
+    symbol:String,
+    description:String,
+    modifier:Modifier=Modifier,
+    selected:Boolean=false,
+    enabled:Boolean=true,
+    action:()->Unit
+) {
+    Surface(
+        onClick=action,enabled=enabled,
+        modifier=modifier.fillMaxWidth().height(42.dp)
+            .semantics {contentDescription=description},
+        shape=androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+        color=if(selected) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.32f),
+        border=if(selected) androidx.compose.foundation.BorderStroke(
+            1.5.dp,MaterialTheme.colorScheme.primary
+        ) else null
+    ) {
+        Box(Modifier.fillMaxSize(),contentAlignment=androidx.compose.ui.Alignment.Center) {
+            Text(symbol,style=MaterialTheme.typography.titleMedium,
+                fontWeight=if(symbol=="B") FontWeight.Bold else FontWeight.Medium,
+                maxLines=1,
+                color=if(selected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(enabled) 1f else 0.35f))
         }
     }
 }
@@ -229,7 +279,18 @@ internal fun NeoRuledNoteEditor(
                                     androidx.compose.ui.text.style.TextAlign.Left
                                 else androidx.compose.ui.text.style.TextAlign.Right)
                         )
-                        inner()
+                        // Ensure the actual editable text takes the page width, not its
+                        // intrinsic glyph width. Short RTL lines must not slide as they grow.
+                        androidx.compose.ui.layout.Layout(
+                            modifier=Modifier.fillMaxWidth(),
+                            content={inner()}
+                        ) { children, limits ->
+                            val width=limits.maxWidth
+                            val child=children.single().measure(
+                                limits.copy(minWidth=width,maxWidth=width)
+                            )
+                            layout(width,child.height) {child.place(0,0)}
+                        }
                     }
                 }
             )

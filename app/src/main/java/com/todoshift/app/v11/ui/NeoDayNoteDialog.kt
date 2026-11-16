@@ -109,7 +109,10 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var reminder by rememberSaveable { mutableStateOf(existing?.reminderAt?.let {java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(it),java.time.ZoneId.systemDefault()).toString()}.orEmpty()) }
     var preview by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable(existing?.id) { mutableStateOf(existing == null) }
-    var noteDirection by rememberSaveable(existing?.id) { mutableStateOf("auto") }
+    // Keep the writing direction stable from the first keystroke. Auto remains selectable.
+    var noteDirection by rememberSaveable(existing?.id) {
+        mutableStateOf(if(neoLabel("ar","en")=="ar") "rtl" else "ltr")
+    }
     var floatingFormat by rememberSaveable { mutableStateOf(false) }
     var noteMoreMenu by remember { mutableStateOf(false) }
     var paperPaletteOpen by remember { mutableStateOf(false) }
@@ -125,16 +128,33 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         if(next.text!=body.text) { undo.add(body); if(undo.size>50) undo.removeAt(0); redo.clear() }
         body=next
     }
-    // Keep persisted source separate from the styled, visible IME buffer.
+    // The IME's composing buffer must remain the source of truth while typing.
+    // Re-encoding spans and reloading the field on each Arabic composing edit
+    // breaks cursor movement and produces unexpected text layout changes.
     var rich by remember(existing?.id) {mutableStateOf(NeoRichEditorState.open(body.text))}
+    var richDirty by remember(existing?.id) {mutableStateOf(false)}
+    var lastEditorCommit by remember(existing?.id) {mutableStateOf(body.text)}
+    fun noteSource():String=if(richDirty) rich.stored() else body.text
     fun editRich(next:NeoRichEditorState) {
+        val contentChanged=next.value.text!=rich.value.text ||
+            next.characters!=rich.characters || next.hidden!=rich.hidden
         rich=next
-        val stored=next.stored()
-        if(stored!=body.text) edit(TextFieldValue(stored))
+        if(contentChanged) richDirty=true
+        // Never replace the IME composing buffer with serialized formatting.
+        if(richDirty && next.value.composition==null) {
+            val stored=next.stored()
+            lastEditorCommit=stored
+            richDirty=false
+            if(stored!=body.text) edit(TextFieldValue(stored))
+        }
     }
-    // Restored drafts, undo/redo and linked checklist edits can replace the source.
+    // Draft recovery and Undo/Redo can replace source from outside the live editor.
     LaunchedEffect(body.text) {
-        if(rich.stored()!=body.text) rich=NeoRichEditorState.open(body.text)
+        if(body.text!=lastEditorCommit && rich.value.composition==null) {
+            if(rich.stored()!=body.text) rich=NeoRichEditorState.open(body.text)
+            lastEditorCommit=body.text
+            richDirty=false
+        }
     }
     var sourceRevision by remember { mutableStateOf(expectedDatabase.dayItems.firstOrNull {it.id==id}?.toString() ?: "<new>") }
     LaunchedEffect(draftKey) {
@@ -171,19 +191,19 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             draftReady=error==null
         } catch(failure: Exception) { error="Unable to recover note draft: ${failure.message}" }
     }
-    fun editVersion():String = org.json.JSONArray(listOf(id,title,body.text,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
         while(pending) delay(10)
         if(rootWritePending || !draftReady || conflictingDraft!=null) return false
         if(!close && lastSavedEdit==editVersion()) return true
-        if(title.isBlank() && body.text.isBlank() && expected.dayItems.none {it.id==id}) {if(close) onDismiss();return true}
+        if(title.isBlank() && noteSource().isBlank() && expected.dayItems.none {it.id==id}) {if(close) onDismiss();return true}
         if(!color.matches(Regex("#[0-9a-fA-F]{6}")) || (background.isNotBlank() && !background.matches(Regex("#[0-9a-fA-F]{6}")))) {
             error="اختر لونًا صحيحًا / Choose a valid color";return false
         }
         if(runCatching {LocalDate.parse(linkedDate)}.isFailure) {error="تاريخ الملاحظة غير صحيح / Invalid note date";return false}
         val reminderAt=if(reminder.isBlank()) null else try {java.time.LocalDateTime.parse(reminder).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()} catch(_:Exception) {error="تاريخ التذكير غير صحيح / Invalid reminder date";return false}
         val note=(expected.dayItems.firstOrNull {it.id==id} ?: DayItemV11(id,date.toString(),calendarId,DayItemTypeV11.NOTE,""))
-            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=body.text,reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,notePreviewHidden=previewHidden,noteBackground=background.takeIf {it.isNotBlank()})
+            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=noteSource(),reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,notePreviewHidden=previewHidden,noteBackground=background.takeIf {it.isNotBlank()})
         val linkedTasks=taskSpecs.map {spec ->
             val key=spec.substringBefore('\n'); val label=spec.substringAfter('\n')
             val taskId=UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString()
@@ -191,11 +211,17 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         }
         val linkedExisting=existingTaskLinks.mapNotNull {key->expected.tasks.firstOrNull {it.id==key}?.copy(linkedNoteId=id)}
         val savedEdit=editVersion()
+        val savedDetails=noteSource()
         closing=close;pending=true
         return try {
             val next=withContext(Dispatchers.IO) {com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).saveNote(expected,expectedMetadata,note,color,border,linkedTasks=(linkedTasks+linkedExisting).distinctBy {it.id}.filterNot {it.id in detachedTasks},detachedTaskIds=detachedTasks.toSet())}
             expected=next;expectedMetadata=withContext(Dispatchers.IO) {styleStore.snapshot().toString()};sourceRevision=note.toString()
             lastSavedEdit=savedEdit
+            if(richDirty) {
+                body=TextFieldValue(savedDetails)
+                lastEditorCommit=savedDetails
+                richDirty=false
+            }
             detachedTasks=emptyList();existingTaskLinks=emptyList()
             onProtectionChanged(note.noteLocked);committed(next);draftStatus="تم الحفظ / Saved";error=null
             withContext(Dispatchers.IO) {drafts.removeIfVersion(draftKey,savedEdit)}
@@ -207,13 +233,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     }
     suspend fun keepDraft() {
       try {
-        val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",body.text).put("tags",tags)
+        val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",noteSource()).put("tags",tags)
             .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden).put("previewHidden",previewHidden)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }
       } catch(_:Exception) {error="تعذر حفظ المسودة؛ لن تُحذف التعديلات / Draft save failed; edits retained"}
     }
-    LaunchedEffect(title,body.text,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending) {
+    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }

@@ -131,23 +131,63 @@ internal fun noteInline(text: String): AnnotatedString =
     NeoNoteVisualTransformation().filter(AnnotatedString(text)).text
 
 @Composable
-internal fun NeoNotePreview(text: String, checklistsOnly:Boolean=false, onChecklist: ((Int) -> Unit)? = null, onCreateTask: ((Int, String) -> Unit)? = null) {
-    Column(verticalArrangement=Arrangement.spacedBy(2.dp)) {
+internal fun NeoNotePreview(
+    text: String,
+    checklistsOnly: Boolean = false,
+    onChecklist: ((Int) -> Unit)? = null,
+    onCreateTask: ((Int, String) -> Unit)? = null,
+    textDirection: androidx.compose.ui.text.style.TextDirection = androidx.compose.ui.text.style.TextDirection.ContentOrRtl
+) {
+    // Match the ruled editor's 34.sp line spacing and paragraph direction.
+    // The read-only view must never expose editable checkbox controls.
+    val lineStyle = MaterialTheme.typography.bodyLarge.copy(
+        lineHeight = 34.sp,
+        textDirection = textDirection
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
         text.lines().forEachIndexed { index, rawLine ->
-            val line=noteDisplayText(rawLine)
+            val line = noteDisplayText(rawLine)
             val checked = Regex("^\\s*- \\[([ xX])\\] (.*)$").matchEntire(line)
-            if (checked != null) Row {
-                Checkbox(checked.groupValues[1] != " ", onCheckedChange=onChecklist?.let { callback -> { _: Boolean -> callback(index) } })
-                Text(noteInline(checked.groupValues[2]), Modifier.weight(1f).padding(top=12.dp))
-                if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checked.groupValues[2])}) {Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))}
+            if (checked != null) {
+                val checkedText = checked.groupValues[2]
+                if(onChecklist == null && onCreateTask == null) {
+                    Text(
+                        noteInline((if(checked.groupValues[1] == " ") "☐ " else "☑ ") + checkedText),
+                        style = lineStyle
+                    )
+                } else {
+                    Row {
+                        Checkbox(
+                            checked.groupValues[1] != " ",
+                            onCheckedChange = onChecklist?.let { callback -> { _: Boolean -> callback(index) } }
+                        )
+                        Text(noteInline(checkedText), Modifier.weight(1f).padding(top=6.dp), style=lineStyle)
+                        if(onCreateTask != null) {
+                            TextButton(onClick = { onCreateTask(index,checkedText) }) {
+                                Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))
+                            }
+                        }
+                    }
+                }
             } else if(!checklistsOnly) {
                 val heading = line.startsWith("# ") || line.startsWith("## ") || line.startsWith("### ")
-                Text(noteInline(if(heading) line.substringAfter(' ') else if(line.startsWith("- ")) "• " + line.drop(2) else line), style=when {line.startsWith("# ") -> MaterialTheme.typography.titleLarge; line.startsWith("## ") -> MaterialTheme.typography.titleMedium; line.startsWith("### ") -> MaterialTheme.typography.titleSmall; else -> MaterialTheme.typography.bodyMedium})
+                val visible = if(heading) line.substringAfter(' ')
+                    else if(line.startsWith("- ")) "• " + line.drop(2)
+                    else line
+                val type = when {
+                    line.startsWith("# ") -> MaterialTheme.typography.titleLarge
+                    line.startsWith("## ") -> MaterialTheme.typography.titleMedium
+                    line.startsWith("### ") -> MaterialTheme.typography.titleSmall
+                    else -> MaterialTheme.typography.bodyLarge
+                }
+                Text(
+                    noteInline(visible.ifEmpty { " " }),
+                    style=type.copy(lineHeight=34.sp,textDirection=textDirection)
+                )
             }
         }
     }
 }
-
 /** A stable token travels with its checklist line, but is never shown or shared. */
 internal fun noteDisplayText(text:String):String = text.replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
 

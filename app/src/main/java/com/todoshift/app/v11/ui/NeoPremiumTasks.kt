@@ -349,15 +349,31 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             Card(onClick={noteId=note.id;noteEditor=true},modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
                                 Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                     if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
-                                    if(note.noteLocked) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium,maxLines=2)
-                                    else {
-                                        Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {noteDisplayText(note.details).lineSequence().firstOrNull {it.isNotBlank()}?.take(100) ?: neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium,maxLines=if(noteLayout=="grid") 2 else 3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                        if(noteLayout!="list") {
-                                            if(note.details.isNotBlank()) Text(noteInline(noteDisplayText(note.details)),maxLines=if(noteLayout=="grid") 3 else 4,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
-                                            if(note.noteTags.isNotBlank() && noteLayout=="details") Text(note.noteTags,style=MaterialTheme.typography.labelSmall,maxLines=1)
+                                    Text(
+                                            (if(note.noteLocked) "🔒 " else if(note.notePinned) "📌 " else "") +
+                                                note.title.ifBlank {
+                                                    if(note.noteLocked || note.notePreviewHidden) neoLabel("ملاحظة","Note")
+                                                    else noteDisplayText(note.details).lineSequence().firstOrNull { it.isNotBlank() }?.take(100)
+                                                        ?: neoLabel("بدون عنوان","Untitled")
+                                                },
+                                            style=MaterialTheme.typography.titleMedium,
+                                            maxLines=if(noteLayout=="grid") 2 else 3,
+                                            overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
+                                        // Password locking and hiding an excerpt are independent settings.
+                                        // Neither option removes the note from the list or blocks opening its card.
+                                        if(!note.noteLocked && !note.notePreviewHidden && noteLayout!="list") {
+                                            if(note.details.isNotBlank()) Text(
+                                                noteInline(noteDisplayText(note.details)),
+                                                maxLines=if(noteLayout=="grid") 3 else 4,
+                                                overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                style=MaterialTheme.typography.bodyMedium
+                                            )
+                                            if(note.noteTags.isNotBlank() && noteLayout=="details")
+                                                Text(note.noteTags,style=MaterialTheme.typography.labelSmall,maxLines=1)
                                         }
-                                        Text(note.date,style=MaterialTheme.typography.labelSmall,color=contentColor.copy(alpha=0.75f),maxLines=1)
-                                    }
+                                        Text(note.date,style=MaterialTheme.typography.labelSmall,
+                                            color=contentColor.copy(alpha=0.75f),maxLines=1)
                                 }
                             }
                                         }
@@ -373,15 +389,31 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         Card(onClick={noteId=note.id;noteEditor=true},modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
                             Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                 if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
-                                if(note.noteLocked) Text(neoLabel("🔒 ملاحظة محمية","🔒 Protected note"),style=MaterialTheme.typography.titleMedium,maxLines=2)
-                                else {
-                                    Text((if(note.notePinned) "📌 " else "")+note.title.ifBlank {noteDisplayText(note.details).lineSequence().firstOrNull {it.isNotBlank()}?.take(100) ?: neoLabel("بدون عنوان","Untitled")},style=MaterialTheme.typography.titleMedium,maxLines=if(noteLayout=="grid") 2 else 3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                    if(noteLayout!="list") {
-                                        if(note.details.isNotBlank()) Text(noteInline(noteDisplayText(note.details)),maxLines=if(noteLayout=="grid") 3 else 4,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
-                                        if(note.noteTags.isNotBlank() && noteLayout=="details") Text(note.noteTags,style=MaterialTheme.typography.labelSmall,maxLines=1)
-                                    }
-                                    Text(note.date,style=MaterialTheme.typography.labelSmall,color=contentColor.copy(alpha=0.75f),maxLines=1)
-                                }
+                                Text(
+                                            (if(note.noteLocked) "🔒 " else if(note.notePinned) "📌 " else "") +
+                                                note.title.ifBlank {
+                                                    if(note.noteLocked || note.notePreviewHidden) neoLabel("ملاحظة","Note")
+                                                    else noteDisplayText(note.details).lineSequence().firstOrNull { it.isNotBlank() }?.take(100)
+                                                        ?: neoLabel("بدون عنوان","Untitled")
+                                                },
+                                            style=MaterialTheme.typography.titleMedium,
+                                            maxLines=if(noteLayout=="grid") 2 else 3,
+                                            overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
+                                        // Password locking and hiding an excerpt are independent settings.
+                                        // Neither option removes the note from the list or blocks opening its card.
+                                        if(!note.noteLocked && !note.notePreviewHidden && noteLayout!="list") {
+                                            if(note.details.isNotBlank()) Text(
+                                                noteInline(noteDisplayText(note.details)),
+                                                maxLines=if(noteLayout=="grid") 3 else 4,
+                                                overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                style=MaterialTheme.typography.bodyMedium
+                                            )
+                                            if(note.noteTags.isNotBlank() && noteLayout=="details")
+                                                Text(note.noteTags,style=MaterialTheme.typography.labelSmall,maxLines=1)
+                                        }
+                                        Text(note.date,style=MaterialTheme.typography.labelSmall,
+                                            color=contentColor.copy(alpha=0.75f),maxLines=1)
                             }
                         }
                         }

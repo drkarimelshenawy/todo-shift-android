@@ -5,6 +5,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.*
@@ -88,6 +91,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var trashed by rememberSaveable { mutableStateOf(existing?.noteTrashed ?: false) }
     var locked by rememberSaveable { mutableStateOf(existing?.noteLocked ?: false) }
     var hidden by rememberSaveable { mutableStateOf(existing?.noteHidden ?: false) }
+    var previewHidden by rememberSaveable { mutableStateOf(existing?.notePreviewHidden ?: false) }
     var calendarLinked by rememberSaveable {mutableStateOf(existing?.noteCalendarLinked ?: true)}
     var linkedDate by rememberSaveable {mutableStateOf(existing?.date ?: date.toString())}
     var linkedCalendar by rememberSaveable {mutableStateOf(existing?.calendarId ?: calendarId)}
@@ -105,8 +109,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var noteDirection by rememberSaveable(existing?.id) { mutableStateOf("auto") }
     var floatingFormat by rememberSaveable { mutableStateOf(false) }
     var formatTab by rememberSaveable { mutableStateOf("format") }
-    var formatX by remember { mutableFloatStateOf(0f) }
-    var formatY by remember { mutableFloatStateOf(0f) }
+    val noteInputFocus=remember { FocusRequester() }
+    val noteKeyboard=LocalSoftwareKeyboardController.current
     var options by rememberSaveable { mutableStateOf(false) }
     var draftReady by rememberSaveable { mutableStateOf(false) }
     var draftStatus by remember { mutableStateOf("") }
@@ -125,14 +129,20 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             if(recovered!=null) {
                 val currentSource=expectedDatabase.dayItems.firstOrNull {it.id==recovered.optString("id")}?.toString()
                 val savedSource=recovered.optString("source")
-                if(savedSource==sourceRevision || savedSource==currentSource || (currentSource!=null && savedSource==currentSource.replace(", noteCalendarLinked=true",""))) {
+                // The new optional preview field changes the data-class toString().
+                // Accept older draft source fingerprints without that default field.
+                val legacyCurrentSource=currentSource?.replace(", notePreviewHidden=false","")
+                val legacyRevision=sourceRevision.replace(", notePreviewHidden=false","")
+                if(savedSource==sourceRevision || savedSource==currentSource ||
+                    savedSource==legacyRevision || savedSource==legacyCurrentSource ||
+                    (legacyCurrentSource!=null && savedSource==legacyCurrentSource.replace(", noteCalendarLinked=true",""))) {
                     sourceRevision=recovered.optString("source",sourceRevision)
                     id=recovered.optString("id",id); title=recovered.optString("title",title)
                     body=TextFieldValue(recovered.optString("details",body.text)); tags=recovered.optString("tags",tags)
                     calendarLinked=recovered.optBoolean("calendarLinked",calendarLinked);linkedDate=recovered.optString("linkedDate",linkedDate)
                     linkedCalendar=if(recovered.has("linkedCalendar")) recovered.optString("linkedCalendar").takeIf {it.isNotBlank()} else linkedCalendar
                     pinned=recovered.optBoolean("pinned",pinned); archived=recovered.optBoolean("archived",archived)
-                    trashed=recovered.optBoolean("trashed",trashed); locked=recovered.optBoolean("locked",locked);hidden=recovered.optBoolean("hidden",hidden)
+                    trashed=recovered.optBoolean("trashed",trashed); locked=recovered.optBoolean("locked",locked);hidden=recovered.optBoolean("hidden",hidden);previewHidden=recovered.optBoolean("previewHidden",previewHidden)
                     detachedTasks=recovered.optJSONArray("detachedTasks")?.let {a->(0 until a.length()).map {a.getString(it)}} ?: emptyList()
                     existingTaskLinks=recovered.optJSONArray("existingTaskLinks")?.let {a->(0 until a.length()).map {a.getString(it)}} ?: emptyList()
                     taskSpecs=recovered.optJSONArray("taskSpecs")?.let { array->(0 until array.length()).map {array.getString(it)} } ?: taskSpecs
@@ -146,7 +156,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             draftReady=error==null
         } catch(failure: Exception) { error="Unable to recover note draft: ${failure.message}" }
     }
-    fun editVersion():String = org.json.JSONArray(listOf(id,title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,body.text,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
         while(pending) delay(10)
         if(rootWritePending || !draftReady || conflictingDraft!=null) return false
@@ -158,7 +168,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         if(runCatching {LocalDate.parse(linkedDate)}.isFailure) {error="تاريخ الملاحظة غير صحيح / Invalid note date";return false}
         val reminderAt=if(reminder.isBlank()) null else try {java.time.LocalDateTime.parse(reminder).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()} catch(_:Exception) {error="تاريخ التذكير غير صحيح / Invalid reminder date";return false}
         val note=(expected.dayItems.firstOrNull {it.id==id} ?: DayItemV11(id,date.toString(),calendarId,DayItemTypeV11.NOTE,""))
-            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=body.text,reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,noteBackground=background.takeIf {it.isNotBlank()})
+            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=body.text,reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,notePreviewHidden=previewHidden,noteBackground=background.takeIf {it.isNotBlank()})
         val linkedTasks=taskSpecs.map {spec ->
             val key=spec.substringBefore('\n'); val label=spec.substringAfter('\n')
             val taskId=UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString()
@@ -183,12 +193,12 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     suspend fun keepDraft() {
       try {
         val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",body.text).put("tags",tags)
-            .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden)
+            .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden).put("previewHidden",previewHidden)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }
       } catch(_:Exception) {error="تعذر حفظ المسودة؛ لن تُحذف التعديلات / Draft save failed; edits retained"}
     }
-    LaunchedEffect(title,body.text,tags,pinned,archived,trashed,locked,hidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending) {
+    LaunchedEffect(title,body.text,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
@@ -225,7 +235,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     MaterialTheme(colorScheme=editorScheme) {
     Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
         properties=DialogProperties(usePlatformDefaultWidth=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
-        Surface(modifier=Modifier.fillMaxSize(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
+        Surface(modifier=Modifier.fillMaxSize().imePadding(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
             Box(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {
                     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
@@ -241,7 +251,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         ) { Text("🖌",style=MaterialTheme.typography.titleMedium) }
                         IconButton(
                             modifier=Modifier.size(40.dp),
-                            onClick={floatingFormat=true;formatTab="appearance";options=false}
+                            onClick={floatingFormat=!(floatingFormat&&formatTab=="appearance");formatTab="appearance";options=false}
                         ) { Text("🎨",style=MaterialTheme.typography.titleMedium) }
                         TextButton(enabled=!pending&&!rootWritePending,onClick={scope.launch {keepDraft();if(persistNote(false)){editing=false;floatingFormat=false;options=false}}}) {Text(neoLabel("تم","Done"))}
                     } else {
@@ -254,160 +264,120 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     Text(if(editing) neoLabel("تعديل","Editing") else neoLabel("قراءة","Viewing"),style=MaterialTheme.typography.labelSmall)
                     Text(date.toString(),style=MaterialTheme.typography.labelSmall)
                 }
-                Box(Modifier.fillMaxWidth().weight(1f)) {
-                    androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
-                        val step=34.sp.toPx()
-                        var y=34.sp.toPx()
-                        val lineColor=if(effectiveBackground!=null) androidx.compose.ui.graphics.Color(0x55BDA44A) else androidx.compose.ui.graphics.Color(0xFFB7D1F5)
-                        while(y<size.height) {
-                            drawLine(lineColor,androidx.compose.ui.geometry.Offset(10.dp.toPx(),y),androidx.compose.ui.geometry.Offset(size.width-10.dp.toPx(),y),strokeWidth=0.7.dp.toPx())
-                            y+=step
+                // Dock the quick bar above the editor, not behind the soft keyboard.
+                if(editing && floatingFormat) {
+                    Surface(
+                        modifier=Modifier.fillMaxWidth().padding(horizontal=8.dp,vertical=2.dp),
+                        shape=androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        tonalElevation=3.dp
+                    ) {
+                        Column(Modifier.padding(horizontal=8.dp,vertical=2.dp)) {
+                            Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                                Text(
+                                    if(formatTab=="format") neoLabel("تنسيق سريع","Quick formatting")
+                                    else neoLabel("🎨 المظهر","🎨 Appearance"),
+                                    modifier=Modifier.weight(1f),
+                                    style=MaterialTheme.typography.labelMedium
+                                )
+                                TextButton(onClick={floatingFormat=false}) {Text("×")}
+                            }
+                            if(formatTab=="format") {
+                                NeoNoteFormatting(
+                                    body,
+                                    {next->if(!closing){edit(next);noteInputFocus.requestFocus()}},
+                                    undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},
+                                    redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},
+                                    canUndo=undo.isNotEmpty()&&!closing,
+                                    canRedo=redo.isNotEmpty()&&!closing,
+                                    direction=noteDirection,
+                                    onDirectionChange={noteDirection=it;noteInputFocus.requestFocus()}
+                                )
+                            } else {
+                                Row(
+                                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
+                                    horizontalArrangement=Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(neoLabel("الخلفية","Paper"),style=MaterialTheme.typography.labelSmall)
+                                    listOf(
+                                        "" to "Default","#FFF4B8" to "Yellow","#D9EFDA" to "Green",
+                                        "#D6E9FF" to "Blue","#F9DCE9" to "Pink","#E8DDF5" to "Purple"
+                                    ).forEach { (hex,label) ->
+                                        val swatch=if(hex.isEmpty()) MaterialTheme.colorScheme.surface
+                                            else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
+                                        Surface(
+                                            onClick={background=hex},
+                                            modifier=Modifier.size(34.dp),
+                                            shape=androidx.compose.foundation.shape.CircleShape,
+                                            color=swatch,
+                                            border=androidx.compose.foundation.BorderStroke(
+                                                if(background==hex) 2.dp else 1.dp,
+                                                if(background==hex) MaterialTheme.colorScheme.primary
+                                                    else MaterialTheme.colorScheme.outlineVariant
+                                            )
+                                        ) {
+                                            Box(Modifier.fillMaxSize(),contentAlignment=androidx.compose.ui.Alignment.Center) {
+                                                if(background==hex) Text("✓",color=MaterialTheme.colorScheme.onSurface)
+                                            }
+                                        }
+                                    }
+                                }
+                                Row(
+                                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement=Arrangement.spacedBy(6.dp)
+                                ) {
+                                    FilterChip(selected=pinned,onClick={pinned=!pinned},
+                                        label={Text(neoLabel("تثبيت","Pin"))})
+                                    FilterChip(selected=previewHidden,onClick={previewHidden=!previewHidden},
+                                        label={Text(neoLabel("إخفاء المعاينة","Hide preview"))})
+                                    FilterChip(selected=locked,onClick={
+                                        if(locked) locked=false
+                                        else {
+                                            val settings=V11SecurityStore(context.applicationContext).load()
+                                            if(settings.mode!=V11LockMode.NONE || settings.biometricEnabled) locked=true
+                                            else error="فعّل PIN أو البصمة أولًا من الإعدادات / Configure PIN or biometrics first"
+                                        }
+                                    },label={Text(neoLabel("🔒 قفل","🔒 Lock"))})
+                                    TextButton(onClick={noteKeyboard?.hide();options=true;floatingFormat=false}) {
+                                        Text(neoLabel("المزيد","More"))
+                                    }
+                                }
+                            }
                         }
                     }
+                }
+                Box(Modifier.fillMaxWidth().weight(1f)) {
                     val direction=when(noteDirection) {
                         "rtl" -> androidx.compose.ui.text.style.TextDirection.Rtl
                         "ltr" -> androidx.compose.ui.text.style.TextDirection.Ltr
                         else -> androidx.compose.ui.text.style.TextDirection.ContentOrRtl
                     }
                     if(editing) {
-                        TextField(body,{if(!closing) edit(it)},enabled=!closing,placeholder={Text(neoLabel("اكتب ملاحظتك هنا…","Write your note here…"))},visualTransformation=remember {NeoNoteVisualTransformation()},textStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,textDirection=direction),modifier=Modifier.fillMaxSize(),colors=TextFieldDefaults.colors(focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,disabledContainerColor=androidx.compose.ui.graphics.Color.Transparent,focusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent,unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent))
+                        NeoRuledNoteEditor(
+                            value=body,
+                            onValueChange={if(!closing) edit(it)},
+                            textDirection=direction,
+                            focusRequester=noteInputFocus,
+                            modifier=Modifier.fillMaxSize()
+                        )
                     } else {
-                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=16.dp,vertical=6.dp)) {
-                            NeoNotePreview(body.text, textDirection=direction)
+                        Column(
+                            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                                .padding(horizontal=16.dp)
+                        ) {
+                            // Long-press to select and copy text in read-only mode.
+                            SelectionContainer {
+                                NeoNotePreview(body.text,textDirection=direction,ruled=true)
+                            }
+                            Spacer(Modifier.height(196.dp))
                         }
                     }
                 }
               }
-              if(editing && floatingFormat) {
-                  Surface(
-                      modifier=Modifier
-                          .align(androidx.compose.ui.Alignment.BottomCenter)
-                          .offset { androidx.compose.ui.unit.IntOffset(formatX.toInt(),formatY.toInt()) }
-                          .padding(bottom=12.dp)
-                          .fillMaxWidth(0.96f),
-                      shape=androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
-                      tonalElevation=6.dp,
-                      shadowElevation=8.dp
-                  ) {
-                      Column(
-                          Modifier.padding(horizontal=10.dp,vertical=6.dp),
-                          verticalArrangement=Arrangement.spacedBy(3.dp)
-                      ) {
-                          Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                              Text(
-                                  "⠿  "+neoLabel("اسحب لتحريك الشريط","Drag to move"),
-                                  modifier=Modifier.weight(1f).pointerInput(pageWidth,pageHeight) {
-                                      detectDragGestures { change,drag ->
-                                          change.consume()
-                                          formatX=(formatX+drag.x).coerceIn(-pageWidth*0.18f,pageWidth*0.18f)
-                                          formatY=(formatY+drag.y).coerceIn(-pageHeight*0.55f,0f)
-                                      }
-                                  },
-                                  style=MaterialTheme.typography.labelSmall,
-                                  color=MaterialTheme.colorScheme.onSurfaceVariant
-                              )
-                              TextButton(onClick={floatingFormat=false}) {Text("×")}
-                          }
-                          Row(
-                              Modifier.fillMaxWidth(),
-                              horizontalArrangement=Arrangement.spacedBy(6.dp)
-                          ) {
-                              FilterChip(
-                                  selected=formatTab=="format",
-                                  onClick={formatTab="format"},
-                                  label={Text(neoLabel("تنسيق النص","Format text"))},
-                                  modifier=Modifier.weight(1f)
-                              )
-                              FilterChip(
-                                  selected=formatTab=="appearance",
-                                  onClick={formatTab="appearance"},
-                                  label={Text(neoLabel("🎨 المظهر","🎨 Appearance"))},
-                                  modifier=Modifier.weight(1f)
-                              )
-                          }
-                          if(formatTab=="format") {
-                              NeoNoteFormatting(
-                                  body,{if(!closing) edit(it)},
-                                  undo={if(undo.isNotEmpty()){redo.add(body);body=undo.removeAt(undo.lastIndex)}},
-                                  redo={if(redo.isNotEmpty()){undo.add(body);body=redo.removeAt(redo.lastIndex)}},
-                                  canUndo=undo.isNotEmpty()&&!closing,
-                                  canRedo=redo.isNotEmpty()&&!closing
-                              )
-                              Row(
-                                  Modifier.fillMaxWidth(),
-                                  horizontalArrangement=Arrangement.spacedBy(4.dp),
-                                  verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
-                              ) {
-                                  listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR").forEach { (key,label) ->
-                                      FilterChip(selected=noteDirection==key,onClick={noteDirection=key},label={Text(label)})
-                                  }
-                              }
-                          } else {
-                              Row(
-                                  Modifier.fillMaxWidth(),
-                                  verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
-                                  horizontalArrangement=Arrangement.spacedBy(6.dp)
-                              ) {
-                                  Text(neoLabel("الخلفية","Paper"),style=MaterialTheme.typography.labelMedium)
-                                  Row(
-                                      Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-                                      horizontalArrangement=Arrangement.spacedBy(7.dp)
-                                  ) {
-                                      listOf(
-                                          "" to neoLabel("افتراضي","Default"),
-                                          "#FFF4B8" to neoLabel("أصفر","Yellow"),
-                                          "#D9EFDA" to neoLabel("أخضر","Green"),
-                                          "#D6E9FF" to neoLabel("أزرق","Blue"),
-                                          "#F9DCE9" to neoLabel("وردي","Pink"),
-                                          "#E8DDF5" to neoLabel("بنفسجي","Purple"),
-                                          "#FFE1C3" to neoLabel("برتقالي","Orange"),
-                                          "#E3E6EB" to neoLabel("رمادي","Gray")
-                                      ).forEach { (hex,label) ->
-                                          val swatch=if(hex.isBlank()) MaterialTheme.colorScheme.surface
-                                              else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
-                                          Surface(
-                                              onClick={background=hex},
-                                              modifier=Modifier.size(36.dp),
-                                              shape=androidx.compose.foundation.shape.CircleShape,
-                                              color=swatch,
-                                              border=androidx.compose.foundation.BorderStroke(
-                                                  if(background==hex) 2.dp else 1.dp,
-                                                  if(background==hex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-                                              )
-                                          ) {
-                                              Box(Modifier.fillMaxSize(),contentAlignment=androidx.compose.ui.Alignment.Center) {
-                                                  if(background==hex) Text("✓",color=MaterialTheme.colorScheme.onSurface)
-                                              }
-                                          }
-                                      }
-                                  }
-                              }
-                              Row(
-                                  Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                  horizontalArrangement=Arrangement.spacedBy(6.dp)
-                              ) {
-                                  FilterChip(selected=pinned,onClick={pinned=!pinned},label={Text(neoLabel("تثبيت","Pin"))})
-                                  FilterChip(selected=archived,onClick={archived=!archived},label={Text(neoLabel("أرشفة","Archive"))})
-                                  FilterChip(selected=calendarLinked,onClick={calendarLinked=!calendarLinked},label={Text(neoLabel("التقويم","Calendar"))})
-                                  FilterChip(selected=locked,onClick={
-                                      if(locked) locked=false
-                                      else {
-                                          val settings=V11SecurityStore(context.applicationContext).load()
-                                          if(settings.mode!=V11LockMode.NONE || settings.biometricEnabled) locked=true
-                                          else error="فعّل PIN أو البصمة أولًا من الإعدادات / Set up PIN or biometrics first"
-                                      }
-                                  },label={Text(neoLabel("قفل","Lock"))})
-                              }
-                              TextButton(onClick={options=true;floatingFormat=false}) {
-                                  Text(neoLabel("المزيد من الخيارات والتذكيرات","More options and reminders"))
-                              }
-                          }
-                      }
-                  }
-              }
+
             }
                     Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=2.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                        if(editing) TextButton(onClick={options=true}) {Text(neoLabel("خيارات الملاحظة","Note options"))}
+                        if(editing) TextButton(onClick={noteKeyboard?.hide();options=true;floatingFormat=false}) {Text(neoLabel("خيارات الملاحظة","Note options"))}
                         Text(
                             if(pending) neoLabel("جارٍ الحفظ…","Saving…")
                             else error ?: if(editVersion()!=lastSavedEdit) neoLabel("تعديلات قيد الحفظ","Changes pending save") else draftStatus,
@@ -486,8 +456,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 NeoSwitch(neoLabel("سلة المهملات (يمكن الاستعادة)","Trash (recoverable)"),trashed){if(it) confirmTrashNote=true else trashed=false}
                 val security=remember { V11SecurityStore(context.applicationContext) }
                 fun canProtect(): Boolean { val settings=security.load();return settings.mode!=V11LockMode.NONE || settings.biometricEnabled }
-                NeoSwitch(neoLabel("قفل الملاحظة","Lock note"),locked){if(!it||canProtect())locked=it else error="Configure app PIN or biometrics in Settings before protecting a note"}
-                NeoSwitch(neoLabel("إخفاء الملاحظة","Hide note"),hidden){hidden=it}
+                NeoSwitch(neoLabel("قفل الملاحظة بـ PIN أو البصمة","Lock note using PIN or biometrics"),locked){if(!it||canProtect())locked=it else error="Configure app PIN or biometrics in Settings before protecting a note"}
+                NeoSwitch(neoLabel("إخفاء معاينة المحتوى في الكروت","Hide card preview"),previewHidden){previewHidden=it}
+                 NeoSwitch(neoLabel("إخفاء الملاحظة من القائمة","Hide note from list"),hidden){hidden=it}
                 Text(neoLabel("خلفية الملاحظة","Note background"))
                 Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                     listOf("" to neoLabel("افتراضي","Default"),"#FFF4B8" to neoLabel("أصفر","Yellow"),"#D9EFDA" to neoLabel("أخضر","Green"),"#D6E9FF" to neoLabel("أزرق","Blue"),"#F9DCE9" to neoLabel("وردي","Pink"),"#E8DDF5" to neoLabel("بنفسجي","Purple"),"#FFE1C3" to neoLabel("برتقالي","Orange"),"#E3E6EB" to neoLabel("رمادي","Gray")).forEach {(value,label) -> FilterChip(background==value,{background=value},label={Text(label)},colors=FilterChipDefaults.filterChipColors(containerColor=if(value.isBlank()) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(value))))}

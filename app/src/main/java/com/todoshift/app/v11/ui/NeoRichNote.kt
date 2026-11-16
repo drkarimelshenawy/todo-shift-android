@@ -8,6 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -45,80 +49,207 @@ internal fun NeoNoteFormatting(
     undo: () -> Unit,
     redo: () -> Unit,
     canUndo: Boolean,
-    canRedo: Boolean
+    canRedo: Boolean,
+    direction: String = "auto",
+    onDirectionChange: (String) -> Unit = {}
 ) {
-    var colorMenu by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf(false)
-    }
-    val textTools = listOf(
-        "B" to ("**" to "**"),
-        "I" to ("*" to "*"),
-        "U" to ("<u>" to "</u>"),
-        "S̶" to ("<s>" to "</s>"),
-        "H1" to ("# " to ""),
-        "H2" to ("## " to ""),
-        "H3" to ("### " to "")
-    )
-    val listTools = listOf(
-        "•" to ("\n- " to ""),
-        "1." to ("\n1. " to ""),
-        "☐" to ("\n- [ ] " to ""),
-        "🔗" to ("[" to "](https://)")
-    )
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            textTools.forEach { (label, marks) ->
-                TextButton(
-                    onClick = { change(noteFormat(value, marks.first, marks.second)) },
-                    modifier = Modifier.widthIn(min = 40.dp).height(40.dp),
-                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
-                ) {
-                    Text(label, fontWeight = if (label == "B") FontWeight.Bold else null, maxLines = 1)
+    var headingsOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var inkOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var directionOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    // One scrollable, keyboard-friendly ribbon: common actions first; uncommon actions in menus.
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        listOf(
+            "B" to ("**" to "**"),
+            "I" to ("*" to "*"),
+            "U" to ("<u>" to "</u>"),
+            "S̶" to ("<s>" to "</s>"),
+            "•" to ("\n- " to ""),
+            "☐" to ("\n- [ ] " to "")
+        ).forEach { (label, tokens) ->
+            TextButton(
+                onClick = { change(noteFormat(value, tokens.first, tokens.second)) },
+                modifier = Modifier.widthIn(min = 40.dp).height(44.dp),
+                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
+            ) {
+                Text(label, maxLines=1, fontWeight = if(label=="B") FontWeight.Bold else null)
+            }
+        }
+        Box {
+            TextButton(
+                onClick={headingsOpen=true},modifier=Modifier.height(44.dp),
+                contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)
+            ) { Text("H ▾") }
+            DropdownMenu(expanded=headingsOpen,onDismissRequest={headingsOpen=false}) {
+                listOf(
+                    "H1" to ("# " to ""),"H2" to ("## " to ""),
+                    "H3" to ("### " to ""),"1." to ("\n1. " to "")
+                ).forEach { (label,tokens) ->
+                    DropdownMenuItem(
+                        text={Text(label)},
+                        onClick={headingsOpen=false;change(noteFormat(value,tokens.first,tokens.second))}
+                    )
                 }
             }
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-        Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            listTools.forEach { (label, marks) ->
-                TextButton(
-                    onClick = { change(noteFormat(value, marks.first, marks.second)) },
-                    modifier = Modifier.widthIn(min = 40.dp).height(40.dp),
-                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
-                ) { Text(label, maxLines = 1) }
+        Box {
+            TextButton(
+                onClick={inkOpen=true},modifier=Modifier.height(44.dp),
+                contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)
+            ) {Text(neoLabel("لون ▾","Ink ▾"))}
+            DropdownMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
+                listOf(
+                    "أحمر" to "#C62828","أزرق" to "#1565C0",
+                    "أخضر" to "#2E7D32","ذهبي" to "#9B6A12"
+                ).forEach { (label,hex) ->
+                    DropdownMenuItem(
+                        text={Text(label,color=Color(android.graphics.Color.parseColor(hex)))},
+                        onClick={
+                            inkOpen=false
+                            change(noteFormat(value,"<font color=\"" + hex + "\">","</font>"))
+                        }
+                    )
+                }
             }
-            Box {
-                TextButton(
-                    onClick = { colorMenu = true },
-                    modifier = Modifier.height(40.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                ) { Text(neoLabel("لون ●", "Ink ●"), maxLines = 1) }
-                DropdownMenu(expanded = colorMenu, onDismissRequest = { colorMenu = false }) {
-                    listOf(
-                        "أحمر" to "#C62828", "أزرق" to "#1565C0",
-                        "أخضر" to "#2E7D32", "ذهبي" to "#9B6A12"
-                    ).forEach { (label, hex) ->
-                        DropdownMenuItem(
-                            text = { Text(label, color = Color(android.graphics.Color.parseColor(hex))) },
-                            onClick = {
-                                colorMenu = false
-                                change(noteFormat(value, "<font color=\"$hex\">", "</font>"))
-                            }
-                        )
+        }
+        TextButton(
+            onClick={change(noteFormat(value,"[","](https://)"))},
+            modifier=Modifier.height(44.dp),
+            contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp)
+        ) {Text("🔗")}
+        Box {
+            TextButton(
+                onClick={directionOpen=true},modifier=Modifier.height(44.dp),
+                contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp)
+            ) {Text(direction.uppercase())}
+            DropdownMenu(expanded=directionOpen,onDismissRequest={directionOpen=false}) {
+                listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR").forEach { (key,label) ->
+                    DropdownMenuItem(text={Text(label)},onClick={directionOpen=false;onDirectionChange(key)})
+                }
+            }
+        }
+        TextButton(
+            onClick=undo,enabled=canUndo,modifier=Modifier.height(44.dp),
+            contentPadding=PaddingValues(horizontal=7.dp,vertical=0.dp)
+        ) {Text("↶")}
+        TextButton(
+            onClick=redo,enabled=canRedo,modifier=Modifier.height(44.dp),
+            contentPadding=PaddingValues(horizontal=7.dp,vertical=0.dp)
+        ) {Text("↷")}
+    }
+}
+
+@Composable
+internal fun NeoRuledNoteEditor(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    textDirection: androidx.compose.ui.text.style.TextDirection,
+    focusRequester: androidx.compose.ui.focus.FocusRequester,
+    modifier: Modifier = Modifier
+) {
+    val lineColor=MaterialTheme.colorScheme.outline.copy(alpha=0.33f)
+    val cursorColor=MaterialTheme.colorScheme.primary
+    val density=androidx.compose.ui.platform.LocalDensity.current
+    val spacing=with(density) { 34.sp.toPx() }
+    var bottoms by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<Float>>(emptyList()) }
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
+        val pageHeight=maxHeight
+        Column(
+            Modifier.fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal=16.dp)
+        ) {
+            androidx.compose.foundation.text.BasicTextField(
+                value=value,
+                onValueChange=onValueChange,
+                modifier=Modifier.fillMaxWidth()
+                    .heightIn(min=pageHeight)
+                    .then(Modifier.focusRequester(focusRequester))
+                    .drawBehind {
+                        val first=bottoms.ifEmpty { listOf(spacing) }
+                        first.forEach { y ->
+                            drawLine(
+                                lineColor,
+                                androidx.compose.ui.geometry.Offset(0f,y),
+                                androidx.compose.ui.geometry.Offset(size.width,y),
+                                strokeWidth=0.7.dp.toPx()
+                            )
+                        }
+                        var y=first.last()+spacing
+                        while(y<size.height) {
+                            drawLine(
+                                lineColor,
+                                androidx.compose.ui.geometry.Offset(0f,y),
+                                androidx.compose.ui.geometry.Offset(size.width,y),
+                                strokeWidth=0.7.dp.toPx()
+                            )
+                            y+=spacing
+                        }
+                    },
+                textStyle=MaterialTheme.typography.bodyLarge.copy(
+                    color=MaterialTheme.colorScheme.onSurface,
+                    lineHeight=34.sp,
+                    textDirection=textDirection
+                ),
+                visualTransformation=androidx.compose.runtime.remember {NeoNoteVisualTransformation()},
+                cursorBrush=androidx.compose.ui.graphics.SolidColor(cursorColor),
+                onTextLayout={result ->
+                    val next=(0 until result.lineCount).map {result.getLineBottom(it)}
+                    if(bottoms!=next) bottoms=next
+                },
+                decorationBox={inner ->
+                    Box {
+                        if(value.text.isEmpty()) {
+                            Text(
+                                neoLabel("اكتب ملاحظتك هنا…","Write your note here…"),
+                                color=MaterialTheme.colorScheme.onSurfaceVariant,
+                                style=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,textDirection=textDirection)
+                            )
+                        }
+                        inner()
                     }
                 }
-            }
-            TextButton(onClick = undo, enabled = canUndo, modifier = Modifier.height(40.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("↶") }
-            TextButton(onClick = redo, enabled = canRedo, modifier = Modifier.height(40.dp),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("↷") }
+            )
+            // Room to scroll the last line above the keyboard/navigation bar.
+            Spacer(Modifier.height(196.dp))
         }
     }
+}
+
+@Composable
+private fun NeoRuledParagraph(
+    content: AnnotatedString,
+    style: androidx.compose.ui.text.TextStyle,
+    modifier: Modifier = Modifier,
+    ruled: Boolean
+) {
+    if(!ruled) {
+        Text(content,modifier=modifier,style=style)
+        return
+    }
+    var bounds by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<Float>>(emptyList()) }
+    val line=MaterialTheme.colorScheme.outline.copy(alpha=0.33f)
+    Text(
+        content,
+        modifier=modifier.fillMaxWidth().drawBehind {
+            bounds.forEach {bottom ->
+                val y=(bottom-1.dp.toPx()).coerceAtLeast(0f)
+                drawLine(
+                    line,
+                    androidx.compose.ui.geometry.Offset(0f,y),
+                    androidx.compose.ui.geometry.Offset(size.width,y),
+                    strokeWidth=0.7.dp.toPx()
+                )
+            }
+        },
+        style=style,
+        onTextLayout={result ->
+            val next=(0 until result.lineCount).map {result.getLineBottom(it)}
+            if(bounds!=next) bounds=next
+        }
+    )
 }
 
 /**
@@ -136,53 +267,46 @@ internal fun NeoNotePreview(
     checklistsOnly: Boolean = false,
     onChecklist: ((Int) -> Unit)? = null,
     onCreateTask: ((Int, String) -> Unit)? = null,
-    textDirection: androidx.compose.ui.text.style.TextDirection = androidx.compose.ui.text.style.TextDirection.ContentOrRtl
+    textDirection: androidx.compose.ui.text.style.TextDirection =
+        androidx.compose.ui.text.style.TextDirection.ContentOrRtl,
+    ruled: Boolean = false
 ) {
-    // Match the ruled editor's 34.sp line spacing and paragraph direction.
-    // The read-only view must never expose editable checkbox controls.
-    val lineStyle = MaterialTheme.typography.bodyLarge.copy(
-        lineHeight = 34.sp,
-        textDirection = textDirection
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+    val lineStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,textDirection=textDirection)
+    Column(verticalArrangement=Arrangement.spacedBy(0.dp)) {
         text.lines().forEachIndexed { index, rawLine ->
-            val line = noteDisplayText(rawLine)
-            val checked = Regex("^\\s*- \\[([ xX])\\] (.*)$").matchEntire(line)
-            if (checked != null) {
-                val checkedText = checked.groupValues[2]
-                if(onChecklist == null && onCreateTask == null) {
-                    Text(
-                        noteInline((if(checked.groupValues[1] == " ") "☐ " else "☑ ") + checkedText),
-                        style = lineStyle
+            val line=noteDisplayText(rawLine)
+            val checked=Regex("^\\s*- \\[([ xX])\\] (.*)$").matchEntire(line)
+            if(checked!=null) {
+                val checkedText=checked.groupValues[2]
+                if(onChecklist==null && onCreateTask==null) {
+                    NeoRuledParagraph(
+                        noteInline((if(checked.groupValues[1]==" ") "☐ " else "☑ ")+checkedText),
+                        lineStyle,ruled=ruled
                     )
                 } else {
                     Row {
-                        Checkbox(
-                            checked.groupValues[1] != " ",
-                            onCheckedChange = onChecklist?.let { callback -> { _: Boolean -> callback(index) } }
-                        )
-                        Text(noteInline(checkedText), Modifier.weight(1f).padding(top=6.dp), style=lineStyle)
-                        if(onCreateTask != null) {
-                            TextButton(onClick = { onCreateTask(index,checkedText) }) {
-                                Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))
-                            }
+                        Checkbox(checked.groupValues[1]!=" ",onCheckedChange=onChecklist?.let {callback->{ _:Boolean->callback(index) }})
+                        NeoRuledParagraph(noteInline(checkedText),lineStyle,Modifier.weight(1f).padding(top=6.dp),ruled)
+                        if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,checkedText)}) {
+                            Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task") else neoLabel("إلى مهمة","To task"))
                         }
                     }
                 }
             } else if(!checklistsOnly) {
-                val heading = line.startsWith("# ") || line.startsWith("## ") || line.startsWith("### ")
-                val visible = if(heading) line.substringAfter(' ')
-                    else if(line.startsWith("- ")) "• " + line.drop(2)
+                val heading=line.startsWith("# ")||line.startsWith("## ")||line.startsWith("### ")
+                val visible=if(heading) line.substringAfter(' ')
+                    else if(line.startsWith("- ")) "• "+line.drop(2)
                     else line
-                val type = when {
+                val type=when {
                     line.startsWith("# ") -> MaterialTheme.typography.titleLarge
                     line.startsWith("## ") -> MaterialTheme.typography.titleMedium
                     line.startsWith("### ") -> MaterialTheme.typography.titleSmall
                     else -> MaterialTheme.typography.bodyLarge
                 }
-                Text(
-                    noteInline(visible.ifEmpty { " " }),
-                    style=type.copy(lineHeight=34.sp,textDirection=textDirection)
+                NeoRuledParagraph(
+                    noteInline(visible.ifEmpty {" "}),
+                    type.copy(lineHeight=34.sp,textDirection=textDirection),
+                    ruled=ruled
                 )
             }
         }

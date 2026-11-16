@@ -222,4 +222,30 @@ class NoteTransactionTest {
         assertTrue(transformed.text.spanStyles.any {it.item.color==androidx.compose.ui.graphics.Color(0xFFC62828)})
     }
 
+    @Test fun previewPrivacyIsIndependentFromPasswordLockAndPersistsAcrossBackups() {
+        val context=RuntimeEnvironment.getApplication()
+        val storage=V11Storage(context)
+        val note=DayItemV11(
+            id="preview-only",date="2026-11-16",type=DayItemTypeV11.NOTE,
+            title="Visible title",details="Private excerpt",
+            notePreviewHidden=true,noteLocked=false,noteHidden=false
+        )
+        assertTrue(note.noteVisible)
+        assertFalse(note.notePrivate)
+        val payload=storage.exportJson(V11Database(dayItems=listOf(note)))
+        val restored=storage.importJson(payload).dayItems.single()
+        assertEquals(note,restored)
+        assertTrue(restored.notePreviewHidden)
+        assertTrue(restored.noteVisible)
+        assertFalse(restored.noteLocked)
+        val legacy=org.json.JSONObject(payload)
+        legacy.getJSONArray("dayItems").getJSONObject(0).remove("notePreviewHidden")
+        val old=storage.importJson(legacy.toString()).dayItems.single()
+        assertFalse("Older records default to visible excerpts",old.notePreviewHidden)
+        assertEquals("Private excerpt",old.details)
+        val passwordLocked=note.copy(notePreviewHidden=false,noteLocked=true)
+        assertTrue("Password-protected notes remain in the note list",passwordLocked.noteVisible)
+        assertTrue(passwordLocked.notePrivate)
+    }
+
 }

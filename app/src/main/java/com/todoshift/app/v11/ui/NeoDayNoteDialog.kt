@@ -394,7 +394,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                       else {
                                           val settings=V11SecurityStore(context.applicationContext).load()
                                           if(settings.mode!=V11LockMode.NONE || settings.biometricEnabled) locked=true
-                                          else error=neoLabel("فعّل PIN أو البصمة أولًا من الإعدادات","Set up PIN or biometrics first")
+                                          else error="فعّل PIN أو البصمة أولًا من الإعدادات / Set up PIN or biometrics first"
                                       }
                                   },label={Text(neoLabel("قفل","Lock"))})
                               }

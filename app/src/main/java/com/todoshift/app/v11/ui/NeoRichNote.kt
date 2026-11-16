@@ -32,8 +32,8 @@ internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = 
         val lineEnd=value.text.indexOf('\n',end).takeIf {it>=0} ?: value.text.length
         val marker=prefix.removePrefix("\n")
         val replacement=value.text.substring(lineStart,lineEnd).lines().mapIndexed {index,line ->
-            val clean=line.replaceFirst(Regex("^(#{1,3} |[0-9]+\\. |- (?:\\[[ xX]\\] )?)"),"")
-            (if(marker=="1. ") "${index+1}. " else marker)+clean
+            val clean=line.replaceFirst(Regex("^(#{1,3} |[0-9]+\\. |[A-Za-z]\\. |- (?:\\[[ xX]\\] )?)"),"")
+            (when(marker) { "1. " -> "${index+1}. "; "A. " -> "${(65+index%26).toChar()}. "; else -> marker })+clean
         }.joinToString("\n")
         return TextFieldValue(value.text.replaceRange(lineStart,lineEnd,replacement),TextRange(lineStart+marker.length,lineStart+replacement.length))
     }
@@ -54,94 +54,129 @@ internal fun NeoNoteFormatting(
     direction: String = "auto",
     onDirectionChange: (String) -> Unit = {}
 ) {
-    var headingsOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var inkOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var directionOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    // One scrollable, keyboard-friendly ribbon: common actions first; uncommon actions in menus.
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    var sizeMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var listMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var directionMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var inkMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var inkHex by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("#9B6A12") }
+    // Fixed toolbar order in both Arabic and English. Two rows, no header or close button.
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        listOf(
-            "B" to ("**" to "**"),
-            "I" to ("*" to "*"),
-            "U" to ("<u>" to "</u>"),
-            "S̶" to ("<s>" to "</s>"),
-            "•" to ("\n- " to ""),
-            "☐" to ("\n- [ ] " to "")
-        ).forEach { (label, tokens) ->
-            TextButton(
-                onClick = { change(noteFormat(value, tokens.first, tokens.second)) },
-                modifier = Modifier.widthIn(min = 40.dp).height(44.dp),
-                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
-            ) {
-                Text(label, maxLines=1, fontWeight = if(label=="B") FontWeight.Bold else null)
-            }
-        }
-        Box {
-            TextButton(
-                onClick={headingsOpen=true},modifier=Modifier.height(44.dp),
-                contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)
-            ) { Text("H ▾") }
-            DropdownMenu(expanded=headingsOpen,onDismissRequest={headingsOpen=false}) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement=Arrangement.spacedBy(0.dp)) {
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
                 listOf(
-                    "H1" to ("# " to ""),"H2" to ("## " to ""),
-                    "H3" to ("### " to ""),"1." to ("\n1. " to "")
-                ).forEach { (label,tokens) ->
-                    DropdownMenuItem(
-                        text={Text(label)},
-                        onClick={headingsOpen=false;change(noteFormat(value,tokens.first,tokens.second))}
-                    )
+                    "B" to ("**" to "**"),
+                    "I" to ("*" to "*"),
+                    "U" to ("<u>" to "</u>"),
+                    "S̶" to ("<s>" to "</s>")
+                ).forEach { (label,marks) ->
+                    TextButton(
+                        onClick={change(noteFormat(value,marks.first,marks.second))},
+                        modifier=Modifier.weight(1f).height(44.dp),
+                        contentPadding=PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            label,maxLines=1,
+                            fontWeight=if(label=="B") FontWeight.Bold else null
+                        )
+                    }
                 }
-            }
-        }
-        Box {
-            TextButton(
-                onClick={inkOpen=true},modifier=Modifier.height(44.dp),
-                contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)
-            ) {Text(neoLabel("لون ▾","Ink ▾"))}
-            DropdownMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
-                listOf(
-                    "أحمر" to "#C62828","أزرق" to "#1565C0",
-                    "أخضر" to "#2E7D32","ذهبي" to "#9B6A12"
-                ).forEach { (label,hex) ->
-                    DropdownMenuItem(
-                        text={Text(label,color=Color(android.graphics.Color.parseColor(hex)))},
-                        onClick={
-                            inkOpen=false
-                            change(noteFormat(value,"<font color=\"" + hex + "\">","</font>"))
+                Box(Modifier.weight(1f)) {
+                    TextButton(
+                        onClick={sizeMenu=true},
+                        modifier=Modifier.fillMaxWidth().height(44.dp),
+                        contentPadding=PaddingValues(0.dp)
+                    ) {Text("Aa ▾",maxLines=1)}
+                    DropdownMenu(expanded=sizeMenu,onDismissRequest={sizeMenu=false}) {
+                        listOf(14,16,18,20,24,28).forEach {fontSize ->
+                            DropdownMenuItem(
+                                text={Text("$fontSize sp",fontSize=fontSize.sp)},
+                                onClick={
+                                    sizeMenu=false
+                                    change(noteFormat(value,"<size sp=\"$fontSize\">","</size>"))
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
-        }
-        TextButton(
-            onClick={change(noteFormat(value,"[","](https://)"))},
-            modifier=Modifier.height(44.dp),
-            contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp)
-        ) {Text("🔗")}
-        Box {
-            TextButton(
-                onClick={directionOpen=true},modifier=Modifier.height(44.dp),
-                contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp)
-            ) {Text(direction.uppercase())}
-            DropdownMenu(expanded=directionOpen,onDismissRequest={directionOpen=false}) {
-                listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR").forEach { (key,label) ->
-                    DropdownMenuItem(text={Text(label)},onClick={directionOpen=false;onDirectionChange(key)})
+            HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant.copy(alpha=0.35f))
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+                Box(Modifier.weight(1f)) {
+                    TextButton(
+                        onClick={listMenu=true},
+                        modifier=Modifier.fillMaxWidth().height(44.dp),
+                        contentPadding=PaddingValues(0.dp)
+                    ) {Text("☷ ▾",maxLines=1)}
+                    DropdownMenu(expanded=listMenu,onDismissRequest={listMenu=false}) {
+                        listOf(
+                            "•  "+neoLabel("نقط","Bullets") to "\n- ",
+                            "☐  "+neoLabel("مربعات","Checklist") to "\n- [ ] ",
+                            "1.  "+neoLabel("أرقام","Numbers") to "\n1. ",
+                            "A.  "+neoLabel("حروف","Letters") to "\nA. "
+                        ).forEach { (label,mark) ->
+                            DropdownMenuItem(text={Text(label)},onClick={
+                                listMenu=false;change(noteFormat(value,mark))
+                            })
+                        }
+                    }
                 }
+                Box(Modifier.weight(1f)) {
+                    TextButton(
+                        onClick={directionMenu=true},
+                        modifier=Modifier.fillMaxWidth().height(44.dp),
+                        contentPadding=PaddingValues(0.dp)
+                    ) {Text("⇄",maxLines=1)}
+                    DropdownMenu(expanded=directionMenu,onDismissRequest={directionMenu=false}) {
+                        listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR").forEach { (key,label) ->
+                            DropdownMenuItem(
+                                text={Text(label+(if(direction==key) " ✓" else ""))},
+                                onClick={directionMenu=false;onDirectionChange(key)}
+                            )
+                        }
+                    }
+                }
+                Box(Modifier.weight(1f)) {
+                    TextButton(
+                        onClick={inkMenu=true},
+                        modifier=Modifier.fillMaxWidth().height(44.dp),
+                        contentPadding=PaddingValues(0.dp)
+                    ) {Text("●",color=Color(android.graphics.Color.parseColor(inkHex)),fontSize=25.sp)}
+                    DropdownMenu(expanded=inkMenu,onDismissRequest={inkMenu=false}) {
+                        listOf(
+                            "أحمر" to "#C62828","أزرق" to "#1565C0",
+                            "أخضر" to "#2E7D32","ذهبي" to "#9B6A12",
+                            "بنفسجي" to "#7B1FA2","أسود" to "#222222"
+                        ).forEach { (label,hex) ->
+                            DropdownMenuItem(
+                                text={Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
+                                    horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                                    Text("●",fontSize=23.sp,color=Color(android.graphics.Color.parseColor(hex)))
+                                    Text(label)
+                                }},
+                                onClick={
+                                    inkMenu=false;inkHex=hex
+                                    change(noteFormat(value,"<font color=\"$hex\">","</font>"))
+                                }
+                            )
+                        }
+                    }
+                }
+                TextButton(
+                    onClick=undo,enabled=canUndo,
+                    modifier=Modifier.weight(1f).height(44.dp),
+                    contentPadding=PaddingValues(0.dp)
+                ) {Text("↶",fontSize=24.sp)}
+                TextButton(
+                    onClick=redo,enabled=canRedo,
+                    modifier=Modifier.weight(1f).height(44.dp),
+                    contentPadding=PaddingValues(0.dp)
+                ) {Text("↷",fontSize=24.sp)}
             }
         }
-        TextButton(
-            onClick=undo,enabled=canUndo,modifier=Modifier.height(44.dp),
-            contentPadding=PaddingValues(horizontal=7.dp,vertical=0.dp)
-        ) {Text("↶")}
-        TextButton(
-            onClick=redo,enabled=canRedo,modifier=Modifier.height(44.dp),
-            contentPadding=PaddingValues(horizontal=7.dp,vertical=0.dp)
-        ) {Text("↷")}
     }
 }
-
 @Composable
 internal fun NeoRuledNoteEditor(
     value: TextFieldValue,
@@ -332,12 +367,13 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         // Keep the portable source unchanged while hiding paired HTML tags in the editor.
         data class OpenMark(val kind:String,val start:Int,val end:Int,val style:SpanStyle)
         val opened=mutableListOf<OpenMark>()
-        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<u>|</u>|<s>|</s>""").findAll(source).forEach { token ->
+        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<size sp="(14|16|18|20|24|28)">|</size>|<u>|</u>|<s>|</s>""").findAll(source).forEach { token ->
             val raw=token.value
-            val kind=when {raw.startsWith("<font ")||raw=="</font>" -> "font";raw=="<u>"||raw=="</u>" -> "u";else -> "s"}
+            val kind=when {raw.startsWith("<font ")||raw=="</font>" -> "font";raw.startsWith("<size ")||raw=="</size>" -> "size";raw=="<u>"||raw=="</u>" -> "u";else -> "s"}
             if(!raw.startsWith("</")) {
                 val style=when(kind) {
                     "font" -> SpanStyle(color=Color(android.graphics.Color.parseColor(token.groupValues[1])))
+                    "size" -> SpanStyle(fontSize=token.groupValues[2].toInt().sp)
                     "u" -> SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.Underline)
                     else -> SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.LineThrough)
                 }

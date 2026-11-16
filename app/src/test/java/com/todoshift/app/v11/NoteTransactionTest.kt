@@ -2,6 +2,7 @@ package com.todoshift.app.v11
 
 import com.todoshift.app.backup.Neo4LocalBackup
 import org.junit.Assert.*
+import androidx.compose.ui.unit.sp
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -246,6 +247,27 @@ class NoteTransactionTest {
         val passwordLocked=note.copy(notePreviewHidden=false,noteLocked=true)
         assertTrue("Password-protected notes remain in the note list",passwordLocked.noteVisible)
         assertTrue(passwordLocked.notePrivate)
+    }
+
+    @Test fun noteFontSizeIsVisualNotRawMarkupAndLetteredListsWork() {
+        val source=androidx.compose.ui.text.input.TextFieldValue(
+            "عربي English",androidx.compose.ui.text.TextRange(0,12)
+        )
+        val formatted=com.todoshift.app.v11.ui.noteFormat(
+            source,"<size sp=\"20\">","</size>"
+        )
+        val rendered=com.todoshift.app.v11.ui.NeoNoteVisualTransformation()
+            .filter(androidx.compose.ui.text.AnnotatedString(formatted.text)).text
+        assertEquals("عربي English",rendered.text)
+        assertTrue(rendered.spanStyles.any {it.item.fontSize==20.sp})
+        assertTrue(formatted.text.contains("<size sp=\"20\">"))
+        val letters=com.todoshift.app.v11.ui.noteFormat(
+            androidx.compose.ui.text.input.TextFieldValue(
+                "one\ntwo\nthree",androidx.compose.ui.text.TextRange(0,13)
+            ),
+            "\nA. "
+        )
+        assertEquals("A. one\nB. two\nC. three",letters.text)
     }
 
 }

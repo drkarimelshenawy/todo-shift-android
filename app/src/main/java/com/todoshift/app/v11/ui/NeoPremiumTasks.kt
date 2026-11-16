@@ -28,6 +28,7 @@ import java.util.Locale
 val LocalNeoTaskCompact = staticCompositionLocalOf { true }
 val LocalNeoTaskMove = staticCompositionLocalOf<((String,Int)->Unit)?> { null }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange: (V11Database)->Unit,
     initialAction: String?, initialTaskId: String?, onHandled: ()->Unit) {

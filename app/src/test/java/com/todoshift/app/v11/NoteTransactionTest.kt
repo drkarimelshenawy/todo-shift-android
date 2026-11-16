@@ -184,4 +184,18 @@ class NoteTransactionTest {
         assertEquals(before, V11Runtime(c).start())
         assertEquals("#6C3A9B", NeoSmartStore(c).noteColor("unrelated"))
     }
+    @Test fun readingModeDoesNotExposeNestedFormattingMarkup() {
+        // This crosses closing-tag boundaries just like notes formatted on the phone.
+        val stored = """نص <u>*<font color="#C62828">الملاحظة</font> <font color="#2E7D32">الجديدة</u>*</font> ختام"""
+        val preview=com.todoshift.app.v11.ui.noteInline(stored)
+        assertEquals("نص الملاحظة الجديدة ختام",preview.text)
+        assertFalse(preview.text.contains("<font"))
+        assertFalse(preview.text.contains("<u>"))
+        assertFalse(preview.text.contains("*"))
+        assertTrue(preview.spanStyles.any {it.item.textDecoration==androidx.compose.ui.text.style.TextDecoration.Underline})
+        assertTrue(preview.spanStyles.any {it.item.color==androidx.compose.ui.graphics.Color(0xFFC62828)})
+        assertTrue(preview.spanStyles.any {it.item.color==androidx.compose.ui.graphics.Color(0xFF2E7D32)})
+        assertTrue(stored.contains("<font color=")) // read-only rendering must not mutate storage
+    }
+
 }

@@ -199,11 +199,11 @@ class NoteTransactionTest {
     }
 
     @Test fun richNoteSelectionOffsetsStayWithinVisibleTextAfterFormatting() {
-        val source = "## عنوان\\n<u>عربي <font color=\\\"#C62828\\\">لون</font></u>\\n**Bold**"
+        val source = "## عنوان\n<u>عربي <font color=\"#C62828\">لون</font></u>\n**Bold**"
         val transformed = com.todoshift.app.v11.ui.NeoNoteVisualTransformation()
             .filter(androidx.compose.ui.text.AnnotatedString(source))
         val visible = transformed.text.text
-        assertEquals("عنوان\\nعربي لون\\nBold",visible)
+        assertEquals("عنوان\nعربي لون\nBold",visible)
         val mapping = transformed.offsetMapping
         var previous = -1
         for(offset in 0..source.length) {

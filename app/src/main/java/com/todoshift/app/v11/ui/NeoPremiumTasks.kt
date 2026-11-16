@@ -138,6 +138,82 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
         confirmButton={TextButton(onClick={missing=false}) {Text(neoLiteral("إغلاق","Close"))}})
+    if(notesTab && noteControlsExpanded) {
+        ModalBottomSheet(onDismissRequest={noteControlsExpanded=false}) {
+            val noteTags=db.dayItems.filter {it.type==DayItemTypeV11.NOTE&&!it.noteLocked&&!it.noteHidden}
+                .flatMap {it.noteTags.split(",")}.map {it.trim()}.filter {it.isNotBlank()}.distinct().sorted()
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                    .padding(start=16.dp,end=16.dp,bottom=24.dp),
+                verticalArrangement=Arrangement.spacedBy(8.dp)
+            ) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                    Text(neoLabel("عرض وتنظيم الملاحظات","Notes display & organization"),
+                        modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium)
+                    TextButton(onClick={noteControlsExpanded=false}) {Text(neoLabel("تم","Done"))}
+                }
+                Text(neoLabel("القسم","Section"),style=MaterialTheme.typography.titleSmall)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    listOf(
+                        "active" to neoLabel("الملاحظات","Notes"),
+                        "pinned" to neoLabel("المثبتة","Pinned"),
+                        "archive" to neoLabel("الأرشيف","Archive"),
+                        "trash" to neoLabel("المهملات","Trash"),
+                        "hidden" to neoLabel("المخفية","Hidden")
+                    ).forEach { (folder,label) ->
+                        FilterChip(selected=noteFolder==folder,onClick={
+                            if(folder=="hidden") hiddenAuthorized=true
+                            noteFolder=folder
+                        },label={Text(label)})
+                    }
+                }
+                if(noteTags.isNotEmpty()) {
+                    NeoChoice(
+                        neoLabel("التصنيف أو الوسم","Category or tag"),
+                        listOf<String?>(null)+noteTags,noteTag,
+                        {it ?: neoLabel("الكل","All")},{noteTag=it}
+                    )
+                }
+                HorizontalDivider()
+                Text(neoLabel("الترتيب حسب","Sort by"),style=MaterialTheme.typography.titleSmall)
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    listOf(
+                        "updated" to neoLabel("آخر تعديل","Updated"),
+                        "title" to neoLabel("العنوان","Title"),
+                        "date" to neoLabel("الإنشاء","Created")
+                    ).forEach { (key,label) ->
+                        FilterChip(
+                            selected=noteSort==key,
+                            onClick={noteSort=key;noteViewPrefs.edit().putString("sort",key).apply()},
+                            label={Text(label,maxLines=1)},
+                            modifier=Modifier.weight(1f)
+                        )
+                    }
+                }
+                HorizontalDivider()
+                Text(neoLabel("شكل الكروت","Card layout"),style=MaterialTheme.typography.titleSmall)
+                listOf(
+                    listOf("list" to neoLabel("قائمة","List"),"details" to neoLabel("تفاصيل","Details")),
+                    listOf("grid" to neoLabel("شبكة","Grid"),"large" to neoLabel("شبكة كبيرة","Large grid"))
+                ).forEach { rowOptions ->
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        rowOptions.forEach { (key,label) ->
+                            FilterChip(
+                                selected=noteLayout==key,
+                                onClick={noteLayout=key;noteViewPrefs.edit().putString("layout",key).apply()},
+                                label={Text(label)},
+                                modifier=Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+                TextButton(onClick={noteFolder="active";noteTag=null}) {
+                    Text(neoLabel("مسح فلاتر القسم والوسوم","Clear section and tag filters"))
+                }
+            }
+        }
+    }
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalNeoTaskCompact provides options.compact,
             LocalNeoTaskMove provides if(options.sort==NeoTaskSort.MANUAL && optionsReady && !settingsBusy) { { id,delta ->
@@ -157,7 +233,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         }
                     }
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f)) { NeoPremiumTabs(listOf(neoLabel("المهام", "Tasks"),neoLabel("الملاحظات", "Notes")),if(notesTab) 1 else 0,{notesTab=it==1}) }
+                        Box(Modifier.weight(1f)) { NeoPremiumTabs(listOf(neoLabel("المهام", "Tasks"),neoLabel("الملاحظات", "Notes")),if(notesTab) 1 else 0,{notesTab=it==1;noteControlsExpanded=false}) }
                         IconButton(onClick={searchExpanded=!searchExpanded}) {Icon(if(searchExpanded) Icons.Rounded.Close else Icons.Rounded.Search,neoLabel("بحث","Search"))}
                         IconButton(onClick={if(notesTab) noteControlsExpanded=!noteControlsExpanded else taskControlsExpanded=!taskControlsExpanded}) {Icon(Icons.Rounded.Tune,neoLabel("فلاتر وفرز","Filters and sort"))}
                     }
@@ -205,30 +281,52 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     }
                 } else {
                     item(key="notes-controls") {
-                        if(noteControlsExpanded) {
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                            listOf("active" to neoLabel("الملاحظات","Notes"),"pinned" to neoLabel("المثبتة","Pinned"),"archive" to neoLabel("الأرشيف","Archive"),"trash" to neoLabel("المهملات","Trash"),"hidden" to neoLabel("المخفية","Hidden")).forEach { (folder,label) ->
-                                FilterChip(noteFolder==folder,onClick={if(folder=="hidden") hiddenAuthorized=true;noteFolder=folder},label={Text(label)})
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement=Arrangement.spacedBy(8.dp),
+                            verticalAlignment=Alignment.CenterVertically
+                        ) {
+                            val folderTitle=when(noteFolder) {
+                                "pinned" -> neoLabel("المثبتة","Pinned")
+                                "archive" -> neoLabel("الأرشيف","Archive")
+                                "trash" -> neoLabel("المهملات","Trash")
+                                "hidden" -> neoLabel("المخفية","Hidden")
+                                else -> neoLabel("الملاحظات","Notes")
+                            }
+                            val sortTitle=when(noteSort) {
+                                "title" -> neoLabel("العنوان","Title")
+                                "date" -> neoLabel("الإنشاء","Created")
+                                else -> neoLabel("آخر تعديل","Updated")
+                            }
+                            val layoutTitle=when(noteLayout) {
+                                "list" -> neoLabel("قائمة","List")
+                                "grid" -> neoLabel("شبكة","Grid")
+                                "large" -> neoLabel("شبكة كبيرة","Large grid")
+                                else -> neoLabel("تفاصيل","Details")
+                            }
+                            AssistChip(
+                                onClick={noteControlsExpanded=true},
+                                modifier=Modifier.weight(1f),
+                                label={
+                                    Text(
+                                        listOf(folderTitle,sortTitle,layoutTitle).joinToString(" · "),
+                                        maxLines=1,
+                                        overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                },
+                                leadingIcon={Icon(Icons.Rounded.Tune,null,modifier=Modifier.size(16.dp))}
+                            )
+                            if(noteTag!=null) TextButton(onClick={noteTag=null}) {
+                                Text(neoLabel("إزالة الوسم ×","Clear tag ×"),maxLines=1)
                             }
                         }
-                        val noteTags=db.dayItems.filter {it.type==DayItemTypeV11.NOTE&&!it.noteLocked&&!it.noteHidden}.flatMap {it.noteTags.split(",")}.map {it.trim()}.filter {it.isNotBlank()}.distinct().sorted()
-                        if(noteTags.isNotEmpty()) NeoChoice(neoLabel("التصنيف أو الوسم","Category or tag"),listOf<String?>(null)+noteTags,noteTag,{it ?: neoLabel("الكل","All")},{noteTag=it})
-                        if(selectedNotes.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState())) {
-                            TextButton(enabled=!write.pending,onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(notePinned=true) else it}),neoLiteral("تم التثبيت","Pinned"));selectedNotes=emptySet()}) {Text(neoLabel("تثبيت","Pin"))}
-                            TextButton(enabled=!write.pending,onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteArchived=noteFolder !in setOf("archive","trash"),noteTrashed=false) else it}),neoLiteral("تم التحديث","Updated"));selectedNotes=emptySet()}) {Text(if(noteFolder=="archive"||noteFolder=="trash") neoLabel("استعادة","Restore") else neoLabel("أرشفة","Archive"))}
-                            TextButton(enabled=!write.pending,onClick={confirmTrash=true}) {Text(neoLabel("مهملات","Trash"))}
-                            TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {Text(neoLabel("إلغاء التحديد","Clear selection"))}
-                        }
-                        Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                            FilterChip(noteSort=="updated",{noteSort="updated";noteViewPrefs.edit().putString("sort","updated").apply()},label={Text(neoLabel("آخر تعديل","Updated"))})
-                            FilterChip(noteSort=="title",{noteSort="title";noteViewPrefs.edit().putString("sort","title").apply()},label={Text(neoLabel("العنوان","Title"))})
-                            FilterChip(noteSort=="date",{noteSort="date";noteViewPrefs.edit().putString("sort","date").apply()},label={Text(neoLabel("تاريخ الإنشاء","Created"))})
-                        }
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                            listOf("list" to neoLabel("قائمة","List"),"details" to neoLabel("تفاصيل","Details"),"grid" to neoLabel("شبكة","Grid"),"large" to neoLabel("شبكة كبيرة","Large grid")).forEach { (key,label) ->
-                                FilterChip(selected=noteLayout==key,onClick={noteLayout=key;noteViewPrefs.edit().putString("layout",key).apply()},label={Text(label)})
+                        if(selectedNotes.isNotEmpty()) {
+                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                                TextButton(enabled=!write.pending,onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(notePinned=true) else it}),neoLiteral("تم التثبيت","Pinned"));selectedNotes=emptySet()}) {Text(neoLabel("تثبيت","Pin"))}
+                                TextButton(enabled=!write.pending,onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteArchived=noteFolder !in setOf("archive","trash"),noteTrashed=false) else it}),neoLiteral("تم التحديث","Updated"));selectedNotes=emptySet()}) {Text(if(noteFolder=="archive"||noteFolder=="trash") neoLabel("استعادة","Restore") else neoLabel("أرشفة","Archive"))}
+                                TextButton(enabled=!write.pending,onClick={confirmTrash=true}) {Text(neoLabel("مهملات","Trash"))}
+                                TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {Text(neoLabel("إلغاء التحديد","Clear selection"))}
                             }
-                        }
                         }
                     }
                     val notes=db.dayItems.filter { note ->

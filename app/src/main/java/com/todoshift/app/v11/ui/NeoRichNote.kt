@@ -39,22 +39,85 @@ internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = 
 
 /** Portable Markdown is persisted in the original details field; no lossy HTML migration. */
 @Composable
-internal fun NeoNoteFormatting(value: TextFieldValue, change: (TextFieldValue) -> Unit, undo: () -> Unit, redo: () -> Unit, canUndo: Boolean, canRedo: Boolean) {
-    var colorMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(0.dp)) {
-        listOf("B" to Pair("**", "**"), "I" to Pair("*", "*"), "U" to Pair("<u>", "</u>"), "S̶" to Pair("<s>", "</s>"), "H1" to Pair("# ", ""), "H2" to Pair("## ", ""), "H3" to Pair("### ", ""), "•" to Pair("\n- ", ""), "1." to Pair("\n1. ", ""), "☐" to Pair("\n- [ ] ", ""), "🔗" to Pair("[", "](https://)")).forEach { (label, marks) ->
-            TextButton(onClick = { change(noteFormat(value, marks.first, marks.second)) }, contentPadding = PaddingValues(horizontal=6.dp, vertical=2.dp), modifier = Modifier.widthIn(min=38.dp)) { Text(label, fontWeight = if(label=="B") FontWeight.Bold else null) }
-        }
-        Box {
-            TextButton(onClick={colorMenu=true},contentPadding=PaddingValues(horizontal=6.dp,vertical=2.dp)) { Text(neoLabel("لون","Color")) }
-            DropdownMenu(expanded=colorMenu,onDismissRequest={colorMenu=false}) {
-                listOf("أحمر" to "#C62828", "أزرق" to "#1565C0", "أخضر" to "#2E7D32", "ذهبي" to "#9B6A12").forEach { (label,hex) ->
-                    DropdownMenuItem(text={Text(label,color=Color(android.graphics.Color.parseColor(hex)))},onClick={colorMenu=false;change(noteFormat(value,"<font color=\"$hex\">","</font>"))})
+internal fun NeoNoteFormatting(
+    value: TextFieldValue,
+    change: (TextFieldValue) -> Unit,
+    undo: () -> Unit,
+    redo: () -> Unit,
+    canUndo: Boolean,
+    canRedo: Boolean
+) {
+    var colorMenu by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(false)
+    }
+    val textTools = listOf(
+        "B" to ("**" to "**"),
+        "I" to ("*" to "*"),
+        "U" to ("<u>" to "</u>"),
+        "S̶" to ("<s>" to "</s>"),
+        "H1" to ("# " to ""),
+        "H2" to ("## " to ""),
+        "H3" to ("### " to "")
+    )
+    val listTools = listOf(
+        "•" to ("\n- " to ""),
+        "1." to ("\n1. " to ""),
+        "☐" to ("\n- [ ] " to ""),
+        "🔗" to ("[" to "](https://)")
+    )
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            textTools.forEach { (label, marks) ->
+                TextButton(
+                    onClick = { change(noteFormat(value, marks.first, marks.second)) },
+                    modifier = Modifier.widthIn(min = 40.dp).height(40.dp),
+                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
+                ) {
+                    Text(label, fontWeight = if (label == "B") FontWeight.Bold else null, maxLines = 1)
                 }
             }
         }
-        TextButton(onClick=undo,enabled=canUndo,contentPadding=PaddingValues(horizontal=6.dp,vertical=2.dp)) {Text("↶")}
-        TextButton(onClick=redo,enabled=canRedo,contentPadding=PaddingValues(horizontal=6.dp,vertical=2.dp)) {Text("↷")}
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            listTools.forEach { (label, marks) ->
+                TextButton(
+                    onClick = { change(noteFormat(value, marks.first, marks.second)) },
+                    modifier = Modifier.widthIn(min = 40.dp).height(40.dp),
+                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
+                ) { Text(label, maxLines = 1) }
+            }
+            Box {
+                TextButton(
+                    onClick = { colorMenu = true },
+                    modifier = Modifier.height(40.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) { Text(neoLabel("لون ●", "Ink ●"), maxLines = 1) }
+                DropdownMenu(expanded = colorMenu, onDismissRequest = { colorMenu = false }) {
+                    listOf(
+                        "أحمر" to "#C62828", "أزرق" to "#1565C0",
+                        "أخضر" to "#2E7D32", "ذهبي" to "#9B6A12"
+                    ).forEach { (label, hex) ->
+                        DropdownMenuItem(
+                            text = { Text(label, color = Color(android.graphics.Color.parseColor(hex))) },
+                            onClick = {
+                                colorMenu = false
+                                change(noteFormat(value, "<font color=\\"$hex\\">", "</font>"))
+                            }
+                        )
+                    }
+                }
+            }
+            TextButton(onClick = undo, enabled = canUndo, modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("↶") }
+            TextButton(onClick = redo, enabled = canRedo, modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) { Text("↷") }
+        }
     }
 }
 

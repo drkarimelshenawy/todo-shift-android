@@ -109,9 +109,11 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var reminder by rememberSaveable { mutableStateOf(existing?.reminderAt?.let {java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(it),java.time.ZoneId.systemDefault()).toString()}.orEmpty()) }
     var preview by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable(existing?.id) { mutableStateOf(existing == null) }
-    // Keep the writing direction stable from the first keystroke. Auto remains selectable.
+    // Evaluate the localized default inside the composable scope, not inside
+    // rememberSaveable's non-composable state initialization lambda.
+    val preferredNoteDirection=if(neoLabel("ar","en")=="ar") "rtl" else "ltr"
     var noteDirection by rememberSaveable(existing?.id) {
-        mutableStateOf(if(neoLabel("ar","en")=="ar") "rtl" else "ltr")
+        mutableStateOf(preferredNoteDirection)
     }
     var floatingFormat by rememberSaveable { mutableStateOf(false) }
     var noteMoreMenu by remember { mutableStateOf(false) }

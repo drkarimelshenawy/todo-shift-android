@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 
 internal fun noteFormat(value: TextFieldValue, prefix: String, suffix: String = ""): TextFieldValue {
     val start = value.selection.min; val end = value.selection.max
-    if(suffix.isEmpty() && prefix in listOf("# ","## ","### ","\n- ","\n1. ","\n- [ ] ")) {
+    if(suffix.isEmpty() && prefix in listOf("# ","## ","### ","\n- ","\n1. ","\nA. ","\n- [ ] ")) {
         val lineStart=value.text.lastIndexOf('\n',start-1)+1
         val lineEnd=value.text.indexOf('\n',end).takeIf {it>=0} ?: value.text.length
         val marker=prefix.removePrefix("\n")

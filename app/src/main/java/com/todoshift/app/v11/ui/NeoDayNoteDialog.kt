@@ -242,7 +242,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 OutlinedTextField(title,{if(!closing) title=it},enabled=!closing,placeholder={Text(neoLabel("عنوان الملاحظة…","Note title…"))},singleLine=true,modifier=Modifier.fillMaxWidth())
             }
             // Lines are decorative: the original note text and cursor stay in the same editable field.
-            Box(Modifier.fillMaxWidth().heightIn(min=440.dp).border(1.dp,MaterialTheme.colorScheme.outlineVariant,androidx.compose.foundation.shape.RoundedCornerShape(12.dp))) {
+            Box(Modifier.fillMaxWidth().height(440.dp).border(1.dp,MaterialTheme.colorScheme.outlineVariant,androidx.compose.foundation.shape.RoundedCornerShape(12.dp))) {
                 androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
                     val lineStep=34.sp.toPx()
                     var y=46.sp.toPx()

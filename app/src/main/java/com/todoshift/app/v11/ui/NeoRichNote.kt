@@ -107,7 +107,7 @@ internal fun NeoNoteFormatting(
                             text = { Text(label, color = Color(android.graphics.Color.parseColor(hex))) },
                             onClick = {
                                 colorMenu = false
-                                change(noteFormat(value, "<font color=\\"$hex\\">", "</font>"))
+                                change(noteFormat(value, "<font color=\"$hex\">", "</font>"))
                             }
                         )
                     }

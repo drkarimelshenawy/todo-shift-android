@@ -226,7 +226,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         properties=DialogProperties(usePlatformDefaultWidth=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
         Surface(modifier=Modifier.fillMaxSize(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            BoxWithConstraints(Modifier.fillMaxWidth().height(620.dp)) {
+            BoxWithConstraints(Modifier.fillMaxWidth().height((androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp - 24).coerceAtLeast(320).dp)) {
               val pageWidth=constraints.maxWidth.toFloat()
               val pageHeight=constraints.maxHeight.toFloat()
               Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(0.dp)) {

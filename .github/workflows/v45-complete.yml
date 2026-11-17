@@ -127,7 +127,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v50-quiet-notes-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v50-Quiet-Notes.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v47 Quick Capture & Templates" --notes "Signed v50 premium notes UI: quiet reading, compact formatting, configurable ruled paper and bilingual fonts, card action menus, long-press selection and select-all. Removed note templates. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+          gh release create "$TAG" delivery/ToDoShift-v50-Quiet-Notes.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v50 — Quiet Notes Editor" --notes "Signed v50 premium notes UI: quiet reading, compact formatting, configurable ruled paper and bilingual fonts, card action menus, long-press selection and select-all. Removed note templates. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}

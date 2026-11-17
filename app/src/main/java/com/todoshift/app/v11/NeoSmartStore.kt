@@ -148,6 +148,91 @@ class NeoSmartStore(context: Context) {
         }
     }
 
+    /**
+     * Folder identity and per-note membership live in the transactionally
+     * backed-up Smart metadata. An unassigned note is always visible in All.
+     * This is additive: no change to DayItemV11, note IDs or stored text.
+     */
+    data class NoteFolder(val id:String,val name:String)
+
+    fun noteFolders():List<NoteFolder> =
+        snapshot().optJSONArray("noteFolders")?.let {folders ->
+            (0 until folders.length()).map {index ->
+                folders.getJSONObject(index).let {NoteFolder(it.getString("id"),it.getString("name"))}
+            }
+        }.orEmpty()
+
+    fun noteFolderAssignments():Map<String,String> =
+        snapshot().optJSONObject("noteFolderAssignments")?.let {o ->
+            o.keys().asSequence().associateWith {id -> o.getString(id)}
+        }.orEmpty()
+
+    fun createNoteFolder(label:String):NoteFolder {
+        val name=label.trim()
+        require(name.isNotEmpty() && name.length<=60)
+        val folder=NoteFolder(UUID.randomUUID().toString(),name)
+        update {o ->
+            val folders=o.optJSONArray("noteFolders") ?: JSONArray()
+            require(folders.length()<100) {"Too many note folders"}
+            require((0 until folders.length()).none {
+                folders.getJSONObject(it).getString("name").equals(name,ignoreCase=true)
+            }) {"Folder name already exists"}
+            folders.put(JSONObject().put("id",folder.id).put("name",folder.name))
+            o.put("noteFolders",folders)
+        }
+        return folder
+    }
+
+    fun renameNoteFolder(id:String,label:String) {
+        val name=label.trim()
+        require(id.isNotBlank() && name.isNotEmpty() && name.length<=60)
+        update {o ->
+            val folders=o.optJSONArray("noteFolders") ?: error("Unknown note folder")
+            require((0 until folders.length()).none {
+                val folder=folders.getJSONObject(it)
+                folder.getString("id")!=id &&
+                    folder.getString("name").equals(name,ignoreCase=true)
+            }) {"Folder name already exists"}
+            val match=(0 until folders.length()).firstOrNull {
+                folders.getJSONObject(it).getString("id")==id
+            } ?: error("Unknown note folder")
+            folders.getJSONObject(match).put("name",name)
+        }
+    }
+
+    fun removeNoteFolder(id:String) {
+        update {o ->
+            val previous=o.optJSONArray("noteFolders") ?: JSONArray()
+            require((0 until previous.length()).any {
+                previous.getJSONObject(it).getString("id")==id
+            }) {"Unknown note folder"}
+            o.put("noteFolders",JSONArray((0 until previous.length())
+                .map {previous.getJSONObject(it)}
+                .filterNot {it.getString("id")==id}))
+            val assignments=o.optJSONObject("noteFolderAssignments") ?: JSONObject()
+            assignments.keys().asSequence()
+                .filter {assignments.optString(it)==id}.toList()
+                .forEach {assignments.remove(it)}
+            o.put("noteFolderAssignments",assignments)
+        }
+    }
+
+    fun moveNotesToFolder(noteIds:Collection<String>,folderId:String?) {
+        require(noteIds.size<=1000 && noteIds.all{it.isNotBlank()&&it.length<=150})
+        update {o ->
+            val folders=o.optJSONArray("noteFolders") ?: JSONArray()
+            require(folderId==null || (0 until folders.length()).any {
+                folders.getJSONObject(it).getString("id")==folderId
+            }) {"Unknown note folder"}
+            val assignments=o.optJSONObject("noteFolderAssignments") ?: JSONObject()
+            noteIds.forEach {id ->
+                if(folderId==null) assignments.remove(id)
+                else assignments.put(id,folderId)
+            }
+            o.put("noteFolderAssignments",assignments)
+        }
+    }
+
     companion object {
         const val NAME = "todo_shift_neo41_smart"
 
@@ -165,6 +250,25 @@ class NeoSmartStore(context: Context) {
                     for (j in 0 until titles.length()) require(
                         titles.getString(j).isNotBlank() && titles.getString(j).length <= 300
                     )
+                }
+            }
+            val folderIds=mutableSetOf<String>()
+            o.optJSONArray("noteFolders")?.let {folders ->
+                require(folders.length()<=100)
+                val labels=mutableSetOf<String>()
+                for(i in 0 until folders.length()) {
+                    val folder=folders.getJSONObject(i)
+                    val id=folder.getString("id")
+                    val name=folder.getString("name")
+                    require(id.isNotBlank() && folderIds.add(id))
+                    require(name.isNotBlank() && name.length<=60 && labels.add(name.lowercase()))
+                }
+            }
+            o.optJSONObject("noteFolderAssignments")?.let {assignments ->
+                require(assignments.length()<=5000)
+                assignments.keys().forEach {id ->
+                    require(id.isNotBlank() && id.length<=150)
+                    require(assignments.getString(id) in folderIds)
                 }
             }
             o.optJSONArray("shiftTemplates")?.let { a ->

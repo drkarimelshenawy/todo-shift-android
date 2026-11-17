@@ -1,0 +1,194 @@
+package com.todoshift.app.v11.ui
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.pdf.PdfDocument
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextDirectionHeuristics
+import android.text.TextPaint
+import com.todoshift.app.v11.NeoAttachmentStore
+import java.io.File
+import java.io.OutputStream
+
+/** Native Android PDF/A4 renderer. Never uploads note contents or media. */
+internal object NeoDocumentPdf {
+    private const val PAGE_WIDTH=595
+    private const val PAGE_HEIGHT=842
+    private const val MARGIN=42f
+    private const val CONTENT_WIDTH=PAGE_WIDTH-2*MARGIN
+
+    /** Returns actual PDF page count after a fully written export. */
+    fun write(
+        context:Context,
+        noteId:String,
+        title:String,
+        source:String,
+        output:OutputStream
+    ):Int {
+        require(source.length<=300_000) {"Document is too long for PDF export"}
+        val pdf=PdfDocument()
+        val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color=android.graphics.Color.BLACK;textSize=12f
+            typeface=android.graphics.Typeface.create("sans-serif",0)
+        }
+        val borderPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color=android.graphics.Color.LTGRAY
+            strokeWidth=.7f;style=Paint.Style.STROKE
+        }
+        var page:PdfDocument.Page?=null
+        var y=MARGIN
+        var pages=0
+
+        fun newPage() {
+            page?.let {existing ->
+                val footer=Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color=android.graphics.Color.DKGRAY;textSize=9f
+                }
+                existing.canvas.drawText(pages.toString(),PAGE_WIDTH/2f,
+                    PAGE_HEIGHT-MARGIN/2f,footer)
+                pdf.finishPage(existing)
+            }
+            pages++
+            page=pdf.startPage(
+                PdfDocument.PageInfo.Builder(PAGE_WIDTH,PAGE_HEIGHT,pages).create())
+            y=MARGIN
+        }
+        fun ensure(height:Float) {
+            if(page==null)newPage()
+            if(y+height>PAGE_HEIGHT-MARGIN && y>MARGIN)newPage()
+        }
+        fun layout(text:String,width:Int=CONTENT_WIDTH.toInt()):StaticLayout {
+            val value=text.ifEmpty{" "}
+            return StaticLayout.Builder.obtain(value,0,value.length,paint,width)
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
+                .setIncludePad(false).build()
+        }
+        fun printText(sourceText:String,size:Float=12f,space:Float=4f) {
+            paint.textSize=size
+            // Split at actual shaped layout line boundaries, so long text
+            // can paginate without clipping a whole multi-line paragraph.
+            val text=sourceText.ifBlank{" "}
+            val wrapped=layout(text)
+            for(index in 0 until wrapped.lineCount) {
+                val start=wrapped.getLineStart(index)
+                val end=wrapped.getLineEnd(index)
+                val piece=text.substring(start,end).trimEnd('\n')
+                val line=layout(piece)
+                val height=line.height.toFloat()+1f
+                ensure(height)
+                page!!.canvas.save()
+                page!!.canvas.translate(MARGIN,y)
+                line.draw(page!!.canvas)
+                page!!.canvas.restore()
+                y+=height
+            }
+            y+=space
+        }
+        try {
+            newPage()
+            if(title.isNotBlank()) {
+                printText(title,18f,14f)
+            }
+            val attachments=NeoAttachmentStore(context).list()
+                .filter{it.owner==noteId && it.mime.startsWith("image/")}
+                .map{it.name}.toSet()
+            NeoDocumentBlocks.parse(source).forEach {block ->
+                when(block) {
+                    is NeoDocumentBlocks.Block.Paragraph -> {
+                        block.source.split('\n').forEach {line ->
+                            val size=when {
+                                line.startsWith("# ")->19f
+                                line.startsWith("## ")->16f
+                                line.startsWith("### ")->14f
+                                else ->12f
+                            }
+                            printText(NeoNoteDocumentTools.visible(line),size,
+                                if(line.isBlank()) 5f else 3f)
+                        }
+                    }
+                    is NeoDocumentBlocks.Block.PageBreak -> newPage()
+                    is NeoDocumentBlocks.Block.Table -> {
+                        val columns=block.cells.first().size
+                        val width=CONTENT_WIDTH/columns
+                        val textWidth=(width-12f).toInt().coerceAtLeast(14)
+                        block.cells.forEachIndexed {index,row ->
+                            paint.textSize=if(index==0) 11f else 10f
+                            val layouts=row.map{layout(it,textWidth)}
+                            val height=(layouts.maxOf{it.height}+12f).coerceAtLeast(25f)
+                            require(height<PAGE_HEIGHT-2*MARGIN) {
+                                "Table cell is too tall for A4; split the cell"
+                            }
+                            ensure(height+2f)
+                            row.forEachIndexed {column,_ ->
+                                val x=MARGIN+column*width
+                                val canvas=page!!.canvas
+                                canvas.drawRect(x,y,x+width,y+height,borderPaint)
+                                canvas.save()
+                                canvas.translate(x+6f,y+6f)
+                                layouts[column].draw(canvas)
+                                canvas.restore()
+                            }
+                            y+=height
+                        }
+                        y+=8f
+                    }
+                    is NeoDocumentBlocks.Block.Image -> {
+                        if(block.name !in attachments ||
+                            !NeoAttachmentStore.safeName(block.name)) {
+                            printText("[Image unavailable]",10f)
+                        } else {
+                            val file=File(context.filesDir,"attachments/"+block.name)
+                            val bounds=BitmapFactory.Options().apply {inJustDecodeBounds=true}
+                            BitmapFactory.decodeFile(file.absolutePath,bounds)
+                            if(bounds.outWidth<=0||bounds.outHeight<=0) {
+                                printText("[Image unavailable]",10f)
+                            } else {
+                                var sample=1
+                                while(bounds.outWidth/sample>1400||
+                                    bounds.outHeight/sample>1400)sample*=2
+                                val image=BitmapFactory.decodeFile(file.absolutePath,
+                                    BitmapFactory.Options().apply {inSampleSize=sample
+                                        inPreferredConfig=Bitmap.Config.RGB_565})
+                                if(image!=null) {
+                                    try {
+                                        val width=CONTENT_WIDTH*(block.width/100f)
+                                        val height=(width*image.height/image.width)
+                                            .coerceAtMost((PAGE_HEIGHT-2*MARGIN)*.72f)
+                                        ensure(height+8f)
+                                        val x=when(block.align) {
+                                            "left"->MARGIN
+                                            "right"->PAGE_WIDTH-MARGIN-width
+                                            else->(PAGE_WIDTH-width)/2f
+                                        }
+                                        page!!.canvas.drawBitmap(image,null,
+                                            RectF(x,y,x+width,y+height),
+                                            Paint(Paint.FILTER_BITMAP_FLAG))
+                                        y+=height+9f
+                                    } finally {image.recycle()}
+                                } else printText("[Image unavailable]",10f)
+                            }
+                        }
+                    }
+                }
+            }
+            page?.let {p ->
+                val footer=Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color=android.graphics.Color.DKGRAY;textSize=9f
+                }
+                p.canvas.drawText(pages.toString(),PAGE_WIDTH/2f,
+                    PAGE_HEIGHT-MARGIN/2f,footer)
+                pdf.finishPage(p)
+                page=null
+            }
+            pdf.writeTo(output)
+            return pages
+        } finally {
+            pdf.close()
+        }
+    }
+}

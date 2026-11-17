@@ -67,7 +67,11 @@ class NeoAttachmentStore(private val context: Context) {
                         data[2] == (-1).toByte() -> "image/jpeg"
                     data.size >= 12 &&
                         data.copyOfRange(4, 8).contentEquals("ftyp".toByteArray()) &&
-                        declaredMime in setOf("audio/mp4", "audio/x-m4a", "audio/m4a") ->
+                        // The M4A brand is definitive even when a document
+                        // provider omits its MIME; generic MP4 brands still
+                        // require an explicitly declared audio type.
+                        (String(data, 8, 4, Charsets.US_ASCII) == "M4A " ||
+                            declaredMime in setOf("audio/mp4", "audio/x-m4a", "audio/m4a")) ->
                         "audio/mp4"
                     declaredMime == "text/plain" && data.none { it == 0.toByte() } -> {
                         Charsets.UTF_8.newDecoder()

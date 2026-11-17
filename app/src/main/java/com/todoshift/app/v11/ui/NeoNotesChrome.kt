@@ -64,11 +64,10 @@ internal fun NeoNoteQuickBar(
                     state.listActive("bullet"),enabled=enabled){onChange(state.list("bullet"))}
                 NeoChromeIcon(Icons.Rounded.CheckBox,neoLabel("قائمة اختيار","Checklist"),
                     state.listActive("check"),enabled=enabled){onChange(state.list("check"))}
-                FilledTonalButton(onClick=onFormat,contentPadding=PaddingValues(horizontal=12.dp)) {
-                    Icon(Icons.Rounded.FormatSize,null,Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(neoLabel("تنسيق","Format"))
-                }
+                // Compact icon instead of a wide button; all daily controls
+                // fit on a typical phone without clipping the Format action.
+                NeoChromeIcon(Icons.Rounded.FormatSize,
+                    neoLabel("لوحة التنسيق","Format panel")) { onFormat() }
             }
         }
     }
@@ -302,6 +301,112 @@ internal fun NeoNoteFormatSheet(
                 }
             }
             Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+
+/**
+ * Secondary settings live in a grouped, scrollable sheet rather than in an
+ * oversized nested popup. No note feature is removed by this presentation.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun NeoNoteSettingsSheet(
+    pinned:Boolean,
+    locked:Boolean,
+    previewHidden:Boolean,
+    a4Preview:Boolean,
+    onOutline:()->Unit,
+    onA4:()->Unit,
+    onAttachments:()->Unit,
+    onRulingFonts:()->Unit,
+    onPageColor:()->Unit,
+    onPreviewHidden:()->Unit,
+    onPinned:()->Unit,
+    onLocked:()->Unit,
+    onLinks:()->Unit,
+    onDismiss:()->Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest=onDismiss,
+        sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)
+    ) {
+        Column(Modifier.fillMaxWidth().heightIn(max=590.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal=16.dp,vertical=6.dp),
+            verticalArrangement=Arrangement.spacedBy(3.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                Text(neoLabel("إعدادات الملاحظة","Note settings"),
+                    style=MaterialTheme.typography.titleLarge,
+                    modifier=Modifier.weight(1f))
+                IconButton(onClick=onDismiss) {
+                    Icon(Icons.Rounded.Close,neoLabel("إغلاق","Close"))
+                }
+            }
+            Text(neoLabel("المستند","Document"),
+                style=MaterialTheme.typography.titleSmall,
+                color=MaterialTheme.colorScheme.primary,
+                modifier=Modifier.padding(top=8.dp,bottom=2.dp))
+            NeoSettingsAction(Icons.Rounded.FormatListBulleted,
+                neoLabel("فهرس العناوين","Document outline"),onOutline)
+            NeoSettingsAction(Icons.Rounded.Description,
+                if(a4Preview) neoLabel("العودة للكتابة","Back to writing")
+                else neoLabel("معاينة A4","A4 reading preview"),onA4)
+            NeoSettingsAction(Icons.Rounded.AttachFile,
+                neoLabel("الصور والمرفقات","Images and attachments"),onAttachments)
+            HorizontalDivider(Modifier.padding(vertical=6.dp))
+            Text(neoLabel("مظهر الصفحة","Page appearance"),
+                style=MaterialTheme.typography.titleSmall,
+                color=MaterialTheme.colorScheme.primary)
+            NeoSettingsAction(Icons.Rounded.ViewHeadline,
+                neoLabel("الورق المسطّر والخطوط","Paper ruling and fonts"),onRulingFonts)
+            NeoSettingsAction(Icons.Rounded.Palette,
+                neoLabel("لون الصفحة","Page color"),onPageColor)
+            NeoSettingsAction(Icons.Rounded.Visibility,
+                if(previewHidden) neoLabel("إظهار معاينة بطاقة الملاحظة","Show note card preview")
+                else neoLabel("إخفاء معاينة بطاقة الملاحظة","Hide note card preview"),
+                onPreviewHidden)
+            HorizontalDivider(Modifier.padding(vertical=6.dp))
+            Text(neoLabel("تنظيم وحماية","Organization and protection"),
+                style=MaterialTheme.typography.titleSmall,
+                color=MaterialTheme.colorScheme.primary)
+            NeoSettingsAction(Icons.Rounded.PushPin,
+                if(pinned) neoLabel("إلغاء التثبيت","Unpin")
+                else neoLabel("تثبيت الملاحظة","Pin note"),onPinned)
+            NeoSettingsAction(Icons.Rounded.Lock,
+                if(locked) neoLabel("إلغاء قفل الملاحظة","Unlock note")
+                else neoLabel("قفل الملاحظة","Lock note"),onLocked)
+            NeoSettingsAction(Icons.Rounded.Link,
+                neoLabel("الربط بالتقويم والمهام","Calendar and task links"),onLinks)
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun NeoSettingsAction(
+    icon:ImageVector,
+    label:String,
+    onClick:()->Unit
+) {
+    Surface(
+        onClick=onClick,
+        modifier=Modifier.fillMaxWidth(),
+        shape=RoundedCornerShape(10.dp),
+        color=Color.Transparent
+    ) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min=44.dp)
+                .padding(horizontal=9.dp,vertical=6.dp),
+            verticalAlignment=Alignment.CenterVertically,
+            horizontalArrangement=Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(icon,contentDescription=null,
+                modifier=Modifier.size(19.dp),
+                tint=MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(label,style=MaterialTheme.typography.bodyMedium)
         }
     }
 }

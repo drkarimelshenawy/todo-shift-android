@@ -379,8 +379,101 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start=12.dp,end=12.dp,top=8.dp,bottom=96.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 item(key="task-header") {
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        Text(neoLabel("المهام والملاحظات","Tasks & notes"),
-                            Modifier.weight(1f),style=MaterialTheme.typography.titleMedium)
+                        Text(
+                            if(notesTab && noteSelectionMode)
+                                neoLabel("محدد: ","Selected: ")+selectedNotes.size
+                            else neoLabel("المهام والملاحظات","Tasks & notes"),
+                            Modifier.weight(1f),style=MaterialTheme.typography.titleMedium
+                        )
+                        if(notesTab && noteSelectionMode) {
+                            val selectable=visibleNotes.filterNot {it.noteLocked}.map {it.id}.toSet()
+                            IconButton(
+                                enabled=selectable.isNotEmpty(),
+                                onClick={
+                                    selectedNotes=if(selectedNotes.containsAll(selectable))
+                                        emptySet() else selectable
+                                }
+                            ) {
+                                Icon(Icons.Rounded.SelectAll,
+                                    neoLabel("تحديد الكل أو إلغاء التحديد","Select or deselect all"))
+                            }
+                            Box {
+                                IconButton(onClick={selectionActionsExpanded=true}) {
+                                    Icon(Icons.Rounded.MoreVert,
+                                        neoLabel("إجراءات التحديد","Selection actions"))
+                                }
+                                DropdownMenu(
+                                    expanded=selectionActionsExpanded,
+                                    onDismissRequest={selectionActionsExpanded=false}
+                                ) {
+                                    DropdownMenuItem(
+                                        enabled=selectedNotes.isNotEmpty()&&!write.pending,
+                                        text={Text(neoLabel("تثبيت المحدد","Pin selected"))},
+                                        onClick={
+                                            selectionActionsExpanded=false
+                                            changed(db.copy(dayItems=db.dayItems.map {
+                                                if(it.id in selectedNotes && !it.noteLocked)
+                                                    it.copy(notePinned=true,updatedAt=System.currentTimeMillis())
+                                                else it
+                                            }),neoLiteral("تم تثبيت الملاحظات","Notes pinned"))
+                                            selectedNotes=emptySet();noteSelectionMode=false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        enabled=selectedNotes.isNotEmpty()&&!write.pending,
+                                        text={Text(
+                                            if(noteFolder=="archive"||noteFolder=="trash")
+                                                neoLabel("استعادة المحدد","Restore selected")
+                                            else neoLabel("أرشفة المحدد","Archive selected"))},
+                                        onClick={
+                                            selectionActionsExpanded=false
+                                            val restore=noteFolder=="archive"||noteFolder=="trash"
+                                            changed(db.copy(dayItems=db.dayItems.map {
+                                                if(it.id in selectedNotes && !it.noteLocked)
+                                                    it.copy(noteArchived=!restore,noteTrashed=false,
+                                                        updatedAt=System.currentTimeMillis())
+                                                else it
+                                            }),neoLiteral("تم تحديث الملاحظات","Notes updated"))
+                                            selectedNotes=emptySet();noteSelectionMode=false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
+                                        text={Text(neoLabel("المفضلة","Favorites"))},
+                                        onClick={
+                                            selectionActionsExpanded=false
+                                            val ids=selectedNotes.toList()
+                                            val next=ids.any {it !in favoriteNoteIds}
+                                            updateFolder({store.setNoteFavorites(ids,next)},
+                                                neoLiteral("تم تحديث المفضلة","Favorites updated"))
+                                            selectedNotes=emptySet();noteSelectionMode=false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
+                                        text={Text(neoLabel("نقل إلى مجلد","Move to folder"))},
+                                        onClick={
+                                            selectionActionsExpanded=false;moveNotesDialog=true
+                                        }
+                                    )
+                                    if(noteFolder!="trash") DropdownMenuItem(
+                                        enabled=selectedNotes.isNotEmpty()&&!write.pending,
+                                        text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},
+                                        onClick={
+                                            selectionActionsExpanded=false;confirmTrash=true
+                                        }
+                                    )
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text={Text(neoLabel("إلغاء التحديد","Exit selection"))},
+                                        onClick={
+                                            selectionActionsExpanded=false
+                                            selectedNotes=emptySet();noteSelectionMode=false
+                                        }
+                                    )
+                                }
+                            }
+                        } else {
                         IconButton(onClick={searchExpanded=!searchExpanded}) {
                             Icon(if(searchExpanded) Icons.Rounded.Close else Icons.Rounded.Search,
                                 neoLabel("بحث","Search"))
@@ -434,6 +527,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                 )
                             }
                         }
+                        }
                     }
                     Row(
                         Modifier.fillMaxWidth().padding(vertical=5.dp),
@@ -473,74 +567,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         singleLine=true,
                         modifier=Modifier.fillMaxWidth()
                     )
-                    if(notesTab && noteSelectionMode) {
-                        Row(
-                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                            verticalAlignment=Alignment.CenterVertically,
-                            horizontalArrangement=Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                neoLabel("محدد: ","Selected: ") + selectedNotes.size,
-                                style=MaterialTheme.typography.labelMedium
-                            )
-                            TextButton(
-                                enabled=selectedNotes.isNotEmpty()&&!write.pending,
-                                onClick={
-                                    changed(
-                                        db.copy(dayItems=db.dayItems.map {
-                                            if(it.id in selectedNotes && !it.noteLocked)
-                                                it.copy(notePinned=true,updatedAt=System.currentTimeMillis())
-                                            else it
-                                        }),
-                                        neoLiteral("تم تثبيت الملاحظات","Notes pinned")
-                                    )
-                                    selectedNotes=emptySet();noteSelectionMode=false
-                                }
-                            ) {Text(neoLabel("تثبيت","Pin"))}
-                            TextButton(
-                                enabled=selectedNotes.isNotEmpty()&&!write.pending,
-                                onClick={
-                                    val restore=noteFolder=="archive"||noteFolder=="trash"
-                                    changed(
-                                        db.copy(dayItems=db.dayItems.map {
-                                            if(it.id in selectedNotes && !it.noteLocked)
-                                                it.copy(noteArchived=!restore,noteTrashed=false,
-                                                    updatedAt=System.currentTimeMillis())
-                                            else it
-                                        }),
-                                        neoLiteral("تم تحديث الملاحظات","Notes updated")
-                                    )
-                                    selectedNotes=emptySet();noteSelectionMode=false
-                                }
-                            ) {
-                                Text(if(noteFolder=="archive"||noteFolder=="trash")
-                                    neoLabel("استعادة","Restore") else neoLabel("أرشفة","Archive"))
-                            }
-                            if(noteFolder!="trash") Button(
-                                enabled=selectedNotes.isNotEmpty()&&!write.pending,
-                                onClick={confirmTrash=true},
-                                colors=ButtonDefaults.buttonColors(
-                                    containerColor=MaterialTheme.colorScheme.error
-                                )
-                            ) {Text(neoLabel("حذف","Delete"))}
-                            TextButton(enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
-                                onClick={moveNotesDialog=true}) {Text(neoLabel("نقل لمجلد","Move to folder"))}
-                            TextButton(
-                                enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
-                                onClick={
-                                    val ids=selectedNotes.toList()
-                                    val next=ids.any {it !in favoriteNoteIds}
-                                    updateFolder({store.setNoteFavorites(ids,next)},
-                                        neoLiteral("تم تحديث المفضلة","Favorites updated"))
-                                    selectedNotes=emptySet();noteSelectionMode=false
-                                }
-                            ) {Text(neoLabel("المفضلة","Favorite"))}
 
-                            TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {
-                                Text(neoLabel("إلغاء","Cancel"))
-                            }
-                        }
-                    }
                 }
                 if (!notesTab) {
                     item(key="task-filters") {

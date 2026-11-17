@@ -317,7 +317,7 @@ class NeoSmartStore(context: Context) {
                     require(NeoAttachmentStore.safeName(t.getString("name")))
                     require(
                         t.getString("mime") in
-                            listOf("image/jpeg", "image/png", "application/pdf", "text/plain")
+                            listOf("image/jpeg", "image/png", "application/pdf", "text/plain", "audio/mp4")
                     )
                 }
             }

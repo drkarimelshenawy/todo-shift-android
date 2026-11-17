@@ -87,6 +87,24 @@ jobs:
             --tests 'com.todoshift.app.backup.BackupRecoveryTest' \
             --tests 'com.todoshift.app.storage.SafePersistenceTest' \
             :app:assembleRelease --stacktrace
+      - name: Diagnose Android test failures
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+          for file in glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml"):
+              try:
+                  root=ET.parse(file).getroot()
+                  for case in root.iter("testcase"):
+                      fail=case.find("failure")
+                      if fail is not None:
+                          print("FAILED TEST:",case.get("classname"),case.get("name"))
+                          print("MESSAGE:",fail.get("message",""))
+                          print((fail.text or "")[:6000])
+              except Exception as error:
+                  print("Failed to read XML:",file,error)
+          PY
       - name: Verify APK signature and identity
         run: |
           python3 tools/verify_premium_apk.py app/build/outputs/apk/release/app-release.apk \

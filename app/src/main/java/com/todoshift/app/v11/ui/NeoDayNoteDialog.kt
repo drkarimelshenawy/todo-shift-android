@@ -486,6 +486,21 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         },
         confirmButton={TextButton(onClick={paperPaletteOpen=false}){Text(neoLabel("إغلاق","Close"))}}
     )
+    val hasDocumentBlocks=remember(noteSource()) {
+        NeoDocumentBlocks.parse(noteSource()).any {
+            it is NeoDocumentBlocks.Block.Image ||
+            it is NeoDocumentBlocks.Block.Table ||
+            it is NeoDocumentBlocks.Block.PageBreak
+        }
+    }
+    val activeText=if(hasDocumentBlocks) focusedParagraph ?: NeoRichEditorState.open("")
+        else rich
+    val applyToActiveText:(NeoRichEditorState)->Unit={next ->
+        if(!closing) {
+            if(hasDocumentBlocks) commitFocusedParagraph?.invoke(next)
+            else editRich(next)
+        }
+    }
     Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
         properties=DialogProperties(usePlatformDefaultWidth=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
         // A full-screen dialog needs resize-aware IME handling: otherwise its footer
@@ -743,21 +758,6 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         mediaShelfVisible=false
                     }
                 )
-                val hasDocumentBlocks=remember(noteSource()) {
-                    NeoDocumentBlocks.parse(noteSource()).any {
-                        it is NeoDocumentBlocks.Block.Image ||
-                        it is NeoDocumentBlocks.Block.Table ||
-                        it is NeoDocumentBlocks.Block.PageBreak
-                    }
-                }
-                val activeText=if(hasDocumentBlocks) focusedParagraph ?: NeoRichEditorState.open("")
-                    else rich
-                val applyToActiveText:(NeoRichEditorState)->Unit={next ->
-                    if(!closing) {
-                        if(hasDocumentBlocks) commitFocusedParagraph?.invoke(next)
-                        else editRich(next)
-                    }
-                }
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     val direction=when(noteDirection) {
                         "rtl" -> androidx.compose.ui.text.style.TextDirection.Rtl

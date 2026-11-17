@@ -512,30 +512,41 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         // measured the footer down to the physical bottom of the display.
         val view=androidx.compose.ui.platform.LocalView.current
         var bottomOcclusionPx by remember(view) {mutableIntStateOf(0)}
+        // The view's coordinates can stay unchanged when the IME opens.
+        // A layout callback alone therefore misses keyboard appearance.
+        // Observe visible-frame changes at the Android window level.
         DisposableEffect(view) {
             val window=(view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
             val previous=window?.attributes?.softInputMode
             window?.setSoftInputMode(
                 android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-            onDispose { if(previous!=null) window?.setSoftInputMode(previous) }
-        }
-        Surface(
-            modifier=Modifier.fillMaxSize().onGloballyPositioned {coords ->
+            val observer=view.viewTreeObserver
+            val listener=android.view.ViewTreeObserver.OnGlobalLayoutListener {
                 val visible=android.graphics.Rect()
                 view.getWindowVisibleDisplayFrame(visible)
-                val origin=IntArray(2)
-                view.getLocationOnScreen(origin)
-                val rootBottom=(origin[1]+coords.boundsInWindow().bottom).roundToInt()
-                val occluded=(rootBottom-visible.bottom).coerceAtLeast(0)
-                if(bottomOcclusionPx!=occluded) bottomOcclusionPx=occluded
-                val inset=androidx.core.view.ViewCompat.getRootWindowInsets(view)
-                android.util.Log.i("NotesViewport",
-                    "rootBottom="+rootBottom+", visibleBottom="+visible.bottom+
-                    ", reserve="+occluded+", nav="+
-                    (inset?.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())?.bottom ?: -1)+
-                    ", ime="+
-                    (inset?.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: -1))
-            },
+                val location=IntArray(2)
+                view.getLocationOnScreen(location)
+                val bottom=location[1]+view.height
+                val occluded=(bottom-visible.bottom).coerceAtLeast(0)
+                if(bottomOcclusionPx!=occluded) {
+                    bottomOcclusionPx=occluded
+                    val insets=androidx.core.view.ViewCompat.getRootWindowInsets(view)
+                    android.util.Log.i("NotesViewport",
+                        "bottom="+bottom+" visibleBottom="+visible.bottom+
+                        " reserve="+occluded+" ime="+
+                        (insets?.getInsets(
+                            androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: -1))
+                }
+            }
+            observer.addOnGlobalLayoutListener(listener)
+            view.post { listener.onGlobalLayout() }
+            onDispose {
+                if(observer.isAlive) observer.removeOnGlobalLayoutListener(listener)
+                if(previous!=null) window?.setSoftInputMode(previous)
+            }
+        }
+        Surface(
+            modifier=Modifier.fillMaxSize(),
             color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface
         ) {
             Box(Modifier.fillMaxSize()) {
@@ -562,7 +573,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 // The dialog window may extend below the actually
                                 // visible area on API 35+. Reserve precisely the
                                 // occluded region reported by the Android window.
-                                val gap=with(LocalDensity.current){bottomOcclusionPx.toDp()}
+                                val imePx=WindowInsets.ime.getBottom(LocalDensity.current)
+                                val reservedPx=maxOf(bottomOcclusionPx,imePx)
+                                val gap=with(LocalDensity.current){reservedPx.toDp()}
                                 if(gap>0.dp) Spacer(Modifier.height(gap))
                             }
                         }

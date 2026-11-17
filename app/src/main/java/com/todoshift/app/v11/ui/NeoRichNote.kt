@@ -473,23 +473,28 @@ internal fun NeoNotePreview(
             val rendered=noteInline(raw)
             // Parse the visible, formatted content: stored <b>/<i>/font wrappers
             // must never break checklists or expose their markup in reading mode.
-            val checked=Regex("^\\s*- \\[([ xX])\\] (.*)$").matchEntire(rendered.text)
+            // Both legacy Markdown and the new in-editor checkbox glyph
+            // render as interactive Material checkboxes in reading mode.
+            val checked=Regex("""^\s*(?:- \[([ xX])\] |([☐☑]) )(.*)$""").matchEntire(rendered.text)
             if(checked!=null) {
-                val label=checked.groupValues[2]
-                val start=checked.groups[2]?.range?.first ?: rendered.length
+                val done=if(checked.groupValues[1].isNotEmpty())
+                    checked.groupValues[1]!=" " else checked.groupValues[2]=="☑"
+                val label=checked.groupValues[3]
+                val start=checked.groups[3]?.range?.first ?: rendered.length
                 val styled=rendered.subSequence(start,rendered.length)
                 if(onChecklist==null && onCreateTask==null) {
                     NeoRuledParagraph(
                         buildAnnotatedString {
-                            append(if(checked.groupValues[1]==" ") "☐ " else "☑ ")
+                            append(if(done) "☑ " else "☐ ")
                             append(styled)
                         },lineStyle,ruled=ruled
                     )
                 } else {
-                    Row {
+                    Row(verticalAlignment=androidx.compose.ui.Alignment.Top) {
                         Checkbox(
-                            checked.groupValues[1]!=" ",
-                            onCheckedChange=onChecklist?.let{callback->{_:Boolean->callback(index)}}
+                            checked=done,
+                            onCheckedChange=onChecklist?.let{callback->{_:Boolean->callback(index)}},
+                            enabled=onChecklist!=null
                         )
                         NeoRuledParagraph(styled,lineStyle,Modifier.weight(1f).padding(top=6.dp),ruled)
                         if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,label)}) {
@@ -500,9 +505,15 @@ internal fun NeoNotePreview(
                 }
             } else if(!checklistsOnly) {
                 val heading=raw.startsWith("# ")||raw.startsWith("## ")||raw.startsWith("### ")
-                val styled=if(rendered.text.startsWith("- ")) {
-                    buildAnnotatedString {append("• ");append(rendered.subSequence(2,rendered.length))}
-                } else rendered
+                val styled=when {
+                    rendered.text.startsWith("- ") ->
+                        buildAnnotatedString {append("• ");append(rendered.subSequence(2,rendered.length))}
+                    rendered.text.matches(Regex("""^[0-9]+[.)] .*""")) ||
+                        rendered.text.matches(Regex("""^[A-Z]+[.)] .*""")) ||
+                        rendered.text.matches(Regex("""^[أابتثجحخدذرزسشصضطظعغفقكلمنهوي][.)] .*""")) ->
+                        rendered
+                    else -> rendered
+                }
                 val type=when {
                     raw.startsWith("# ") -> MaterialTheme.typography.titleLarge
                     raw.startsWith("## ") -> MaterialTheme.typography.titleMedium

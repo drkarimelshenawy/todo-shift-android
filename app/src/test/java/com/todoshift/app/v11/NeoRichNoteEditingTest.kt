@@ -97,4 +97,30 @@ class NeoRichNoteEditingTest {
         assertTrue(note.characters.drop(3).all{!it.italic})
     }
 
+
+    @Test fun numberedListContinuesOnEnterAndRichSaveRoundTrips() {
+        val initial=NeoRichEditorState.open("1. ملاحظة عربية")
+        val after="1. ملاحظة عربية\n"
+        val appended=initial.input(TextFieldValue(after,TextRange(after.length)))
+        assertEquals("1. ملاحظة عربية\n2. ",appended.value.text)
+        assertEquals(appended.value.text,NeoRichEditorState.open(appended.stored()).value.text)
+    }
+
+    @Test fun checklistDoesNotShowBracketSyntaxForNewItems() {
+        val created=NeoRichEditorState.open("").list("check")
+        assertEquals("☐ ",created.value.text)
+        val populated=created.input(TextFieldValue("☐ مراجعة",TextRange("☐ مراجعة".length)))
+        val complete=populated.toggleChecklist()
+        assertEquals("☑ مراجعة",complete.value.text)
+        assertEquals("☑ مراجعة",NeoRichEditorState.open(complete.stored()).value.text)
+    }
+
+    @Test fun legacyCheckboxAndTaskAnchorRemainReadAndWritable() {
+        val old="- [ ] بند قديم <!--task:existing-123-->"
+        val read=NeoRichEditorState.open(old)
+        assertEquals("- [ ] بند قديم ",read.value.text)
+        val checked=read.toggleChecklist()
+        assertTrue(checked.stored().startsWith("- [x] بند قديم"))
+        assertTrue(checked.stored().contains("<!--task:existing-123-->"))
+    }
 }

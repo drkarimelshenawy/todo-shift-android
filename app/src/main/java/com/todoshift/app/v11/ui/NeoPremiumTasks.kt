@@ -598,17 +598,37 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             },modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
                                 Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                     if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
-                                    Text(
+                                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Top) {
+                                        Text(
                                             (if(note.noteLocked) "🔒 " else if(note.notePinned) "📌 " else "") +
                                                 note.title.ifBlank {
                                                     if(note.noteLocked || note.notePreviewHidden) neoLabel("ملاحظة","Note")
                                                     else noteDisplayText(note.details).lineSequence().firstOrNull { it.isNotBlank() }?.take(100)
                                                         ?: neoLabel("بدون عنوان","Untitled")
                                                 },
+                                            modifier=Modifier.weight(1f),
                                             style=MaterialTheme.typography.titleMedium,
                                             maxLines=if(noteLayout=="grid") 2 else 3,
                                             overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
+                                        if(!noteSelectionMode) IconButton(
+                                            enabled=!folderBusy&&!write.pending,
+                                            modifier=Modifier.size(36.dp),
+                                            onClick={
+                                                val isFavorite=note.id in favoriteNoteIds
+                                                updateFolder({store.setNoteFavorites(listOf(note.id),!isFavorite)},
+                                                    neoLiteral("تم تحديث المفضلة","Favorites updated"))
+                                            }
+                                        ) {
+                                            Icon(
+                                                if(note.id in favoriteNoteIds) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                                                neoLabel("إضافة أو إزالة من المفضلة","Toggle favorite"),
+                                                tint=if(note.id in favoriteNoteIds) MaterialTheme.colorScheme.primary
+                                                    else contentColor.copy(alpha=0.7f),
+                                                modifier=Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
                                         // Password locking and hiding an excerpt are independent settings.
                                         // Neither option removes the note from the list or blocks opening its card.
                                         if(!note.noteLocked && !note.notePreviewHidden && noteLayout!="list") {
@@ -645,17 +665,37 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             },modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
                             Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                 if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
-                                Text(
+                                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Top) {
+                                    Text(
                                             (if(note.noteLocked) "🔒 " else if(note.notePinned) "📌 " else "") +
                                                 note.title.ifBlank {
                                                     if(note.noteLocked || note.notePreviewHidden) neoLabel("ملاحظة","Note")
                                                     else noteDisplayText(note.details).lineSequence().firstOrNull { it.isNotBlank() }?.take(100)
                                                         ?: neoLabel("بدون عنوان","Untitled")
                                                 },
+                                            modifier=Modifier.weight(1f),
                                             style=MaterialTheme.typography.titleMedium,
                                             maxLines=if(noteLayout=="grid") 2 else 3,
                                             overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
+                                    if(!noteSelectionMode) IconButton(
+                                        enabled=!folderBusy&&!write.pending,
+                                        modifier=Modifier.size(36.dp),
+                                        onClick={
+                                            val isFavorite=note.id in favoriteNoteIds
+                                            updateFolder({store.setNoteFavorites(listOf(note.id),!isFavorite)},
+                                                neoLiteral("تم تحديث المفضلة","Favorites updated"))
+                                        }
+                                    ) {
+                                        Icon(
+                                            if(note.id in favoriteNoteIds) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                                            neoLabel("إضافة أو إزالة من المفضلة","Toggle favorite"),
+                                            tint=if(note.id in favoriteNoteIds) MaterialTheme.colorScheme.primary
+                                                else contentColor.copy(alpha=0.7f),
+                                            modifier=Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
                                         // Password locking and hiding an excerpt are independent settings.
                                         // Neither option removes the note from the list or blocks opening its card.
                                         if(!note.noteLocked && !note.notePreviewHidden && noteLayout!="list") {

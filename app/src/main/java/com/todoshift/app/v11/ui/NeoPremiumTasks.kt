@@ -31,7 +31,8 @@ val LocalNeoTaskMove = staticCompositionLocalOf<((String,Int)->Unit)?> { null }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange: (V11Database)->Unit,
-    initialAction: String?, initialTaskId: String?, onHandled: ()->Unit) {
+    initialAction: String?, initialTaskId: String?, onHandled: ()->Unit,
+    initialSharedNoteText:String?=null) {
     val context=LocalContext.current;val scope=rememberCoroutineScope()
     val permission=androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {}
     val store=remember { NeoSmartStore(context.applicationContext) }
@@ -53,11 +54,15 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             finally { settingsBusy=false }
         }
     }
-    var notesTab by rememberSaveable { mutableStateOf(NeoLaunchPreferences(context).openNotes) }
+    var notesTab by rememberSaveable {
+        mutableStateOf(NeoLaunchPreferences(context).openNotes ||
+            initialAction=="new_note" || initialAction=="notes")
+    }
     LaunchedEffect(Unit) {if(initialAction==null) notesTab=NeoLaunchPreferences(context).openNotes}
     LaunchedEffect(initialAction,initialTaskId) {
         if(initialAction=="tasks" || (initialAction=="open" && db.tasks.any {it.id==initialTaskId})) notesTab=false
-        if(initialAction=="notes" || (initialAction=="open" && db.dayItems.any {it.id==initialTaskId && it.type==DayItemTypeV11.NOTE})) notesTab=true
+        if(initialAction=="notes" || initialAction=="new_note" ||
+            (initialAction=="open" && db.dayItems.any {it.id==initialTaskId && it.type==DayItemTypeV11.NOTE})) notesTab=true
     }
     val noteSecurity=remember {V11SecurityStore(context.applicationContext)}
     val noteSecuritySettings=noteSecurity.load()
@@ -89,6 +94,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var preferencesOpen by remember { mutableStateOf(false) }
     var noteEditor by rememberSaveable { mutableStateOf(false) }
     var noteId by rememberSaveable { mutableStateOf<String?>(null) }
+    var templatePicker by remember {mutableStateOf(false)}
+    var initialNoteTitle by rememberSaveable {mutableStateOf("")}
+    var initialNoteBody by rememberSaveable {mutableStateOf("")}
     var noteSearch by rememberSaveable { mutableStateOf("") }
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     var noteControlsExpanded by rememberSaveable { mutableStateOf(false) }
@@ -153,8 +161,27 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         NeoTaskQueries.select(visible.filter {search.isBlank() || (!it.linkedNotePrivateV11(db) && !(noteSecuritySettings.protectNotes&&it.linkedNoteId!=null))},date,period,status,search,priority,calendar,options)
     }
     fun open(id: String?=null) { editingId=id;editor=true }
-    LaunchedEffect(initialAction,initialTaskId) {
-        when(initialAction) { "tasks" -> notesTab=false; "notes" -> notesTab=true; "add" -> open(); "open" -> when {db.tasks.any { it.id==initialTaskId }->open(initialTaskId);db.dayItems.any {it.id==initialTaskId&&it.type==DayItemTypeV11.NOTE}-> {notesTab=true;noteId=initialTaskId;noteEditor=true};else->missing=true} }
+    LaunchedEffect(initialAction,initialTaskId,initialSharedNoteText) {
+        when(initialAction) {
+            "tasks" -> notesTab=false
+            "notes" -> notesTab=true
+            "new_note" -> {
+                notesTab=true
+                noteId=null
+                initialNoteTitle=""
+                initialNoteBody=initialSharedNoteText.orEmpty().take(16_000)
+                newNoteFolderTarget=null
+                noteEditor=true
+            }
+            "add" -> open()
+            "open" -> when {
+                db.tasks.any {it.id==initialTaskId} -> open(initialTaskId)
+                db.dayItems.any {it.id==initialTaskId && it.type==DayItemTypeV11.NOTE} -> {
+                    notesTab=true;noteId=initialTaskId;noteEditor=true
+                }
+                else -> missing=true
+            }
+        }
         if(initialAction!=null) onHandled()
     }
     fun changed(next: V11Database, message: String) {
@@ -175,6 +202,45 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             } finally {folderBusy=false}
         }
     }
+    if(templatePicker) AlertDialog(
+        onDismissRequest={templatePicker=false},
+        title={Text(neoLabel("قوالب الملاحظات","Note templates"))},
+        text={
+            Column(
+                Modifier.fillMaxWidth().heightIn(max=460.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement=Arrangement.spacedBy(4.dp)
+            ) {
+                Text(neoLabel("كل قالب يبدأ ملاحظة عادية قابلة للتعديل بالكامل.",
+                    "Every template creates a regular, fully editable note."),
+                    style=MaterialTheme.typography.bodySmall)
+                TextButton(onClick={
+                    templatePicker=false
+                    initialNoteTitle=""
+                    initialNoteBody=""
+                    newNoteFolderTarget=activeFolderId?.takeUnless{it=="__unfiled__"}
+                    noteId=null
+                    noteEditor=true
+                }) {Text(neoLabel("ملاحظة فارغة","Blank note"))}
+                val ar=neoLabel("ar","en")=="ar"
+                NeoNoteTemplates.builtIn.forEach {template ->
+                    TextButton(onClick={
+                        templatePicker=false
+                        initialNoteTitle=template.title(ar)
+                        initialNoteBody=template.body(ar)
+                        newNoteFolderTarget=activeFolderId?.takeUnless{it=="__unfiled__"}
+                        noteId=null
+                        noteEditor=true
+                    }) {Text(template.title(ar))}
+                }
+            }
+        },
+        confirmButton={
+            TextButton(onClick={templatePicker=false}) {
+                Text(neoLabel("إغلاق","Close"))
+            }
+        }
+    )
     if(confirmTrash) AlertDialog(onDismissRequest={confirmTrash=false},title={Text(neoLabel("نقل المحدد إلى المهملات؟","Move selected notes to trash?"))},text={Text(neoLabel("يمكن استعادتها من المهملات","You can restore them from Trash"))},confirmButton={TextButton(onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteTrashed=true,updatedAt=System.currentTimeMillis()) else it}),neoLiteral("نُقلت إلى المهملات","Moved to Trash"));selectedNotes=emptySet();noteSelectionMode=false;confirmTrash=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrash=false}) {Text(neoLabel("إلغاء","Cancel"))}})
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
@@ -362,6 +428,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         sharedMenu=false
                                         if(notesTab) noteControlsExpanded=true else filters=true
                                     }
+                                )
+                                if(notesTab) DropdownMenuItem(
+                                    text={Text(neoLabel("قوالب الملاحظات","Note templates"))},
+                                    onClick={sharedMenu=false;templatePicker=true}
                                 )
                                 if(notesTab) DropdownMenuItem(
                                     text={Text(if(noteSelectionMode) neoLabel("إلغاء تحديد الملاحظات","Exit selection")
@@ -563,6 +633,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     label={Text(neoLabel("بدون مجلد","Unfiled"))}
                                 )
                                 AssistChip(
+                                    onClick={templatePicker=true},
+                                    label={Text(neoLabel("من قالب","From template"))}
+                                )
+                                AssistChip(
                                     onClick={editingFolderId=null;folderName="";editFolderDialog=true},
                                     label={Text(neoLabel("مجلد جديد +","New folder +"))}
                                 )
@@ -724,7 +798,11 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                 }
             }
         }
-        FloatingActionButton(onClick={if(notesTab) {newNoteFolderTarget=activeFolderId;noteId=null;noteEditor=true} else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+        FloatingActionButton(onClick={if(notesTab) {
+            initialNoteTitle="";initialNoteBody=""
+            newNoteFolderTarget=activeFolderId?.takeUnless{it=="__unfiled__"}
+            noteId=null;noteEditor=true
+        } else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
         }
     }
@@ -739,7 +817,12 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         CompositionLocalProvider(LocalNeoOpenNoteTask provides {taskId -> noteEditor=false;noteId=null;open(taskId)}) {
         NeoDayNoteDialog(existing?.date?.let { java.time.LocalDate.parse(it) } ?: today, existing,
             expectedDatabase = db, calendarId = existing?.calendarId ?: db.calendars.firstOrNull { it.visible }?.id,
-            onDismiss = { noteEditor = false; noteId = null }) { saved ->
+            onDismiss = {
+                noteEditor=false;noteId=null;initialNoteTitle="";initialNoteBody=""
+            },
+            initialTitle=if(existing==null) initialNoteTitle else "",
+            initialBody=if(existing==null) initialNoteBody else ""
+        ) { saved ->
                 noteEditor = false; noteId = null
                 if(existing==null) {
                     val destination=newNoteFolderTarget
@@ -749,6 +832,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     )
                 }
                 newNoteFolderTarget=null
+                initialNoteTitle="";initialNoteBody=""
             }
         }
     }

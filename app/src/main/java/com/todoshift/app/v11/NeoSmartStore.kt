@@ -356,7 +356,7 @@ class NeoSmartStore(context: Context) {
         require(noteIds.size<=1000 && noteIds.all{it.isNotBlank()&&it.length<=150})
         update {metadata ->
             val folders=metadata.optJSONArray("noteFolders") ?: JSONArray()
-            require(folderId==null || (0 until folders.length).any {
+            require(folderId==null || (0 until folders.length()).any {
                 folders.getJSONObject(it).getString("id")==folderId
             }) {"Unknown folder"}
             val assignments=metadata.optJSONObject("noteFolderAssignments") ?: JSONObject()

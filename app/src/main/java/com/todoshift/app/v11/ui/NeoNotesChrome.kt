@@ -25,7 +25,8 @@ import androidx.compose.ui.unit.dp
 internal fun NeoNoteQuickBar(
     state: NeoRichEditorState,
     onChange: (NeoRichEditorState) -> Unit,
-    onFormat: () -> Unit
+    onFormat: () -> Unit,
+    enabled:Boolean=true
 ) {
     var inkOpen by remember { mutableStateOf(false) }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -41,13 +42,13 @@ internal fun NeoNoteQuickBar(
                 horizontalArrangement=Arrangement.spacedBy(7.dp)
             ) {
                 NeoChromeIcon(Icons.Rounded.FormatBold,neoLabel("عريض","Bold"),
-                    state.active("bold")){onChange(state.toggle("bold"))}
+                    state.active("bold")),enabled=enabled){onChange(state.toggle("bold"))}
                 NeoChromeIcon(Icons.Rounded.FormatItalic,neoLabel("مائل","Italic"),
-                    state.active("italic")){onChange(state.toggle("italic"))}
+                    state.active("italic")),enabled=enabled){onChange(state.toggle("italic"))}
                 NeoChromeIcon(Icons.Rounded.FormatUnderlined,neoLabel("تسطير النص","Underline text"),
-                    state.active("underline")){onChange(state.toggle("underline"))}
+                    state.active("underline")),enabled=enabled){onChange(state.toggle("underline"))}
                 Box {
-                    NeoChromeIcon(Icons.Rounded.FormatColorText,neoLabel("لون النص","Text color")) {
+                    NeoChromeIcon(Icons.Rounded.FormatColorText,neoLabel("لون النص","Text color"),enabled=enabled) {
                         inkOpen=true
                     }
                     DropdownMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
@@ -60,9 +61,9 @@ internal fun NeoNoteQuickBar(
                 }
                 VerticalDivider(Modifier.height(28.dp),thickness=1.dp)
                 NeoChromeIcon(Icons.Rounded.FormatListBulleted,neoLabel("قائمة نقطية","Bullet list"),
-                    state.listActive("bullet")){onChange(state.list("bullet"))}
+                    state.listActive("bullet")),enabled=enabled){onChange(state.list("bullet"))}
                 NeoChromeIcon(Icons.Rounded.CheckBox,neoLabel("قائمة اختيار","Checklist"),
-                    state.listActive("check")){onChange(state.list("check"))}
+                    state.listActive("check")),enabled=enabled){onChange(state.list("check"))}
                 FilledTonalButton(onClick=onFormat,contentPadding=PaddingValues(horizontal=12.dp)) {
                     Icon(Icons.Rounded.FormatSize,null,Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
@@ -75,10 +76,10 @@ internal fun NeoNoteQuickBar(
 
 @Composable
 private fun NeoChromeIcon(
-    icon:ImageVector,description:String,selected:Boolean=false,onClick:()->Unit
+    icon:ImageVector,description:String,selected:Boolean=false,enabled:Boolean=true,onClick:()->Unit
 ) {
     Surface(
-        onClick=onClick,modifier=Modifier.size(42.dp),
+        onClick=onClick,enabled=enabled,modifier=Modifier.size(42.dp),
         shape=RoundedCornerShape(12.dp),
         color=if(selected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surface,

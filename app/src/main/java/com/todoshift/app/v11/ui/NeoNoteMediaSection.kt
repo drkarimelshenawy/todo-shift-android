@@ -46,7 +46,10 @@ internal fun NeoNoteMediaSection(
     noteId: String,
     editable: Boolean,
     onChanged: () -> Unit,
-    onError: (String) -> Unit
+    onError: (String) -> Unit,
+    request:String?=null,
+    onRequestHandled:()->Unit={},
+    onImageImported:(String)->Unit={}
 ) {
     val context=LocalContext.current
     val store=remember(context) {NeoAttachmentStore(context.applicationContext)}
@@ -54,6 +57,7 @@ internal fun NeoNoteMediaSection(
     var files by remember(noteId) {mutableStateOf<List<NeoAttachmentStore.Attachment>>(emptyList())}
     var revision by remember(noteId) {mutableIntStateOf(0)}
     var busy by remember {mutableStateOf(false)}
+    var attachImageInline by remember {mutableStateOf(false)}
     var deleting by remember {mutableStateOf<NeoAttachmentStore.Attachment?>(null)}
     val player=remember {mutableStateOf<MediaPlayer?>(null)}
     var playingName by remember {mutableStateOf<String?>(null)}
@@ -68,14 +72,16 @@ internal fun NeoNoteMediaSection(
         catch(e:Exception) {onError(e.message ?: "Unable to load attachments")}
     }
 
-    fun importFile(uri:Uri,temporary:File?=null) {
+    fun importFile(uri:Uri,temporary:File?=null,inlineImage:Boolean=false) {
         if(busy) {temporary?.delete();return}
         busy=true
         scope.launch {
             try {
-                withContext(Dispatchers.IO) {store.import(noteId,uri)}
+                val imported=withContext(Dispatchers.IO) {store.import(noteId,uri)}
                 revision++
                 onChanged()
+                if(inlineImage && imported.mime.startsWith("image/"))
+                    onImageImported(imported.name)
             } catch(e:Exception) {onError(e.message ?: "Cannot import media")}
             finally {
                 withContext(Dispatchers.IO) {temporary?.delete()}
@@ -155,14 +161,58 @@ internal fun NeoNoteMediaSection(
         else onError("Microphone permission denied")
     }
     val picker=rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()) {uri->if(uri!=null) importFile(uri)}
+        ActivityResultContracts.OpenDocument()) {uri->
+            val inline=attachImageInline
+            attachImageInline=false
+            if(uri!=null) importFile(uri,inlineImage=inline)
+        }
     val camera=rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()) {success->
         val target=cameraTemp.value;cameraTemp.value=null
         if(target!=null) {
             if(success) importFile(FileProvider.getUriForFile(context,
-                context.packageName+".attachments",target),target)
+                context.packageName+".attachments",target),target,inlineImage=true)
             else target.delete()
+        }
+    }
+
+    LaunchedEffect(request) {
+        if(!editable || request==null) return@LaunchedEffect
+        when(request) {
+            "image" -> {
+                attachImageInline=true
+                onRequestHandled()
+                picker.launch(arrayOf("image/jpeg","image/png"))
+            }
+            "file" -> {
+                attachImageInline=false
+                onRequestHandled()
+                picker.launch(arrayOf("image/png","image/jpeg","application/pdf",
+                    "text/plain","audio/mp4","audio/x-m4a"))
+            }
+            "camera" -> {
+                onRequestHandled()
+                val file=File(context.filesDir,
+                    "attachments/neo-camera-draft-"+UUID.randomUUID()+".jpg")
+                try {
+                    check(file.parentFile?.isDirectory==true ||
+                        file.parentFile?.mkdirs()==true)
+                    cameraTemp.value=file
+                    camera.launch(FileProvider.getUriForFile(context,
+                        context.packageName+".attachments",file))
+                } catch(e:Exception) {
+                    cameraTemp.value=null;file.delete()
+                    onError(e.message ?: "Camera unavailable")
+                }
+            }
+            "voice" -> {
+                onRequestHandled()
+                if(ContextCompat.checkSelfPermission(context,
+                    Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)
+                    beginRecording()
+                else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+            else -> onRequestHandled()
         }
     }
 
@@ -184,48 +234,10 @@ internal fun NeoNoteMediaSection(
 
     Column(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp),
         verticalArrangement=Arrangement.spacedBy(6.dp)) {
-        Text(neoLabel("الصور والصوت والمرفقات","Images, audio & files")+
+        // File actions are available via the single + menu; this shelf is for
+        // browsing, playback and detaching existing files.
+        Text(neoLabel("مرفقات الملاحظة","Note attachments")+
             " ("+files.size+")",style=MaterialTheme.typography.titleSmall)
-        if(editable) Row(Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(enabled=!busy&&!recording,onClick={
-                picker.launch(arrayOf("image/png","image/jpeg","application/pdf",
-                    "text/plain","audio/mp4","audio/x-m4a"))
-            }) {
-                Icon(Icons.Rounded.AttachFile,null,Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp));Text(neoLabel("إدراج ملف","Add file"))
-            }
-            OutlinedButton(enabled=!busy&&!recording,onClick={
-                val target=File(context.filesDir,
-                    "attachments/neo-camera-draft-"+UUID.randomUUID()+".jpg")
-                try {
-                    check(target.parentFile?.isDirectory==true ||
-                        target.parentFile?.mkdirs()==true)
-                    cameraTemp.value=target
-                    camera.launch(FileProvider.getUriForFile(context,
-                        context.packageName+".attachments",target))
-                } catch(e:Exception) {
-                    cameraTemp.value=null;target.delete()
-                    onError(e.message ?: "Camera unavailable")
-                }
-            }) {
-                Icon(Icons.Rounded.PhotoCamera,null,Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp));Text(neoLabel("كاميرا","Camera"))
-            }
-            OutlinedButton(enabled=!busy,onClick={
-                if(recording) finishRecording()
-                else if(ContextCompat.checkSelfPermission(context,
-                    Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)
-                    beginRecording()
-                else micPermission.launch(Manifest.permission.RECORD_AUDIO)
-            }) {
-                Icon(if(recording) Icons.Rounded.StopCircle else Icons.Rounded.Mic,
-                    null,Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(if(recording) neoLabel("إيقاف وحفظ","Stop & save")
-                    else neoLabel("سجل صوت","Record"))
-            }
-        }
         if(recording) Text(
             neoLabel("تسجيل صوتي جارٍ • 100 ثانية كحد أقصى",
                 "Voice recording • 100 seconds maximum"),
@@ -243,6 +255,11 @@ internal fun NeoNoteMediaSection(
                             contentAlignment=Alignment.Center) {
                             Icon(if(file.mime=="audio/mp4") Icons.Rounded.GraphicEq
                                 else Icons.Rounded.Description,null,Modifier.size(28.dp))
+                        }
+                        if(editable && file.mime.startsWith("image/")) {
+                            TextButton(onClick={onImageImported(file.name)}) {
+                                Text(neoLabel("إدراج داخل النص","Insert into note"))
+                            }
                         }
                         Text(when(file.mime) {
                             "image/png","image/jpeg" -> neoLabel("صورة","Image")

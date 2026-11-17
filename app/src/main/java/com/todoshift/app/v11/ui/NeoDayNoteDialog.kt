@@ -330,6 +330,52 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         error=if(contrast==androidx.compose.ui.graphics.Color.Black) androidx.compose.ui.graphics.Color(0xFFB3261E) else androidx.compose.ui.graphics.Color(0xFFF2B8B5))
     val openChecklistTask=LocalNeoOpenNoteTask.current
     MaterialTheme(colorScheme=editorScheme) {
+    if(appearanceOpen) AlertDialog(
+        onDismissRequest={appearanceOpen=false},
+        title={Text(neoLabel("مظهر الملاحظة","Note appearance"))},
+        text={
+            Column(Modifier.heightIn(max=480.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                Text(neoLabel(
+                    "الإعدادات دي تخص الملاحظة الحالية فقط. ممكن ترجع لإعدادات التطبيق الافتراضية في أي وقت.",
+                    "These options apply to this note only. You can return to app defaults anytime."),
+                    style=MaterialTheme.typography.bodySmall)
+                NeoSwitch(
+                    neoLabel("الورق المسطّر","Ruled paper"),ruledPaper
+                ) {ruledOverride=it}
+                TextButton(onClick={ruledOverride=null}) {
+                    Text(neoLabel("اتّباع إعداد التسطير الافتراضي",
+                        "Use default ruling")+
+                        if(ruledOverride==null) " ✓" else "")
+                }
+                val fonts=listOf<String?>(null,"system","sans","serif","mono")
+                fun labelFont(key:String?):String=when(key) {
+                    null -> neoLabel("حسب إعدادات التطبيق","Follow app default")
+                    "sans" -> neoLabel("واضح (Sans)","Sans")
+                    "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
+                    "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
+                    else -> neoLabel("خط الجهاز","System default")
+                }
+                NeoChoice(
+                    neoLabel("خط النص العربي","Arabic font"),
+                    fonts,arabicFontOverride,::labelFont,
+                    {arabicFontOverride=it}
+                )
+                NeoChoice(
+                    neoLabel("خط النص الإنجليزي","English font"),
+                    fonts,englishFontOverride,::labelFont,
+                    {englishFontOverride=it}
+                )
+                Text(neoLabel(
+                    "الخطوط المتاحة تعتمد على نظام Android والخطوط الموجودة على الجهاز.",
+                    "Available faces depend on Android and the fonts installed on your device."),
+                    style=MaterialTheme.typography.labelSmall)
+            }
+        },
+        confirmButton={TextButton(onClick={appearanceOpen=false}) {
+            Text(neoLabel("تم","Done"))
+        }}
+    )
     if(paperPaletteOpen) AlertDialog(
         onDismissRequest={paperPaletteOpen=false},
         title={Text(neoLabel("🎨 لون صفحة الملاحظة","🎨 Note paper color"))},
@@ -416,34 +462,54 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
-                    IconButton(modifier=Modifier.size(44.dp),onClick={
-                        mediaShelfVisible=!mediaShelfVisible
-                        noteKeyboard?.hide()
-                    }) {
-                        Icon(androidx.compose.material.icons.Icons.Rounded.AttachFile,
-                            neoLabel("صور وصوت ومرفقات","Images, audio and attachments"))
-                    }
-                    // Different, accessible actions: edit pencil when reading, format when editing.
-                    IconButton(
-                        modifier=Modifier.size(44.dp),
-                        onClick={
-                            if(!editing) {editing=true;floatingFormat=false}
-                            else floatingFormat=!floatingFormat
+                    // Reading: Edit. Writing: compact formatting toggle and Done.
+                    if(editing) {
+                        IconButton(modifier=Modifier.size(44.dp),onClick={
+                            floatingFormat=!floatingFormat
                             options=false
+                        }) {
+                            Icon(androidx.compose.material.icons.Icons.Rounded.FormatPaint,
+                                neoLabel("تنسيق النص","Format text"))
                         }
-                    ) {
-                        Icon(
-                            if(editing) androidx.compose.material.icons.Icons.Rounded.FormatPaint
-                            else androidx.compose.material.icons.Icons.Rounded.Edit,
-                            if(editing) neoLabel("تنسيق النص","Text formatting")
-                            else neoLabel("تعديل الملاحظة","Edit note")
-                        )
+                        IconButton(
+                            modifier=Modifier.size(44.dp),
+                            enabled=!pending&&!rootWritePending,
+                            onClick={
+                                scope.launch {
+                                    keepDraft()
+                                    if(persistNote(false)) {
+                                        editing=false;floatingFormat=false;options=false
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(androidx.compose.material.icons.Icons.Rounded.Check,
+                                neoLabel("تم — حفظ والعودة للقراءة","Done — save and view"))
+                        }
+                    } else {
+                        IconButton(modifier=Modifier.size(44.dp),onClick={
+                            editing=true;floatingFormat=false
+                        }) {
+                            Icon(androidx.compose.material.icons.Icons.Rounded.Edit,
+                                neoLabel("تعديل الملاحظة","Edit note"))
+                        }
                     }
                     Box {
                         IconButton(modifier=Modifier.size(44.dp),onClick={noteMoreMenu=true}) {
-                            Text("⋮",style=MaterialTheme.typography.headlineSmall)
+                            Icon(androidx.compose.material.icons.Icons.Rounded.MoreVert,
+                                neoLabel("المزيد من الخيارات","More options"))
                         }
                         DropdownMenu(expanded=noteMoreMenu,onDismissRequest={noteMoreMenu=false}) {
+                            DropdownMenuItem(
+                                text={Text(neoLabel("مظهر الملاحظة: التسطير والخط",
+                                    "Note appearance: ruling and fonts"))},
+                                onClick={noteMoreMenu=false;appearanceOpen=true;noteKeyboard?.hide()}
+                            )
+                            DropdownMenuItem(
+                                text={Text(neoLabel("أدوات المستند","Document tools"))},
+                                onClick={noteMoreMenu=false;documentToolsOpen=!documentToolsOpen;noteKeyboard?.hide()}
+                            )
+
                             DropdownMenuItem(
                                 text={Text(neoLabel("🎨 لون الصفحة","🎨 Page color"))},
                                 onClick={noteMoreMenu=false;paperPaletteOpen=true;noteKeyboard?.hide()}
@@ -501,11 +567,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         }
                     }
                 }
-                Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=2.dp),horizontalArrangement=Arrangement.SpaceBetween) {
-                    Text(if(editing) neoLabel("تعديل","Editing") else neoLabel("قراءة","Viewing"),style=MaterialTheme.typography.labelSmall)
-                    Text(date.toString(),style=MaterialTheme.typography.labelSmall)
-                }
-                NeoNoteProToolbar(
+                if(documentToolsOpen) NeoNoteProToolbar(
                     noteId=id,document=rich.value.text,
                     source=noteSource(),title=title,
                     onJump={start,end ->

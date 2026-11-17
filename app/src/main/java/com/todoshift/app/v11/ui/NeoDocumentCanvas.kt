@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -195,7 +196,21 @@ private fun NeoEditableDocumentParagraph(
             value=state.value,
             onValueChange={apply(state.input(it))},
             modifier=Modifier.fillMaxWidth().heightIn(min=46.dp)
-                .onFocusChanged {focused=it.isFocused},
+                .onFocusChanged {focused=it.isFocused}
+                .drawBehind {
+                    if(ruled) {
+                        val rowHeight=34.sp.toPx()
+                        val ink=Color.Gray.copy(alpha=0.27f)
+                        var baseline=rowHeight
+                        while(baseline<size.height) {
+                            drawLine(ink,
+                                androidx.compose.ui.geometry.Offset(0f,baseline),
+                                androidx.compose.ui.geometry.Offset(size.width,baseline),
+                                strokeWidth=0.7.dp.toPx())
+                            baseline+=rowHeight
+                        }
+                    }
+                },
             textStyle=MaterialTheme.typography.bodyLarge.copy(
                 color=MaterialTheme.colorScheme.onSurface,
                 lineHeight=if(ruled)34.sp else 28.sp,

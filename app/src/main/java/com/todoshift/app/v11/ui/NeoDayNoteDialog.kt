@@ -503,19 +503,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     }
     Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
         properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
-        // A full-screen dialog needs resize-aware IME handling: otherwise its footer
-        // can stay underneath the keyboard on edge-to-edge Android devices.
-        val view=androidx.compose.ui.platform.LocalView.current
-        DisposableEffect(view) {
-            val window=(view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
-            val oldMode=window?.attributes?.softInputMode
-            window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-            onDispose {if(oldMode!=null)window?.setSoftInputMode(oldMode)}
-        }
+        // DialogProperties(decorFitsSystemWindows=false) supplies Android 12+
+        // edge-to-edge IME insets. Do not override its soft-input mode: manual
+        // adjustResize competes with Compose imePadding on newer Android.
         Surface(
             modifier=Modifier.fillMaxSize()
                 .statusBarsPadding()
-                .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars)),
+                .imePadding()
+                .navigationBarsPadding(),
             color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface
         ) {
             Box(Modifier.fillMaxSize()) {
@@ -796,18 +791,20 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         }
                     }
                 }
-                // Formatting stays at the keyboard edge; it never pushes the editor from above.
-                if(editing && !a4Preview) {
-                    NeoNoteQuickBar(
-                        state=activeText,
-                        enabled=!hasDocumentBlocks || focusedParagraph!=null,
-                        onChange=applyToActiveText,
-                        onFormat={formatInitialTab=0;showFormatSheet=true;noteKeyboard?.hide()}
-                    )
-                }
               }
 
             }
+                    // IMPORTANT: outside the weighted editor container.
+                    // The editor shrinks when the IME appears; this bottom bar
+                    // always measures at its own height and remains visible.
+                    if(editing && !a4Preview) {
+                        NeoNoteQuickBar(
+                            state=activeText,
+                            enabled=!hasDocumentBlocks || focusedParagraph!=null,
+                            onChange=applyToActiveText,
+                            onFormat={formatInitialTab=0;showFormatSheet=true;noteKeyboard?.hide()}
+                        )
+                    }
                     if(pending || error!=null) Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=2.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                         Text(
                             if(pending) neoLabel("جارٍ الحفظ…","Saving…")

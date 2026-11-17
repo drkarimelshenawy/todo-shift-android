@@ -21,7 +21,8 @@ import androidx.compose.ui.unit.sp
 internal data class NeoRichCharStyle(
     val bold: Boolean = false, val italic: Boolean = false,
     val underline: Boolean = false, val strike: Boolean = false,
-    val size: Int? = null, val color: String? = null
+    val size: Int? = null, val color: String? = null,
+    val face:String?=null
 ) {
     fun span(): SpanStyle = SpanStyle(
         fontWeight=if(bold) FontWeight.Bold else null,
@@ -32,6 +33,7 @@ internal data class NeoRichCharStyle(
             strike -> TextDecoration.LineThrough
             else -> null
         },
+        fontFamily=face?.let(NeoNoteTypefaces::family),
         fontSize=size?.sp ?: androidx.compose.ui.unit.TextUnit.Unspecified,
         color=color?.let {runCatching {Color(android.graphics.Color.parseColor(it))}.getOrNull()} ?: Color.Unspecified
     )
@@ -147,6 +149,11 @@ internal data class NeoRichEditorState(
     }
     fun fontSize(points:Int):NeoRichEditorState=style {it.copy(size=points)}
     fun ink(hex:String):NeoRichEditorState=style {it.copy(color=hex)}
+    /** Applies selected font to highlighted text/word or future typing. */
+    fun face(name:String?):NeoRichEditorState {
+        require(name==null || name in com.todoshift.app.v11.NeoNotePresentation.FONT_KEYS)
+        return style {it.copy(face=name)}
+    }
     private fun style(change:(NeoRichCharStyle)->NeoRichCharStyle):NeoRichEditorState {
         val range=editRange() ?: return copy(pending=change(effective()))
         val styled=characters.toMutableList()
@@ -208,6 +215,7 @@ internal data class NeoRichEditorState(
                 if(style.strike)add("<s>" to "</s>")
                 style.size?.let{add("<size sp=\"$it\">" to "</size>")}
                 style.color?.let{add("<font color=\"$it\">" to "</font>")}
+                style.face?.let{add("<face key=\"$it\">" to "</face>")}
             }
             if(tags!=open) {close();tags.forEach{out.append(it.first)};open=tags}
             out.append(text[i])
@@ -240,7 +248,8 @@ internal data class NeoRichEditorState(
                         italic=prev.italic||item.fontStyle==FontStyle.Italic,
                         underline=prev.underline||item.textDecoration?.contains(TextDecoration.Underline)==true,
                         strike=prev.strike||item.textDecoration?.contains(TextDecoration.LineThrough)==true,
-                        size=size?:prev.size,color=color?:prev.color
+                        size=size?:prev.size,color=color?:prev.color,
+                        face=NeoNoteTypefaces.keyOf(item.fontFamily) ?: prev.face
                     )
                 }
             }

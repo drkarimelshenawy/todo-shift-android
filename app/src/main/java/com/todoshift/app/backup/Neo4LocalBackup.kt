@@ -83,7 +83,7 @@ class Neo4LocalBackup(context: Context) :
                 if (it == NeoSmartStore.NAME && BackupSection.SETTINGS !in scope) {
                     val original = NeoSmartStore(app).snapshot()
                     val noteMetadata = JSONObject().put("version", 1)
-                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments").forEach { key -> original.opt(key)?.let { value -> noteMetadata.put(key, value) } }
+                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites").forEach { key -> original.opt(key)?.let { value -> noteMetadata.put(key, value) } }
                     captured = JSONObject().put("data", typed(noteMetadata.toString()))
                 }
                 sections["prefs/$it.json"] = bytes(captured.toString())
@@ -541,7 +541,7 @@ class Neo4LocalBackup(context: Context) :
                 selectedSections["prefs/${NeoSmartStore.NAME}.json"]?.let { raw ->
                     val incoming = JSONObject(json(raw).getJSONObject("data").getString("value"))
                     val retained = NeoSmartStore(app).snapshot()
-                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments").forEach { key ->
+                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites").forEach { key ->
                         incoming.opt(key)?.let { value ->
                             if (key == "noteFolders" && value is JSONArray && mode == RestoreMode.MERGE) {
                                 val old = retained.optJSONArray(key) ?: JSONArray()

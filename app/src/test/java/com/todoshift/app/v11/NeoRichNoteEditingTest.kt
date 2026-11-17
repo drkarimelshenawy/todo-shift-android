@@ -86,6 +86,23 @@ class NeoRichNoteEditingTest {
         assertFalse(state.value.text.contains("<b>"))
     }
 
+    @Test fun arabicCompositionRetainsBoldSpansInEarlierParagraph() {
+        val stored="<b>عنوان عريض</b>\nسطر جديد"
+        var state=NeoRichEditorState.open(stored)
+        val start=state.value.text
+        state=state.input(TextFieldValue(start+" ا",TextRange(start.length+2),
+            TextRange(start.length+1,start.length+2)))
+        assertTrue(state.characters.take("عنوان عريض".length).all{it.bold})
+        assertTrue("Bold line must stay visually bold while typing another line",
+            state.value.annotatedString.spanStyles.any {
+                it.item.fontWeight==androidx.compose.ui.text.font.FontWeight.Bold &&
+                it.start==0 && it.end>=("عنوان عريض".length)
+            })
+        state=state.input(TextFieldValue(start+" ا",TextRange(start.length+2)))
+        assertEquals(start+" ا",NeoRichEditorState.open(state.stored()).value.text)
+        assertTrue(state.characters.take("عنوان عريض".length).all{it.bold})
+    }
+
     @Test fun independentStyleSegmentsRemainStableWhenArabicCaretMoves() {
         var note=NeoRichEditorState.open("هنا سطر عربي")
         note=note.input(TextFieldValue(note.value.annotatedString,TextRange(1)))

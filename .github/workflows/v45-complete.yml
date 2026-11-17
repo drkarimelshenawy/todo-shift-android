@@ -1,8 +1,8 @@
-name: v46 Notes Library & Smart Lists signed APK
+name: v46 Notes Completion signed APK
 
 on:
   push:
-    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117]
+    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117, feat/v46-notes-completion-20261117]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117'
+    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117' || github.ref == 'refs/heads/feat/v46-notes-completion-20261117'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -92,11 +92,11 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v46-Notes.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v46-Notes-Complete.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-v46-Notes-signed-APK
+          name: ToDoShift-v46-Notes-Complete-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -104,17 +104,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v46-notes-smartlists-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v46-Notes.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 completed revision" --notes "Signed v46 preview with smart list continuation, real checkbox controls in note reader, folder library and backup-aware organization. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+          TAG="v46-notes-complete-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v46-Notes-Complete.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v46 Notes Completion" --notes "Signed v46 completion preview with favorites, inline editor checklist interaction, optional completed-item ordering, and backed-up folder organization. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v46-notes-smartlists-${GITHUB_SHA:0:12}"
+          TAG="v46-notes-complete-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ToDoShift-v46-Notes.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ToDoShift-v46-Notes.apk "$RUNNER_TEMP/published/ToDoShift-v46-Notes.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v46-Notes.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ToDoShift-v46-Notes-Complete.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v46-Notes-Complete.apk "$RUNNER_TEMP/published/ToDoShift-v46-Notes-Complete.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v46-Notes-Complete.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

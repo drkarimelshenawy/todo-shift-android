@@ -25,6 +25,8 @@ import kotlinx.coroutines.withContext
 internal fun NeoNoteProToolbar(
     noteId:String,
     document:String,
+    source:String,
+    title:String,
     onJump:(Int,Int)->Unit,
     onRestore:(NeoNoteHistoryStore.Revision)->Unit,
     onError:(String)->Unit
@@ -34,14 +36,14 @@ internal fun NeoNoteProToolbar(
     val scope=rememberCoroutineScope()
     var findOpen by rememberSaveable {mutableStateOf(false)}
     var query by rememberSaveable {mutableStateOf("")}
-    var matchIndex by rememberSaveable {mutableIntStateOf(0)}
+    var matchIndex by rememberSaveable {mutableIntStateOf(-1)}
     var outlineOpen by remember {mutableStateOf(false)}
     var historyOpen by remember {mutableStateOf(false)}
     var chosen by remember {mutableStateOf<NeoNoteHistoryStore.Revision?>(null)}
     var revisions by remember {mutableStateOf<List<NeoNoteHistoryStore.Revision>>(emptyList())}
     val stats=remember(document) {NeoNoteDocumentTools.stats(document)}
     val results=remember(document,query) {NeoNoteDocumentTools.find(document,query)}
-    val headings=remember(document) {NeoNoteDocumentTools.headings(document)}
+    val headings=remember(source) {NeoNoteDocumentTools.headings(source)}
     fun jump(direction:Int) {
         if(results.isEmpty()) return
         matchIndex=(matchIndex+direction+results.size)%results.size
@@ -82,7 +84,7 @@ internal fun NeoNoteProToolbar(
                 horizontalArrangement=Arrangement.spacedBy(2.dp)) {
                 OutlinedTextField(
                     value=query,onValueChange={
-                        query=it.take(128);matchIndex=0
+                        query=it.take(128);matchIndex=-1
                     },
                     modifier=Modifier.weight(1f),
                     singleLine=true,

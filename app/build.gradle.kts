@@ -13,8 +13,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 57
-        versionName = "4.15.0-premium-v53-fonts-docx"
+        versionCode = 58
+        versionName = "4.16.0-premium-v54-protected-history"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

@@ -514,7 +514,28 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface
         ) {
             Box(Modifier.fillMaxSize()) {
-                Column(Modifier.fillMaxSize()) {
+                // Material3 Scaffold measures the bottom bar independently and
+                // passes the remaining height to the note content. Previous
+                // weighted Column placed the toolbar outside the visible Dialog.
+                Scaffold(
+                    modifier=Modifier.fillMaxSize(),
+                    contentWindowInsets=WindowInsets(0,0,0,0),
+                    bottomBar={
+                        if(editing && !a4Preview) {
+                            NeoNoteQuickBar(
+                                state=activeText,
+                                enabled=!hasDocumentBlocks || focusedParagraph!=null,
+                                onChange=applyToActiveText,
+                                onFormat={
+                                    formatInitialTab=0
+                                    showFormatSheet=true
+                                    noteKeyboard?.hide()
+                                }
+                            )
+                        }
+                    }
+                ) {innerPadding ->
+                Column(Modifier.fillMaxSize().padding(innerPadding)) {
                     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
               val pageWidth=constraints.maxWidth.toFloat()
               val pageHeight=constraints.maxHeight.toFloat()
@@ -794,17 +815,6 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
               }
 
             }
-                    // IMPORTANT: outside the weighted editor container.
-                    // The editor shrinks when the IME appears; this bottom bar
-                    // always measures at its own height and remains visible.
-                    if(editing && !a4Preview) {
-                        NeoNoteQuickBar(
-                            state=activeText,
-                            enabled=!hasDocumentBlocks || focusedParagraph!=null,
-                            onChange=applyToActiveText,
-                            onFormat={formatInitialTab=0;showFormatSheet=true;noteKeyboard?.hide()}
-                        )
-                    }
                     if(pending || error!=null) Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=2.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                         Text(
                             if(pending) neoLabel("جارٍ الحفظ…","Saving…")
@@ -814,6 +824,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             maxLines=1
                         )
                     }
+                }
                 }
                 if(options && editing) {
                     Surface(

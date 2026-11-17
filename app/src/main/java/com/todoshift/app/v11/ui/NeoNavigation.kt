@@ -167,10 +167,18 @@ data class NeoEntry(
     val date: LocalDate? = null,
     val taskAction: String? = null,
     val taskId: String? = null,
+    val sharedNoteText: String? = null,
 ) {
     companion object {
+        /** Accept only a text share: never import file URIs or attachments implicitly. */
+        private fun isTextShare(intent:Intent):Boolean =
+            intent.action==Intent.ACTION_SEND &&
+                intent.type?.startsWith("text/")==true &&
+                !intent.getCharSequenceExtra(Intent.EXTRA_TEXT).isNullOrBlank()
+
         fun routed(intent: Intent, token: Long): NeoEntry? =
             if (
+                isTextShare(intent) ||
                 intent.action == "com.todoshift.app.OPEN_FINANCE" ||
                     listOf(
                             "neo4_open_tab",
@@ -185,8 +193,9 @@ data class NeoEntry(
 
         fun parse(intent: Intent, token: Long): NeoEntry {
             val action =
-                intent.getStringExtra("todo_shift_task_action")?.takeIf {
-                    it in listOf("add", "open", "notes", "tasks")
+                if(isTextShare(intent)) "new_note"
+                else intent.getStringExtra("todo_shift_task_action")?.takeIf {
+                    it in listOf("add", "open", "notes", "tasks", "new_note")
                 }
             val date =
                 intent.getStringExtra("todo_shift_open_date")?.let {
@@ -202,6 +211,8 @@ data class NeoEntry(
                 date,
                 action,
                 intent.getStringExtra("todo_shift_task_open_id")?.take(200),
+                if(isTextShare(intent)) intent.getCharSequenceExtra(Intent.EXTRA_TEXT)
+                    ?.toString()?.take(16_000) else null,
             )
         }
     }

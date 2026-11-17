@@ -57,190 +57,159 @@ internal fun NeoNoteFormatting(
     undo:()->Unit,redo:()->Unit,canUndo:Boolean,canRedo:Boolean,
     direction:String="auto",onDirectionChange:(String)->Unit={}
 ) {
-    var sizes by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var lists by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var directions by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var colors by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var lists by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
+    var headings by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
+    var more by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
+    var morePage by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf("root")}
     val effective=state.effective()
-    // The controls deliberately keep a stable left-to-right order in both
-    // locales. The writing direction is controlled separately by the editor.
+    val allLists=listOf("bullet","circle","square","check",
+        "number","numberParen","letter","letterParen","arabic")
+
+    // Fixed icon order in both locales; text direction is not altered here.
     androidx.compose.runtime.CompositionLocalProvider(
-        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
+        androidx.compose.ui.platform.LocalLayoutDirection provides
+            androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        Column(
-            Modifier.fillMaxWidth().padding(vertical=4.dp),
-            verticalArrangement=Arrangement.spacedBy(4.dp)
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                .padding(horizontal=6.dp,vertical=4.dp),
+            horizontalArrangement=Arrangement.spacedBy(4.dp),
+            verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
         ) {
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                    .padding(horizontal=8.dp),
-                horizontalArrangement=Arrangement.spacedBy(6.dp),
-                verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                NeoFormatAction(
-                    Icons.Rounded.FormatBold,neoLabel("عريض","Bold"),
-                    selected=state.active("bold"),
-                    action={change(state.toggle("bold"))}
-                )
-                NeoFormatAction(
-                    Icons.Rounded.FormatItalic,neoLabel("مائل","Italic"),
-                    selected=state.active("italic"),
-                    action={change(state.toggle("italic"))}
-                )
-                NeoFormatAction(
-                    Icons.Rounded.FormatUnderlined,neoLabel("تحته خط","Underline"),
-                    selected=state.active("underline"),
-                    action={change(state.toggle("underline"))}
-                )
-                NeoFormatAction(
-                    Icons.Rounded.FormatStrikethrough,neoLabel("يتوسطه خط","Strikethrough"),
-                    selected=state.active("strike"),
-                    action={change(state.toggle("strike"))}
-                )
-                VerticalDivider(Modifier.height(28.dp).padding(horizontal=2.dp))
-                Box {
-                    NeoFormatAction(
-                        icon=Icons.Rounded.FormatSize,
-                        description=neoLabel("حجم الخط","Font size"),
-                        modifier=Modifier.width(90.dp),
-                        selected=effective.size!=null,
-                        badge=effective.size?.toString() ?: "Aa",
-                        action={sizes=true}
-                    )
-                    DropdownMenu(expanded=sizes,onDismissRequest={sizes=false}) {
-                        listOf(14,16,18,20,24,28).forEach {points ->
-                            DropdownMenuItem(
-                                text={Text("$points sp",fontSize=points.sp)},
-                                onClick={sizes=false;change(state.fontSize(points))}
-                            )
-                        }
+            NeoFormatAction(Icons.Rounded.FormatBold,neoLabel("عريض","Bold"),
+                selected=state.active("bold"),action={change(state.toggle("bold"))})
+            NeoFormatAction(Icons.Rounded.FormatItalic,neoLabel("مائل","Italic"),
+                selected=state.active("italic"),action={change(state.toggle("italic"))})
+            Box {
+                NeoFormatAction(Icons.Rounded.Title,
+                    neoLabel("العناوين H1/H2/H3","Headings H1/H2/H3"),
+                    action={headings=true})
+                DropdownMenu(expanded=headings,onDismissRequest={headings=false}) {
+                    listOf(
+                        1 to neoLabel("عنوان رئيسي H1","Heading H1"),
+                        2 to neoLabel("عنوان فرعي H2","Heading H2"),
+                        3 to neoLabel("عنوان صغير H3","Heading H3"),
+                        0 to neoLabel("نص عادي","Normal paragraph")
+                    ).forEach {(level,label) ->
+                        DropdownMenuItem(text={Text(label)},onClick={
+                            headings=false
+                            val text=state.value.text
+                            val selection=state.value.selection
+                            val from=text.lastIndexOf('\n',selection.min-1)+1
+                            val to=text.indexOf('\n',selection.max).takeIf{it>=0} ?: text.length
+                            val selected=text.substring(from,to)
+                            val replacement=selected.split('\n').joinToString("\n") {line ->
+                                val clean=line.replaceFirst(Regex("^#{1,3} "), "")
+                                if(level==0) clean else "#".repeat(level)+" "+clean
+                            }
+                            val updated=text.replaceRange(from,to,replacement)
+                            change(state.input(TextFieldValue(updated,
+                                TextRange((from+replacement.length).coerceIn(0,updated.length)))))
+                        })
                     }
                 }
             }
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                    .padding(horizontal=8.dp),
-                horizontalArrangement=Arrangement.spacedBy(6.dp),
-                verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Box {
-                    val listKinds=listOf("bullet","circle","square","check",
-                        "number","numberParen","letter","letterParen","arabic")
-                    NeoFormatAction(
-                        Icons.Rounded.FormatListBulleted,
-                        neoLabel("قوائم ذكية وترقيم مستمر","Smart lists and numbering"),
-                        selected=listKinds.any {state.listActive(it)},
-                        action={lists=true}
-                    )
-                    DropdownMenu(expanded=lists,onDismissRequest={lists=false}) {
-                        listOf(
-                            Triple(neoLabel("نقاط","Bullets"),"•","bullet"),
-                            Triple(neoLabel("دوائر","Circles"),"◦","circle"),
-                            Triple(neoLabel("مربعات","Squares"),"▪","square"),
-                            Triple(neoLabel("قائمة اختيار","Checklist"),"☐","check"),
-                            Triple(neoLabel("أرقام متسلسلة","Numbered"),"1.","number"),
-                            Triple(neoLabel("أرقام مع قوس","Numbers with parentheses"),"1)","numberParen"),
-                            Triple(neoLabel("حروف متسلسلة","Letters"),"A.","letter"),
-                            Triple(neoLabel("حروف مع قوس","Letters with parentheses"),"A)","letterParen"),
-                            Triple(neoLabel("حروف عربية","Arabic letters"),"أ.","arabic")
-                        ).forEach {(label,marker,kind) ->
-                            DropdownMenuItem(
-                                text={
-                                    Row(
-                                        verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
-                                        horizontalArrangement=Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Text(marker,modifier=Modifier.width(32.dp))
-                                        Text(label,modifier=Modifier.weight(1f))
-                                        if(state.listActive(kind)) Icon(
-                                            Icons.Rounded.Check,contentDescription=null,
-                                            tint=MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                },
-                                onClick={lists=false;change(state.list(kind))}
-                            )
+            Box {
+                NeoFormatAction(Icons.Rounded.FormatListBulleted,
+                    neoLabel("قوائم ذكية","Smart lists"),
+                    selected=allLists.any {state.listActive(it)},
+                    action={lists=true})
+                DropdownMenu(expanded=lists,onDismissRequest={lists=false}) {
+                    listOf(
+                        Triple(neoLabel("نقاط","Bullets"),"•","bullet"),
+                        Triple(neoLabel("دوائر","Circles"),"◦","circle"),
+                        Triple(neoLabel("مربعات","Squares"),"▪","square"),
+                        Triple(neoLabel("قائمة اختيار","Checklist"),"☐","check"),
+                        Triple(neoLabel("أرقام","Numbers"),"1.","number"),
+                        Triple(neoLabel("أرقام بأقواس","Numbers with parentheses"),"1)","numberParen"),
+                        Triple(neoLabel("حروف لاتينية","Latin letters"),"A.","letter"),
+                        Triple(neoLabel("حروف بأقواس","Letter parentheses"),"A)","letterParen"),
+                        Triple(neoLabel("حروف عربية","Arabic letters"),"أ.","arabic")
+                    ).forEach {(label,icon,kind) ->
+                        DropdownMenuItem(
+                            text={Text("$icon   $label"+if(state.listActive(kind)) " ✓" else "")},
+                            onClick={lists=false;change(state.list(kind))}
+                        )
+                    }
+                }
+            }
+            NeoFormatAction(Icons.Rounded.Undo,neoLabel("تراجع","Undo"),
+                enabled=canUndo,action=undo)
+            Box {
+                NeoFormatAction(Icons.Rounded.MoreHoriz,
+                    neoLabel("مزيد من التنسيق","More formatting"),
+                    action={morePage="root";more=true})
+                DropdownMenu(expanded=more,onDismissRequest={more=false}) {
+                    if(morePage=="root") {
+                        DropdownMenuItem(
+                            text={Text(neoLabel("تسطير","Underline")+
+                                if(state.active("underline")) " ✓" else "")},
+                            onClick={more=false;change(state.toggle("underline"))}
+                        )
+                        DropdownMenuItem(
+                            text={Text(neoLabel("شطب","Strikethrough")+
+                                if(state.active("strike")) " ✓" else "")},
+                            onClick={more=false;change(state.toggle("strike"))}
+                        )
+                        if(state.listActive("check")) DropdownMenuItem(
+                            text={Text(neoLabel("تحديد بند Checklist","Toggle checklist"))},
+                            onClick={more=false;change(state.toggleChecklist())}
+                        )
+                        DropdownMenuItem(
+                            text={Text(neoLabel("حجم الخط","Font size"))},
+                            onClick={morePage="size"}
+                        )
+                        DropdownMenuItem(
+                            text={Text(neoLabel("لون النص","Text color"))},
+                            onClick={morePage="color"}
+                        )
+                        DropdownMenuItem(
+                            text={Text(neoLabel("اتجاه الكتابة","Text direction"))},
+                            onClick={morePage="direction"}
+                        )
+                        DropdownMenuItem(
+                            text={Text(neoLabel("إعادة التعديل","Redo"))},
+                            enabled=canRedo,
+                            onClick={more=false;redo()}
+                        )
+                    } else {
+                        DropdownMenuItem(
+                            text={Text(neoLabel("رجوع","Back"))},
+                            onClick={morePage="root"}
+                        )
+                        when(morePage) {
+                            "size" -> listOf(14,16,18,20,24,28).forEach {points ->
+                                DropdownMenuItem(
+                                    text={Text("$points sp")},
+                                    onClick={more=false;change(state.fontSize(points))}
+                                )
+                            }
+                            "color" -> listOf(
+                                neoLabel("أحمر","Red") to "#C62828",
+                                neoLabel("أزرق","Blue") to "#1565C0",
+                                neoLabel("أخضر","Green") to "#2E7D32",
+                                neoLabel("ذهبي","Gold") to "#9B6A12",
+                                neoLabel("بنفسجي","Purple") to "#7B1FA2",
+                                neoLabel("أسود","Black") to "#222222"
+                            ).forEach {(name,hex) ->
+                                DropdownMenuItem(
+                                    text={Text(name)},
+                                    onClick={more=false;change(state.ink(hex))}
+                                )
+                            }
+                            "direction" -> listOf(
+                                "auto" to neoLabel("تلقائي","Automatic"),
+                                "rtl" to neoLabel("من اليمين إلى اليسار","Right to left"),
+                                "ltr" to neoLabel("من اليسار إلى اليمين","Left to right")
+                            ).forEach {(value,label) ->
+                                DropdownMenuItem(
+                                    text={Text(label+if(direction==value) " ✓" else "")},
+                                    onClick={more=false;onDirectionChange(value)}
+                                )
+                            }
                         }
                     }
                 }
-                if(state.listActive("check")) {
-                    NeoFormatAction(
-                        Icons.Rounded.CheckBox,
-                        neoLabel("تحديد أو إلغاء بند","Toggle checklist item"),
-                        action={change(state.toggleChecklist())}
-                    )
-                }
-                Box {
-                    val directionIcon=when(direction) {
-                        "rtl" -> Icons.Rounded.FormatTextdirectionRToL
-                        "ltr" -> Icons.Rounded.FormatTextdirectionLToR
-                        else -> Icons.Rounded.SwapHoriz
-                    }
-                    NeoFormatAction(
-                        directionIcon,neoLabel("اتجاه الكتابة","Text direction"),
-                        selected=direction!="auto",
-                        action={directions=true}
-                    )
-                    DropdownMenu(expanded=directions,onDismissRequest={directions=false}) {
-                        listOf(
-                            "auto" to neoLabel("تلقائي","Automatic"),
-                            "rtl" to neoLabel("من اليمين إلى اليسار","Right to left"),
-                            "ltr" to neoLabel("من اليسار إلى اليمين","Left to right")
-                        ).forEach {(key,label) ->
-                            DropdownMenuItem(
-                                text={Text(label+(if(direction==key)" ✓" else ""))},
-                                onClick={directions=false;onDirectionChange(key)}
-                            )
-                        }
-                    }
-                }
-                Box {
-                    val currentColor=effective.color?.let {
-                        runCatching {Color(android.graphics.Color.parseColor(it))}.getOrNull()
-                    } ?: MaterialTheme.colorScheme.primary
-                    NeoFormatAction(
-                        Icons.Rounded.FormatColorText,neoLabel("لون الخط","Text color"),
-                        selected=effective.color!=null,
-                        iconTint=currentColor,
-                        action={colors=true}
-                    )
-                    DropdownMenu(expanded=colors,onDismissRequest={colors=false}) {
-                        listOf(
-                            neoLabel("أحمر","Red") to "#C62828",
-                            neoLabel("أزرق","Blue") to "#1565C0",
-                            neoLabel("أخضر","Green") to "#2E7D32",
-                            neoLabel("ذهبي","Gold") to "#9B6A12",
-                            neoLabel("بنفسجي","Purple") to "#7B1FA2",
-                            neoLabel("أسود","Black") to "#222222"
-                        ).forEach {(label,hex) ->
-                            DropdownMenuItem(
-                                text={
-                                    Row(
-                                        verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
-                                        horizontalArrangement=Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Surface(
-                                            modifier=Modifier.size(16.dp),
-                                            shape=androidx.compose.foundation.shape.CircleShape,
-                                            color=Color(android.graphics.Color.parseColor(hex))
-                                        ) {}
-                                        Text(label)
-                                    }
-                                },
-                                onClick={colors=false;change(state.ink(hex))}
-                            )
-                        }
-                    }
-                }
-                VerticalDivider(Modifier.height(28.dp).padding(horizontal=2.dp))
-                NeoFormatAction(
-                    Icons.Rounded.Undo,neoLabel("تراجع","Undo"),
-                    enabled=canUndo,action=undo
-                )
-                NeoFormatAction(
-                    Icons.Rounded.Redo,neoLabel("إعادة","Redo"),
-                    enabled=canRedo,action=redo
-                )
             }
         }
     }
@@ -250,7 +219,7 @@ internal fun NeoNoteFormatting(
 private fun NeoFormatAction(
     icon:androidx.compose.ui.graphics.vector.ImageVector,
     description:String,
-    modifier:Modifier=Modifier.size(48.dp),
+    modifier:Modifier=Modifier.size(44.dp),
     selected:Boolean=false,
     enabled:Boolean=true,
     badge:String?=null,
@@ -261,11 +230,11 @@ private fun NeoFormatAction(
     Surface(
         onClick=action,
         enabled=enabled,
-        modifier=modifier.height(48.dp).semantics {
+        modifier=modifier.height(44.dp).semantics {
             contentDescription=description
             stateDescription=selectionDescription
         },
-        shape=androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        shape=androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
         color=if(selected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.55f),
         border=if(selected) androidx.compose.foundation.BorderStroke(

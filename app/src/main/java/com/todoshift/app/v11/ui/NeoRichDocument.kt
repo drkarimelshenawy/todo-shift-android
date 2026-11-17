@@ -108,11 +108,24 @@ internal data class NeoRichEditorState(
         // Preserve the exact IME-supplied editing buffer while composing.
         // Replacing it with a newly serialized AnnotatedString on every Arabic
         // keystroke can invalidate composing spans and move the cursor.
-        if(next.composition!=null) return copy(
-            value=TextFieldValue(styledBuffer(next.annotatedString,styles),
-                next.selection,next.composition),
-            characters=styles,hidden=tokens,pending=pending
-        )
+        if(next.composition!=null) {
+            val composing=next.composition
+            // Leave the IME-owned composing region byte-for-byte untouched.
+            // Paint only previously formatted characters outside that range:
+            // this prevents an earlier bold paragraph flashing as plain text
+            // without changing the keyboard's in-progress Arabic word.
+            val previousStyles=styles.mapIndexed {index,mark ->
+                if(index>=composing.min && index<composing.max)
+                    NeoRichCharStyle() else mark
+            }
+            val hasEarlierFormat=previousStyles.any {it!=NeoRichCharStyle()}
+            return copy(
+                value=if(!hasEarlierFormat) next else TextFieldValue(
+                    styledBuffer(next.annotatedString,previousStyles),
+                    next.selection,next.composition),
+                characters=styles,hidden=tokens,pending=pending
+            )
+        }
         val edited=withValue(after,styles,next.selection,tokens,pending,next.composition)
         val smart=NeoSmartLists.onKeyboardEdit(before,after,next.selection.start)
         return if(smart!=null && smart.text!=after)

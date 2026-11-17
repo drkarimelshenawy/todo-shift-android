@@ -13,8 +13,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 61
-        versionName = "4.19.0-premium-v57-notes-stability"
+        versionCode = 62
+        versionName = "4.20.0-premium-v58-notes-keyboard-menu"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

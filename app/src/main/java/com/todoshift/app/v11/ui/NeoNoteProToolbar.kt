@@ -67,6 +67,18 @@ internal fun NeoNoteProToolbar(
             } catch(e:Exception) {onError(e.message ?: "Could not export text")}
         }
     }
+    val pdfLauncher=rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")) {uri ->
+        if(uri!=null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use {output ->
+                        NeoDocumentPdf.write(context,noteId,title,source,output)
+                    } ?: error("Cannot open PDF output document")
+                }
+            } catch(e:Exception) {onError(e.message ?: "Could not export PDF")}
+        }
+    }
     val exportName=title.ifBlank {"Note"}
         .replace(Regex("""[/\\:*?"<>|]"""),"_").take(55)
     var revisions by remember {mutableStateOf<List<NeoNoteHistoryStore.Revision>>(emptyList())}
@@ -95,6 +107,22 @@ internal fun NeoNoteProToolbar(
                         Modifier.size(20.dp))
                 }
                 DropdownMenu(expanded=exportOpen,onDismissRequest={exportOpen=false}) {
+                    DropdownMenuItem(
+                        text={Text(neoLabel("PDF بحجم A4","PDF (A4)"))},
+                        onClick={
+                            exportOpen=false
+                            pdfLauncher.launch(exportName+".pdf")
+                        }
+                    )
+                    DropdownMenuItem(
+                        text={Text(neoLabel("طباعة المستند","Print document"))},
+                        onClick={
+                            exportOpen=false
+                            runCatching {
+                                NeoDocumentPrinter.print(context,noteId,title,source)
+                            }.onFailure {onError(it.message ?: "Print unavailable")}
+                        }
+                    )
                     DropdownMenuItem(
                         text={Text(neoLabel("HTML منسّق","Styled HTML"))},
                         onClick={

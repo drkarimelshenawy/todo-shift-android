@@ -59,6 +59,7 @@ internal fun NeoNoteFormatting(
 ) {
     var lists by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
     var headings by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
+    var faceMenu by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
     var more by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
     var morePage by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf("root")}
     val effective=state.effective()
@@ -80,6 +81,43 @@ internal fun NeoNoteFormatting(
                 selected=state.active("bold"),action={change(state.toggle("bold"))})
             NeoFormatAction(Icons.Rounded.FormatItalic,neoLabel("مائل","Italic"),
                 selected=state.active("italic"),action={change(state.toggle("italic"))})
+            Box {
+                TextButton(onClick={faceMenu=true},modifier=Modifier.size(44.dp),
+                    contentPadding=PaddingValues(0.dp)) {
+                    Text("Aa",style=MaterialTheme.typography.titleMedium)
+                }
+                DropdownMenu(expanded=faceMenu,onDismissRequest={faceMenu=false}) {
+                    DropdownMenuItem(
+                        text={Text(neoLabel("الخط الأساسي للنص المحدد","Default selected-text font"))},
+                        onClick={faceMenu=false;change(state.face(null))}
+                    )
+                    HorizontalDivider()
+                    listOf(
+                        "amiri" to "Amiri · نسخي",
+                        "tajawal" to "Tajawal · حديث",
+                        "reem" to "Reem Kufi · كوفي"
+                    ).forEach {(key,label) ->
+                        DropdownMenuItem(
+                            text={Text(label,style=MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily=NeoNoteTypefaces.family(key)))},
+                            onClick={faceMenu=false;change(state.face(key))}
+                        )
+                    }
+                    HorizontalDivider()
+                    listOf(
+                        "montserrat" to "Montserrat",
+                        "lora" to "Lora",
+                        "oswald" to "Oswald"
+                    ).forEach {(key,label) ->
+                        DropdownMenuItem(
+                            text={Text(label,style=MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily=NeoNoteTypefaces.family(key)))},
+                            onClick={faceMenu=false;change(state.face(key))}
+                        )
+                    }
+                }
+            }
+
             Box {
                 NeoFormatAction(Icons.Rounded.Title,
                     neoLabel("العناوين H1/H2/H3","Headings H1/H2/H3"),

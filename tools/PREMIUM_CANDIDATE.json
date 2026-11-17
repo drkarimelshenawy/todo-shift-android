@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 56,
-  "versionName": "4.14.0-premium-v52-document-studio",
-  "branch": "feat/v52-notes-document-blocks-20261117",
-  "baseline": "6096727afe5cf0d09a435caa5ba439ffaa8e0ca6",
-  "classification": "PERSISTENT-SIGNED v52 DOCUMENT STUDIO — device acceptance pending"
+  "versionCode": 57,
+  "versionName": "4.15.0-premium-v53-fonts-docx",
+  "branch": "feat/v53-fonts-docx-20261117",
+  "baseline": "422f931e4e0918ec7c1dd521dbcc53c3acba3955",
+  "classification": "PERSISTENT-SIGNED v53 BUNDLED FONTS DOCX — physical-device acceptance pending"
 }

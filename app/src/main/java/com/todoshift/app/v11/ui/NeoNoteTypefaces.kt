@@ -70,23 +70,30 @@ internal object NeoNoteTypefaces {
 
     fun styled(source:AnnotatedString,arabic:String,english:String):AnnotatedString {
         if(arabic=="system" && english=="system") return source
+        val explicit=BooleanArray(source.length)
+        source.spanStyles.filter{it.item.fontFamily!=null}.forEach {range ->
+            for(index in range.start.coerceAtLeast(0) until
+                range.end.coerceAtMost(explicit.size)) explicit[index]=true
+        }
         return buildAnnotatedString {
             append(source)
             var active=0
             var start=0
             fun finish(end:Int) {
+                if(start>=end)return
                 if(active==1 && arabic!="system")
                     addStyle(SpanStyle(fontFamily=family(arabic)),start,end)
                 if(active==2 && english!="system")
                     addStyle(SpanStyle(fontFamily=family(english)),start,end)
             }
             source.text.forEachIndexed {index,char ->
-                val current=script(char)
-                // Leave numbers, whitespace and combining marks with their
-                // surrounding script for natural mixed Arabic/English layout.
-                if(current!=0 && current!=active) {
+                val current=if(explicit[index]) 0 else script(char)
+                // Explicit per-range font always wins over note-level defaults.
+                // Preserve punctuation and combining marks with their runs.
+                val next=if(explicit[index])0 else if(current!=0)current else active
+                if(next!=active) {
                     finish(index)
-                    active=current
+                    active=next
                     start=index
                 }
             }

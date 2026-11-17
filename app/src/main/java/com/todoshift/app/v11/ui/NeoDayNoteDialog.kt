@@ -35,7 +35,7 @@ val LocalNeoOpenNoteTask = staticCompositionLocalOf<((String) -> Unit)?> {null}
 val LocalNeoNoteCommitted = staticCompositionLocalOf<(V11Database) -> Unit> { {} }
 
 @Composable
-fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, initialTitle:String="", initialBody:String="") {
+fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, initialTitle:String="", initialBody:String="", onSave: (DayItemV11) -> Unit) {
     val context = LocalContext.current
     val security = remember { V11SecurityStore(context.applicationContext) }
     val editorState=androidx.compose.runtime.saveable.rememberSaveableStateHolder()

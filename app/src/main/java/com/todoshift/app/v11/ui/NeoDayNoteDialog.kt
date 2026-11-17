@@ -568,11 +568,6 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 checklistPreferences.edit()
                                     .putBoolean("move_completed_to_end",enabled).apply()
                             }
-                            Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                                Text(neoLabel("المعاينة التفاعلية","Interactive preview"),
-                                    style=MaterialTheme.typography.labelSmall)
-
-                            }
             if(editing && (preview || body.text.lines().any {NeoSmartLists.parse(it)?.kind=="check"})) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
                 if(!pending) {
                     val next=NeoSmartLists.toggleChecklistLine(body.text,line,moveCompletedChecklistItems)

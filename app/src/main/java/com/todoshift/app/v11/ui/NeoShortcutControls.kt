@@ -21,6 +21,7 @@ fun NeoShortcutControls() {
         Triple("calendar",neoLabel("ToDo Shift","ToDo Shift"),0),
         Triple("tasks",neoLabel("المهام","Tasks"),4),
         Triple("notes",neoLabel("الملاحظات","Notes"),4),
+        Triple("new_note",neoLabel("ملاحظة جديدة","New note"),4),
         Triple("cashbook",neoLabel("الإدارة المالية","Cash Book"),1),
     )
     if(manager?.isRequestPinShortcutSupported!=true)
@@ -33,6 +34,7 @@ fun NeoShortcutControls() {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 if(id=="tasks") intent.putExtra("todo_shift_task_action","tasks")
                 if(id=="notes") intent.putExtra("todo_shift_task_action","notes")
+                if(id=="new_note") intent.putExtra("todo_shift_task_action","new_note")
                 val icon=when(id){"calendar"->R.drawable.neo41_nav_calendar;"cashbook"->R.drawable.neo41_nav_finance;else->R.drawable.neo41_nav_tasks}
                 val shortcut=ShortcutInfo.Builder(context,id).setShortLabel(label).setLongLabel(label)
                     .setIcon(Icon.createWithResource(context,icon)).setIntent(intent).build()

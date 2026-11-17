@@ -40,7 +40,8 @@ internal object NeoNoteExporter {
         return out.toString()
     }
 
-    fun plain(source:String):String = NeoNoteDocumentTools.visible(source)
+    fun plain(source:String):String = NeoNoteDocumentTools.visible(
+        NeoDocumentBlocks.safePreview(source))
 
     fun html(title:String,source:String):String = buildString {
         append("<!doctype html><html lang=\"ar\"><head><meta charset=\"utf-8\">")
@@ -49,20 +50,52 @@ internal object NeoNoteExporter {
         append("<style>body{font-family:system-ui,Arial,sans-serif;max-width:840px;")
         append("margin:2rem auto;padding:1rem;line-height:1.65;overflow-wrap:anywhere;}")
         append("p{margin:.4em 0;white-space:pre-wrap}h1,h2,h3{margin:1em 0 .3em;}")
+        append("table{border-collapse:collapse;width:100%;margin:.8em 0;}") 
+        append("th,td{border:1px solid #aaa;padding:.45em;text-align:start;}")
         append("@media print{body{max-width:none;margin:0;padding:0;}}</style></head><body dir=\"auto\">")
         append("<h1>").append(escape(title)).append("</h1>")
-        source.split('\n').forEach {raw ->
-            val line=raw.replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
-            val heading=Regex("""^(#{1,3}) (.*)$""").matchEntire(line)
-            if(heading!=null) {
-                val level=heading.groupValues[1].length
-                append("<h").append(level).append(" dir=\"auto\">")
-                append(safeInline(heading.groupValues[2]))
-                append("</h").append(level).append(">")
-            } else {
-                append("<p dir=\"auto\">")
-                if(line.isBlank()) append("&nbsp;") else append(safeInline(line))
-                append("</p>")
+        NeoDocumentBlocks.parse(source).forEach {block ->
+            when(block) {
+                is NeoDocumentBlocks.Block.Paragraph -> {
+                    block.source.split('\n').forEach {raw ->
+                        val line=raw.replace(
+                            Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
+                        val heading=Regex("""^(#{1,3}) (.*)$""").matchEntire(line)
+                        if(heading!=null) {
+                            val level=heading.groupValues[1].length
+                            append("<h").append(level).append(" dir=\"auto\">")
+                            append(safeInline(heading.groupValues[2]))
+                            append("</h").append(level).append(">")
+                        } else {
+                            append("<p dir=\"auto\">")
+                            if(line.isBlank())append("&nbsp;")
+                            else append(safeInline(line))
+                            append("</p>")
+                        }
+                    }
+                }
+                is NeoDocumentBlocks.Block.Table -> {
+                    append("<table><thead><tr>")
+                    block.cells.first().forEach{cell ->
+                        append("<th>").append(escape(cell)).append("</th>")
+                    }
+                    append("</tr></thead><tbody>")
+                    block.cells.drop(1).forEach{row ->
+                        append("<tr>")
+                        row.forEach{cell ->
+                            append("<td>").append(escape(cell)).append("</td>")
+                        }
+                        append("</tr>")
+                    }
+                    append("</tbody></table>")
+                }
+                is NeoDocumentBlocks.Block.Image -> {
+                    // Private attachment paths must never leak through a
+                    // standalone HTML export. PDF includes authorized media.
+                    append("<p>[Image — use PDF export to include media]</p>")
+                }
+                is NeoDocumentBlocks.Block.PageBreak ->
+                    append("<div style=\"break-before:page\"></div>")
             }
         }
         append("</body></html>")

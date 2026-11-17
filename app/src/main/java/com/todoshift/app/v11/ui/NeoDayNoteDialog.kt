@@ -143,6 +143,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var noteMoreMenu by remember { mutableStateOf(false) }
     var paperPaletteOpen by remember { mutableStateOf(false) }
     var mediaShelfVisible by rememberSaveable {mutableStateOf(false)}
+    var mediaRequest by remember {mutableStateOf<String?>(null)}
+    var advancedCanvas by rememberSaveable {mutableStateOf(false)}
+    var a4Preview by rememberSaveable {mutableStateOf(false)}
     var mediaVersion by remember {mutableIntStateOf(0)}
     val noteInputFocus=remember { FocusRequester() }
     val noteKeyboard=LocalSoftwareKeyboardController.current
@@ -163,6 +166,33 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var richDirty by remember(existing?.id) {mutableStateOf(false)}
     var lastEditorCommit by remember(existing?.id) {mutableStateOf(body.text)}
     fun noteSource():String=if(richDirty) rich.stored() else body.text
+    fun replaceDocumentSource(next:String) {
+        require(next.length<=300_000)
+        if(rich.value.composition!=null) {
+            error=neoLiteral("أنهِ الكلمة الحالية قبل إدراج مستند",
+                "Finish composing your current word before inserting a block")
+            return
+        }
+        edit(TextFieldValue(next))
+        rich=NeoRichEditorState.open(next)
+        lastEditorCommit=next
+        richDirty=false
+    }
+    fun insertDocumentBlock(markup:String) {
+        val current=noteSource()
+        val visibleCaret=rich.value.selection.end.coerceIn(0,rich.value.text.length)
+        val mapping=NeoNoteVisualTransformation()
+            .filter(androidx.compose.ui.text.AnnotatedString(current)).offsetMapping
+        val caret=mapping.transformedToOriginal(visibleCaret).coerceIn(0,current.length)
+        runCatching {
+            replaceDocumentSource(NeoDocumentBlocks.insert(current,caret,markup))
+        }.onFailure {error=it.message ?: "Cannot insert document block"}
+    }
+    fun launchMedia(action:String) {
+        mediaShelfVisible=true
+        mediaRequest=action
+    }
+
     fun editRich(next:NeoRichEditorState) {
         val contentChanged=next.value.text!=rich.value.text ||
             next.characters!=rich.characters || next.hidden!=rich.hidden
@@ -482,6 +512,22 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             Icon(androidx.compose.material.icons.Icons.Rounded.FormatPaint,
                                 neoLabel("تنسيق النص","Format text"))
                         }
+                        NeoNoteInsertMenu(
+                            enabled=!closing&&!pending&&!rootWritePending,
+                            insertTable={
+                                insertDocumentBlock(NeoDocumentBlocks.table())
+                                advancedCanvas=true
+                            },
+                            insertImage={launchMedia("image")},
+                            insertCamera={launchMedia("camera")},
+                            insertVoice={launchMedia("voice")},
+                            insertFile={launchMedia("file")},
+                            insertPageBreak={
+                                insertDocumentBlock(NeoDocumentBlocks.PAGE_BREAK)
+                                advancedCanvas=true
+                            },
+                            openAttachments={mediaShelfVisible=!mediaShelfVisible}
+                        )
                         IconButton(
                             modifier=Modifier.size(44.dp),
                             enabled=!pending&&!rootWritePending,
@@ -511,6 +557,28 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 neoLabel("المزيد من الخيارات","More options"))
                         }
                         DropdownMenu(expanded=noteMoreMenu,onDismissRequest={noteMoreMenu=false}) {
+                            DropdownMenuItem(
+                                text={Text(if(advancedCanvas)
+                                    neoLabel("العودة لمحرر النص","Edit note text")
+                                    else neoLabel("عرض وتحرير الجداول والصور","Visual document blocks"))},
+                                onClick={
+                                    noteMoreMenu=false
+                                    advancedCanvas=!advancedCanvas
+                                    noteKeyboard?.hide()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text={Text(if(a4Preview)
+                                    neoLabel("عرض الموبايل العادي","Phone layout")
+                                    else neoLabel("معاينة صفحات A4","A4 page preview"))},
+                                onClick={
+                                    noteMoreMenu=false
+                                    a4Preview=!a4Preview
+                                    if(a4Preview) advancedCanvas=true
+                                    noteKeyboard?.hide()
+                                }
+                            )
+
                             DropdownMenuItem(
                                 text={Text(neoLabel("مظهر الملاحظة: التسطير والخط",
                                     "Note appearance: ruling and fonts"))},
@@ -620,7 +688,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         expectedMetadata=styleStore.snapshot().toString()
                         mediaVersion++
                     },
-                    onError={reason -> error=reason}
+                    onError={reason -> error=reason},
+                    request=mediaRequest,
+                    onRequestHandled={mediaRequest=null},
+                    onImageImported={name ->
+                        insertDocumentBlock(NeoDocumentBlocks.image(name))
+                        advancedCanvas=true
+                        mediaShelfVisible=false
+                    }
                 )
                 // Two dense, discoverable rows; always above the editor and soft keyboard.
                 if(editing && floatingFormat) {
@@ -660,7 +735,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             else androidx.compose.ui.text.style.TextDirection.Ltr
                         }
                     }
-                    if(editing) {
+                    if(editing && !advancedCanvas) {
                         NeoRuledNoteEditor(
                             value=rich.value,
                             onValueChange={if(!closing) editRich(rich.input(it))},
@@ -685,32 +760,42 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     } else {
                         Column(
                             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                                .padding(horizontal=16.dp)
+                                .padding(horizontal=if(a4Preview) 4.dp else 16.dp)
                         ) {
-                            // Long-press to select and copy text in read-only mode.
-                            SelectionContainer {
-                                NeoNotePreview(
-                                    body.text,
-                                    textDirection=direction,
-                                    ruled=ruledPaper,
-                                    arabicFont=arabicTypeface,
-                                    englishFont=englishTypeface,
-                                    onChecklist={line ->
-                                        if(!pending) {
-                                            val rows=body.text.lines().toMutableList()
-                                            if(line in rows.indices) {
-                                                val changed=NeoSmartLists.toggleChecked(rows[line])
-                                                if(changed!=rows[line]) {
-                                                    val next=NeoSmartLists.toggleChecklistLine(
-                                                        body.text,line,moveCompletedChecklistItems
-                                                    )
-                                                    edit(TextFieldValue(next))
-                                                }
-                                            }
-                                        }
+                            if(editing && advancedCanvas) {
+                                Row(Modifier.fillMaxWidth(),verticalAlignment=
+                                    androidx.compose.ui.Alignment.CenterVertically) {
+                                    Text(neoLabel("المحرر المرئي: الجداول والصور",
+                                        "Visual blocks: tables and images"),
+                                        modifier=Modifier.weight(1f),
+                                        style=MaterialTheme.typography.labelSmall)
+                                    TextButton(onClick={advancedCanvas=false}) {
+                                        Text(neoLabel("تحرير النص","Edit text"))
                                     }
-                                )
+                                }
                             }
+                            NeoDocumentCanvas(
+                                noteId=id,
+                                source=noteSource(),
+                                editable=editing&&!closing&&!pending,
+                                onSourceChange={next ->
+                                    if(!closing) replaceDocumentSource(next)
+                                },
+                                onError={error=it},
+                                textDirection=direction,
+                                ruled=ruledPaper,
+                                arabicFont=arabicTypeface,
+                                englishFont=englishTypeface,
+                                a4=a4Preview,
+                                onChecklist={line ->
+                                    if(!pending) {
+                                        val current=noteSource()
+                                        val next=NeoSmartLists.toggleChecklistLine(
+                                            current,line,moveCompletedChecklistItems)
+                                        if(next!=current) replaceDocumentSource(next)
+                                    }
+                                }
+                            )
                         }
                     }
                 }

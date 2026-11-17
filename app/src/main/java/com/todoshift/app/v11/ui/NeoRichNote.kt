@@ -579,13 +579,14 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         // Keep the portable source unchanged while hiding paired HTML tags in the editor.
         data class OpenMark(val kind:String,val start:Int,val end:Int,val style:SpanStyle)
         val opened=mutableListOf<OpenMark>()
-        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<size sp="(14|16|18|20|24|28)">|</size>|<b>|</b>|<i>|</i>|<u>|</u>|<s>|</s>""").findAll(source).forEach { token ->
+        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<size sp="(14|16|18|20|24|28)">|</size>|<face key="(amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>|<b>|</b>|<i>|</i>|<u>|</u>|<s>|</s>""").findAll(source).forEach { token ->
             val raw=token.value
-            val kind=when {raw.startsWith("<font ")||raw=="</font>" -> "font";raw.startsWith("<size ")||raw=="</size>" -> "size";raw=="<b>"||raw=="</b>" -> "b";raw=="<i>"||raw=="</i>" -> "i";raw=="<u>"||raw=="</u>" -> "u";else -> "s"}
+            val kind=when {raw.startsWith("<font ")||raw=="</font>" -> "font";raw.startsWith("<size ")||raw=="</size>" -> "size";raw.startsWith("<face ")||raw=="</face>" -> "face";raw=="<b>"||raw=="</b>" -> "b";raw=="<i>"||raw=="</i>" -> "i";raw=="<u>"||raw=="</u>" -> "u";else -> "s"}
             if(!raw.startsWith("</")) {
                 val style=when(kind) {
                     "font" -> SpanStyle(color=Color(android.graphics.Color.parseColor(token.groupValues[1])))
                     "size" -> SpanStyle(fontSize=token.groupValues[2].toInt().sp)
+                    "face" -> SpanStyle(fontFamily=NeoNoteTypefaces.family(token.groupValues[3]))
                     "b" -> SpanStyle(fontWeight=FontWeight.Bold)
                     "i" -> SpanStyle(fontStyle=FontStyle.Italic)
                     "u" -> SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.Underline)

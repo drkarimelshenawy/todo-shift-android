@@ -131,6 +131,24 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var deleteFolderId by remember {mutableStateOf<String?>(null)}
     var moveNotesDialog by remember {mutableStateOf(false)}
     var newNoteFolderTarget by remember {mutableStateOf<String?>(null)}
+    LaunchedEffect(folderRefresh) {
+        try {
+            val (folders,assignments,favorites)=withContext(Dispatchers.IO) {
+                Triple(store.noteFolders(),store.noteFolderAssignments(),store.noteFavorites())
+            }
+            noteFolders=folders
+            noteFolderAssignments=assignments
+            favoriteNoteIds=favorites
+            if(activeFolderId!=null &&
+                activeFolderId !in setOf("__all__","__unfiled__") &&
+                folders.none{it.id==activeFolderId}) activeFolderId=null
+        } catch(failure:Exception) {
+            error=failure.message ?: "Could not load note folders"
+        }
+    }
+    var noteSelectionMode by remember {mutableStateOf(false)}
+    var selectedNotes by remember {mutableStateOf(setOf<String>())}
+    var selectionActionsExpanded by remember {mutableStateOf(false)}
     fun authorizedFolder(id:String?):Boolean {
         if(id==null || id=="__all__" || id=="__unfiled__")return true
         val index=noteFolders.associateBy{it.id}
@@ -159,24 +177,6 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         }
         editFolderDialog=true
     }
-    LaunchedEffect(folderRefresh) {
-        try {
-            val (folders,assignments,favorites)=withContext(Dispatchers.IO) {
-                Triple(store.noteFolders(),store.noteFolderAssignments(),store.noteFavorites())
-            }
-            noteFolders=folders
-            noteFolderAssignments=assignments
-            favoriteNoteIds=favorites
-            if(activeFolderId!=null &&
-                activeFolderId !in setOf("__all__","__unfiled__") &&
-                folders.none{it.id==activeFolderId}) activeFolderId=null
-        } catch(failure:Exception) {
-            error=failure.message ?: "Could not load note folders"
-        }
-    }
-    var noteSelectionMode by remember {mutableStateOf(false)}
-    var selectedNotes by remember {mutableStateOf(setOf<String>())}
-    var selectionActionsExpanded by remember {mutableStateOf(false)}
     var confirmTrash by remember {mutableStateOf(false)}
     val noteViewPrefs=remember(context) { context.applicationContext.getSharedPreferences("neo_note_view_v45",android.content.Context.MODE_PRIVATE) }
     var noteSort by rememberSaveable { mutableStateOf(noteViewPrefs.getString("sort","updated")?.takeIf { it in setOf("updated","title","date") } ?: "updated") }

@@ -512,7 +512,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             val previous=window?.attributes?.softInputMode
             window?.setSoftInputMode(
                 android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-            onDispose { if(previous!=null) window.setSoftInputMode(previous) }
+            onDispose { if(previous!=null) window?.setSoftInputMode(previous) }
         }
         Surface(
             modifier=Modifier.fillMaxSize(),

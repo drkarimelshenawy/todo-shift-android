@@ -531,11 +531,16 @@ internal fun NeoNotePreview(
                 val label=checked.groupValues[3]
                 val start=checked.groups[3]?.range?.first ?: rendered.length
                 val styled=rendered.subSequence(start,rendered.length)
+                val checklistLabel=if(done) buildAnnotatedString {
+                    withStyle(SpanStyle(
+                        textDecoration=androidx.compose.ui.text.style.TextDecoration.LineThrough
+                    )) {append(styled)}
+                } else styled
                 if(onChecklist==null && onCreateTask==null) {
                     NeoRuledParagraph(
                         buildAnnotatedString {
                             append(if(done) "☑ " else "☐ ")
-                            append(styled)
+                            append(checklistLabel)
                         },lineStyle,ruled=ruled
                     )
                 } else {
@@ -545,7 +550,7 @@ internal fun NeoNotePreview(
                             onCheckedChange=onChecklist?.let{callback->{_:Boolean->callback(index)}},
                             enabled=onChecklist!=null
                         )
-                        NeoRuledParagraph(styled,lineStyle,Modifier.weight(1f).padding(top=6.dp),ruled)
+                        NeoRuledParagraph(checklistLabel,lineStyle,Modifier.weight(1f).padding(top=6.dp),ruled)
                         if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,label)}) {
                             Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task")
                                 else neoLabel("إلى مهمة","To task"))

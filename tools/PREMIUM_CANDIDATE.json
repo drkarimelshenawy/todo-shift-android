@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 49,
-  "versionName": "4.8.0-premium-v46-notes",
-  "branch": "feat/v46-notes-smartlists-20261117",
-  "baseline": "757263f1b157f3947c3c6f42d2fd65bc1d6de6e7",
-  "classification": "PERSISTENT-SIGNED v46 RELEASE VARIANT — physical-device acceptance pending"
+  "versionCode": 50,
+  "versionName": "4.8.1-premium-v46-notes-complete",
+  "branch": "feat/v46-notes-completion-20261117",
+  "baseline": "79b74fba7d24d9d64857a67ab3ec06ca82b98768",
+  "classification": "PERSISTENT-SIGNED v46 NOTES COMPLETION RELEASE — physical-device acceptance pending"
 }

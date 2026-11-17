@@ -1,6 +1,8 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -28,7 +30,7 @@ import java.util.Locale
 val LocalNeoTaskCompact = staticCompositionLocalOf { true }
 val LocalNeoTaskMove = staticCompositionLocalOf<((String,Int)->Unit)?> { null }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange: (V11Database)->Unit,
     initialAction: String?, initialTaskId: String?, onHandled: ()->Unit,
@@ -643,14 +645,30 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         Box(Modifier.weight(1f)) {
                             val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
                             val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
-                            Card(onClick={
-                                if(noteSelectionMode) {
-                                    if(!note.noteLocked) {
-                                        selectedNotes=if(note.id in selectedNotes) selectedNotes-note.id
-                                            else selectedNotes+note.id
+                            Card(modifier=Modifier
+                                .fillMaxWidth()
+                                .then(if(noteLayout=="grid"||noteLayout=="large")
+                                    Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp)
+                                    else Modifier)
+                                .combinedClickable(
+                                    onClick={
+                                        if(noteSelectionMode) {
+                                            if(!note.noteLocked)
+                                                selectedNotes=if(note.id in selectedNotes)
+                                                    selectedNotes-note.id else selectedNotes+note.id
+                                        } else {noteId=note.id;noteEditor=true}
+                                    },
+                                    onLongClick={
+                                        if(!note.noteLocked) {
+                                            noteSelectionMode=true
+                                            selectedNotes=selectedNotes+note.id
+                                        }
                                     }
-                                } else {noteId=note.id;noteEditor=true}
-                            },modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
+                                ),
+                            colors=CardDefaults.cardColors(
+                                containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)}
+                                    ?: MaterialTheme.colorScheme.surface,
+                                contentColor=contentColor)) {
                                 Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                     if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
                                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Top) {
@@ -666,23 +684,45 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             maxLines=if(noteLayout=="grid") 2 else 3,
                                             overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
-                                        if(!noteSelectionMode) IconButton(
-                                            enabled=!folderBusy&&!write.pending,
-                                            modifier=Modifier.size(36.dp),
-                                            onClick={
-                                                val isFavorite=note.id in favoriteNoteIds
-                                                updateFolder({store.setNoteFavorites(listOf(note.id),!isFavorite)},
+                                        if(!noteSelectionMode) NeoNoteCardMenu(
+                                            favorite=note.id in favoriteNoteIds,
+                                            pinned=note.notePinned,
+                                            archived=note.noteArchived,
+                                            trashed=note.noteTrashed,
+                                            locked=note.noteLocked,
+                                            busy=folderBusy||write.pending,
+                                            onOpen={noteId=note.id;noteEditor=true},
+                                            onFavorite={
+                                                val next=note.id !in favoriteNoteIds
+                                                updateFolder(
+                                                    {store.setNoteFavorites(listOf(note.id),next)},
                                                     neoLiteral("تم تحديث المفضلة","Favorites updated"))
+                                            },
+                                            onPin={
+                                                changed(db.copy(dayItems=db.dayItems.map {item ->
+                                                    if(item.id==note.id) item.copy(
+                                                        notePinned=!note.notePinned,
+                                                        updatedAt=System.currentTimeMillis()) else item
+                                                }),neoLiteral("تم تحديث التثبيت","Pin updated"))
+                                            },
+                                            onArchive={
+                                                changed(db.copy(dayItems=db.dayItems.map {item ->
+                                                    if(item.id==note.id) item.copy(
+                                                        noteArchived=if(note.noteTrashed) false else !note.noteArchived,
+                                                        noteTrashed=false,
+                                                        updatedAt=System.currentTimeMillis()) else item
+                                                }),neoLiteral("تم تحديث الأرشيف","Archive updated"))
+                                            },
+                                            onMove={
+                                                selectedNotes=setOf(note.id);moveNotesDialog=true
+                                            },
+                                            onSelect={
+                                                selectedNotes=setOf(note.id);noteSelectionMode=true
+                                            },
+                                            onTrash={
+                                                selectedNotes=setOf(note.id);confirmTrash=true
                                             }
-                                        ) {
-                                            Icon(
-                                                if(note.id in favoriteNoteIds) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                                                neoLabel("إضافة أو إزالة من المفضلة","Toggle favorite"),
-                                                tint=if(note.id in favoriteNoteIds) MaterialTheme.colorScheme.primary
-                                                    else contentColor.copy(alpha=0.7f),
-                                                modifier=Modifier.size(20.dp)
-                                            )
-                                        }
+                                        )
                                     }
                                         // Password locking and hiding an excerpt are independent settings.
                                         // Neither option removes the note from the list or blocks opening its card.
@@ -710,14 +750,30 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         items(notes,key={it.id}) {note ->
                         val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
                         val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
-                        Card(onClick={
-                                if(noteSelectionMode) {
-                                    if(!note.noteLocked) {
-                                        selectedNotes=if(note.id in selectedNotes) selectedNotes-note.id
-                                            else selectedNotes+note.id
+                        Card(modifier=Modifier
+                                .fillMaxWidth()
+                                .then(if(noteLayout=="grid"||noteLayout=="large")
+                                    Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp)
+                                    else Modifier)
+                                .combinedClickable(
+                                    onClick={
+                                        if(noteSelectionMode) {
+                                            if(!note.noteLocked)
+                                                selectedNotes=if(note.id in selectedNotes)
+                                                    selectedNotes-note.id else selectedNotes+note.id
+                                        } else {noteId=note.id;noteEditor=true}
+                                    },
+                                    onLongClick={
+                                        if(!note.noteLocked) {
+                                            noteSelectionMode=true
+                                            selectedNotes=selectedNotes+note.id
+                                        }
                                     }
-                                } else {noteId=note.id;noteEditor=true}
-                            },modifier=Modifier.fillMaxWidth().then(if(noteLayout=="grid"||noteLayout=="large") Modifier.height(if(noteLayout=="grid") 142.dp else 184.dp) else Modifier),colors=CardDefaults.cardColors(containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface,contentColor=contentColor)) {
+                                ),
+                            colors=CardDefaults.cardColors(
+                                containerColor=customColor?.let {androidx.compose.ui.graphics.Color(it)}
+                                    ?: MaterialTheme.colorScheme.surface,
+                                contentColor=contentColor)) {
                             Column(Modifier.fillMaxSize().padding(if(noteLayout=="grid") 7.dp else 12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                 if(noteSelectionMode&&!note.noteLocked) Checkbox(checked=note.id in selectedNotes,onCheckedChange={checked->selectedNotes=if(checked) selectedNotes+note.id else selectedNotes-note.id})
                                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Top) {
@@ -733,23 +789,45 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             maxLines=if(noteLayout=="grid") 2 else 3,
                                             overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
-                                    if(!noteSelectionMode) IconButton(
-                                        enabled=!folderBusy&&!write.pending,
-                                        modifier=Modifier.size(36.dp),
-                                        onClick={
-                                            val isFavorite=note.id in favoriteNoteIds
-                                            updateFolder({store.setNoteFavorites(listOf(note.id),!isFavorite)},
-                                                neoLiteral("تم تحديث المفضلة","Favorites updated"))
-                                        }
-                                    ) {
-                                        Icon(
-                                            if(note.id in favoriteNoteIds) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                                            neoLabel("إضافة أو إزالة من المفضلة","Toggle favorite"),
-                                            tint=if(note.id in favoriteNoteIds) MaterialTheme.colorScheme.primary
-                                                else contentColor.copy(alpha=0.7f),
-                                            modifier=Modifier.size(20.dp)
+                                    if(!noteSelectionMode) NeoNoteCardMenu(
+                                            favorite=note.id in favoriteNoteIds,
+                                            pinned=note.notePinned,
+                                            archived=note.noteArchived,
+                                            trashed=note.noteTrashed,
+                                            locked=note.noteLocked,
+                                            busy=folderBusy||write.pending,
+                                            onOpen={noteId=note.id;noteEditor=true},
+                                            onFavorite={
+                                                val next=note.id !in favoriteNoteIds
+                                                updateFolder(
+                                                    {store.setNoteFavorites(listOf(note.id),next)},
+                                                    neoLiteral("تم تحديث المفضلة","Favorites updated"))
+                                            },
+                                            onPin={
+                                                changed(db.copy(dayItems=db.dayItems.map {item ->
+                                                    if(item.id==note.id) item.copy(
+                                                        notePinned=!note.notePinned,
+                                                        updatedAt=System.currentTimeMillis()) else item
+                                                }),neoLiteral("تم تحديث التثبيت","Pin updated"))
+                                            },
+                                            onArchive={
+                                                changed(db.copy(dayItems=db.dayItems.map {item ->
+                                                    if(item.id==note.id) item.copy(
+                                                        noteArchived=if(note.noteTrashed) false else !note.noteArchived,
+                                                        noteTrashed=false,
+                                                        updatedAt=System.currentTimeMillis()) else item
+                                                }),neoLiteral("تم تحديث الأرشيف","Archive updated"))
+                                            },
+                                            onMove={
+                                                selectedNotes=setOf(note.id);moveNotesDialog=true
+                                            },
+                                            onSelect={
+                                                selectedNotes=setOf(note.id);noteSelectionMode=true
+                                            },
+                                            onTrash={
+                                                selectedNotes=setOf(note.id);confirmTrash=true
+                                            }
                                         )
-                                    }
                                 }
                                         // Password locking and hiding an excerpt are independent settings.
                                         // Neither option removes the note from the list or blocks opening its card.
@@ -857,4 +935,71 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
 private fun periodLabel(period: NeoTaskPeriod): String = when(period) {
     NeoTaskPeriod.TODAY -> neoLiteral("اليوم","Today");NeoTaskPeriod.UPCOMING -> neoLiteral("القادمة","Upcoming")
     NeoTaskPeriod.OVERDUE -> neoLiteral("المتأخرة","Overdue");NeoTaskPeriod.ALL_DATES -> neoLiteral("كل التواريخ","All dates")
+}
+
+
+@Composable
+private fun NeoNoteCardMenu(
+    favorite:Boolean,
+    pinned:Boolean,
+    archived:Boolean,
+    trashed:Boolean,
+    locked:Boolean,
+    busy:Boolean,
+    onOpen:()->Unit,
+    onFavorite:()->Unit,
+    onPin:()->Unit,
+    onArchive:()->Unit,
+    onMove:()->Unit,
+    onSelect:()->Unit,
+    onTrash:()->Unit
+) {
+    var expanded by remember {mutableStateOf(false)}
+    Box {
+        IconButton(modifier=Modifier.size(36.dp),onClick={expanded=true}) {
+            Icon(Icons.Rounded.MoreVert,
+                neoLabel("إجراءات الملاحظة","Note actions"),
+                Modifier.size(20.dp))
+        }
+        DropdownMenu(expanded=expanded,onDismissRequest={expanded=false}) {
+            DropdownMenuItem(
+                text={Text(neoLabel("فتح الملاحظة","Open note"))},
+                onClick={expanded=false;onOpen()}
+            )
+            HorizontalDivider()
+            DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(if(favorite) neoLabel("إزالة من المفضلة","Remove favorite")
+                    else neoLabel("إضافة للمفضلة","Add favorite"))},
+                onClick={expanded=false;onFavorite()}
+            )
+            DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(if(pinned) neoLabel("إلغاء التثبيت","Unpin")
+                    else neoLabel("تثبيت","Pin"))},
+                onClick={expanded=false;onPin()}
+            )
+            DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(if(archived||trashed) neoLabel("استعادة","Restore")
+                    else neoLabel("أرشفة","Archive"))},
+                onClick={expanded=false;onArchive()}
+            )
+            DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(neoLabel("نقل إلى مجلد","Move to folder"))},
+                onClick={expanded=false;onMove()}
+            )
+            DropdownMenuItem(
+                enabled=!locked,
+                text={Text(neoLabel("تحديد مع ملاحظات أخرى","Select multiple"))},
+                onClick={expanded=false;onSelect()}
+            )
+            if(!trashed) DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},
+                onClick={expanded=false;onTrash()}
+            )
+        }
+    }
 }

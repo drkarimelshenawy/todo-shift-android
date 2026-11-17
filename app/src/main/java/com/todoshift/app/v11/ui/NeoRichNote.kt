@@ -342,7 +342,7 @@ internal fun NeoRuledNoteEditor(
                 visualTransformation=NeoNoteTypefaces.visual(arabicFont,englishFont),
                 textStyle=MaterialTheme.typography.bodyLarge.copy(
                     color=MaterialTheme.colorScheme.onSurface,
-                    lineHeight=34.sp,textDirection=textDirection,
+                    lineHeight=if(ruled) 34.sp else 28.sp,textDirection=textDirection,
                     textAlign=if(textDirection==androidx.compose.ui.text.style.TextDirection.Ltr)
                         androidx.compose.ui.text.style.TextAlign.Left
                     else androidx.compose.ui.text.style.TextAlign.Right
@@ -384,7 +384,7 @@ internal fun NeoRuledNoteEditor(
                             neoLabel("اكتب ملاحظتك هنا…","Write your note here…"),
                             modifier=Modifier.fillMaxWidth(),
                             color=MaterialTheme.colorScheme.onSurfaceVariant,
-                            style=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,
+                            style=MaterialTheme.typography.bodyLarge.copy(lineHeight=if(ruled) 34.sp else 28.sp,
                                 textDirection=textDirection,
                                 textAlign=if(textDirection==androidx.compose.ui.text.style.TextDirection.Ltr)
                                     androidx.compose.ui.text.style.TextAlign.Left
@@ -492,7 +492,8 @@ internal fun NeoNotePreview(
     arabicFont:String="system",
     englishFont:String="system"
 ) {
-    val lineStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,textDirection=textDirection)
+    val paraLineHeight=if(ruled) 34.sp else 28.sp
+    val lineStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=paraLineHeight,textDirection=textDirection)
     Column(verticalArrangement=Arrangement.spacedBy(0.dp)) {
         text.lines().forEachIndexed { index, rawLine ->
             val raw=noteDisplayText(rawLine)
@@ -553,7 +554,7 @@ internal fun NeoNotePreview(
                 }
                 NeoRuledParagraph(
                     if(styled.isEmpty()) AnnotatedString(" ") else styled,
-                    type.copy(lineHeight=34.sp,textDirection=textDirection),ruled=ruled
+                    type.copy(lineHeight=paraLineHeight,textDirection=textDirection),ruled=ruled
                 )
             }
         }

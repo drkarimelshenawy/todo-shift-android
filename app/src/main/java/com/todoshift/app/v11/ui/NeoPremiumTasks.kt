@@ -204,7 +204,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             } finally {folderBusy=false}
         }
     }
-    if(confirmTrash) AlertDialog(onDismissRequest={confirmTrash=false},title={Text(neoLabel("نقل المحدد إلى المهملات؟","Move selected notes to trash?"))},text={Text(neoLabel("يمكن استعادتها من المهملات","You can restore them from Trash"))},confirmButton={TextButton(onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteTrashed=true,updatedAt=System.currentTimeMillis()) else it}),neoLiteral("نُقلت إلى المهملات","Moved to Trash"));selectedNotes=emptySet();noteSelectionMode=false;confirmTrash=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrash=false}) {Text(neoLabel("إلغاء","Cancel"))}})
+    if(confirmTrash) AlertDialog(onDismissRequest={confirmTrash=false;if(!noteSelectionMode)selectedNotes=emptySet()},title={Text(neoLabel("نقل المحدد إلى المهملات؟","Move selected notes to trash?"))},text={Text(neoLabel("يمكن استعادتها من المهملات","You can restore them from Trash"))},confirmButton={TextButton(onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteTrashed=true,updatedAt=System.currentTimeMillis()) else it}),neoLiteral("نُقلت إلى المهملات","Moved to Trash"));selectedNotes=emptySet();noteSelectionMode=false;confirmTrash=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrash=false;if(!noteSelectionMode)selectedNotes=emptySet()}) {Text(neoLabel("إلغاء","Cancel"))}})
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
         confirmButton={TextButton(onClick={missing=false}) {Text(neoLiteral("إغلاق","Close"))}})
@@ -249,7 +249,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         )
     }
     if(moveNotesDialog) AlertDialog(
-        onDismissRequest={moveNotesDialog=false},
+        onDismissRequest={moveNotesDialog=false;if(!noteSelectionMode)selectedNotes=emptySet()},
         title={Text(neoLabel("نقل الملاحظات إلى مجلد","Move notes to folder"))},
         text={
             Column(Modifier.verticalScroll(rememberScrollState())) {
@@ -267,7 +267,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                 }
             }
         },
-        confirmButton={TextButton(onClick={moveNotesDialog=false}) {Text(neoLabel("إغلاق","Close"))}}
+        confirmButton={TextButton(onClick={moveNotesDialog=false;if(!noteSelectionMode)selectedNotes=emptySet()}) {Text(neoLabel("إغلاق","Close"))}}
     )
     if(notesTab && noteControlsExpanded) {
         ModalBottomSheet(onDismissRequest={noteControlsExpanded=false}) {

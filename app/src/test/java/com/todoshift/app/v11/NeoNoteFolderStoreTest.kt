@@ -75,4 +75,70 @@ class NeoNoteFolderStoreTest {
         try {NeoSmartStore.validate(invalid);fail("False favorite metadata must not be imported")}
         catch(_:IllegalArgumentException) {}
     }
+
+    @Test fun nestedFoldersKeepColorsLockAndSafeParents() {
+        val store=NeoSmartStore(context)
+        val top=store.createNoteFolder("Hospital",color="#368FC0",locked=true)
+        val child=store.createNoteFolder("2026",top.id,color="#F2A23A")
+        val deep=store.createNoteFolder("Notes",child.id)
+        assertEquals(top.id,store.noteFolders().first{it.id==child.id}.parentId)
+        assertEquals("#368FC0",store.noteFolders().first{it.id==top.id}.color)
+        assertTrue(store.folderLocked(deep.id))
+        assertFalse(store.folderLocked(deep.id,setOf(top.id)))
+        store.moveNotesToFolder(listOf("note-a"),deep.id)
+        val before=store.snapshot().toString()
+        try {store.moveNoteFolder(top.id,deep.id);fail("Cycle allowed")}
+        catch(_:IllegalArgumentException) {}
+        assertEquals(before,store.snapshot().toString())
+        store.moveNoteFolder(deep.id,null)
+        assertEquals(null,store.noteFolders().first{it.id==deep.id}.parentId)
+        assertFalse(store.folderLocked(deep.id))
+    }
+
+    @Test fun deleteNestedFolderReparentsWithoutDeletingNoteOrChild() {
+        val store=NeoSmartStore(context)
+        val root=store.createNoteFolder("Root")
+        val parent=store.createNoteFolder("Parent",root.id)
+        val child=store.createNoteFolder("Child",parent.id)
+        store.moveNotesToFolder(listOf("note-a"),parent.id)
+        store.moveNotesToFolder(listOf("note-b"),child.id)
+        store.removeNoteFolder(parent.id)
+        assertEquals(root.id,store.noteFolderAssignments()["note-a"])
+        assertEquals(child.id,store.noteFolderAssignments()["note-b"])
+        assertEquals(root.id,store.noteFolders().first{it.id==child.id}.parentId)
+        assertFalse(store.noteFolders().any{it.id==parent.id})
+    }
+
+    @Test fun legacyFoldersRemainReadableAndInvalidHierarchyIsRejected() {
+        val legacy=JSONObject().put("version",1)
+            .put("noteFolders",org.json.JSONArray().put(JSONObject()
+                .put("id","old").put("name","Old")))
+        NeoSmartStore.validate(legacy)
+        val store=NeoSmartStore(context)
+        store.update{it.put("noteFolders",legacy.getJSONArray("noteFolders"))}
+        assertEquals(null,store.noteFolders().first().parentId)
+        assertEquals("#D8AD55",store.noteFolders().first().color)
+        val cycle=JSONObject().put("version",1)
+            .put("noteFolders",org.json.JSONArray()
+                .put(JSONObject().put("id","a").put("name","A").put("parentId","b"))
+                .put(JSONObject().put("id","b").put("name","B").put("parentId","a")))
+        try {NeoSmartStore.validate(cycle);fail("Cycle accepted")}
+        catch(_:IllegalArgumentException) {}
+        val orphan=JSONObject().put("version",1)
+            .put("noteFolders",org.json.JSONArray()
+                .put(JSONObject().put("id","a").put("name","A").put("parentId","missing")))
+        try {NeoSmartStore.validate(orphan);fail("Orphan accepted")}
+        catch(_:IllegalArgumentException) {}
+    }
+
+    @Test fun siblingsCanHaveSameNameButNotSameParent() {
+        val store=NeoSmartStore(context)
+        val a=store.createNoteFolder("A")
+        val b=store.createNoteFolder("B")
+        store.createNoteFolder("Review",a.id)
+        store.createNoteFolder("Review",b.id)
+        try {store.createNoteFolder("REVIEW",a.id);fail("Duplicate sibling")}
+        catch(_:IllegalArgumentException) {}
+        assertEquals(4,store.noteFolders().size)
+    }
 }

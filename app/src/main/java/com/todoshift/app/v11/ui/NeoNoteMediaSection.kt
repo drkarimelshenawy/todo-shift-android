@@ -207,7 +207,8 @@ internal fun NeoNoteMediaSection(
             }
             "voice" -> {
                 onRequestHandled()
-                if(ContextCompat.checkSelfPermission(context,
+                if(recording) finishRecording()
+                else if(ContextCompat.checkSelfPermission(context,
                     Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)
                     beginRecording()
                 else micPermission.launch(Manifest.permission.RECORD_AUDIO)
@@ -238,11 +239,19 @@ internal fun NeoNoteMediaSection(
         // browsing, playback and detaching existing files.
         Text(neoLabel("مرفقات الملاحظة","Note attachments")+
             " ("+files.size+")",style=MaterialTheme.typography.titleSmall)
-        if(recording) Text(
-            neoLabel("تسجيل صوتي جارٍ • 100 ثانية كحد أقصى",
-                "Voice recording • 100 seconds maximum"),
-            color=MaterialTheme.colorScheme.error,
-            style=MaterialTheme.typography.labelSmall)
+        if(recording) {
+            Row(verticalAlignment=Alignment.CenterVertically,
+                horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text(neoLabel("تسجيل صوتي جارٍ","Recording voice"),
+                    color=MaterialTheme.colorScheme.error,
+                    style=MaterialTheme.typography.labelSmall)
+                OutlinedButton(onClick={finishRecording()}) {
+                    Icon(Icons.Rounded.StopCircle,null,Modifier.size(19.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(neoLabel("إيقاف وحفظ","Stop and save"))
+                }
+            }
+        }
         if(files.isEmpty()) Text(neoLabel("لا توجد مرفقات","No attachments"),
             style=MaterialTheme.typography.bodySmall)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),

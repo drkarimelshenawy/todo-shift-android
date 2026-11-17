@@ -94,6 +94,30 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var noteControlsExpanded by rememberSaveable { mutableStateOf(false) }
     var noteFolder by rememberSaveable { mutableStateOf("active") }
     var noteTag by rememberSaveable {mutableStateOf<String?>(null)}
+
+    var activeFolderId by rememberSaveable {mutableStateOf<String?>(null)}
+    var noteFolders by remember {mutableStateOf<List<NeoSmartStore.NoteFolder>>(emptyList())}
+    var noteFolderAssignments by remember {mutableStateOf<Map<String,String>>(emptyMap())}
+    var folderRefresh by remember {mutableIntStateOf(0)}
+    var folderBusy by remember {mutableStateOf(false)}
+    var editFolderDialog by remember {mutableStateOf(false)}
+    var editingFolderId by remember {mutableStateOf<String?>(null)}
+    var folderName by rememberSaveable {mutableStateOf("")}
+    var deleteFolderId by remember {mutableStateOf<String?>(null)}
+    var moveNotesDialog by remember {mutableStateOf(false)}
+    var newNoteFolderTarget by remember {mutableStateOf<String?>(null)}
+    LaunchedEffect(folderRefresh) {
+        try {
+            val (folders,assignments)=withContext(Dispatchers.IO) {
+                store.noteFolders() to store.noteFolderAssignments()
+            }
+            noteFolders=folders
+            noteFolderAssignments=assignments
+            if(activeFolderId!=null && folders.none{it.id==activeFolderId}) activeFolderId=null
+        } catch(failure:Exception) {
+            error=failure.message ?: "Could not load note folders"
+        }
+    }
     var noteSelectionMode by remember {mutableStateOf(false)}
     var selectedNotes by remember {mutableStateOf(setOf<String>())}
     var confirmTrash by remember {mutableStateOf(false)}
@@ -134,6 +158,20 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     fun changed(next: V11Database, message: String) {
         if(write.pending) return
         commit(next) { undoCandidate=next;notice=message }
+    }
+
+    fun updateFolder(action:()->Unit,message:String) {
+        if(folderBusy||write.pending) return
+        folderBusy=true
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {action()}
+                folderRefresh++
+                notice=message
+            } catch(failure:Exception) {
+                error=failure.message ?: "Folder operation could not be saved"
+            } finally {folderBusy=false}
+        }
     }
     if(confirmTrash) AlertDialog(onDismissRequest={confirmTrash=false},title={Text(neoLabel("نقل المحدد إلى المهملات؟","Move selected notes to trash?"))},text={Text(neoLabel("يمكن استعادتها من المهملات","You can restore them from Trash"))},confirmButton={TextButton(onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteTrashed=true,updatedAt=System.currentTimeMillis()) else it}),neoLiteral("نُقلت إلى المهملات","Moved to Trash"));selectedNotes=emptySet();noteSelectionMode=false;confirmTrash=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrash=false}) {Text(neoLabel("إلغاء","Cancel"))}})
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})

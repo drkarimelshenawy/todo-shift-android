@@ -72,6 +72,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     val context=LocalContext.current
     val styleStore=remember { NeoSmartStore(context.applicationContext) }
     val drafts=remember { NeoNoteDraftStore(context.applicationContext) }
+    val versions=remember {NeoNoteHistoryStore(context.applicationContext)}
     var expectedMetadata by remember { mutableStateOf(styleStore.snapshot().toString()) }
     var expected by remember { mutableStateOf(expectedDatabase) }
     val committed=LocalNeoNoteCommitted.current
@@ -231,6 +232,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             expected.tasks.firstOrNull {(it.id==taskId||it.id==key)&&it.linkedNoteId==id} ?: TaskV11(id=taskId,title=label,date=linkedDate,calendarId=linkedCalendar,linkedNoteId=id)
         }
         val linkedExisting=existingTaskLinks.mapNotNull {key->expected.tasks.firstOrNull {it.id==key}?.copy(linkedNoteId=id)}
+        val priorCommitted=expected.dayItems.firstOrNull {it.id==id}
         val savedEdit=editVersion()
         val savedDetails=noteSource()
         closing=close;pending=true
@@ -245,6 +247,20 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             }
             detachedTasks=emptyList();existingTaskLinks=emptyList()
             onProtectionChanged(note.noteLocked);committed(next);draftStatus="تم الحفظ / Saved";error=null
+            if(priorCommitted!=null &&
+                (priorCommitted.title!=note.title || priorCommitted.details!=note.details)) {
+                try {
+                    withContext(Dispatchers.IO) {
+                        versions.savePrior(id,priorCommitted.title,priorCommitted.details,
+                            System.currentTimeMillis())
+                    }
+                } catch(failure:Exception) {
+                    // The current note was already committed; never discard it
+                    // because optional local history could not be updated.
+                    draftStatus=neoLiteral("تم الحفظ بدون تحديث سجل النسخ",
+                        "Saved; history checkpoint unavailable")
+                }
+            }
             withContext(Dispatchers.IO) {drafts.removeIfVersion(draftKey,savedEdit)}
             if(close) onSave(note)
             true
@@ -470,6 +486,40 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     Text(if(editing) neoLabel("تعديل","Editing") else neoLabel("قراءة","Viewing"),style=MaterialTheme.typography.labelSmall)
                     Text(date.toString(),style=MaterialTheme.typography.labelSmall)
                 }
+                NeoNoteProToolbar(
+                    noteId=id,document=rich.value.text,
+                    onJump={start,end ->
+                        if(rich.value.composition==null) {
+                            editing=true
+                            rich=rich.copy(value=rich.value.copy(
+                                selection=androidx.compose.ui.text.TextRange(start,end)
+                            ))
+                        }
+                    },
+                    onRestore={revision ->
+                        scope.launch {
+                            try {
+                                // If the history checkpoint fails, retain the
+                                // live edit and surface the error instead.
+                                withContext(Dispatchers.IO) {
+                                    versions.savePrior(id,title,noteSource(),
+                                        System.currentTimeMillis(),force=true)
+                                }
+                                keepDraft()
+                                title=revision.title
+                                edit(TextFieldValue(revision.details))
+                                rich=NeoRichEditorState.open(revision.details)
+                                lastEditorCommit=revision.details
+                                richDirty=false
+                                editing=true
+                                error=null
+                            } catch(failure:Exception) {
+                                error=failure.message ?: "Could not restore version"
+                            }
+                        }
+                    },
+                    onError={error=it}
+                )
                 if(mediaShelfVisible) NeoNoteMediaSection(
                     noteId=id,
                     editable=editing&&!pending&&!closing&&!rootWritePending,

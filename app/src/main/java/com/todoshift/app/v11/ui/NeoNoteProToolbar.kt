@@ -1,0 +1,182 @@
+package com.todoshift.app.v11.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.todoshift.app.v11.NeoNoteHistoryStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * Compact document navigator: search, heading outline and encrypted revisions.
+ * Does not rewrite the active document while searching or counting.
+ */
+@Composable
+internal fun NeoNoteProToolbar(
+    noteId:String,
+    document:String,
+    onJump:(Int,Int)->Unit,
+    onRestore:(NeoNoteHistoryStore.Revision)->Unit,
+    onError:(String)->Unit
+) {
+    val context=LocalContext.current
+    val store=remember(context) {NeoNoteHistoryStore(context.applicationContext)}
+    val scope=rememberCoroutineScope()
+    var findOpen by rememberSaveable {mutableStateOf(false)}
+    var query by rememberSaveable {mutableStateOf("")}
+    var matchIndex by rememberSaveable {mutableIntStateOf(0)}
+    var outlineOpen by remember {mutableStateOf(false)}
+    var historyOpen by remember {mutableStateOf(false)}
+    var chosen by remember {mutableStateOf<NeoNoteHistoryStore.Revision?>(null)}
+    var revisions by remember {mutableStateOf<List<NeoNoteHistoryStore.Revision>>(emptyList())}
+    val stats=remember(document) {NeoNoteDocumentTools.stats(document)}
+    val results=remember(document,query) {NeoNoteDocumentTools.find(document,query)}
+    val headings=remember(document) {NeoNoteDocumentTools.headings(document)}
+    fun jump(direction:Int) {
+        if(results.isEmpty()) return
+        matchIndex=(matchIndex+direction+results.size)%results.size
+        val current=results[matchIndex]
+        onJump(current.start,current.end)
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=1.dp)) {
+        Row(verticalAlignment=Alignment.CenterVertically,
+            horizontalArrangement=Arrangement.spacedBy(3.dp)) {
+            Text(neoLabel(stats.words.toString()+" كلمة • "+
+                    stats.characters+" حرف",stats.words.toString()+" words • "+
+                    stats.characters+" chars"),
+                modifier=Modifier.weight(1f),
+                color=MaterialTheme.colorScheme.onSurfaceVariant,
+                style=MaterialTheme.typography.labelSmall)
+            IconButton(modifier=Modifier.size(36.dp),onClick={findOpen=!findOpen}) {
+                Icon(Icons.Rounded.Search,neoLabel("بحث داخل المستند","Find in note"),
+                    modifier=Modifier.size(20.dp))
+            }
+            IconButton(modifier=Modifier.size(36.dp),onClick={outlineOpen=true}) {
+                Icon(Icons.Rounded.FormatListBulleted,
+                    neoLabel("فهرس العناوين","Document outline"),Modifier.size(20.dp))
+            }
+            IconButton(modifier=Modifier.size(36.dp),onClick={
+                scope.launch {
+                    try {
+                        revisions=withContext(Dispatchers.IO) {store.revisions(noteId)}
+                        historyOpen=true
+                    } catch(e:Exception) {onError(e.message ?: "Could not open history")}
+                }
+            }) {
+                Icon(Icons.Rounded.History,neoLabel("سجل الإصدارات","Version history"),
+                    Modifier.size(20.dp))
+            }
+        }
+        if(findOpen) {
+            Row(verticalAlignment=Alignment.CenterVertically,
+                horizontalArrangement=Arrangement.spacedBy(2.dp)) {
+                OutlinedTextField(
+                    value=query,onValueChange={
+                        query=it.take(128);matchIndex=0
+                    },
+                    modifier=Modifier.weight(1f),
+                    singleLine=true,
+                    label={Text(neoLabel("بحث داخل الملاحظة","Find in note"))}
+                )
+                Text(
+                    if(query.isBlank()) "—" else
+                        (if(results.isEmpty()) "0" else
+                            (matchIndex.coerceIn(0,results.lastIndex)+1).toString())+
+                            "/"+results.size,
+                    style=MaterialTheme.typography.labelSmall
+                )
+                IconButton(enabled=results.isNotEmpty(),onClick={jump(-1)}) {
+                    Icon(Icons.Rounded.KeyboardArrowUp,
+                        neoLabel("السابق","Previous result"))
+                }
+                IconButton(enabled=results.isNotEmpty(),onClick={jump(1)}) {
+                    Icon(Icons.Rounded.KeyboardArrowDown,
+                        neoLabel("التالي","Next result"))
+                }
+                IconButton(onClick={findOpen=false;query=""}) {
+                    Icon(Icons.Rounded.Close,neoLabel("إغلاق البحث","Close search"))
+                }
+            }
+        }
+    }
+
+    if(outlineOpen) AlertDialog(
+        onDismissRequest={outlineOpen=false},
+        title={Text(neoLabel("فهرس العناوين","Document outline"))},
+        text={
+            Column(Modifier.heightIn(max=440.dp).verticalScroll(rememberScrollState())) {
+                if(headings.isEmpty()) Text(neoLabel(
+                    "استخدم عناوين H1 وH2 وH3 من قائمة التنسيق.",
+                    "Use H1, H2 and H3 headings from formatting tools."))
+                headings.forEach {heading ->
+                    TextButton(onClick={
+                        onJump(heading.start,heading.start)
+                        outlineOpen=false
+                    }) {Text("   ".repeat(heading.level-1)+heading.title,maxLines=2)}
+                }
+            }
+        },
+        confirmButton={TextButton(onClick={outlineOpen=false}) {
+            Text(neoLabel("إغلاق","Close"))
+        }}
+    )
+
+    if(historyOpen) AlertDialog(
+        onDismissRequest={historyOpen=false},
+        title={Text(neoLabel("سجل الإصدارات","Version history"))},
+        text={
+            Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                Text(neoLabel(
+                    "نسخ محلية مشفّرة حتى 12 إصدارًا. السجل غير مضمن بعد في النسخ الاحتياطية المنقولة بين الأجهزة.",
+                    "Up to 12 locally encrypted versions. History is not yet included in portable backups."),
+                    style=MaterialTheme.typography.bodySmall)
+                if(revisions.isEmpty()) Text(neoLabel("لا توجد نسخ سابقة",
+                    "No previous versions yet"))
+                revisions.forEach {revision ->
+                    TextButton(onClick={chosen=revision;historyOpen=false}) {
+                        Column {
+                            Text(java.text.DateFormat.getDateTimeInstance(
+                                java.text.DateFormat.MEDIUM,java.text.DateFormat.SHORT
+                            ).format(java.util.Date(revision.savedAt)))
+                            Text(revision.title.ifBlank {
+                                neoLabel("بدون عنوان","Untitled")
+                            },maxLines=1)
+                            Text(NeoNoteDocumentTools.visible(revision.details).take(90),
+                                maxLines=2,style=MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton={TextButton(onClick={historyOpen=false}) {
+            Text(neoLabel("إغلاق","Close"))
+        }}
+    )
+
+    chosen?.let {revision ->
+        AlertDialog(
+            onDismissRequest={chosen=null},
+            title={Text(neoLabel("استعادة النسخة؟","Restore version?"))},
+            text={Text(neoLabel(
+                "ستحل هذه النسخة محل العنوان والنص بعد تأمين النسخة الحالية. المرفقات والروابط لن تتغير.",
+                "The saved title and text will replace the current content after it is checkpointed. Attachments and links remain unchanged."))},
+            confirmButton={TextButton(onClick={
+                chosen=null;onRestore(revision)
+            }) {Text(neoLabel("استعادة","Restore"))}},
+            dismissButton={TextButton(onClick={chosen=null}) {
+                Text(neoLabel("إلغاء","Cancel"))
+            }}
+        )
+    }
+}

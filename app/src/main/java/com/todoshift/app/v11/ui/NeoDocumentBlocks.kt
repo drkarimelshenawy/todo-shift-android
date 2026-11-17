@@ -36,7 +36,7 @@ internal object NeoDocumentBlocks {
 
     private val imagePattern=Regex("""^\[\[neo-image:([A-Za-z0-9_.-]{1,110}):([0-9]{1,3}):(left|center|right)\]\]$""")
     const val PAGE_BREAK="[[neo-page-break]]"
-    private val separator=Regex("""^\|\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$""")
+    private val separator=Regex("""^\|\s*:?-{3,}:?\s*\|(?:\s*:?-{3,}:?\s*\|)*$""")
     private const val MAX_COLUMNS=8
     private const val MAX_ROWS=80
 

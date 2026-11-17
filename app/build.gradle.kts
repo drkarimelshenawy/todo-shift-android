@@ -13,8 +13,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 55
-        versionName = "4.13.0-premium-v51-library"
+        versionCode = 56
+        versionName = "4.14.0-premium-v52-document-studio"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

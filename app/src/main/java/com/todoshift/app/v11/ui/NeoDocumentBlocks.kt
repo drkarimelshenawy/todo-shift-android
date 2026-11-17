@@ -144,6 +144,18 @@ internal object NeoDocumentBlocks {
             rows.drop(block.endLine)).joinToString("\n")
     }
 
+    /** Re-resolve the paragraph against the latest note source before saving.
+     * This avoids stale editor callbacks overwriting an intervening media edit.
+     */
+    fun replaceParagraphAt(source:String,startLine:Int,paragraph:String):String {
+        require(paragraph.length<=300_000)
+        val current=parse(source).firstOrNull {
+            it is Block.Paragraph && it.startLine==startLine
+        } as? Block.Paragraph
+            ?: throw IllegalArgumentException("Paragraph moved; reopen the editor")
+        return replace(source,current,paragraph)
+    }
+
     fun insert(source:String,caret:Int,block:String):String {
         require(caret in 0..source.length && block.length<=16_000)
         val lineEnd=source.indexOf('\n',caret).takeIf{it>=0} ?: source.length

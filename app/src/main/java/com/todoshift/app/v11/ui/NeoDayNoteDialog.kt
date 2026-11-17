@@ -380,36 +380,45 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         "Use default ruling")+
                         if(ruledOverride==null) " ✓" else "")
                 }
-                val fonts=listOf<String?>(null,"system","sans","serif","mono")
-                NeoChoice(
-                    neoLabel("خط النص العربي","Arabic font"),
-                    fonts,arabicFontOverride,{key ->
+                val arFonts=listOf<String?>(null)+NeoNoteTypefaces.arabicChoices+
+                    listOfNotNull(arabicFontOverride).filter{
+                        it !in NeoNoteTypefaces.arabicChoices
+                    }
+                val enFonts=listOf<String?>(null)+NeoNoteTypefaces.englishChoices+
+                    listOfNotNull(englishFontOverride).filter{
+                        it !in NeoNoteTypefaces.englishChoices
+                    }
+                NeoChoice(neoLabel("خط النص العربي","Arabic font"),
+                    arFonts,arabicFontOverride,{key ->
                         when(key) {
                             null -> neoLabel("حسب إعدادات التطبيق","Follow app default")
-                            "sans" -> neoLabel("واضح (Sans)","Sans")
-                            "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
-                            "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
-                            else -> neoLabel("خط الجهاز","System default")
+                            "amiri" -> "Amiri — "+neoLabel("نسخي","Naskh")
+                            "tajawal" -> "Tajawal — "+neoLabel("حديث","Modern")
+                            "reem" -> "Reem Kufi — "+neoLabel("كوفي","Kufi")
+                            "sans" -> "Sans"
+                            "serif" -> "Serif"
+                            "mono" -> "Mono"
+                            else -> neoLabel("الخط الأساسي","System default")
                         }
-                    },
-                    {arabicFontOverride=it}
+                    },{arabicFontOverride=it}
                 )
-                NeoChoice(
-                    neoLabel("خط النص الإنجليزي","English font"),
-                    fonts,englishFontOverride,{key ->
+                NeoChoice(neoLabel("خط النص الإنجليزي","English font"),
+                    enFonts,englishFontOverride,{key ->
                         when(key) {
                             null -> neoLabel("حسب إعدادات التطبيق","Follow app default")
-                            "sans" -> neoLabel("واضح (Sans)","Sans")
-                            "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
-                            "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
-                            else -> neoLabel("خط الجهاز","System default")
+                            "montserrat" -> "Montserrat"
+                            "lora" -> "Lora"
+                            "oswald" -> "Oswald"
+                            "sans" -> "Sans"
+                            "serif" -> "Serif"
+                            "mono" -> "Mono"
+                            else -> neoLabel("الخط الأساسي","System default")
                         }
-                    },
-                    {englishFontOverride=it}
+                    },{englishFontOverride=it}
                 )
                 Text(neoLabel(
-                    "الخطوط المتاحة تعتمد على نظام Android والخطوط الموجودة على الجهاز.",
-                    "Available faces depend on Android and the fonts installed on your device."),
+                    "الخطوط الجديدة مضمّنة داخل التطبيق، وتبقى إعدادات الملاحظة مستقلة عن باقي الملاحظات.",
+                    "Bundled typefaces are available offline. Each note keeps its own appearance."),
                     style=MaterialTheme.typography.labelSmall)
             }
         },

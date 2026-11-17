@@ -103,7 +103,11 @@ internal data class NeoRichEditorState(
         if(next.composition!=null) return copy(
             value=next,characters=styles,hidden=tokens,pending=pending
         )
-        return withValue(after,styles,next.selection,tokens,pending,next.composition)
+        val edited=withValue(after,styles,next.selection,tokens,pending,next.composition)
+        val smart=NeoSmartLists.onKeyboardEdit(before,after,next.selection.start)
+        return if(smart!=null && smart.text!=after)
+            edited.input(TextFieldValue(smart.text,TextRange(smart.caret)))
+        else edited
     }
 
     /** A selection or a word under the caret; at a boundary toggle future typing. */
@@ -150,19 +154,12 @@ internal data class NeoRichEditorState(
         return withValue(value.text,styled,value.selection,typing=null)
     }
 
-    fun list(marker:String):NeoRichEditorState {
-        val start=value.text.lastIndexOf('\n',(value.selection.min-1).coerceAtLeast(0))+1
-        val end=value.text.indexOf('\n',value.selection.max).takeIf{it>=0} ?: value.text.length
-        val lines=value.text.substring(start,end).lines()
-        val replacement=lines.mapIndexed {index,line ->
-            val clean=line.replaceFirst(Regex("^(#{1,3} |[0-9]+\\. |[A-Za-z]\\. |- (?:\\[[ xX]\\] )?)"),"")
-            (when(marker) {
-                "1. "->"${index+1}. "
-                "A. "->"${('A'.code+index%26).toChar()}. "
-                else->marker
-            })+clean
-        }.joinToString("\n")
-        return input(TextFieldValue(value.text.replaceRange(start,end,replacement),TextRange(start+replacement.length)))
+    fun listActive(kind:String):Boolean =
+        NeoSmartLists.active(value.text,value.selection.start,kind)
+
+    fun list(kind:String):NeoRichEditorState {
+        val edit=NeoSmartLists.toggle(value.text,value.selection,kind)
+        return input(TextFieldValue(edit.text,TextRange(edit.caret)))
     }
 
     /** Encode WYSIWYG ranges into inline tags understood by the existing reader. */

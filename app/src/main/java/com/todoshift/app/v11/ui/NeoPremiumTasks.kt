@@ -94,7 +94,6 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var preferencesOpen by remember { mutableStateOf(false) }
     var noteEditor by rememberSaveable { mutableStateOf(false) }
     var noteId by rememberSaveable { mutableStateOf<String?>(null) }
-    var templatePicker by remember {mutableStateOf(false)}
     var initialNoteTitle by rememberSaveable {mutableStateOf("")}
     var initialNoteBody by rememberSaveable {mutableStateOf("")}
     var noteSearch by rememberSaveable { mutableStateOf("") }
@@ -202,45 +201,6 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             } finally {folderBusy=false}
         }
     }
-    if(templatePicker) AlertDialog(
-        onDismissRequest={templatePicker=false},
-        title={Text(neoLabel("قوالب الملاحظات","Note templates"))},
-        text={
-            Column(
-                Modifier.fillMaxWidth().heightIn(max=460.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement=Arrangement.spacedBy(4.dp)
-            ) {
-                Text(neoLabel("كل قالب يبدأ ملاحظة عادية قابلة للتعديل بالكامل.",
-                    "Every template creates a regular, fully editable note."),
-                    style=MaterialTheme.typography.bodySmall)
-                TextButton(onClick={
-                    templatePicker=false
-                    initialNoteTitle=""
-                    initialNoteBody=""
-                    newNoteFolderTarget=activeFolderId?.takeUnless{it=="__unfiled__"}
-                    noteId=null
-                    noteEditor=true
-                }) {Text(neoLabel("ملاحظة فارغة","Blank note"))}
-                val ar=neoLabel("ar","en")=="ar"
-                NeoNoteTemplates.builtIn.forEach {template ->
-                    TextButton(onClick={
-                        templatePicker=false
-                        initialNoteTitle=template.title(ar)
-                        initialNoteBody=template.body(ar)
-                        newNoteFolderTarget=activeFolderId?.takeUnless{it=="__unfiled__"}
-                        noteId=null
-                        noteEditor=true
-                    }) {Text(template.title(ar))}
-                }
-            }
-        },
-        confirmButton={
-            TextButton(onClick={templatePicker=false}) {
-                Text(neoLabel("إغلاق","Close"))
-            }
-        }
-    )
     if(confirmTrash) AlertDialog(onDismissRequest={confirmTrash=false},title={Text(neoLabel("نقل المحدد إلى المهملات؟","Move selected notes to trash?"))},text={Text(neoLabel("يمكن استعادتها من المهملات","You can restore them from Trash"))},confirmButton={TextButton(onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteTrashed=true,updatedAt=System.currentTimeMillis()) else it}),neoLiteral("نُقلت إلى المهملات","Moved to Trash"));selectedNotes=emptySet();noteSelectionMode=false;confirmTrash=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrash=false}) {Text(neoLabel("إلغاء","Cancel"))}})
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
@@ -428,10 +388,6 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         sharedMenu=false
                                         if(notesTab) noteControlsExpanded=true else filters=true
                                     }
-                                )
-                                if(notesTab) DropdownMenuItem(
-                                    text={Text(neoLabel("قوالب الملاحظات","Note templates"))},
-                                    onClick={sharedMenu=false;templatePicker=true}
                                 )
                                 if(notesTab) DropdownMenuItem(
                                     text={Text(if(noteSelectionMode) neoLabel("إلغاء تحديد الملاحظات","Exit selection")
@@ -631,10 +587,6 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     selected=activeFolderId=="__unfiled__",
                                     onClick={activeFolderId="__unfiled__"},
                                     label={Text(neoLabel("بدون مجلد","Unfiled"))}
-                                )
-                                AssistChip(
-                                    onClick={templatePicker=true},
-                                    label={Text(neoLabel("من قالب","From template"))}
                                 )
                                 AssistChip(
                                     onClick={editingFolderId=null;folderName="";editFolderDialog=true},

@@ -184,83 +184,187 @@ class NeoSmartStore(context: Context) {
      * backed-up Smart metadata. An unassigned note is always visible in All.
      * This is additive: no change to DayItemV11, note IDs or stored text.
      */
-    data class NoteFolder(val id:String,val name:String)
+    data class NoteFolder(
+        val id:String,
+        val name:String,
+        val parentId:String?=null,
+        val color:String="#D8AD55",
+        val locked:Boolean=false,
+        val createdAt:Long=0L,
+        val updatedAt:Long=0L
+    )
 
     fun noteFolders():List<NoteFolder> =
         snapshot().optJSONArray("noteFolders")?.let {folders ->
-            (0 until folders.length()).map {index ->
-                folders.getJSONObject(index).let {NoteFolder(it.getString("id"),it.getString("name"))}
+            (0 until folders.length()).map {i ->
+                val record=folders.getJSONObject(i)
+                NoteFolder(
+                    id=record.getString("id"),
+                    name=record.getString("name"),
+                    parentId=record.optString("parentId").takeIf{it.isNotBlank()},
+                    color=record.optString("color").takeIf{it.matches(Regex("#[0-9A-Fa-f]{6}"))}
+                        ?: "#D8AD55",
+                    locked=record.optBoolean("locked",false),
+                    createdAt=record.optLong("createdAt",0L),
+                    updatedAt=record.optLong("updatedAt",0L)
+                )
             }
         }.orEmpty()
 
     fun noteFolderAssignments():Map<String,String> =
         snapshot().optJSONObject("noteFolderAssignments")?.let {o ->
-            o.keys().asSequence().associateWith {id -> o.getString(id)}
+            o.keys().asSequence().associateWith {id ->o.getString(id)}
         }.orEmpty()
 
-    fun createNoteFolder(label:String):NoteFolder {
+    /** Reused by the library, search and deep-link routing. */
+    fun folderLocked(folderId:String?,unlocked:Set<String> = emptySet()):Boolean {
+        if(folderId==null) return false
+        val index=noteFolders().associateBy{it.id}
+        var current=folderId
+        val visited=mutableSetOf<String>()
+        while(current!=null && visited.add(current)) {
+            val item=index[current] ?: return true // reject unresolvable ancestors
+            if(item.locked && item.id !in unlocked) return true
+            current=item.parentId
+        }
+        return current!=null // malformed cycle must never expose content
+    }
+
+    fun createNoteFolder(
+        label:String,parentId:String?=null,color:String="#D8AD55",locked:Boolean=false
+    ):NoteFolder {
         val name=label.trim()
-        require(name.isNotEmpty() && name.length<=60)
-        val folder=NoteFolder(UUID.randomUUID().toString(),name)
-        update {o ->
-            val folders=o.optJSONArray("noteFolders") ?: JSONArray()
-            require(folders.length()<100) {"Too many note folders"}
-            require((0 until folders.length()).none {
-                folders.getJSONObject(it).getString("name").equals(name,ignoreCase=true)
-            }) {"Folder name already exists"}
-            folders.put(JSONObject().put("id",folder.id).put("name",folder.name))
-            o.put("noteFolders",folders)
+        require(name.isNotBlank() && name.length<=60)
+        require(color.matches(Regex("#[0-9A-Fa-f]{6}")))
+        val now=System.currentTimeMillis()
+        val folder=NoteFolder(UUID.randomUUID().toString(),name,parentId,color,locked,now,now)
+        update {metadata ->
+            val array=metadata.optJSONArray("noteFolders") ?: JSONArray()
+            val existing=(0 until array.length()).map {array.getJSONObject(it)}
+            require(existing.size<300) {"Too many folders"}
+            require(parentId==null || existing.any {it.getString("id")==parentId}) {
+                "Unknown parent folder"
+            }
+            val parents=existing.associate {
+                it.getString("id") to it.optString("parentId").takeIf{v->v.isNotBlank()}
+            }
+            var parent=parentId
+            var depth=0
+            while(parent!=null) {
+                require(++depth<=12) {"Maximum folder depth reached"}
+                parent=parents[parent]
+            }
+            require(existing.none {
+                it.optString("parentId").takeIf{v->v.isNotBlank()}==parentId &&
+                    it.getString("name").equals(name,true)
+            }) {"Folder with this name already exists in this location"}
+            array.put(JSONObject().put("id",folder.id).put("name",folder.name)
+                .put("parentId",parentId ?: "")
+                .put("color",color).put("locked",locked)
+                .put("createdAt",now).put("updatedAt",now))
+            metadata.put("noteFolders",array)
         }
         return folder
     }
 
-    fun renameNoteFolder(id:String,label:String) {
-        val name=label.trim()
-        require(id.isNotBlank() && name.isNotEmpty() && name.length<=60)
-        update {o ->
-            val folders=o.optJSONArray("noteFolders") ?: error("Unknown note folder")
-            require((0 until folders.length()).none {
-                val folder=folders.getJSONObject(it)
-                folder.getString("id")!=id &&
-                    folder.getString("name").equals(name,ignoreCase=true)
-            }) {"Folder name already exists"}
-            val match=(0 until folders.length()).firstOrNull {
-                folders.getJSONObject(it).getString("id")==id
-            } ?: error("Unknown note folder")
-            folders.getJSONObject(match).put("name",name)
+    fun updateNoteFolder(id:String,label:String?=null,color:String?=null,locked:Boolean?=null) {
+        if(label!=null) require(label.trim().isNotBlank() && label.trim().length<=60)
+        if(color!=null) require(color.matches(Regex("#[0-9A-Fa-f]{6}")))
+        update {metadata ->
+            val array=metadata.optJSONArray("noteFolders") ?: error("Unknown folder")
+            val all=(0 until array.length()).map{array.getJSONObject(it)}
+            val record=all.firstOrNull{it.getString("id")==id} ?: error("Unknown folder")
+            if(label!=null) {
+                val parent=record.optString("parentId")
+                require(all.none {
+                    it.getString("id")!=id && it.optString("parentId")==parent &&
+                        it.getString("name").equals(label.trim(),true)
+                }) {"Duplicate sibling folder"}
+                record.put("name",label.trim())
+            }
+            if(color!=null)record.put("color",color)
+            if(locked!=null)record.put("locked",locked)
+            record.put("updatedAt",System.currentTimeMillis())
         }
     }
 
+    fun renameNoteFolder(id:String,label:String)=updateNoteFolder(id,label=label)
+
+    fun moveNoteFolder(id:String,parentId:String?) {
+        update {metadata ->
+            val array=metadata.optJSONArray("noteFolders") ?: error("Unknown folders")
+            val all=(0 until array.length()).map{array.getJSONObject(it)}
+            val target=all.firstOrNull{it.getString("id")==id} ?: error("Unknown folder")
+            require(parentId==null || all.any{it.getString("id")==parentId}) {"Unknown parent"}
+            require(id!=parentId) {"Folder cannot contain itself"}
+            val parents=all.associate {
+                it.getString("id") to it.optString("parentId").takeIf{v->v.isNotBlank()}
+            }
+            var cursor=parentId
+            val visited=mutableSetOf<String>()
+            var depth=0
+            while(cursor!=null) {
+                require(cursor!=id && visited.add(cursor)) {"Folder ancestry cycle"}
+                require(++depth<=12) {"Folder nesting too deep"}
+                cursor=parents[cursor]
+            }
+            require(all.none {
+                it.getString("id")!=id &&
+                    it.optString("parentId").takeIf{v->v.isNotBlank()}==parentId &&
+                    it.getString("name").equals(target.getString("name"),true)
+            }) {"Duplicate sibling folder"}
+            target.put("parentId",parentId ?: "")
+            target.put("updatedAt",System.currentTimeMillis())
+        }
+    }
+
+    /** A deleted folder's immediate notes and children move safely to its parent. */
     fun removeNoteFolder(id:String) {
-        update {o ->
-            val previous=o.optJSONArray("noteFolders") ?: JSONArray()
-            require((0 until previous.length()).any {
-                previous.getJSONObject(it).getString("id")==id
-            }) {"Unknown note folder"}
-            o.put("noteFolders",JSONArray((0 until previous.length())
-                .map {previous.getJSONObject(it)}
-                .filterNot {it.getString("id")==id}))
-            val assignments=o.optJSONObject("noteFolderAssignments") ?: JSONObject()
-            assignments.keys().asSequence()
-                .filter {assignments.optString(it)==id}.toList()
-                .forEach {assignments.remove(it)}
-            o.put("noteFolderAssignments",assignments)
+        update {metadata ->
+            val before=metadata.optJSONArray("noteFolders") ?: JSONArray()
+            val all=(0 until before.length()).map{before.getJSONObject(it)}
+            val deleted=all.firstOrNull{it.getString("id")==id} ?: error("Unknown folder")
+            val parentId=deleted.optString("parentId").takeIf{it.isNotBlank()}
+            val siblings=all.filter {
+                it.getString("id")!=id &&
+                    it.optString("parentId").takeIf{v->v.isNotBlank()}==parentId
+            }.map{it.getString("name").lowercase()}.toMutableSet()
+            all.filter{it.optString("parentId")==id}.forEach {child ->
+                // Collision-safe rename is preferable to dropping a child folder.
+                var name=child.getString("name")
+                var number=2
+                while(!siblings.add(name.lowercase())) {
+                    name=child.getString("name").take(42)+" ($number)"
+                    number++
+                }
+                child.put("name",name)
+                child.put("parentId",parentId ?: "")
+                child.put("updatedAt",System.currentTimeMillis())
+            }
+            metadata.put("noteFolders",JSONArray(all.filterNot{it.getString("id")==id}))
+            val assignments=metadata.optJSONObject("noteFolderAssignments") ?: JSONObject()
+            assignments.keys().asSequence().filter{assignments.optString(it)==id}
+                .toList().forEach {noteId ->
+                    if(parentId==null)assignments.remove(noteId)
+                    else assignments.put(noteId,parentId)
+                }
+            metadata.put("noteFolderAssignments",assignments)
         }
     }
 
     fun moveNotesToFolder(noteIds:Collection<String>,folderId:String?) {
         require(noteIds.size<=1000 && noteIds.all{it.isNotBlank()&&it.length<=150})
-        update {o ->
-            val folders=o.optJSONArray("noteFolders") ?: JSONArray()
-            require(folderId==null || (0 until folders.length()).any {
+        update {metadata ->
+            val folders=metadata.optJSONArray("noteFolders") ?: JSONArray()
+            require(folderId==null || (0 until folders.length).any {
                 folders.getJSONObject(it).getString("id")==folderId
-            }) {"Unknown note folder"}
-            val assignments=o.optJSONObject("noteFolderAssignments") ?: JSONObject()
+            }) {"Unknown folder"}
+            val assignments=metadata.optJSONObject("noteFolderAssignments") ?: JSONObject()
             noteIds.forEach {id ->
-                if(folderId==null) assignments.remove(id)
+                if(folderId==null)assignments.remove(id)
                 else assignments.put(id,folderId)
             }
-            o.put("noteFolderAssignments",assignments)
+            metadata.put("noteFolderAssignments",assignments)
         }
     }
 
@@ -304,14 +408,32 @@ class NeoSmartStore(context: Context) {
             }
             val folderIds=mutableSetOf<String>()
             o.optJSONArray("noteFolders")?.let {folders ->
-                require(folders.length()<=100)
-                val labels=mutableSetOf<String>()
-                for(i in 0 until folders.length()) {
-                    val folder=folders.getJSONObject(i)
+                require(folders.length()<=300)
+                val all=(0 until folders.length()).map{folders.getJSONObject(it)}
+                val parents=mutableMapOf<String,String?>()
+                val names=mutableSetOf<Pair<String?,String>>()
+                all.forEach {folder ->
                     val id=folder.getString("id")
                     val name=folder.getString("name")
+                    val parent=folder.optString("parentId").takeIf{it.isNotBlank()}
                     require(id.isNotBlank() && folderIds.add(id))
-                    require(name.isNotBlank() && name.length<=60 && labels.add(name.lowercase()))
+                    require(name.isNotBlank() && name.length<=60)
+                    require(names.add(parent to name.lowercase())) {"Duplicate sibling folder"}
+                    require(!folder.has("color") ||
+                        folder.getString("color").matches(Regex("#[0-9A-Fa-f]{6}")))
+                    if(folder.has("locked"))require(folder.get("locked") is Boolean)
+                    parents[id]=parent
+                }
+                parents.forEach {(id,parent) ->
+                    require(parent==null || parent in folderIds) {"Orphan folder"}
+                    val seen=mutableSetOf(id)
+                    var cursor=parent
+                    var depth=0
+                    while(cursor!=null) {
+                        require(seen.add(cursor)) {"Folder cycle"}
+                        require(++depth<=12) {"Folder nesting too deep"}
+                        cursor=parents[cursor]
+                    }
                 }
             }
             o.optJSONObject("noteFolderAssignments")?.let {assignments ->

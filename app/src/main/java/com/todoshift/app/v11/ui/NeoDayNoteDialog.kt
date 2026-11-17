@@ -520,6 +520,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 Scaffold(
                     modifier=Modifier.fillMaxSize(),
                     contentWindowInsets=WindowInsets(0,0,0,0),
+                    containerColor=androidx.compose.ui.graphics.Color.Transparent,
                     bottomBar={
                         if(editing && !a4Preview) {
                             NeoNoteQuickBar(

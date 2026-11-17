@@ -1,0 +1,295 @@
+package com.todoshift.app.v11.ui
+
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.dp
+import com.todoshift.app.v11.NeoAttachmentStore
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/**
+ * Document blocks are rendered in their original paragraph order, not in a
+ * separate attachments shelf. Editing a table or inline image changes the
+ * portable source of the same note and participates in draft/autosave/history.
+ */
+@Composable
+internal fun NeoDocumentCanvas(
+    noteId:String,
+    source:String,
+    editable:Boolean,
+    onSourceChange:(String)->Unit,
+    onError:(String)->Unit,
+    onChecklist:((Int)->Unit)?=null,
+    textDirection:TextDirection=TextDirection.ContentOrRtl,
+    ruled:Boolean=false,
+    arabicFont:String="system",
+    englishFont:String="system",
+    a4:Boolean=false
+) {
+    val blocks=remember(source){NeoDocumentBlocks.parse(source)}
+    val pages=remember(blocks) {
+        val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
+        blocks.forEach {block ->
+            if(block is NeoDocumentBlocks.Block.PageBreak) result.add(mutableListOf())
+            else result.last().add(block)
+        }
+        result
+    }
+    val background=if(a4) Color.White else MaterialTheme.colorScheme.surface
+    val contentColor=if(a4) Color(0xFF202126) else MaterialTheme.colorScheme.onSurface
+    Column(verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
+        pages.forEachIndexed {pageIndex,pageBlocks ->
+            Surface(
+                modifier=if(a4) Modifier.fillMaxWidth().padding(horizontal=6.dp)
+                    else Modifier.fillMaxWidth(),
+                color=background,contentColor=contentColor,
+                shadowElevation=if(a4) 3.dp else 0.dp,
+                shape=if(a4) androidx.compose.foundation.shape.RoundedCornerShape(3.dp)
+                    else MaterialTheme.shapes.extraSmall
+            ) {
+                Column(Modifier.fillMaxWidth().padding(
+                    horizontal=if(a4) 22.dp else 0.dp,
+                    vertical=if(a4) 32.dp else 0.dp),
+                    verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                    if(a4) Text(
+                        neoLabel("معاينة A4 • صفحة ","A4 preview • page ")+(pageIndex+1),
+                        style=MaterialTheme.typography.labelSmall,color=Color.Gray
+                    )
+                    pageBlocks.forEach {block ->
+                        when(block) {
+                            is NeoDocumentBlocks.Block.Paragraph -> {
+                                SelectionContainer {
+                                    NeoNotePreview(block.source,
+                                        textDirection=textDirection,
+                                        ruled=ruled,arabicFont=arabicFont,
+                                        englishFont=englishFont,
+                                        onChecklist=onChecklist?.let {callback->
+                                            {line:Int ->callback(block.startLine+line)}
+                                        }
+                                    )
+                                }
+                            }
+                            is NeoDocumentBlocks.Block.Table -> {
+                                NeoDocumentTable(block,editable,{rows ->
+                                    runCatching {
+                                        onSourceChange(NeoDocumentBlocks.replace(source,block,
+                                            NeoDocumentBlocks.serializeTable(rows)))
+                                    }.onFailure {
+                                        onError(it.message ?: "Table could not be saved")
+                                    }
+                                })
+                            }
+                            is NeoDocumentBlocks.Block.Image -> {
+                                NeoDocumentImage(
+                                    noteId,block,editable,
+                                    onModify={width,align ->
+                                        runCatching {
+                                            onSourceChange(NeoDocumentBlocks.replace(
+                                                source,block,NeoDocumentBlocks.image(
+                                                    block.name,width,align)))
+                                        }.onFailure {onError(it.message ?: "Image layout failed")}
+                                    },onError=onError
+                                )
+                            }
+                            is NeoDocumentBlocks.Block.PageBreak -> Unit
+                        }
+                    }
+                    if(a4) {
+                        Spacer(Modifier.height(26.dp))
+                        Text((pageIndex+1).toString(),
+                            style=MaterialTheme.typography.labelSmall,
+                            modifier=Modifier.align(Alignment.CenterHorizontally),
+                            color=Color.Gray)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NeoDocumentTable(
+    table:NeoDocumentBlocks.Block.Table,
+    editable:Boolean,
+    onSave:(List<List<String>>)->Unit
+) {
+    var editor by remember {mutableStateOf(false)}
+    Column(Modifier.fillMaxWidth(),
+        verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+            Text(neoLabel("جدول","Table"),style=MaterialTheme.typography.labelSmall,
+                modifier=Modifier.weight(1f))
+            if(editable) TextButton(onClick={editor=true}) {
+                Icon(Icons.Rounded.Edit,null,Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(neoLabel("تعديل الجدول","Edit table"))
+            }
+        }
+        Column(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+            table.cells.forEachIndexed {rowIndex,row ->
+                Row {
+                    row.forEach {value ->
+                        Surface(
+                            modifier=Modifier.width(110.dp).heightIn(min=36.dp),
+                            color=if(rowIndex==0)
+                                MaterialTheme.colorScheme.surfaceContainerHigh
+                                else MaterialTheme.colorScheme.surface,
+                            border=androidx.compose.foundation.BorderStroke(
+                                0.5.dp,MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Text(value.ifEmpty{" "},Modifier.padding(6.dp),
+                                style=MaterialTheme.typography.bodySmall,
+                                maxLines=4)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if(editor) {
+        var cells by remember(table.startLine) {mutableStateOf(table.cells)}
+        AlertDialog(
+            onDismissRequest={editor=false},
+            title={Text(neoLabel("تحرير الجدول","Edit table"))},
+            text={
+                Column(Modifier.heightIn(max=460.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text(neoLabel("يمكن تعديل الخلايا وإضافة أو حذف الصفوف والأعمدة.",
+                        "Edit cells and add or remove rows and columns."),
+                        style=MaterialTheme.typography.labelSmall)
+                    cells.forEachIndexed {rowIndex,row ->
+                        Row(Modifier.horizontalScroll(rememberScrollState())) {
+                            row.forEachIndexed {colIndex,value ->
+                                OutlinedTextField(
+                                    value=value,
+                                    onValueChange={next ->
+                                        val safe=next.replace("|","").replace("\n"," ")
+                                            .replace("\r"," ").take(250)
+                                        cells=cells.mapIndexed {r,old ->
+                                            if(r==rowIndex) old.mapIndexed {c,cell ->
+                                                if(c==colIndex) safe else cell
+                                            } else old
+                                        }
+                                    },modifier=Modifier.width(115.dp),
+                                    label={Text((rowIndex+1).toString()+","+(colIndex+1))},
+                                    singleLine=true,textStyle=MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                    Row(Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+                        OutlinedButton(enabled=cells.size<80,onClick={
+                            cells=cells+listOf(List(cells[0].size){""})
+                        }) {Text(neoLabel("+ صف","+ Row"))}
+                        OutlinedButton(enabled=cells.size>2,onClick={
+                            cells=cells.dropLast(1)
+                        }) {Text(neoLabel("− صف","− Row"))}
+                        OutlinedButton(enabled=cells.first().size<8,onClick={
+                            cells=cells.map{it+""}
+                        }) {Text(neoLabel("+ عمود","+ Column"))}
+                        OutlinedButton(enabled=cells.first().size>1,onClick={
+                            cells=cells.map{it.dropLast(1)}
+                        }) {Text(neoLabel("− عمود","− Column"))}
+                    }
+                }
+            },
+            confirmButton={TextButton(onClick={onSave(cells);editor=false}) {
+                Text(neoLabel("حفظ الجدول","Save table"))
+            }},
+            dismissButton={TextButton(onClick={editor=false}) {
+                Text(neoLabel("إلغاء","Cancel"))
+            }}
+        )
+    }
+}
+
+@Composable
+private fun NeoDocumentImage(
+    noteId:String,
+    image:NeoDocumentBlocks.Block.Image,
+    editable:Boolean,
+    onModify:(Int,String)->Unit,
+    onError:(String)->Unit
+) {
+    val context=LocalContext.current
+    var bitmap by remember(noteId,image.name) {mutableStateOf<Bitmap?>(null)}
+    var unavailable by remember(noteId,image.name) {mutableStateOf(false)}
+    LaunchedEffect(noteId,image.name) {
+        bitmap=withContext(Dispatchers.IO) {
+            runCatching {
+                require(NeoAttachmentStore.safeName(image.name))
+                val store=NeoAttachmentStore(context.applicationContext)
+                require(store.list().any{it.owner==noteId && it.name==image.name})
+                val file=File(context.filesDir,"attachments/"+image.name)
+                val bounds=BitmapFactory.Options().apply {inJustDecodeBounds=true}
+                BitmapFactory.decodeFile(file.absolutePath,bounds)
+                require(bounds.outWidth>0 && bounds.outHeight>0)
+                var sample=1
+                while(bounds.outWidth/sample>1024||bounds.outHeight/sample>1024)
+                    sample*=2
+                BitmapFactory.decodeFile(file.absolutePath,BitmapFactory.Options().apply {
+                    inSampleSize=sample;inPreferredConfig=Bitmap.Config.RGB_565
+                })
+            }.getOrNull()
+        }
+        unavailable=bitmap==null
+    }
+    Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+        if(bitmap!=null) {
+            Box(Modifier.fillMaxWidth(),contentAlignment=when(image.align) {
+                "left"->Alignment.CenterStart
+                "right"->Alignment.CenterEnd
+                else ->Alignment.Center
+            }) {
+                Image(
+                    bitmap!!.asImageBitmap(),contentDescription=neoLabel(
+                        "صورة داخل المستند","Inline document image"),
+                    modifier=Modifier.fillMaxWidth(image.width/100f).heightIn(max=420.dp),
+                    contentScale=ContentScale.Fit
+                )
+            }
+        } else if(unavailable) {
+            Text(neoLabel("الصورة غير متاحة في هذا المستند",
+                "Image not available for this note"),
+                color=MaterialTheme.colorScheme.error,
+                style=MaterialTheme.typography.bodySmall)
+        }
+        if(editable) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            verticalAlignment=Alignment.CenterVertically,
+            horizontalArrangement=Arrangement.spacedBy(3.dp)) {
+            Text(neoLabel("حجم الصورة","Image width")+": "+image.width+"%",
+                style=MaterialTheme.typography.labelSmall)
+            IconButton(onClick={onModify((image.width-10).coerceAtLeast(25),image.align)}) {
+                Icon(Icons.Rounded.Remove,neoLabel("تصغير الصورة","Smaller"))
+            }
+            IconButton(onClick={onModify((image.width+10).coerceAtMost(100),image.align)}) {
+                Icon(Icons.Rounded.Add,neoLabel("تكبير الصورة","Larger"))
+            }
+            listOf("left","center","right").forEach {alignment ->
+                TextButton(onClick={onModify(image.width,alignment)}) {
+                    Text(when(alignment){"left"->"⇤";"right"->"⇥";else->"↔"})
+                }
+            }
+        }
+    }
+}

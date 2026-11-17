@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 51,
-  "versionName": "4.9.0-premium-v47-quick-notes",
-  "branch": "feat/v47-notes-quick-capture-20261117",
-  "baseline": "a140455e979e76854b459283f467a8177dc83d5c",
-  "classification": "PERSISTENT-SIGNED v47 QUICK NOTES RELEASE — device acceptance pending"
+  "versionCode": 52,
+  "versionName": "4.10.0-premium-v48-rich-notes",
+  "branch": "feat/v48-rich-notes-media-20261117",
+  "baseline": "482d7e58ef96dd64e35adeb44eb6885c8b07dd40",
+  "classification": "PERSISTENT-SIGNED v48 RICH NOTES MEDIA — physical-device acceptance pending"
 }

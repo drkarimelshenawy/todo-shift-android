@@ -57,11 +57,7 @@ jobs:
             adb shell wm size 1080x2400
             adb shell wm density 440
             mkdir -p device-evidence
-            set +e
-            gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace
-            result=$?
-            adb pull /sdcard/Android/data/com.todoshift.app/files/notes-toolbar/. device-evidence/ || true
-            exit "$result"
+            bash -c 'gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace; status=$?; adb pull /sdcard/Android/data/com.todoshift.app/files/notes-toolbar/. device-evidence/ || true; exit "$status"'
       - name: Publish screenshot evidence
         uses: actions/upload-artifact@v4
         if: always()

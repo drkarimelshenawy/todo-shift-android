@@ -160,6 +160,37 @@ internal object NeoSmartLists {
         return Edit(numberedText,finalCaret)
     }
 
+    /**
+     * Stable partition inside each consecutive checklist block only.
+     * Every original line, inline style tag and <!--task:...--> marker travels
+     * with its item; other paragraphs never move.
+     */
+    fun moveCompletedToEnd(source:String):String {
+        val rows=source.split('\n').toMutableList()
+        var start=0
+        while(start<rows.size) {
+            if(parse(rows[start])?.kind!="check") {start++;continue}
+            var end=start
+            while(end<rows.size && parse(rows[end])?.kind=="check") end++
+            val group=rows.subList(start,end).toList()
+            val sorted=group.filterNot{parse(it)?.checked==true}+
+                group.filter{parse(it)?.checked==true}
+            for(i in start until end) rows[i]=sorted[i-start]
+            start=end
+        }
+        return rows.joinToString("\n")
+    }
+
+    fun toggleChecklistLine(source:String,index:Int,moveCompleted:Boolean=false):String {
+        val rows=source.split('\n').toMutableList()
+        if(index !in rows.indices) return source
+        val next=toggleChecked(rows[index])
+        if(next==rows[index]) return source
+        rows[index]=next
+        val value=rows.joinToString("\n")
+        return if(moveCompleted) moveCompletedToEnd(value) else value
+    }
+
     fun toggleChecked(line:String):String {
         val prefix=parse(line) ?: return line
         if(prefix.kind!="check") return line

@@ -522,9 +522,35 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         }
                     }
                 } else {
+                    item(key="note-folder-library") {
+                        Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                            Text(neoLabel("مكتبة الملاحظات","Notes Library"),
+                                style=MaterialTheme.typography.titleMedium)
+                            Row(
+                                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement=Arrangement.spacedBy(6.dp),
+                                verticalAlignment=Alignment.CenterVertically
+                            ) {
+                                FilterChip(selected=activeFolderId==null,onClick={activeFolderId=null},
+                                    label={Text(neoLabel("كل الملاحظات","All notes"))})
+                                noteFolders.forEach {folder ->
+                                    FilterChip(
+                                        selected=activeFolderId==folder.id,
+                                        onClick={activeFolderId=folder.id},
+                                        label={Text(folder.name,maxLines=1)}
+                                    )
+                                }
+                                AssistChip(
+                                    onClick={editingFolderId=null;folderName="";editFolderDialog=true},
+                                    label={Text(neoLabel("مجلد جديد +","New folder +"))}
+                                )
+                            }
+                        }
+                    }
                     val notes=db.dayItems.filter { note ->
                         note.type==DayItemTypeV11.NOTE &&
                         when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;"pinned"->note.notePinned&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
+                        (activeFolderId==null || noteFolderAssignments[note.id]==activeFolderId) &&
                         (noteTag==null || (!note.noteLocked && note.noteTags.split(",").map {it.trim()}.contains(noteTag))) &&
                         (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
                     }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.createdAt};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
@@ -634,7 +660,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                 }
             }
         }
-        FloatingActionButton(onClick={if(notesTab) {noteId=null;noteEditor=true} else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+        FloatingActionButton(onClick={if(notesTab) {newNoteFolderTarget=activeFolderId;noteId=null;noteEditor=true} else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
         }
     }
@@ -649,7 +675,17 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         CompositionLocalProvider(LocalNeoOpenNoteTask provides {taskId -> noteEditor=false;noteId=null;open(taskId)}) {
         NeoDayNoteDialog(existing?.date?.let { java.time.LocalDate.parse(it) } ?: today, existing,
             expectedDatabase = db, calendarId = existing?.calendarId ?: db.calendars.firstOrNull { it.visible }?.id,
-            onDismiss = { noteEditor = false; noteId = null }) { noteEditor = false; noteId = null }
+            onDismiss = { noteEditor = false; noteId = null }) { saved ->
+                noteEditor = false; noteId = null
+                if(existing==null) {
+                    val destination=newNoteFolderTarget
+                    if(destination!=null) updateFolder(
+                        {store.moveNotesToFolder(listOf(saved.id),destination)},
+                        neoLiteral("تم حفظ الملاحظة داخل المجلد","Note saved to folder")
+                    )
+                }
+                newNoteFolderTarget=null
+            }
         }
     }
     if(filters) AlertDialog(onDismissRequest={filters=false},title={Text(neoLiteral("فلاتر وعرض المهام","Task filters and view"))},text={

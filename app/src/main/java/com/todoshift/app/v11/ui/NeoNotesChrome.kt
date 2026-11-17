@@ -121,6 +121,7 @@ internal fun neoNoteHeading(state:NeoRichEditorState,level:Int):NeoRichEditorSta
 @Composable
 internal fun NeoNoteFormatSheet(
     state:NeoRichEditorState,
+    initialTab:Int=0,
     onChange:(NeoRichEditorState)->Unit,
     direction:String,
     onDirectionChange:(String)->Unit,
@@ -131,7 +132,7 @@ internal fun NeoNoteFormatSheet(
     onPageColor:()->Unit,
     onDismiss:()->Unit
 ) {
-    var tab by remember {mutableStateOf(0)}
+    var tab by remember(initialTab) {mutableIntStateOf(initialTab)}
     var fontMenu by remember {mutableStateOf(false)}
     val currentSize=state.effective().size ?: 16
     val sizes=listOf(14,16,18,20,24,28)

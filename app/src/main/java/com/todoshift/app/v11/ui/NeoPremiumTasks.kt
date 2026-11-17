@@ -411,7 +411,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         title={Text(neoLabel("نقل الملاحظات إلى مجلد","Move notes to folder"))},
         text={
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                (listOf<NeoSmartStore.NoteFolder?>(null)+noteFolders).forEach {folder ->
+                (listOf<NeoSmartStore.NoteFolder?>(null)+
+                    noteFolders.filter{authorizedFolder(it.id)}).forEach {folder ->
                     TextButton(enabled=!folderBusy&&!write.pending,onClick={
                         val ids=selectedNotes.filter {id ->
                             db.dayItems.any {it.id==id && it.type==DayItemTypeV11.NOTE && !it.noteLocked}
@@ -429,7 +430,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     )
     if(notesTab && noteControlsExpanded) {
         ModalBottomSheet(onDismissRequest={noteControlsExpanded=false}) {
-            val noteTags=db.dayItems.filter {it.type==DayItemTypeV11.NOTE&&!it.noteLocked&&!it.noteHidden}
+            val noteTags=db.dayItems.filter {it.type==DayItemTypeV11.NOTE&&!it.noteLocked&&!it.noteHidden &&
+                    authorizedFolder(noteFolderAssignments[it.id])}
                 .flatMap {it.noteTags.split(",")}.map {it.trim()}.filter {it.isNotBlank()}.distinct().sorted()
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
@@ -855,19 +857,34 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         Box(Modifier.weight(1f)) {
                                         if(entry is NeoNoteLibraryEntry.Folder) {
                                             NeoNoteFolderCard(entry.value,
-                                                count=noteFolderAssignments.values.count{
-                                                    it==entry.value.id
-                                                }+noteFolders.count{
-                                                    it.parentId==entry.value.id
-                                                },
+                                                count=if(authorizedFolder(entry.value.id))
+                                                    noteFolderAssignments.values.count{
+                                                        it==entry.value.id
+                                                    }+noteFolders.count{
+                                                        it.parentId==entry.value.id
+                                                    } else -1,
                                                 onOpen={enterFolder(entry.value.id)},
-                                                onEdit={initFolderEditor(entry.value.id)},
+                                                onEdit={
+                                    if(authorizedFolder(entry.value.id))
+                                        initFolderEditor(entry.value.id)
+                                    else pendingUnlockFolder=entry.value.id
+                                },
                                                 onChild={
-                                                    initFolderEditor(null)
-                                                    folderParentChoice=entry.value.id
-                                                },
-                                                onMove={folderMoveId=entry.value.id},
-                                                onDelete={deleteFolderId=entry.value.id},
+                                    if(authorizedFolder(entry.value.id)) {
+                                        initFolderEditor(null)
+                                        folderParentChoice=entry.value.id
+                                    } else pendingUnlockFolder=entry.value.id
+                                },
+                                                onMove={
+                                    if(authorizedFolder(entry.value.id))
+                                        folderMoveId=entry.value.id
+                                    else pendingUnlockFolder=entry.value.id
+                                },
+                                                onDelete={
+                                    if(authorizedFolder(entry.value.id))
+                                        deleteFolderId=entry.value.id
+                                    else pendingUnlockFolder=entry.value.id
+                                },
                                                 modifier=Modifier.fillMaxWidth().height(
                                                     if(noteLayout=="grid") 142.dp else 184.dp
                                                 )
@@ -987,16 +1004,32 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         }) {entry ->
                         if(entry is NeoNoteLibraryEntry.Folder) {
                             NeoNoteFolderCard(entry.value,
-                                count=noteFolderAssignments.values.count{it==entry.value.id}+
-                                    noteFolders.count{it.parentId==entry.value.id},
+                                count=if(authorizedFolder(entry.value.id))
+                                    noteFolderAssignments.values.count{it==entry.value.id}+
+                                        noteFolders.count{it.parentId==entry.value.id}
+                                    else -1,
                                 onOpen={enterFolder(entry.value.id)},
-                                onEdit={initFolderEditor(entry.value.id)},
-                                onChild={
-                                    initFolderEditor(null)
-                                    folderParentChoice=entry.value.id
+                                onEdit={
+                                    if(authorizedFolder(entry.value.id))
+                                        initFolderEditor(entry.value.id)
+                                    else pendingUnlockFolder=entry.value.id
                                 },
-                                onMove={folderMoveId=entry.value.id},
-                                onDelete={deleteFolderId=entry.value.id}
+                                onChild={
+                                    if(authorizedFolder(entry.value.id)) {
+                                        initFolderEditor(null)
+                                        folderParentChoice=entry.value.id
+                                    } else pendingUnlockFolder=entry.value.id
+                                },
+                                onMove={
+                                    if(authorizedFolder(entry.value.id))
+                                        folderMoveId=entry.value.id
+                                    else pendingUnlockFolder=entry.value.id
+                                },
+                                onDelete={
+                                    if(authorizedFolder(entry.value.id))
+                                        deleteFolderId=entry.value.id
+                                    else pendingUnlockFolder=entry.value.id
+                                }
                             )
                         } else {
                         val note=(entry as NeoNoteLibraryEntry.Note).value
@@ -1309,7 +1342,8 @@ private fun NeoNoteFolderCard(
                     Text(folder.name,maxLines=1,
                         style=MaterialTheme.typography.titleMedium)
                 }
-                Text(neoLabel("$count عنصر","$count items")+
+                Text((if(count<0) neoLabel("مقفول","Locked")
+                    else neoLabel("$count عنصر","$count items"))+
                     if(folder.locked) "  🔒" else "",
                     style=MaterialTheme.typography.labelSmall)
             }

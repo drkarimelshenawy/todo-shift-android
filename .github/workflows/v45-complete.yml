@@ -1,4 +1,4 @@
-name: v45 specification completion signed APK
+name: v46 Notes Library & Smart Lists signed APK
 
 on:
   push:
@@ -74,6 +74,8 @@ jobs:
             --tests 'com.todoshift.app.v11.SecurityAttemptLimitTest' \
             --tests 'com.todoshift.app.v11.NoteTransactionTest' \
             --tests 'com.todoshift.app.v11.NeoRichNoteEditingTest' \
+            --tests 'com.todoshift.app.v11.NeoSmartListsTest' \
+            --tests 'com.todoshift.app.v11.NeoNoteFolderStoreTest' \
             --tests 'com.todoshift.app.backup.EncryptedBackupTest' \
             --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
             --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \
@@ -89,11 +91,11 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v45-followup-ui.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v46-Notes.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-v45-calendar-fix-signed-APK
+          name: ToDoShift-v46-Notes-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -101,17 +103,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v45-followup-ui-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v45-followup-ui.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 completed revision" --notes "Signed v45 revision with calendar, workplace, notes, recovery and restore completion. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+          TAG="v46-notes-smartlists-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v46-Notes.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v45 completed revision" --notes "Signed v46 preview with smart list continuation, real checkbox controls in note reader, folder library and backup-aware organization. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v45-followup-ui-${GITHUB_SHA:0:12}"
+          TAG="v46-notes-smartlists-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ToDoShift-v45-followup-ui.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ToDoShift-v45-followup-ui.apk "$RUNNER_TEMP/published/ToDoShift-v45-followup-ui.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v45-followup-ui.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ToDoShift-v46-Notes.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v46-Notes.apk "$RUNNER_TEMP/published/ToDoShift-v46-Notes.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v46-Notes.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

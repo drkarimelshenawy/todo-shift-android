@@ -103,6 +103,17 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var linkedDate by rememberSaveable {mutableStateOf(existing?.date ?: date.toString())}
     var linkedCalendar by rememberSaveable {mutableStateOf(existing?.calendarId ?: calendarId)}
     var background by rememberSaveable { mutableStateOf(existing?.noteBackground.orEmpty()) }
+    val launchPrefs=remember {NeoLaunchPreferences(context.applicationContext)}
+    val savedPresentation=remember(id) {styleStore.notePresentation(id)}
+    var ruledOverride by rememberSaveable(id) {mutableStateOf(savedPresentation.ruled)}
+    var arabicFontOverride by rememberSaveable(id) {mutableStateOf(savedPresentation.arabicFont)}
+    var englishFontOverride by rememberSaveable(id) {mutableStateOf(savedPresentation.englishFont)}
+    val ruledPaper=ruledOverride ?: launchPrefs.defaultNoteRuled
+    val arabicTypeface=arabicFontOverride ?: launchPrefs.defaultArabicNoteFont
+    val englishTypeface=englishFontOverride ?: launchPrefs.defaultEnglishNoteFont
+    var appearanceOpen by remember {mutableStateOf(false)}
+    var documentToolsOpen by rememberSaveable {mutableStateOf(false)}
+
     var detachedTasks by rememberSaveable {mutableStateOf(listOf<String>())}
     var existingTaskLinks by rememberSaveable {mutableStateOf(listOf<String>())}
     val linkedTaskSecurity=remember {V11SecurityStore(context.applicationContext)}
@@ -197,6 +208,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     existingTaskLinks=recovered.optJSONArray("existingTaskLinks")?.let {a->(0 until a.length()).map {a.getString(it)}} ?: emptyList()
                     taskSpecs=recovered.optJSONArray("taskSpecs")?.let { array->(0 until array.length()).map {array.getString(it)} } ?: taskSpecs
                     reminder=recovered.optString("reminder",reminder);background=recovered.optString("background",background);color=recovered.optString("color",color);border=recovered.optBoolean("border",border)
+                    ruledOverride=if(recovered.has("ruledOverride")) recovered.optBoolean("ruledOverride") else null
+                    arabicFontOverride=recovered.optString("arabicFontOverride").takeIf {it in NeoNotePresentation.FONT_KEYS}
+                    englishFontOverride=recovered.optString("englishFontOverride").takeIf {it in NeoNotePresentation.FONT_KEYS}
                     draftStatus="تم استرجاع المسودة / Draft recovered"
                 } else {
                     conflictingDraft=recovered
@@ -206,7 +220,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             draftReady=error==null
         } catch(failure: Exception) { error="Unable to recover note draft: ${failure.message}" }
     }
-    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion)).toString()
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
         while(pending) delay(10)
         if(rootWritePending || !draftReady || conflictingDraft!=null) return false
@@ -237,7 +251,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         val savedDetails=noteSource()
         closing=close;pending=true
         return try {
-            val next=withContext(Dispatchers.IO) {com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).saveNote(expected,expectedMetadata,note,color,border,linkedTasks=(linkedTasks+linkedExisting).distinctBy {it.id}.filterNot {it.id in detachedTasks},detachedTaskIds=detachedTasks.toSet())}
+            val next=withContext(Dispatchers.IO) {com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).saveNote(expected,expectedMetadata,note,color,border,
+                presentation=NeoNotePresentation(ruledOverride,arabicFontOverride,englishFontOverride),
+                linkedTasks=(linkedTasks+linkedExisting).distinctBy {it.id}.filterNot {it.id in detachedTasks},detachedTaskIds=detachedTasks.toSet())}
             expected=next;expectedMetadata=withContext(Dispatchers.IO) {styleStore.snapshot().toString()};sourceRevision=note.toString()
             lastSavedEdit=savedEdit
             if(richDirty) {
@@ -273,10 +289,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",noteSource()).put("tags",tags)
             .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden).put("previewHidden",previewHidden)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
+        ruledOverride?.let {value.put("ruledOverride",it)}
+        arabicFontOverride?.let {value.put("arabicFontOverride",it)}
+        englishFontOverride?.let {value.put("englishFontOverride",it)}
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }
       } catch(_:Exception) {error="تعذر حفظ المسودة؛ لن تُحذف التعديلات / Draft save failed; edits retained"}
     }
-    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion) {
+    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
@@ -585,7 +604,10 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             },
                             textDirection=direction,
                             focusRequester=noteInputFocus,
-                            modifier=Modifier.fillMaxSize()
+                            modifier=Modifier.fillMaxSize(),
+                            ruled=ruledPaper,
+                            arabicFont=arabicTypeface,
+                            englishFont=englishTypeface
                         )
                     } else {
                         Column(
@@ -597,7 +619,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 NeoNotePreview(
                                     body.text,
                                     textDirection=direction,
-                                    ruled=true,
+                                    ruled=ruledPaper,
+                                    arabicFont=arabicTypeface,
+                                    englishFont=englishTypeface,
                                     onChecklist={line ->
                                         if(!pending) {
                                             val rows=body.text.lines().toMutableList()

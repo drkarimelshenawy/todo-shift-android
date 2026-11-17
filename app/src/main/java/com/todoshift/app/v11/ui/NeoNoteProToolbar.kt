@@ -31,7 +31,10 @@ internal fun NeoNoteProToolbar(
     title:String,
     onJump:(Int,Int)->Unit,
     onRestore:(NeoNoteHistoryStore.Revision)->Unit,
-    onError:(String)->Unit
+    onError:(String)->Unit,
+    command:String?=null,
+    onCommandHandled:()->Unit={},
+    showToolbar:Boolean=true
 ) {
     val context=LocalContext.current
     val store=remember(context) {NeoNoteHistoryStore(context.applicationContext)}
@@ -100,6 +103,20 @@ internal fun NeoNoteProToolbar(
     val stats=remember(document) {NeoNoteDocumentTools.stats(document)}
     val results=remember(document,query) {NeoNoteDocumentTools.find(document,query)}
     val headings=remember(source) {NeoNoteDocumentTools.headings(source)}
+    // Commands open the requested utility directly, without an additional
+    // toolbar-only mode or a nested bottom sheet of unexplained icons.
+    LaunchedEffect(command) {
+        when(command) {
+            "find" -> findOpen=true
+            "outline" -> outlineOpen=true
+            "export" -> exportOpen=true
+            "history" -> try {
+                revisions=withContext(Dispatchers.IO) {store.revisions(noteId)}
+                historyOpen=true
+            } catch(e:Exception) {onError(e.message ?: "Could not open history")}
+        }
+        if(command!=null) onCommandHandled()
+    }
     fun jump(direction:Int) {
         if(results.isEmpty()) return
         matchIndex=(matchIndex+direction+results.size)%results.size
@@ -107,16 +124,16 @@ internal fun NeoNoteProToolbar(
         onJump(current.start,current.end)
     }
     Column(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=1.dp)) {
-        Row(verticalAlignment=Alignment.CenterVertically,
+        if(showToolbar||exportOpen) Row(verticalAlignment=Alignment.CenterVertically,
             horizontalArrangement=Arrangement.spacedBy(3.dp)) {
-            Text(neoLabel(stats.words.toString()+" كلمة • "+
+            if(showToolbar) Text(neoLabel(stats.words.toString()+" كلمة • "+
                     stats.characters+" حرف",stats.words.toString()+" words • "+
                     stats.characters+" chars"),
                 modifier=Modifier.weight(1f),
                 color=MaterialTheme.colorScheme.onSurfaceVariant,
                 style=MaterialTheme.typography.labelSmall)
             Box {
-                IconButton(modifier=Modifier.size(36.dp),onClick={exportOpen=true}) {
+                if(showToolbar) IconButton(modifier=Modifier.size(36.dp),onClick={exportOpen=true}) {
                     Icon(Icons.Rounded.FileDownload,
                         neoLabel("تصدير المستند","Export document"),
                         Modifier.size(20.dp))
@@ -161,6 +178,7 @@ internal fun NeoNoteProToolbar(
                     )
                 }
             }
+            if(showToolbar) {
             IconButton(modifier=Modifier.size(36.dp),onClick={findOpen=!findOpen}) {
                 Icon(Icons.Rounded.Search,neoLabel("بحث داخل المستند","Find in note"),
                     modifier=Modifier.size(20.dp))
@@ -179,6 +197,7 @@ internal fun NeoNoteProToolbar(
             }) {
                 Icon(Icons.Rounded.History,neoLabel("سجل الإصدارات","Version history"),
                     Modifier.size(20.dp))
+            }
             }
         }
         if(findOpen) {

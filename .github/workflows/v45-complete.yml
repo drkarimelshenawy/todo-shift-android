@@ -8,6 +8,7 @@ on:
       - 'cashbook-feature/**'
       - 'app/**'
       - '.github/workflows/v45-complete.yml'
+      - 'tools/PREMIUM_CANDIDATE.json'
       - 'scripts/check_v44_cashbook_integration.py'
       - 'settings.gradle.kts'
       - 'build.gradle.kts'

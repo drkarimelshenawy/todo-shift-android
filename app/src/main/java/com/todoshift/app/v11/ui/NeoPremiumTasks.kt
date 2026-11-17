@@ -380,6 +380,32 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             dismissButton={TextButton(onClick={deleteFolderId=null}) {Text(neoLabel("إلغاء","Cancel"))}}
         )
     }
+    folderMoveId?.let {folderId ->
+        AlertDialog(
+            onDismissRequest={folderMoveId=null},
+            title={Text(neoLabel("نقل المجلد","Move folder"))},
+            text={
+                Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState())) {
+                    (listOf<NeoSmartStore.NoteFolder?>(null)+
+                        noteFolders.filter {it.id!=folderId && authorizedFolder(it.id)}
+                    ).forEach {parent ->
+                        TextButton(enabled=!folderBusy&&!write.pending,onClick={
+                            updateFolder(
+                                {store.moveNoteFolder(folderId,parent?.id)},
+                                neoLiteral("تم نقل المجلد","Folder moved")
+                            )
+                            folderMoveId=null
+                        }) {
+                            Text(parent?.name ?: neoLabel("المكتبة الرئيسية","Library root"))
+                        }
+                    }
+                }
+            },
+            confirmButton={TextButton(onClick={folderMoveId=null}) {
+                Text(neoLabel("إغلاق","Close"))
+            }}
+        )
+    }
     if(moveNotesDialog) AlertDialog(
         onDismissRequest={moveNotesDialog=false;if(!noteSelectionMode)selectedNotes=emptySet()},
         title={Text(neoLabel("نقل الملاحظات إلى مجلد","Move notes to folder"))},
@@ -836,8 +862,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                                 },
                                                 onOpen={enterFolder(entry.value.id)},
                                                 onEdit={initFolderEditor(entry.value.id)},
-                                                onChild={enterFolder(entry.value.id);
-                                                    initFolderEditor(null)},
+                                                onChild={
+                                                    initFolderEditor(null)
+                                                    folderParentChoice=entry.value.id
+                                                },
                                                 onMove={folderMoveId=entry.value.id},
                                                 onDelete={deleteFolderId=entry.value.id},
                                                 modifier=Modifier.fillMaxWidth().height(
@@ -963,7 +991,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     noteFolders.count{it.parentId==entry.value.id},
                                 onOpen={enterFolder(entry.value.id)},
                                 onEdit={initFolderEditor(entry.value.id)},
-                                onChild={enterFolder(entry.value.id);initFolderEditor(null)},
+                                onChild={
+                                    initFolderEditor(null)
+                                    folderParentChoice=entry.value.id
+                                },
                                 onMove={folderMoveId=entry.value.id},
                                 onDelete={deleteFolderId=entry.value.id}
                             )
@@ -1222,6 +1253,67 @@ private fun NeoNoteCardMenu(
                 text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},
                 onClick={expanded=false;onTrash()}
             )
+        }
+    }
+}
+
+@Composable
+private fun NeoNoteFolderCard(
+    folder:NeoSmartStore.NoteFolder,
+    count:Int,
+    onOpen:()->Unit,
+    onEdit:()->Unit,
+    onChild:()->Unit,
+    onMove:()->Unit,
+    onDelete:()->Unit,
+    modifier:Modifier=Modifier.fillMaxWidth()
+) {
+    var menu by remember {mutableStateOf(false)}
+    val accent=remember(folder.color) {
+        androidx.compose.ui.graphics.Color(
+            android.graphics.Color.parseColor(folder.color))
+    }
+    Card(modifier=modifier,colors=CardDefaults.cardColors(
+        containerColor=MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Row(Modifier.fillMaxSize().padding(12.dp),
+            verticalAlignment=Alignment.CenterVertically,
+            horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            IconButton(onClick=onOpen,modifier=Modifier.size(48.dp)) {
+                Icon(if(folder.locked) Icons.Rounded.FolderOff
+                    else Icons.Rounded.Folder,
+                    contentDescription=neoLabel("فتح المجلد","Open folder"),
+                    tint=accent,modifier=Modifier.size(39.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                TextButton(onClick=onOpen,contentPadding=PaddingValues(0.dp)) {
+                    Text(folder.name,maxLines=1,
+                        style=MaterialTheme.typography.titleMedium)
+                }
+                Text(neoLabel("$count عنصر","$count items")+
+                    if(folder.locked) "  🔒" else "",
+                    style=MaterialTheme.typography.labelSmall)
+            }
+            Box {
+                IconButton(onClick={menu=true},modifier=Modifier.size(36.dp)) {
+                    Icon(Icons.Rounded.MoreVert,neoLabel("خيارات المجلد","Folder options"))
+                }
+                DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
+                    DropdownMenuItem(text={Text(neoLabel("فتح","Open"))},
+                        onClick={menu=false;onOpen()})
+                    DropdownMenuItem(text={Text(neoLabel("تعديل الاسم واللون والقفل",
+                        "Edit name, color and lock"))},
+                        onClick={menu=false;onEdit()})
+                    DropdownMenuItem(text={Text(neoLabel("مجلد فرعي جديد",
+                        "New subfolder"))},
+                        onClick={menu=false;onChild()})
+                    DropdownMenuItem(text={Text(neoLabel("نقل المجلد","Move folder"))},
+                        onClick={menu=false;onMove()})
+                    HorizontalDivider()
+                    DropdownMenuItem(text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
+                        "Delete folder (keep contents)"))},
+                        onClick={menu=false;onDelete()})
+                }
+            }
         }
     }
 }

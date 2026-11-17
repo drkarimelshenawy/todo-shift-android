@@ -3,6 +3,9 @@ package com.todoshift.app.v11.ui
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontWeight
+import com.todoshift.app.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
@@ -16,13 +19,47 @@ import androidx.compose.ui.text.input.VisualTransformation
  * fall back to the device's default Arabic/Latin font.
  */
 internal object NeoNoteTypefaces {
-    val choices=listOf("system","sans","serif","mono")
+    val arabicChoices=listOf("system","amiri","tajawal","reem")
+    val englishChoices=listOf("system","montserrat","lora","oswald")
+    // Legacy keys remain valid and readable for existing notes.
+    val choices=listOf("system","sans","serif","mono")+
+        arabicChoices.drop(1)+englishChoices.drop(1)
+
+    private val amiri=FontFamily(
+        Font(R.font.note_ar_amiri,FontWeight.Normal),
+        Font(R.font.note_ar_amiri_bold,FontWeight.Bold))
+    private val tajawal=FontFamily(
+        Font(R.font.note_ar_tajawal,FontWeight.Normal),
+        Font(R.font.note_ar_tajawal_bold,FontWeight.Bold))
+    private val reem=FontFamily(Font(R.font.note_ar_reem_kufi))
+    private val montserrat=FontFamily(Font(R.font.note_en_montserrat))
+    private val lora=FontFamily(Font(R.font.note_en_lora))
+    private val oswald=FontFamily(Font(R.font.note_en_oswald))
 
     fun family(key:String):FontFamily=when(key) {
+        "amiri" -> amiri
+        "tajawal" -> tajawal
+        "reem" -> reem
+        "montserrat" -> montserrat
+        "lora" -> lora
+        "oswald" -> oswald
         "sans" -> FontFamily.SansSerif
         "serif" -> FontFamily.Serif
         "mono" -> FontFamily.Monospace
         else -> FontFamily.Default
+    }
+
+    fun keyOf(font:FontFamily?):String?=when(font) {
+        amiri -> "amiri"
+        tajawal -> "tajawal"
+        reem -> "reem"
+        montserrat -> "montserrat"
+        lora -> "lora"
+        oswald -> "oswald"
+        FontFamily.SansSerif -> "sans"
+        FontFamily.Serif -> "serif"
+        FontFamily.Monospace -> "mono"
+        else -> null
     }
 
     private fun script(c:Char):Int = when(Character.UnicodeScript.of(c.code)) {

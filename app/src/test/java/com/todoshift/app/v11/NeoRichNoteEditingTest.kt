@@ -118,7 +118,7 @@ class NeoRichNoteEditingTest {
     @Test fun legacyCheckboxAndTaskAnchorRemainReadAndWritable() {
         val old="- [ ] بند قديم <!--task:existing-123-->"
         val read=NeoRichEditorState.open(old)
-        assertEquals("- [ ] بند قديم ",read.value.text)
+        assertEquals("- [ ] بند قديم",read.value.text)
         val checked=read.toggleChecklist()
         assertTrue(checked.stored().startsWith("- [x] بند قديم"))
         assertTrue(checked.stored().contains("<!--task:existing-123-->"))

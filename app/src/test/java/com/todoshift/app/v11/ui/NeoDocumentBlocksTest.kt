@@ -53,6 +53,21 @@ class NeoDocumentBlocksTest {
         try {NeoDocumentBlocks.serializeTable(large);fail("Unbounded cell")} catch(_:IllegalArgumentException) {}
     }
 
+    @Test fun deletingColumnsDownToOneKeepsEditableTable() {
+        val source=NeoDocumentBlocks.serializeTable(
+            listOf(listOf("Header"),listOf("قيمة"),listOf("Another")))
+        val block=NeoDocumentBlocks.parse(source)
+            .filterIsInstance<NeoDocumentBlocks.Block.Table>().single()
+        assertEquals(1,block.cells.first().size)
+        assertEquals(3,block.cells.size)
+        val changed=NeoDocumentBlocks.replace(source,block,
+            NeoDocumentBlocks.serializeTable(
+                listOf(listOf("Header"),listOf("تم التعديل"),listOf("Another"))))
+        assertEquals("تم التعديل",
+            NeoDocumentBlocks.parse(changed).filterIsInstance<
+                NeoDocumentBlocks.Block.Table>().single().cells[1][0])
+    }
+
     @Test fun staleBlockReplacementMustFailRatherThanOverwriteOtherText() {
         val original="Hello\n"+NeoDocumentBlocks.table(2,2)
         val block=NeoDocumentBlocks.parse(original)

@@ -55,8 +55,13 @@ class AttachmentBackupTest {
         val backup = Neo4LocalBackup(context)
         backup.export(db, output)
         val prepared = backup.preview(output.toByteArray().inputStream())
-        assertTrue(file.delete()) // Simulates the missing attachment in this isolated test sandbox.
-        backup.restore(prepared, prepared.token)
+        assertTrue(file.delete()) // Missing referenced asset: ordinary restore must not bypass the safety copy.
+        val denied = runCatching {backup.restore(prepared,prepared.token)}.exceptionOrNull()
+        assertTrue(denied is IllegalArgumentException)
+        assertTrue(denied?.message.orEmpty().contains("Missing referenced attachment"))
+        // The dedicated recovery mode is explicitly authorized to repair a
+        // damaged store after the user has authenticated to the recovery UI.
+        backup.recoverFromBackup(prepared,prepared.token)
         assertArrayEquals(original, file.readBytes())
         assertEquals(task.id, NeoAttachmentStore(context).list().single().owner)
         assertEquals(db, V11Storage(context).load())
@@ -139,7 +144,10 @@ class AttachmentBackupTest {
         backup.export(withNote,bytes)
         val prepared=backup.preview(bytes.toByteArray().inputStream())
         assertTrue(stored.delete())
-        backup.restore(prepared,prepared.token)
+        val denied=runCatching {backup.restore(prepared,prepared.token)}.exceptionOrNull()
+        assertTrue(denied is IllegalArgumentException)
+        assertTrue(denied?.message.orEmpty().contains("Missing referenced attachment"))
+        backup.recoverFromBackup(prepared,prepared.token)
         assertArrayEquals(original,stored.readBytes())
         assertEquals(note.id,NeoAttachmentStore(context).list().single().owner)
     }

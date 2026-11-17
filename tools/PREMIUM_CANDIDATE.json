@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 53,
-  "versionName": "4.11.0-premium-v49-pro-editor",
-  "branch": "feat/v49-notes-pro-editor-20261117",
-  "baseline": "f7f01804ea1d391c8512c79ec4b13e164942f8b2",
-  "classification": "PERSISTENT-SIGNED v49 NOTES PRO EDITOR — physical-device acceptance pending"
+  "versionCode": 54,
+  "versionName": "4.12.0-premium-v50-calm-notes",
+  "branch": "feat/v50-notes-quiet-editor-20261117",
+  "baseline": "d5c647e106749477085f90dc4dbf40a1f5c80382",
+  "classification": "PERSISTENT-SIGNED v50 NOTES QUIET EDITOR — physical-device acceptance pending"
 }

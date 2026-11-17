@@ -123,4 +123,12 @@ class NeoRichNoteEditingTest {
         assertTrue(checked.stored().startsWith("- [x] بند قديم"))
         assertTrue(checked.stored().contains("<!--task:existing-123-->"))
     }
+
+    @Test fun tappingSecondInlineCheckboxDoesNotModifyFirstOrTaskAnchor() {
+        val before="☐ First\n☐ Second <!--task:note-task-2-->"
+        val result=NeoRichEditorState.open(before).toggleChecklistAtLine(1)
+        assertEquals("☐ First\n☑ Second",result.value.text)
+        assertTrue(result.stored().contains("<!--task:note-task-2-->"))
+        assertEquals(result.value.text,NeoRichEditorState.open(result.stored()).value.text)
+    }
 }

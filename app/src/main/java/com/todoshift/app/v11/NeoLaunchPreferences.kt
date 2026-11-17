@@ -11,6 +11,26 @@ class NeoLaunchPreferences(context: Context) {
     var defaultNoteBackground:String
         get()=prefs.getString("note_background","").orEmpty()
         set(value) {require(value.isBlank() || value.matches(Regex("#[0-9a-fA-F]{6}")));check(prefs.edit().putString("note_background",value).commit())}
+    var defaultNoteRuled:Boolean
+        get()=prefs.getBoolean("note_ruled",true)
+        set(value) {check(prefs.edit().putBoolean("note_ruled",value).commit())}
+
+    var defaultArabicNoteFont:String
+        get()=prefs.getString("note_font_ar","system").orEmpty()
+            .takeIf {it in NeoNotePresentation.FONT_KEYS} ?: "system"
+        set(value) {
+            require(value in NeoNotePresentation.FONT_KEYS)
+            check(prefs.edit().putString("note_font_ar",value).commit())
+        }
+
+    var defaultEnglishNoteFont:String
+        get()=prefs.getString("note_font_en","system").orEmpty()
+            .takeIf {it in NeoNotePresentation.FONT_KEYS} ?: "system"
+        set(value) {
+            require(value in NeoNotePresentation.FONT_KEYS)
+            check(prefs.edit().putString("note_font_en",value).commit())
+        }
+
     var openNotes: Boolean
         get() = prefs.getBoolean("notes", false)
         set(value) { check(prefs.edit().putBoolean("notes", value).commit()) }

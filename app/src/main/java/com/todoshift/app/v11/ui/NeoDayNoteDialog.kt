@@ -502,15 +502,20 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         }
     }
     Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
-        properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
-        // DialogProperties(decorFitsSystemWindows=false) supplies Android 12+
-        // edge-to-edge IME insets. Do not override its soft-input mode: manual
-        // adjustResize competes with Compose imePadding on newer Android.
+        properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=true,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
+        // The Android Window, rather than a child padding modifier, owns the
+        // system-bar and keyboard-safe bounds. The previous edge-to-edge Dialog
+        // measured the footer down to the physical bottom of the display.
+        val view=androidx.compose.ui.platform.LocalView.current
+        DisposableEffect(view) {
+            val window=(view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+            val previous=window?.attributes?.softInputMode
+            window?.setSoftInputMode(
+                android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            onDispose { if(previous!=null) window.setSoftInputMode(previous) }
+        }
         Surface(
-            modifier=Modifier.fillMaxSize()
-                .statusBarsPadding()
-                .imePadding()
-                .navigationBarsPadding(),
+            modifier=Modifier.fillMaxSize(),
             color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface
         ) {
             Box(Modifier.fillMaxSize()) {

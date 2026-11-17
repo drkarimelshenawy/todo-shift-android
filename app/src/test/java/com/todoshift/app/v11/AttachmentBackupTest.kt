@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -14,6 +15,19 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class AttachmentBackupTest {
+    @Before
+    fun refreshRobolectricFileProviderRoots() {
+        // Robolectric changes its sandbox filesDir between tests while the
+        // provider's static strategy cache may point to an earlier sandbox.
+        val context=RuntimeEnvironment.getApplication()
+        FileProvider().attachInfo(
+            context,
+            context.packageManager.resolveContentProvider(
+                context.packageName+".attachments",0
+            )!!
+        )
+    }
+
     @Test
     fun attachmentPathWhitelistRejectsTraversalAndExecutableTypes() {
         assertFalse(NeoAttachmentStore.safePath("attachments/../../secret"))

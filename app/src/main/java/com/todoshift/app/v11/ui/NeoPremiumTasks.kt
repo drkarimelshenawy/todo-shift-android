@@ -129,6 +129,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     var noteSelectionMode by remember {mutableStateOf(false)}
     var selectedNotes by remember {mutableStateOf(setOf<String>())}
+    var selectionActionsExpanded by remember {mutableStateOf(false)}
     var confirmTrash by remember {mutableStateOf(false)}
     val noteViewPrefs=remember(context) { context.applicationContext.getSharedPreferences("neo_note_view_v45",android.content.Context.MODE_PRIVATE) }
     var noteSort by rememberSaveable { mutableStateOf(noteViewPrefs.getString("sort","updated")?.takeIf { it in setOf("updated","title","date") } ?: "updated") }
@@ -361,6 +362,15 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             }
         }
     }
+    val visibleNotes=db.dayItems.filter { note ->
+                        note.type==DayItemTypeV11.NOTE &&
+                        when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;"pinned"->note.notePinned&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;"favorites"->note.id in favoriteNoteIds&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
+                        (activeFolderId==null || (activeFolderId=="__unfiled__" &&
+                            noteFolderAssignments[note.id]==null) ||
+                            noteFolderAssignments[note.id]==activeFolderId) &&
+                        (noteTag==null || (!note.noteLocked && note.noteTags.split(",").map {it.trim()}.contains(noteTag))) &&
+                        (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
+                    }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.createdAt};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalNeoTaskCompact provides options.compact,
             LocalNeoTaskMove provides if(options.sort==NeoTaskSort.MANUAL && optionsReady && !settingsBusy) { { id,delta ->
@@ -595,15 +605,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             }
                         }
                     }
-                    val notes=db.dayItems.filter { note ->
-                        note.type==DayItemTypeV11.NOTE &&
-                        when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;"pinned"->note.notePinned&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;"favorites"->note.id in favoriteNoteIds&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
-                        (activeFolderId==null || (activeFolderId=="__unfiled__" &&
-                            noteFolderAssignments[note.id]==null) ||
-                            noteFolderAssignments[note.id]==activeFolderId) &&
-                        (noteTag==null || (!note.noteLocked && note.noteTags.split(",").map {it.trim()}.contains(noteTag))) &&
-                        (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
-                    }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.createdAt};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
+                    val notes=visibleNotes
                     if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات مطابقة","No matching notes"),neoLabel("غيّر البحث أو المجلد، أو أضف ملاحظة","Change search or folder, or add a note"))}
                     if(noteLayout=="grid" || noteLayout=="large") {
                         val columns=if(noteLayout=="grid") 3 else 2

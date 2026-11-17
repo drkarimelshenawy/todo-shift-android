@@ -16,7 +16,8 @@ import java.util.zip.ZipInputStream
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28])
 class NeoNoteHistoryPortableTest {
-    private val context get()=RuntimeEnvironment.getApplication()
+    private val context:android.content.Context
+        get()=RuntimeEnvironment.getApplication()
 
     @Test fun portableHistoryIsBoundedValidatedAndMergeIdempotent() {
         val store=NeoNoteHistoryStore(context)

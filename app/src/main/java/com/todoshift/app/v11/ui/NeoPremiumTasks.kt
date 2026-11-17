@@ -113,9 +113,52 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var editFolderDialog by remember {mutableStateOf(false)}
     var editingFolderId by remember {mutableStateOf<String?>(null)}
     var folderName by rememberSaveable {mutableStateOf("")}
+    var folderColor by rememberSaveable {mutableStateOf("#D8AD55")}
+    var folderLocked by rememberSaveable {mutableStateOf(false)}
+    var folderParentChoice by rememberSaveable {mutableStateOf<String?>(null)}
+    var folderMoveId by remember {mutableStateOf<String?>(null)}
+    var pendingUnlockFolder by remember {mutableStateOf<String?>(null)}
+    var unlockedFolderIds by remember {mutableStateOf(setOf<String>())}
+    val folderColors=listOf("#D8AD55","#388E9C","#5977B9","#8052A5",
+        "#BA6580","#4E9479","#C97B42","#64748B")
+    val folderSortPrefs=remember(context) {
+        context.applicationContext.getSharedPreferences("neo_note_library_v51",
+            android.content.Context.MODE_PRIVATE)
+    }
+    var foldersFirst by rememberSaveable {
+        mutableStateOf(folderSortPrefs.getBoolean("folders_first",true))
+    }
     var deleteFolderId by remember {mutableStateOf<String?>(null)}
     var moveNotesDialog by remember {mutableStateOf(false)}
     var newNoteFolderTarget by remember {mutableStateOf<String?>(null)}
+    fun authorizedFolder(id:String?):Boolean {
+        if(id==null || id=="__all__" || id=="__unfiled__")return true
+        val index=noteFolders.associateBy{it.id}
+        var cursor=id
+        val seen=mutableSetOf<String>()
+        while(cursor!=null && seen.add(cursor)) {
+            val item=index[cursor] ?: return false
+            if(item.locked && item.id !in unlockedFolderIds)return false
+            cursor=item.parentId
+        }
+        return cursor==null
+    }
+    fun enterFolder(id:String?) {
+        if(!authorizedFolder(id)) { pendingUnlockFolder=id;return }
+        activeFolderId=id;noteSearch="";searchExpanded=false
+        selectedNotes=emptySet();noteSelectionMode=false
+    }
+    fun initFolderEditor(id:String?) {
+        val existing=noteFolders.firstOrNull{it.id==id}
+        editingFolderId=id
+        folderName=existing?.name.orEmpty()
+        folderColor=existing?.color ?: "#D8AD55"
+        folderLocked=existing?.locked ?: false
+        folderParentChoice=existing?.parentId ?: activeFolderId?.takeUnless{
+            it=="__all__"||it=="__unfiled__"
+        }
+        editFolderDialog=true
+    }
     LaunchedEffect(folderRefresh) {
         try {
             val (folders,assignments,favorites)=withContext(Dispatchers.IO) {
@@ -124,7 +167,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             noteFolders=folders
             noteFolderAssignments=assignments
             favoriteNoteIds=favorites
-            if(activeFolderId!=null && folders.none{it.id==activeFolderId}) activeFolderId=null
+            if(activeFolderId!=null &&
+                activeFolderId !in setOf("__all__","__unfiled__") &&
+                folders.none{it.id==activeFolderId}) activeFolderId=null
         } catch(failure:Exception) {
             error=failure.message ?: "Could not load note folders"
         }
@@ -140,7 +185,11 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var hiddenUnlock by remember { mutableStateOf(false) }
     val noteLifecycle=androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     DisposableEffect(noteLifecycle) {
-        val observer=androidx.lifecycle.LifecycleEventObserver {_,event->if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP){hiddenAuthorized=false;if(noteFolder=="hidden")noteFolder="active"}}
+        val observer=androidx.lifecycle.LifecycleEventObserver {_,event->if(event==androidx.lifecycle.Lifecycle.Event.ON_STOP){
+            hiddenAuthorized=false;unlockedFolderIds=emptySet()
+            if(noteFolder=="hidden")noteFolder="active"
+            if(activeFolderId!=null && !authorizedFolder(activeFolderId))activeFolderId=null
+        }}
         noteLifecycle.addObserver(observer)
         onDispose {noteLifecycle.removeObserver(observer)}
     }

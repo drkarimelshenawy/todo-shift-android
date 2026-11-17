@@ -39,20 +39,28 @@ fun NeoLaunchPreferencesUi() {
             .onSuccess {ruled=value;failure=false}.onFailure {failure=true}
     }
     val fonts=listOf("system","sans","serif","mono")
-    fun fontLabel(key:String)=when(key) {
-        "sans" -> neoLabel("واضح (Sans)","Sans")
-        "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
-        "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
-        else -> neoLabel("خط الجهاز","System default")
-    }
     NeoChoice(neoLabel("الخط العربي الافتراضي","Default Arabic text font"),
-        fonts,arabicFont,::fontLabel,
+        fonts,arabicFont,{key ->
+            when(key) {
+                "sans" -> neoLabel("واضح (Sans)","Sans")
+                "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
+                "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
+                else -> neoLabel("خط الجهاز","System default")
+            }
+        },
         {value ->
             runCatching {store.defaultArabicNoteFont=value}
                 .onSuccess {arabicFont=value;failure=false}.onFailure {failure=true}
         })
     NeoChoice(neoLabel("الخط الإنجليزي الافتراضي","Default English text font"),
-        fonts,englishFont,::fontLabel,
+        fonts,englishFont,{key ->
+            when(key) {
+                "sans" -> neoLabel("واضح (Sans)","Sans")
+                "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
+                "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
+                else -> neoLabel("خط الجهاز","System default")
+            }
+        },
         {value ->
             runCatching {store.defaultEnglishNoteFont=value}
                 .onSuccess {englishFont=value;failure=false}.onFailure {failure=true}

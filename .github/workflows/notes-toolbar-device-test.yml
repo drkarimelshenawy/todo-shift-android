@@ -52,7 +52,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            adb shell wm size 393x873
+            adb shell wm size 1080x2400
             adb shell wm density 440
             mkdir -p device-evidence
             set +e

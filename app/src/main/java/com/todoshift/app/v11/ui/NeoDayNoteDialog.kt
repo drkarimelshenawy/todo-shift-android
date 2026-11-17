@@ -700,7 +700,6 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     }
                                 )
                             }
-                            Spacer(Modifier.height(196.dp))
                         }
                     }
                 }

@@ -485,7 +485,16 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     )
     Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
         properties=DialogProperties(usePlatformDefaultWidth=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
-        Surface(modifier=Modifier.fillMaxSize().imePadding(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
+        // A full-screen dialog needs resize-aware IME handling: otherwise its footer
+        // can stay underneath the keyboard on edge-to-edge Android devices.
+        val view=androidx.compose.ui.platform.LocalView.current
+        DisposableEffect(view) {
+            val window=(view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+            val oldMode=window?.attributes?.softInputMode
+            window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            onDispose {if(oldMode!=null)window?.setSoftInputMode(oldMode)}
+        }
+        Surface(modifier=Modifier.fillMaxSize().navigationBarsPadding().imePadding(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
             Box(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {
                     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {

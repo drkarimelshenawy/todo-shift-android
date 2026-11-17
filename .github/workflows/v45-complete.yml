@@ -2,7 +2,7 @@ name: v45 specification completion signed APK
 
 on:
   push:
-    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117]
+    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117'
+    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

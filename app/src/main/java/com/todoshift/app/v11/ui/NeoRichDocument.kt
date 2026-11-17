@@ -162,6 +162,19 @@ internal data class NeoRichEditorState(
         return input(TextFieldValue(edit.text,TextRange(edit.caret)))
     }
 
+    fun toggleChecklist():NeoRichEditorState {
+        val lines=value.text.split('\n').toMutableList()
+        val index=value.text.substring(0,value.selection.start.coerceIn(0,value.text.length)).count{it=='\n'}
+        if(index !in lines.indices) return this
+        val updated=NeoSmartLists.toggleChecked(lines[index])
+        if(updated==lines[index]) return this
+        lines[index]=updated
+        val offset=lines.take(index).sumOf{it.length+1}
+        val newCaret=(offset+(value.selection.start-offset).coerceAtMost(updated.length))
+            .coerceIn(0,lines.joinToString("\n").length)
+        return input(TextFieldValue(lines.joinToString("\n"),TextRange(newCaret)))
+    }
+
     /** Encode WYSIWYG ranges into inline tags understood by the existing reader. */
     fun stored():String {
         val text=value.text;val tokens=hidden.groupBy {it.position.coerceIn(0,text.length)}

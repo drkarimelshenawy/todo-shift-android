@@ -529,7 +529,12 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
                         horizontalArrangement=Arrangement.spacedBy(2.dp)
                     ) {
-                        if(editing) {
+                        if(editing && a4Preview) {
+                            TextButton(onClick={a4Preview=false;advancedCanvas=false}) {
+                                Text(neoLabel("العودة للكتابة","Back to writing"))
+                            }
+                            Spacer(Modifier.weight(1f))
+                        } else if(editing) {
                             FilledTonalIconButton(
                                 enabled=!closing&&!pending&&!rootWritePending,
                                 onClick={

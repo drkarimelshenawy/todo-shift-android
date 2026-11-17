@@ -257,28 +257,105 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
         confirmButton={TextButton(onClick={missing=false}) {Text(neoLiteral("إغلاق","Close"))}})
+    pendingUnlockFolder?.let {target ->
+        androidx.compose.ui.window.Dialog(onDismissRequest={pendingUnlockFolder=null}) {
+            Surface(shape=MaterialTheme.shapes.large) {
+                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text(neoLabel("مجلد مقفول","Locked folder"),
+                        style=MaterialTheme.typography.titleMedium)
+                    if(noteSecuritySettings.mode==V11LockMode.NONE) {
+                        Text(neoLabel("فعّل PIN أو النمط من إعدادات الحماية قبل فتح المجلد.",
+                            "Configure a PIN or pattern in Security settings to unlock this folder."))
+                    } else {
+                        V11AccountsUnlockScreen(noteSecuritySettings,noteSecurity) {
+                            val index=noteFolders.associateBy{it.id}
+                            var cursor:String?=target
+                            val unlocked=mutableSetOf<String>()
+                            val seen=mutableSetOf<String>()
+                            while(cursor!=null && seen.add(cursor)) {
+                                unlocked.add(cursor)
+                                cursor=index[cursor]?.parentId
+                            }
+                            unlockedFolderIds=unlockedFolderIds+unlocked
+                            pendingUnlockFolder=null
+                            enterFolder(target)
+                        }
+                    }
+                    TextButton(onClick={pendingUnlockFolder=null}) {
+                        Text(neoLabel("إلغاء","Cancel"))
+                    }
+                }
+            }
+        }
+    }
     if(editFolderDialog) AlertDialog(
         onDismissRequest={editFolderDialog=false},
-        title={Text(if(editingFolderId==null) neoLabel("مجلد جديد","New folder")
-            else neoLabel("تعديل اسم المجلد","Rename folder"))},
+        title={Text(if(editingFolderId==null) neoLabel("إنشاء مجلد","New folder")
+            else neoLabel("تعديل المجلد","Edit folder"))},
         text={
-            OutlinedTextField(
-                value=folderName,onValueChange={folderName=it.take(60)},
-                label={Text(neoLabel("اسم المجلد","Folder name"))},singleLine=true
-            )
+            Column(Modifier.heightIn(max=480.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value=folderName,onValueChange={folderName=it.take(60)},
+                    label={Text(neoLabel("اسم المجلد","Folder name"))},singleLine=true
+                )
+                Text(neoLabel("لون المجلد","Folder color"),
+                    style=MaterialTheme.typography.labelMedium)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                    folderColors.forEach {hex ->
+                        FilterChip(
+                            selected=folderColor==hex,onClick={folderColor=hex},
+                            label={Text("●",color=androidx.compose.ui.graphics.Color(
+                                android.graphics.Color.parseColor(hex)))}
+                        )
+                    }
+                }
+                val availableParents=(listOf<NeoSmartStore.NoteFolder?>(null)+
+                    noteFolders.filter{it.id!=editingFolderId && authorizedFolder(it.id)})
+                NeoChoice(
+                    neoLabel("المجلد الأب","Inside folder"),
+                    availableParents,availableParents.firstOrNull{it?.id==folderParentChoice},
+                    {it?.name ?: neoLabel("المكتبة الرئيسية","Library root")},
+                    {folderParentChoice=it?.id}
+                )
+                Row(verticalAlignment=Alignment.CenterVertically) {
+                    Checkbox(checked=folderLocked,onCheckedChange={folderLocked=it})
+                    Text(neoLabel("قفل المجلد","Lock folder"))
+                }
+                Text(neoLabel(
+                    "القفل يتطلب PIN أو نمط حماية مفعّلًا. حذف المجلد ينقل محتوياته إلى المجلد الأب.",
+                    "Locking requires a configured PIN or pattern. Deleting moves children to the parent."),
+                    style=MaterialTheme.typography.bodySmall)
+            }
         },
         confirmButton={
-            TextButton(enabled=folderName.isNotBlank()&&!folderBusy&&!write.pending,onClick={
-                val id=editingFolderId
-                val name=folderName
-                updateFolder({
-                    if(id==null) {store.createNoteFolder(name);Unit}
-                    else store.renameNoteFolder(id,name)
-                },neoLiteral("تم حفظ المجلد","Folder saved"))
-                editFolderDialog=false
-            }) {Text(neoLabel("حفظ","Save"))}
+            TextButton(enabled=folderName.isNotBlank()&&!folderBusy&&!write.pending,
+                onClick={
+                    if(folderLocked && noteSecuritySettings.mode==V11LockMode.NONE) {
+                        error=neoLiteral("فعّل PIN أو النمط أولًا","Set up PIN or pattern first")
+                        return@TextButton
+                    }
+                    val id=editingFolderId
+                    val name=folderName
+                    val color=folderColor
+                    val locked=folderLocked
+                    val parent=folderParentChoice
+                    updateFolder({
+                        if(id==null) {
+                            store.createNoteFolder(name,parent,color,locked)
+                        } else {
+                            store.moveNoteFolder(id,parent)
+                            store.updateNoteFolder(id,name,color,locked)
+                        }
+                    },neoLiteral("تم حفظ المجلد","Folder saved"))
+                    editFolderDialog=false
+                }
+            ) {Text(neoLabel("حفظ","Save"))}
         },
-        dismissButton={TextButton(onClick={editFolderDialog=false}) {Text(neoLabel("إلغاء","Cancel"))}}
+        dismissButton={TextButton(onClick={editFolderDialog=false}) {
+            Text(neoLabel("إلغاء","Cancel"))
+        }}
     )
     deleteFolderId?.let {folderId ->
         AlertDialog(
@@ -290,7 +367,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                 TextButton(enabled=!folderBusy&&!write.pending,onClick={
                     updateFolder({store.removeNoteFolder(folderId)},
                         neoLiteral("تم حذف المجلد والملاحظات محفوظة","Folder deleted; notes preserved"))
-                    if(activeFolderId==folderId) activeFolderId=null
+                    if(activeFolderId==folderId) activeFolderId=
+                        noteFolders.firstOrNull{it.id==folderId}?.parentId
                     deleteFolderId=null
                 }) {Text(neoLabel("حذف المجلد","Delete folder"))}
             },

@@ -122,29 +122,51 @@ internal fun NeoNoteFormatting(
                 verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
             ) {
                 Box {
+                    val listKinds=listOf("bullet","circle","square","check",
+                        "number","numberParen","letter","letterParen","arabic")
                     NeoFormatAction(
                         Icons.Rounded.FormatListBulleted,
-                        neoLabel("القوائم والترقيم","Bullets and numbering"),
+                        neoLabel("قوائم ذكية وترقيم مستمر","Smart lists and numbering"),
+                        selected=listKinds.any {state.listActive(it)},
                         action={lists=true}
                     )
                     DropdownMenu(expanded=lists,onDismissRequest={lists=false}) {
                         listOf(
-                            Triple(neoLabel("قائمة نقطية","Bulleted list"),"•","- "),
-                            Triple(neoLabel("قائمة مهام","Checklist"),"☐","- [ ] "),
-                            Triple(neoLabel("قائمة مرقمة","Numbered list"),"1.","1. "),
-                            Triple(neoLabel("قائمة بالحروف","Lettered list"),"A.","A. ")
-                        ).forEach {(label,marker,format) ->
+                            Triple(neoLabel("نقاط","Bullets"),"•","bullet"),
+                            Triple(neoLabel("دوائر","Circles"),"◦","circle"),
+                            Triple(neoLabel("مربعات","Squares"),"▪","square"),
+                            Triple(neoLabel("قائمة اختيار","Checklist"),"☐","check"),
+                            Triple(neoLabel("أرقام متسلسلة","Numbered"),"1.","number"),
+                            Triple(neoLabel("أرقام مع قوس","Numbers with parentheses"),"1)","numberParen"),
+                            Triple(neoLabel("حروف متسلسلة","Letters"),"A.","letter"),
+                            Triple(neoLabel("حروف مع قوس","Letters with parentheses"),"A)","letterParen"),
+                            Triple(neoLabel("حروف عربية","Arabic letters"),"أ.","arabic")
+                        ).forEach {(label,marker,kind) ->
                             DropdownMenuItem(
                                 text={
-                                    Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                                        Text(marker)
-                                        Text(label)
+                                    Row(
+                                        verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
+                                        horizontalArrangement=Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(marker,modifier=Modifier.width(32.dp))
+                                        Text(label,modifier=Modifier.weight(1f))
+                                        if(state.listActive(kind)) Icon(
+                                            Icons.Rounded.Check,contentDescription=null,
+                                            tint=MaterialTheme.colorScheme.primary
+                                        )
                                     }
                                 },
-                                onClick={lists=false;change(state.list(format))}
+                                onClick={lists=false;change(state.list(kind))}
                             )
                         }
                     }
+                }
+                if(state.listActive("check")) {
+                    NeoFormatAction(
+                        Icons.Rounded.CheckBox,
+                        neoLabel("تحديد أو إلغاء بند","Toggle checklist item"),
+                        action={change(state.toggleChecklist())}
+                    )
                 }
                 Box {
                     val directionIcon=when(direction) {

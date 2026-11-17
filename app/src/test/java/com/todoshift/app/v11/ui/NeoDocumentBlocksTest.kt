@@ -45,6 +45,18 @@ class NeoDocumentBlocksTest {
         assertTrue(NeoDocumentBlocks.parse(updated).any{it is NeoDocumentBlocks.Block.Table})
     }
 
+    @Test fun editingParagraphKeepsInlineImageAndAdjacentText() {
+        val name="neo-attachment-01234567-89ab-cdef-0123-456789abcdef.jpg"
+        val image=NeoDocumentBlocks.image(name,50,"center")
+        val before="عنوان\n"+image+"\nبعد الصورة"
+        val edited=NeoDocumentBlocks.replaceParagraphAt(before,0,"عنوان جديد")
+        assertEquals("عنوان جديد\n"+image+"\nبعد الصورة",edited)
+        val updated=NeoDocumentBlocks.replaceParagraphAt(edited,2,"تعديل بعد الصورة")
+        assertEquals("عنوان جديد\n"+image+"\nتعديل بعد الصورة",updated)
+        assertEquals(name,NeoDocumentBlocks.parse(updated)
+            .filterIsInstance<NeoDocumentBlocks.Block.Image>().single().name)
+    }
+
     @Test fun corruptTablesRemainPlainTextAndOversizedCellsAreRejected() {
         val malformed="| a | b |\n| -- | -- |\n| c | d |"
         assertTrue(NeoDocumentBlocks.parse(malformed)

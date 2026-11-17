@@ -44,7 +44,9 @@ class NeoAttachmentStore(private val context: Context) {
                     var n = input.read(buffer)
                     while (n >= 0) {
                         if (n > 0) out.write(buffer, 0, n)
-                        require(out.size() <= MAX_FILE) { "Attachment exceeds 4 MiB" }
+                        require(out.size() <= NeoImageOptimizer.MAX_INCOMING_IMAGE) {
+                            "Source exceeds the 16 MiB import safety limit"
+                        }
                         n = input.read(buffer)
                     }
                     out.toByteArray()
@@ -81,6 +83,11 @@ class NeoAttachmentStore(private val context: Context) {
                     }
                     else -> error("Choose a valid PNG, JPEG, PDF, M4A audio or UTF-8 text file")
                 }
+            val converted=if(mime=="image/jpeg"||mime=="image/png")
+                NeoImageOptimizer.optimize(data,mime) else data
+            require(converted.size<=MAX_FILE) {
+                "Attachment exceeds 4 MiB; choose a smaller document"
+            }
             val ext =
                 when (mime) {
                     "image/jpeg" -> "jpg"
@@ -91,7 +98,7 @@ class NeoAttachmentStore(private val context: Context) {
                 }
             require(
                 list().sumOf { File(context.filesDir, "attachments/${it.name}").length() } +
-                    data.size <= 24 * 1024 * 1024
+                    converted.size <= 24 * 1024 * 1024
             ) {
                 "Attachment backup allowance is full"
             }
@@ -101,7 +108,7 @@ class NeoAttachmentStore(private val context: Context) {
             val file = AtomicFile(File(folder, name))
             val stream = file.startWrite()
             try {
-                stream.write(data)
+                stream.write(converted)
                 file.finishWrite(stream)
             } catch (e: Exception) {
                 file.failWrite(stream)

@@ -152,6 +152,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var mediaShelfVisible by rememberSaveable {mutableStateOf(false)}
     var mediaRequest by remember {mutableStateOf<String?>(null)}
     var advancedCanvas by rememberSaveable {mutableStateOf(false)}
+    var focusedParagraph by remember {mutableStateOf<NeoRichEditorState?>(null)}
+    var commitFocusedParagraph by remember {mutableStateOf<((NeoRichEditorState)->Unit)?>(null)}
     var a4Preview by rememberSaveable {mutableStateOf(false)}
     var mediaVersion by remember {mutableIntStateOf(0)}
     val noteInputFocus=remember { FocusRequester() }
@@ -737,10 +739,25 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     onRequestHandled={mediaRequest=null},
                     onImageImported={name ->
                         insertDocumentBlock(NeoDocumentBlocks.image(name))
-                        advancedCanvas=true
+                        advancedCanvas=false
                         mediaShelfVisible=false
                     }
                 )
+                val hasDocumentBlocks=remember(noteSource()) {
+                    NeoDocumentBlocks.parse(noteSource()).any {
+                        it is NeoDocumentBlocks.Block.Image ||
+                        it is NeoDocumentBlocks.Block.Table ||
+                        it is NeoDocumentBlocks.Block.PageBreak
+                    }
+                }
+                val activeText=if(hasDocumentBlocks) focusedParagraph ?: NeoRichEditorState.open("")
+                    else rich
+                val applyToActiveText:(NeoRichEditorState)->Unit={next ->
+                    if(!closing) {
+                        if(hasDocumentBlocks) commitFocusedParagraph?.invoke(next)
+                        else editRich(next)
+                    }
+                }
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     val direction=when(noteDirection) {
                         "rtl" -> androidx.compose.ui.text.style.TextDirection.Rtl
@@ -760,7 +777,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             else androidx.compose.ui.text.style.TextDirection.Ltr
                         }
                     }
-                    if(editing && !advancedCanvas) {
+                    if(editing && !advancedCanvas && !hasDocumentBlocks) {
                         NeoRuledNoteEditor(
                             value=rich.value,
                             onValueChange={if(!closing) editRich(rich.input(it))},
@@ -787,22 +804,25 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                                 .padding(horizontal=if(a4Preview) 4.dp else 16.dp)
                         ) {
-                            if(editing && advancedCanvas) {
-                                Row(Modifier.fillMaxWidth(),verticalAlignment=
-                                    androidx.compose.ui.Alignment.CenterVertically) {
-                                    Text(neoLabel("المحرر المرئي: الجداول والصور",
-                                        "Visual blocks: tables and images"),
-                                        modifier=Modifier.weight(1f),
-                                        style=MaterialTheme.typography.labelSmall)
-                                    TextButton(onClick={advancedCanvas=false}) {
-                                        Text(neoLabel("تحرير النص","Edit text"))
-                                    }
-                                }
-                            }
                             NeoDocumentCanvas(
                                 noteId=id,
                                 source=noteSource(),
-                                editable=editing&&!closing&&!pending,
+                                editable=editing&&!closing&&!pending&&!a4Preview,
+                                inlineEditing=editing&&!a4Preview,
+                                onParagraphEdited={startLine,nextParagraph ->
+                                    if(!closing) runCatching {
+                                        NeoDocumentBlocks.replaceParagraphAt(
+                                            noteSource(),startLine,nextParagraph)
+                                    }.onSuccess {updated ->
+                                        replaceDocumentSource(updated)
+                                    }.onFailure {failure ->
+                                        error=failure.message ?: "Could not update paragraph"
+                                    }
+                                },
+                                onActiveParagraph={textState,apply ->
+                                    focusedParagraph=textState
+                                    commitFocusedParagraph=apply
+                                },
                                 onSourceChange={next ->
                                     if(!closing) replaceDocumentSource(next)
                                 },
@@ -825,10 +845,11 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     }
                 }
                 // Formatting stays at the keyboard edge; it never pushes the editor from above.
-                if(editing && !advancedCanvas) {
+                if(editing && !a4Preview) {
                     NeoNoteQuickBar(
-                        state=rich,
-                        onChange={next ->if(!closing) editRich(next)},
+                        state=activeText,
+                        enabled=!hasDocumentBlocks || focusedParagraph!=null,
+                        onChange=applyToActiveText,
                         onFormat={formatInitialTab=0;showFormatSheet=true;noteKeyboard?.hide()}
                     )
                 }
@@ -953,9 +974,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     }
                 }
                 if(showFormatSheet && editing) NeoNoteFormatSheet(
-                    state=rich,
+                    state=activeText,
                     initialTab=formatInitialTab,
-                    onChange={next->if(!closing)editRich(next)},
+                    onChange=applyToActiveText,
                     direction=noteDirection,
                     onDirectionChange={noteDirection=it},
                     ruledPaper=ruledPaper,

@@ -95,4 +95,55 @@ class AttachmentBackupTest {
         assertEquals("Untouched fixture", unknown.readText())
         assertEquals("%PDF-1.4\nFixture\n%%EOF", source.readText())
     }
+
+    @Test
+    fun recordedM4aUsesWhitelistedNameAndRestoresWithNote() {
+        val context=RuntimeEnvironment.getApplication()
+        val runtime=V11Runtime(context)
+        val before=runtime.start()
+        val note=DayItemV11("media-note","2026-11-17",type=DayItemTypeV11.NOTE,
+            title="Voice and images",details="")
+        val withNote=before.copy(dayItems=before.dayItems+note)
+        runtime.saveIfCurrent(before,withNote)
+        val root=File(context.filesDir,"attachments").apply{mkdirs()}
+        // A minimal MP4/M4A ftyp header exercises safe content recognition;
+        // playback itself is covered only by device acceptance, not Robolectric.
+        val source=File(root,"synthetic-recording.m4a")
+        source.writeBytes(byteArrayOf(0,0,0,24)+
+            "ftypM4A ".toByteArray(Charsets.US_ASCII)+
+            byteArrayOf(0,0,0,0,0,0,0,0))
+        val fileUri=FileProvider.getUriForFile(context,
+            context.packageName+".attachments",source)
+        val item=NeoAttachmentStore(context).import(note.id,fileUri)
+        assertEquals("audio/mp4",item.mime)
+        assertTrue(NeoAttachmentStore.safePath("attachments/"+item.name))
+        assertFalse(NeoAttachmentStore.safePath("attachments/../../voice.m4a"))
+        val stored=File(root,item.name)
+        val original=stored.readBytes()
+        val backup=Neo4LocalBackup(context)
+        val bytes=ByteArrayOutputStream()
+        backup.export(withNote,bytes)
+        val prepared=backup.preview(bytes.toByteArray().inputStream())
+        assertTrue(stored.delete())
+        backup.restore(prepared,prepared.token)
+        assertArrayEquals(original,stored.readBytes())
+        assertEquals(note.id,NeoAttachmentStore(context).list().single().owner)
+    }
+
+    @Test
+    fun detachingMediaPreservesPrivateFileUntilExplicitCleanup() {
+        val context=RuntimeEnvironment.getApplication()
+        val root=File(context.filesDir,"attachments").apply{mkdirs()}
+        val file=File(root,"synthetic-photo.jpg")
+        file.writeBytes(byteArrayOf(-1,-40,-1,1,2,3))
+        val store=NeoAttachmentStore(context)
+        val item=store.import("sample-note",FileProvider.getUriForFile(context,
+            context.packageName+".attachments",file))
+        val backed=File(root,item.name)
+        assertTrue(backed.isFile)
+        store.detach(item.name)
+        assertTrue(store.list().isEmpty())
+        assertTrue(backed.isFile)
+        assertTrue(item.name in store.detachedNames())
+    }
 }

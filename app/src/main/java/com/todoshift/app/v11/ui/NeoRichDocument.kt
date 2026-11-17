@@ -109,7 +109,7 @@ internal data class NeoRichEditorState(
         // Replacing it with a newly serialized AnnotatedString on every Arabic
         // keystroke can invalidate composing spans and move the cursor.
         if(next.composition!=null) {
-            val composing=next.composition
+            val composing=requireNotNull(next.composition)
             // Leave the IME-owned composing region byte-for-byte untouched.
             // Paint only previously formatted characters outside that range:
             // this prevents an earlier bold paragraph flashing as plain text

@@ -17,6 +17,9 @@ import androidx.compose.material.icons.rounded.FormatPaint
 import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Undo
+import androidx.compose.material.icons.rounded.Redo
+import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -69,6 +72,7 @@ fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V
     editorState.SaveableStateProvider(existing?.id ?: "new-note") {NeoRichNoteDialog(date, existing, expectedDatabase, calendarId, onDismiss, onSave, {editorLocked=it}, initialTitle, initialBody)}
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, onProtectionChanged:(Boolean)->Unit, initialTitle:String, initialBody:String) {
     val context=LocalContext.current
@@ -645,7 +649,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                                     val settings=V11SecurityStore(context.applicationContext).load()
                                                     if(settings.mode!=V11LockMode.NONE || settings.biometricEnabled)
                                                         locked=true
-                                                    else error=neoLabel("فعّل PIN أو البصمة أولًا",
+                                                    else error=neoLiteral("فعّل PIN أو البصمة أولًا",
                                                         "Set up PIN or biometrics first")
                                                 }
                                             })

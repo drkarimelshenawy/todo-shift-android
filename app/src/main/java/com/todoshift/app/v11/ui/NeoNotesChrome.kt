@@ -90,6 +90,7 @@ private fun NeoChromeIcon(
     }
 }
 
+@Composable
 private fun neoInkChoices()=listOf(
     neoLabel("أسود","Black") to "#222222",
     neoLabel("أحمر","Red") to "#C62828",

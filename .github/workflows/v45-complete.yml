@@ -1,8 +1,8 @@
-name: v49 Notes Pro Editor signed APK
+name: v50 Notes Quiet Editor signed APK
 
 on:
   push:
-    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117, feat/v46-notes-completion-20261117, feat/v47-notes-quick-capture-20261117, feat/v48-rich-notes-media-20261117, feat/v49-notes-pro-editor-20261117]
+    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117, feat/v46-notes-completion-20261117, feat/v47-notes-quick-capture-20261117, feat/v48-rich-notes-media-20261117, feat/v49-notes-pro-editor-20261117, feat/v50-notes-quiet-editor-20261117]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117' || github.ref == 'refs/heads/feat/v46-notes-completion-20261117' || github.ref == 'refs/heads/feat/v47-notes-quick-capture-20261117' || github.ref == 'refs/heads/feat/v48-rich-notes-media-20261117' || github.ref == 'refs/heads/feat/v49-notes-pro-editor-20261117'
+    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117' || github.ref == 'refs/heads/feat/v46-notes-completion-20261117' || github.ref == 'refs/heads/feat/v47-notes-quick-capture-20261117' || github.ref == 'refs/heads/feat/v48-rich-notes-media-20261117' || github.ref == 'refs/heads/feat/v49-notes-pro-editor-20261117' || github.ref == 'refs/heads/feat/v50-notes-quiet-editor-20261117'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -76,11 +76,11 @@ jobs:
             --tests 'com.todoshift.app.v11.NoteTransactionTest' \
             --tests 'com.todoshift.app.v11.NeoRichNoteEditingTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNavigationTest' \
-            --tests 'com.todoshift.app.v11.ui.NeoNoteTemplatesTest' \
             --tests 'com.todoshift.app.v11.NeoSmartListsTest' \
             --tests 'com.todoshift.app.v11.NeoNoteFolderStoreTest' \
             --tests 'com.todoshift.app.v11.AttachmentBackupTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteProToolsTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNoteAppearanceTest' \
             --tests 'com.todoshift.app.backup.EncryptedBackupTest' \
             --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
             --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \
@@ -114,11 +114,11 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v49-Notes-Pro.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v50-Quiet-Notes.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-v49-Notes-Pro-signed-APK
+          name: ToDoShift-v50-Quiet-Notes-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -126,17 +126,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v49-notes-pro-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v49-Notes-Pro.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v47 Quick Capture & Templates" --notes "Signed v49 Notes Pro preview: document search, outline, word count, encrypted local revisions, offline HTML/TXT export, and safe image optimization. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+          TAG="v50-quiet-notes-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v50-Quiet-Notes.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v47 Quick Capture & Templates" --notes "Signed v50 premium notes UI: quiet reading, compact formatting, configurable ruled paper and bilingual fonts, card action menus, long-press selection and select-all. Removed note templates. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v49-notes-pro-${GITHUB_SHA:0:12}"
+          TAG="v50-quiet-notes-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ToDoShift-v49-Notes-Pro.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ToDoShift-v49-Notes-Pro.apk "$RUNNER_TEMP/published/ToDoShift-v49-Notes-Pro.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v49-Notes-Pro.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ToDoShift-v50-Quiet-Notes.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v50-Quiet-Notes.apk "$RUNNER_TEMP/published/ToDoShift-v50-Quiet-Notes.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v50-Quiet-Notes.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

@@ -58,8 +58,11 @@ internal fun NeoDocumentCanvas(
     val contentColor=if(a4) Color(0xFF202126) else MaterialTheme.colorScheme.onSurface
     Column(verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
         pages.forEachIndexed {pageIndex,pageBlocks ->
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val a4Height=maxWidth*297f/210f
             Surface(
                 modifier=if(a4) Modifier.fillMaxWidth().padding(horizontal=6.dp)
+                    .heightIn(min=a4Height)
                     else Modifier.fillMaxWidth(),
                 color=background,contentColor=contentColor,
                 shadowElevation=if(a4) 3.dp else 0.dp,
@@ -71,7 +74,7 @@ internal fun NeoDocumentCanvas(
                     vertical=if(a4) 32.dp else 0.dp),
                     verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     if(a4) Text(
-                        neoLabel("معاينة A4 • صفحة ","A4 preview • page ")+(pageIndex+1),
+                        neoLabel("معاينة A4 تقريبية • صفحة ","Approximate A4 preview • page ")+(pageIndex+1),
                         style=MaterialTheme.typography.labelSmall,color=Color.Gray
                     )
                     pageBlocks.forEach {block ->
@@ -121,6 +124,7 @@ internal fun NeoDocumentCanvas(
                             color=Color.Gray)
                     }
                 }
+            }
             }
         }
     }

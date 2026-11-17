@@ -108,6 +108,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var taskSpecs by rememberSaveable { mutableStateOf(listOf<String>()) }
     var reminder by rememberSaveable { mutableStateOf(existing?.reminderAt?.let {java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(it),java.time.ZoneId.systemDefault()).toString()}.orEmpty()) }
     var preview by rememberSaveable { mutableStateOf(false) }
+    val checklistPreferences=remember(context) {
+        context.applicationContext.getSharedPreferences("neo_note_view_v46",
+            android.content.Context.MODE_PRIVATE)
+    }
+    var moveCompletedChecklistItems by rememberSaveable {
+        mutableStateOf(checklistPreferences.getBoolean("move_completed_to_end",false))
+    }
     var editing by rememberSaveable(existing?.id) { mutableStateOf(existing == null) }
     // Evaluate the localized default inside the composable scope, not inside
     // rememberSaveable's non-composable state initialization lambda.
@@ -482,6 +489,17 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         NeoRuledNoteEditor(
                             value=rich.value,
                             onValueChange={if(!closing) editRich(rich.input(it))},
+                            onChecklistToggle={line ->
+                                if(!closing && rich.value.composition==null) {
+                                    val changed=rich.toggleChecklistAtLine(line)
+                                    val formatted=changed.stored()
+                                    val rearranged=if(moveCompletedChecklistItems)
+                                        NeoSmartLists.moveCompletedToEnd(formatted)
+                                    else formatted
+                                    if(rearranged!=formatted) editRich(NeoRichEditorState.open(rearranged))
+                                    else editRich(changed)
+                                }
+                            },
                             textDirection=direction,
                             focusRequester=noteInputFocus,
                             modifier=Modifier.fillMaxSize()
@@ -503,8 +521,10 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                             if(line in rows.indices) {
                                                 val changed=NeoSmartLists.toggleChecked(rows[line])
                                                 if(changed!=rows[line]) {
-                                                    rows[line]=changed
-                                                    edit(TextFieldValue(rows.joinToString("\n")))
+                                                    val next=NeoSmartLists.toggleChecklistLine(
+                                                        body.text,line,moveCompletedChecklistItems
+                                                    )
+                                                    edit(TextFieldValue(next))
                                                 }
                                             }
                                         }
@@ -539,8 +559,25 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 Text(neoLabel("خيارات الملاحظة","Note options"),style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
                                 TextButton(onClick={options=false}) {Text(neoLabel("إغلاق","Close"))}
                             }
+                            NeoSwitch(
+                                neoLabel("نقل عناصر Checklist المكتملة إلى آخر المجموعة",
+                                    "Move completed checklist items to the end"),
+                                moveCompletedChecklistItems
+                            ) {enabled ->
+                                moveCompletedChecklistItems=enabled
+                                checklistPreferences.edit()
+                                    .putBoolean("move_completed_to_end",enabled).apply()
+                            }
+                            Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                                Text(neoLabel("المعاينة التفاعلية","Interactive preview"),
+                                    style=MaterialTheme.typography.labelSmall)
+
+                            }
             if(editing && (preview || body.text.lines().any {NeoSmartLists.parse(it)?.kind=="check"})) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
-                if(!pending) { val lines=body.text.lines().toMutableList();if(line in lines.indices) {lines[line]=NeoSmartLists.toggleChecked(lines[line]);edit(TextFieldValue(lines.joinToString("\n")))}}
+                if(!pending) {
+                    val next=NeoSmartLists.toggleChecklistLine(body.text,line,moveCompletedChecklistItems)
+                    if(next!=body.text) edit(TextFieldValue(next))
+                }
             },onCreateTask={line,label->
                 if(!pending) {val lines=body.text.lines().toMutableList()
                     val found=Regex("<!--task:([A-Za-z0-9_-]+)-->").find(lines[line])

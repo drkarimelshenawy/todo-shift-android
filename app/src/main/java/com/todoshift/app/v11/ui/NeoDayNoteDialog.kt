@@ -35,7 +35,7 @@ val LocalNeoOpenNoteTask = staticCompositionLocalOf<((String) -> Unit)?> {null}
 val LocalNeoNoteCommitted = staticCompositionLocalOf<(V11Database) -> Unit> { {} }
 
 @Composable
-fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit) {
+fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, initialTitle:String="", initialBody:String="") {
     val context = LocalContext.current
     val security = remember { V11SecurityStore(context.applicationContext) }
     val editorState=androidx.compose.runtime.saveable.rememberSaveableStateHolder()
@@ -63,11 +63,11 @@ fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V
         }
         return
     }
-    editorState.SaveableStateProvider(existing?.id ?: "new-note") {NeoRichNoteDialog(date, existing, expectedDatabase, calendarId, onDismiss, onSave) {editorLocked=it}}
+    editorState.SaveableStateProvider(existing?.id ?: "new-note") {NeoRichNoteDialog(date, existing, expectedDatabase, calendarId, onDismiss, onSave, {editorLocked=it}, initialTitle, initialBody)}
 }
 
 @Composable
-private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, onProtectionChanged:(Boolean)->Unit) {
+private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, onProtectionChanged:(Boolean)->Unit, initialTitle:String, initialBody:String) {
     val context=LocalContext.current
     val styleStore=remember { NeoSmartStore(context.applicationContext) }
     val drafts=remember { NeoNoteDraftStore(context.applicationContext) }
@@ -85,8 +85,10 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
 
     var color by rememberSaveable { mutableStateOf(styleStore.noteColor(id)) }
     var border by rememberSaveable { mutableStateOf(styleStore.snapshot().optJSONObject("noteBorders")?.optBoolean(id,false) ?: false) }
-    var title by rememberSaveable { mutableStateOf(existing?.title.orEmpty()) }
-    var body by rememberSaveable(stateSaver=TextFieldValue.Saver) { mutableStateOf(TextFieldValue(existing?.details.orEmpty())) }
+    var title by rememberSaveable { mutableStateOf(existing?.title ?: initialTitle.take(300)) }
+    var body by rememberSaveable(stateSaver=TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(existing?.details ?: initialBody.take(16_000)))
+    }
     var tags by rememberSaveable { mutableStateOf(existing?.noteTags.orEmpty()) }
     var pinned by rememberSaveable { mutableStateOf(existing?.notePinned ?: false) }
     var archived by rememberSaveable { mutableStateOf(existing?.noteArchived ?: false) }

@@ -314,6 +314,7 @@ fun V11Home(
     }
     var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction ?: if (NeoLaunchPreferences(context).openNotes) "notes" else null) }
     var pendingTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
+    var pendingSharedNoteText by rememberSaveable { mutableStateOf<String?>(null) }
     var temporaryFocus by remember { mutableStateOf(false) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
     var calendarActionId by remember { mutableIntStateOf(0) }
@@ -388,6 +389,7 @@ fun V11Home(
             }
             pendingTaskAction = request.taskAction
             pendingTaskId = request.taskId
+            pendingSharedNoteText = request.sharedNoteText
             calendarAction = null
         }
     }
@@ -1066,9 +1068,11 @@ fun V11Home(
                                             workplaces = oldData.workplaces,
                                             initialAction = pendingTaskAction,
                                             initialTaskId = pendingTaskId,
+                                            initialSharedNoteText = pendingSharedNoteText,
                                             onInitialActionHandled = {
                                                 pendingTaskAction = null
                                                 pendingTaskId = null
+                                                pendingSharedNoteText = null
                                             },
                                             onDatabaseChange = { saveDb(it) },
                                         )

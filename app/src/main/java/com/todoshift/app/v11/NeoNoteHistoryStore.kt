@@ -61,9 +61,9 @@ internal class NeoNoteHistoryStore(context: Context) {
      * backup, and never written to an unencrypted portable archive.
      */
     fun portableSnapshot(eligibleIds:Collection<String>):JSONObject = synchronized(monitor) {
-        require(eligibleIds.size<=MAX_PORTABLE_NOTES && eligibleIds.all {
-            it.isNotBlank() && it.length<=200
-        }) {"Too many eligible notes for portable history"}
+        require(eligibleIds.all {it.isNotBlank() && it.length<=200})
+        // An app may contain thousands of notes; only nonempty histories
+        // consume one of the bounded portable-history slots.
         val notes=JSONArray()
         eligibleIds.distinct().forEach {id ->
             val history=revisions(id)
@@ -73,6 +73,9 @@ internal class NeoNoteHistoryStore(context: Context) {
                 history.forEach {item ->
                     versions.put(JSONObject().put("savedAt",item.savedAt)
                         .put("title",item.title).put("details",item.details))
+                }
+                require(notes.length()<MAX_PORTABLE_NOTES) {
+                    "Too many note histories for this encrypted backup"
                 }
                 notes.put(entry.put("revisions",versions))
             }

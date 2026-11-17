@@ -32,3 +32,4 @@ class NeoNoteToolVisibilityTest {
         assertFalse(state.showFormatting)
         assertTrue(state.showDocumentTools)
     }
+}

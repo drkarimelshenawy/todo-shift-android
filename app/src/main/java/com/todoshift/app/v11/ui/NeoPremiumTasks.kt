@@ -276,6 +276,24 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     )
                 }
                 HorizontalDivider()
+                Text(neoLabel("مجلدات الملاحظات","Note folders"),style=MaterialTheme.typography.titleSmall)
+                TextButton(onClick={editingFolderId=null;folderName="";editFolderDialog=true}) {
+                    Icon(Icons.Rounded.CreateNewFolder,contentDescription=null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(neoLabel("مجلد جديد","New folder"))
+                }
+                noteFolders.forEach { folder ->
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        Text(folder.name,modifier=Modifier.weight(1f))
+                        IconButton(onClick={editingFolderId=folder.id;folderName=folder.name;editFolderDialog=true}) {
+                            Icon(Icons.Rounded.Edit,neoLabel("تعديل المجلد","Rename folder"))
+                        }
+                        IconButton(onClick={deleteFolderId=folder.id}) {
+                            Icon(Icons.Rounded.DeleteOutline,neoLabel("حذف المجلد","Delete folder"))
+                        }
+                    }
+                }
+                HorizontalDivider()
                 Text(neoLabel("الترتيب حسب","Sort by"),style=MaterialTheme.typography.titleSmall)
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     listOf(
@@ -466,6 +484,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     containerColor=MaterialTheme.colorScheme.error
                                 )
                             ) {Text(neoLabel("حذف","Delete"))}
+                            TextButton(enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
+                                onClick={moveNotesDialog=true}) {Text(neoLabel("نقل لمجلد","Move to folder"))}
                             TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {
                                 Text(neoLabel("إلغاء","Cancel"))
                             }

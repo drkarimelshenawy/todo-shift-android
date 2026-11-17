@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FormatPaint
+import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -127,6 +128,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var floatingFormat by rememberSaveable { mutableStateOf(false) }
     var noteMoreMenu by remember { mutableStateOf(false) }
     var paperPaletteOpen by remember { mutableStateOf(false) }
+    var mediaShelfVisible by rememberSaveable {mutableStateOf(false)}
+    var mediaVersion by remember {mutableIntStateOf(0)}
     val noteInputFocus=remember { FocusRequester() }
     val noteKeyboard=LocalSoftwareKeyboardController.current
     var options by rememberSaveable { mutableStateOf(false) }
@@ -202,12 +205,19 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             draftReady=error==null
         } catch(failure: Exception) { error="Unable to recover note draft: ${failure.message}" }
     }
-    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks)).toString()
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
         while(pending) delay(10)
         if(rootWritePending || !draftReady || conflictingDraft!=null) return false
         if(!close && lastSavedEdit==editVersion()) return true
-        if(title.isBlank() && noteSource().isBlank() && expected.dayItems.none {it.id==id}) {if(close) onDismiss();return true}
+        val hasMedia=withContext(Dispatchers.IO) {
+            NeoAttachmentStore(context.applicationContext).list().any {it.owner==id}
+        }
+        if(title.isBlank() && noteSource().isBlank() && !hasMedia &&
+            expected.dayItems.none {it.id==id}) {
+            if(close) onDismiss()
+            return true
+        }
         if(!color.matches(Regex("#[0-9a-fA-F]{6}")) || (background.isNotBlank() && !background.matches(Regex("#[0-9a-fA-F]{6}")))) {
             error="اختر لونًا صحيحًا / Choose a valid color";return false
         }
@@ -250,7 +260,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }
       } catch(_:Exception) {error="تعذر حفظ المسودة؛ لن تُحذف التعديلات / Draft save failed; edits retained"}
     }
-    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending) {
+    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
@@ -371,6 +381,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
+                    IconButton(modifier=Modifier.size(44.dp),onClick={
+                        mediaShelfVisible=!mediaShelfVisible
+                        noteKeyboard?.hide()
+                    }) {
+                        Icon(androidx.compose.material.icons.Icons.Rounded.AttachFile,
+                            neoLabel("صور وصوت ومرفقات","Images, audio and attachments"))
+                    }
                     // Different, accessible actions: edit pencil when reading, format when editing.
                     IconButton(
                         modifier=Modifier.size(44.dp),
@@ -419,6 +436,10 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 onClick={noteMoreMenu=false;pinned=!pinned}
                             )
                             DropdownMenuItem(
+                                text={Text(neoLabel("إدراج الصور والصوت والملفات","Images, voice and files"))},
+                                onClick={noteMoreMenu=false;mediaShelfVisible=true;noteKeyboard?.hide()}
+                            )
+                            DropdownMenuItem(
                                 text={Text(neoLabel("المزيد من الخيارات","More note options"))},
                                 onClick={noteMoreMenu=false;noteKeyboard?.hide();editing=true;options=true;floatingFormat=false}
                             )
@@ -449,6 +470,15 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     Text(if(editing) neoLabel("تعديل","Editing") else neoLabel("قراءة","Viewing"),style=MaterialTheme.typography.labelSmall)
                     Text(date.toString(),style=MaterialTheme.typography.labelSmall)
                 }
+                if(mediaShelfVisible) NeoNoteMediaSection(
+                    noteId=id,
+                    editable=editing&&!pending&&!closing&&!rootWritePending,
+                    onChanged={
+                        expectedMetadata=styleStore.snapshot().toString()
+                        mediaVersion++
+                    },
+                    onError={reason -> error=reason}
+                )
                 // Two dense, discoverable rows; always above the editor and soft keyboard.
                 if(editing && floatingFormat) {
                     Surface(

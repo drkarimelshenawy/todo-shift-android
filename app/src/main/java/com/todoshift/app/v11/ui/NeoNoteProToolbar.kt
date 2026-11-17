@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
  * Compact document navigator: search, heading outline and encrypted revisions.
  * Does not rewrite the active document while searching or counting.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NeoNoteProToolbar(
     noteId:String,
@@ -124,7 +125,7 @@ internal fun NeoNoteProToolbar(
         onJump(current.start,current.end)
     }
     Column(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=1.dp)) {
-        if(showToolbar||exportOpen) Row(verticalAlignment=Alignment.CenterVertically,
+        if(showToolbar) Row(verticalAlignment=Alignment.CenterVertically,
             horizontalArrangement=Arrangement.spacedBy(3.dp)) {
             if(showToolbar) Text(neoLabel(stats.words.toString()+" كلمة • "+
                     stats.characters+" حرف",stats.words.toString()+" words • "+
@@ -233,6 +234,38 @@ internal fun NeoNoteProToolbar(
         }
     }
 
+    // The no-toolbar mode uses a labeled export sheet. A DropdownMenu anchored
+    // to a hidden zero-width icon is both confusing and hard to reach.
+    if(exportOpen && !showToolbar) {
+        ModalBottomSheet(onDismissRequest={exportOpen=false}) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal=18.dp,vertical=8.dp),
+                verticalArrangement=Arrangement.spacedBy(5.dp)
+            ) {
+                Text(neoLabel("مشاركة وتصدير","Share & export"),
+                    style=MaterialTheme.typography.titleLarge)
+                NeoNoteExportAction(neoLabel("Word DOCX — قابل للتحرير","Editable Word DOCX")) {
+                    exportOpen=false;docxLauncher.launch(exportName+".docx")
+                }
+                NeoNoteExportAction(neoLabel("PDF — صفحات A4","PDF — A4 pages")) {
+                    exportOpen=false;pdfLauncher.launch(exportName+".pdf")
+                }
+                NeoNoteExportAction(neoLabel("طباعة","Print")) {
+                    exportOpen=false
+                    runCatching {NeoDocumentPrinter.print(context,noteId,title,source)}
+                        .onFailure {onError(it.message ?: "Print unavailable")}
+                }
+                NeoNoteExportAction(neoLabel("HTML منسّق","Styled HTML")) {
+                    exportOpen=false;htmlLauncher.launch(exportName+".html")
+                }
+                NeoNoteExportAction(neoLabel("نص عادي TXT","Plain TXT")) {
+                    exportOpen=false;textLauncher.launch(exportName+".txt")
+                }
+                Spacer(Modifier.height(18.dp))
+            }
+        }
+    }
+
     if(outlineOpen) AlertDialog(
         onDismissRequest={outlineOpen=false},
         title={Text(neoLabel("فهرس العناوين","Document outline"))},
@@ -301,5 +334,16 @@ internal fun NeoNoteProToolbar(
                 Text(neoLabel("إلغاء","Cancel"))
             }}
         )
+    }
+}
+
+
+@Composable
+private fun NeoNoteExportAction(label:String,onClick:()->Unit) {
+    Surface(onClick=onClick,modifier=Modifier.fillMaxWidth(),
+        shape=MaterialTheme.shapes.small) {
+        Text(label,modifier=Modifier.fillMaxWidth()
+            .padding(horizontal=14.dp,vertical=12.dp),
+            style=MaterialTheme.typography.bodyLarge)
     }
 }

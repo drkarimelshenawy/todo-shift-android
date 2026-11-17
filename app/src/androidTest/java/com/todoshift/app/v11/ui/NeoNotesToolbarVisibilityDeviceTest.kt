@@ -9,6 +9,9 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
+import android.view.KeyEvent
+import kotlin.math.roundToInt
 import com.todoshift.app.v11.V11Database
 import java.io.File
 import java.io.FileOutputStream
@@ -70,8 +73,16 @@ class NeoNotesToolbarVisibilityDeviceTest {
         }
         val closedBottom=rule.onNodeWithTag("notes_quick_bar")
             .fetchSemanticsNode().boundsInWindow.bottom
-        rule.onNodeWithTag("notes_body_input").performClick()
-        rule.onNodeWithTag("notes_body_input").performTextInput("اختبار")
+        // Compose performTextInput injects through test APIs and may leave the
+        // actual Android IME hidden. Use genuine device taps instead.
+        val field=rule.onNodeWithTag("notes_body_input")
+            .fetchSemanticsNode().boundsInWindow
+        val x=(field.right-65f).roundToInt()
+        val y=(field.top+45f).roundToInt()
+        val device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        assertTrue("Real input tap failed",device.click(x,y))
+        rule.waitForIdle()
+        device.pressKeyCode(KeyEvent.KEYCODE_A)
         // Text entry alone does not prove that the software keyboard opened.
         // Require the real toolbar to rise above the newly shown IME.
         val moved=runCatching {

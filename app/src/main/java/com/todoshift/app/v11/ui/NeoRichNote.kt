@@ -5,6 +5,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -52,105 +55,168 @@ internal fun NeoNoteFormatting(
     undo:()->Unit,redo:()->Unit,canUndo:Boolean,canRedo:Boolean,
     direction:String="auto",onDirectionChange:(String)->Unit={}
 ) {
-    var sizes by androidx.compose.runtime.remember{androidx.compose.runtime.mutableStateOf(false)}
-    var lists by androidx.compose.runtime.remember{androidx.compose.runtime.mutableStateOf(false)}
-    var directions by androidx.compose.runtime.remember{androidx.compose.runtime.mutableStateOf(false)}
-    var colors by androidx.compose.runtime.remember{androidx.compose.runtime.mutableStateOf(false)}
+    var sizes by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var lists by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var directions by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var colors by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val effective=state.effective()
+    // The controls deliberately keep a stable left-to-right order in both
+    // locales. The writing direction is controlled separately by the editor.
     androidx.compose.runtime.CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        Column(Modifier.fillMaxWidth()) {
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-                listOf("B" to "bold","I" to "italic","U̲" to "underline","S̶" to "strike")
-                    .forEach { (symbol,mark) ->
-                        val selected=state.active(mark)
-                        NeoFormatAction(symbol,selected=selected,
-                            description=mark,action={change(state.toggle(mark))},
-                            modifier=Modifier.weight(1f))
-                    }
-                Box(Modifier.weight(1.25f)) {
-                    val selected=state.effective().size!=null
+        Column(
+            Modifier.fillMaxWidth().padding(vertical=4.dp),
+            verticalArrangement=Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                    .padding(horizontal=8.dp),
+                horizontalArrangement=Arrangement.spacedBy(6.dp),
+                verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                NeoFormatAction(
+                    Icons.Rounded.FormatBold,neoLabel("عريض","Bold"),
+                    selected=state.active("bold"),
+                    action={change(state.toggle("bold"))}
+                )
+                NeoFormatAction(
+                    Icons.Rounded.FormatItalic,neoLabel("مائل","Italic"),
+                    selected=state.active("italic"),
+                    action={change(state.toggle("italic"))}
+                )
+                NeoFormatAction(
+                    Icons.Rounded.FormatUnderlined,neoLabel("تحته خط","Underline"),
+                    selected=state.active("underline"),
+                    action={change(state.toggle("underline"))}
+                )
+                NeoFormatAction(
+                    Icons.Rounded.FormatStrikethrough,neoLabel("يتوسطه خط","Strikethrough"),
+                    selected=state.active("strike"),
+                    action={change(state.toggle("strike"))}
+                )
+                VerticalDivider(Modifier.height(28.dp).padding(horizontal=2.dp))
+                Box {
                     NeoFormatAction(
-                        (state.effective().size?.toString() ?: "Aa")+"⌄",
-                        selected=selected,
+                        icon=Icons.Rounded.FormatSize,
                         description=neoLabel("حجم الخط","Font size"),
+                        modifier=Modifier.width(90.dp),
+                        selected=effective.size!=null,
+                        badge=effective.size?.toString() ?: "Aa",
                         action={sizes=true}
                     )
                     DropdownMenu(expanded=sizes,onDismissRequest={sizes=false}) {
                         listOf(14,16,18,20,24,28).forEach {points ->
-                            DropdownMenuItem(text={Text("$points sp",fontSize=points.sp)},
-                                onClick={sizes=false;change(state.fontSize(points))})
+                            DropdownMenuItem(
+                                text={Text("$points sp",fontSize=points.sp)},
+                                onClick={sizes=false;change(state.fontSize(points))}
+                            )
                         }
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-                Box(Modifier.weight(1f)) {
-                    NeoFormatAction("≡",description=neoLabel("قوائم وترقيم","Lists"),
-                        action={lists=true})
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                    .padding(horizontal=8.dp),
+                horizontalArrangement=Arrangement.spacedBy(6.dp),
+                verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Box {
+                    NeoFormatAction(
+                        Icons.Rounded.FormatListBulleted,
+                        neoLabel("القوائم والترقيم","Bullets and numbering"),
+                        action={lists=true}
+                    )
                     DropdownMenu(expanded=lists,onDismissRequest={lists=false}) {
-                        listOf("•" to "- ","☐" to "- [ ] ","1." to "1. ","A." to "A. ")
-                            .forEach {(label,marker) ->
-                                DropdownMenuItem(text={Text(label)},onClick={
-                                    lists=false;change(state.list(marker))
-                                })
-                            }
+                        listOf(
+                            Triple(neoLabel("قائمة نقطية","Bulleted list"),"•","- "),
+                            Triple(neoLabel("قائمة مهام","Checklist"),"☐","- [ ] "),
+                            Triple(neoLabel("قائمة مرقمة","Numbered list"),"1.","1. "),
+                            Triple(neoLabel("قائمة بالحروف","Lettered list"),"A.","A. ")
+                        ).forEach {(label,marker,format) ->
+                            DropdownMenuItem(
+                                text={
+                                    Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                                        Text(marker)
+                                        Text(label)
+                                    }
+                                },
+                                onClick={lists=false;change(state.list(format))}
+                            )
+                        }
                     }
                 }
-                Box(Modifier.weight(1f)) {
+                Box {
+                    val directionIcon=when(direction) {
+                        "rtl" -> Icons.Rounded.FormatTextdirectionRToL
+                        "ltr" -> Icons.Rounded.FormatTextdirectionLToR
+                        else -> Icons.Rounded.SwapHoriz
+                    }
                     NeoFormatAction(
-                        if(direction=="rtl") "⇤" else if(direction=="ltr") "⇥" else "⇄",
-                        description=neoLabel("اتجاه الكتابة","Text direction"),
+                        directionIcon,neoLabel("اتجاه الكتابة","Text direction"),
+                        selected=direction!="auto",
                         action={directions=true}
                     )
                     DropdownMenu(expanded=directions,onDismissRequest={directions=false}) {
-                        listOf("auto" to "Auto","rtl" to "RTL","ltr" to "LTR")
-                            .forEach {(key,label) ->
-                                DropdownMenuItem(
-                                    text={Text(label+(if(direction==key)" ✓" else ""))},
-                                    onClick={directions=false;onDirectionChange(key)}
-                                )
-                            }
-                    }
-                }
-                Box(Modifier.weight(1f)) {
-                    val hex=state.effective().color
-                    val chipColor=hex?.let{
-                        runCatching{Color(android.graphics.Color.parseColor(it))}.getOrNull()
-                    } ?: MaterialTheme.colorScheme.primary
-                    Surface(
-                        onClick={colors=true},
-                        modifier=Modifier.fillMaxWidth().height(42.dp),
-                        shape=androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
-                        color=MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.32f)
-                    ) {
-                        Box(Modifier.fillMaxSize(),contentAlignment=androidx.compose.ui.Alignment.Center) {
-                            Surface(
-                                modifier=Modifier.size(18.dp),
-                                shape=androidx.compose.foundation.shape.CircleShape,
-                                color=chipColor
-                            ) {}
+                        listOf(
+                            "auto" to neoLabel("تلقائي","Automatic"),
+                            "rtl" to neoLabel("من اليمين إلى اليسار","Right to left"),
+                            "ltr" to neoLabel("من اليسار إلى اليمين","Left to right")
+                        ).forEach {(key,label) ->
+                            DropdownMenuItem(
+                                text={Text(label+(if(direction==key)" ✓" else ""))},
+                                onClick={directions=false;onDirectionChange(key)}
+                            )
                         }
                     }
+                }
+                Box {
+                    val currentColor=effective.color?.let {
+                        runCatching {Color(android.graphics.Color.parseColor(it))}.getOrNull()
+                    } ?: MaterialTheme.colorScheme.primary
+                    NeoFormatAction(
+                        Icons.Rounded.FormatColorText,neoLabel("لون الخط","Text color"),
+                        selected=effective.color!=null,
+                        iconTint=currentColor,
+                        action={colors=true}
+                    )
                     DropdownMenu(expanded=colors,onDismissRequest={colors=false}) {
-                        listOf("أحمر" to "#C62828","أزرق" to "#1565C0",
-                            "أخضر" to "#2E7D32","ذهبي" to "#9B6A12",
-                            "بنفسجي" to "#7B1FA2","أسود" to "#222222")
-                            .forEach {(label,color) ->
-                                DropdownMenuItem(
-                                    text={Row(horizontalArrangement=Arrangement.spacedBy(9.dp)){
-                                        Text("●",color=Color(android.graphics.Color.parseColor(color)))
+                        listOf(
+                            neoLabel("أحمر","Red") to "#C62828",
+                            neoLabel("أزرق","Blue") to "#1565C0",
+                            neoLabel("أخضر","Green") to "#2E7D32",
+                            neoLabel("ذهبي","Gold") to "#9B6A12",
+                            neoLabel("بنفسجي","Purple") to "#7B1FA2",
+                            neoLabel("أسود","Black") to "#222222"
+                        ).forEach {(label,hex) ->
+                            DropdownMenuItem(
+                                text={
+                                    Row(
+                                        verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
+                                        horizontalArrangement=Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Surface(
+                                            modifier=Modifier.size(16.dp),
+                                            shape=androidx.compose.foundation.shape.CircleShape,
+                                            color=Color(android.graphics.Color.parseColor(hex))
+                                        ) {}
                                         Text(label)
-                                    }},
-                                    onClick={colors=false;change(state.ink(color))}
-                                )
-                            }
+                                    }
+                                },
+                                onClick={colors=false;change(state.ink(hex))}
+                            )
+                        }
                     }
                 }
-                NeoFormatAction("↶",description=neoLabel("تراجع","Undo"),
-                    enabled=canUndo,action=undo,modifier=Modifier.weight(1f))
-                NeoFormatAction("↷",description=neoLabel("إعادة","Redo"),
-                    enabled=canRedo,action=redo,modifier=Modifier.weight(1f))
+                VerticalDivider(Modifier.height(28.dp).padding(horizontal=2.dp))
+                NeoFormatAction(
+                    Icons.Rounded.Undo,neoLabel("تراجع","Undo"),
+                    enabled=canUndo,action=undo
+                )
+                NeoFormatAction(
+                    Icons.Rounded.Redo,neoLabel("إعادة","Redo"),
+                    enabled=canRedo,action=redo
+                )
             }
         }
     }
@@ -158,30 +224,55 @@ internal fun NeoNoteFormatting(
 
 @Composable
 private fun NeoFormatAction(
-    symbol:String,
+    icon:androidx.compose.ui.graphics.vector.ImageVector,
     description:String,
-    modifier:Modifier=Modifier,
+    modifier:Modifier=Modifier.size(48.dp),
     selected:Boolean=false,
     enabled:Boolean=true,
+    badge:String?=null,
+    iconTint:Color?=null,
     action:()->Unit
 ) {
+    val selectionDescription=if(selected) neoLabel("مفعّل","On") else neoLabel("غير مفعّل","Off")
     Surface(
-        onClick=action,enabled=enabled,
-        modifier=modifier.fillMaxWidth().height(42.dp)
-            .semantics {contentDescription=description},
-        shape=androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+        onClick=action,
+        enabled=enabled,
+        modifier=modifier.height(48.dp).semantics {
+            contentDescription=description
+            stateDescription=selectionDescription
+        },
+        shape=androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
         color=if(selected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.32f),
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.55f),
         border=if(selected) androidx.compose.foundation.BorderStroke(
-            1.5.dp,MaterialTheme.colorScheme.primary
+            1.dp,MaterialTheme.colorScheme.primary
         ) else null
     ) {
-        Box(Modifier.fillMaxSize(),contentAlignment=androidx.compose.ui.Alignment.Center) {
-            Text(symbol,style=MaterialTheme.typography.titleMedium,
-                fontWeight=if(symbol=="B") FontWeight.Bold else FontWeight.Medium,
-                maxLines=1,
-                color=if(selected) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(enabled) 1f else 0.35f))
+        Row(
+            Modifier.fillMaxSize().padding(horizontal=5.dp),
+            horizontalArrangement=Arrangement.Center,
+            verticalAlignment=androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector=icon,
+                contentDescription=null,
+                modifier=Modifier.size(22.dp),
+                tint=iconTint ?: if(selected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(enabled) 1f else 0.35f)
+            )
+            if(badge!=null) {
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    badge,fontSize=12.sp,
+                    color=if(selected) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(
+                    Icons.Rounded.ArrowDropDown,
+                    contentDescription=null,
+                    modifier=Modifier.size(14.dp)
+                )
+            }
         }
     }
 }

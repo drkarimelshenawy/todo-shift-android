@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 58,
-  "versionName": "4.16.0-premium-v54-protected-history",
-  "branch": "feat/v54-history-backup-20261117",
-  "baseline": "8be3cbe0e656404edb29d853e99750ba74597117",
-  "classification": "PERSISTENT-SIGNED v54 PROTECTED HISTORY — physical-device acceptance pending"
+  "versionCode": 59,
+  "versionName": "4.17.0-premium-v55-progressive-notes",
+  "branch": "feat/v55-notes-progressive-tools-20261117",
+  "baseline": "5ead46f5070bb58d64d94cf36e35708a23b04b5b",
+  "classification": "PERSISTENT-SIGNED v55 PROGRESSIVE NOTES — physical-device acceptance pending"
 }

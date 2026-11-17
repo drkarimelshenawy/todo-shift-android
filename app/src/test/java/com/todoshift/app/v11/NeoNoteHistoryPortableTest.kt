@@ -16,7 +16,7 @@ import java.util.zip.ZipInputStream
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28])
 class NeoNoteHistoryPortableTest {
-    private val context get()=RuntimeEnvironment.getApplication<android.content.Context>()
+    private val context get()=RuntimeEnvironment.getApplication()
 
     @Test fun portableHistoryIsBoundedValidatedAndMergeIdempotent() {
         val store=NeoNoteHistoryStore(context)
@@ -94,6 +94,6 @@ class NeoNoteHistoryPortableTest {
             "Private historical content"))
         val decoded=backup.preview(ciphertext.inputStream(),secret)
         assertTrue("data/note-history-v54.json" in entries(decoded.bytes))
-        assertEquals(NeoNoteHistoryStore(context).revisions(id).size,2-1)
+        assertEquals(1,NeoNoteHistoryStore(context).revisions(id).size)
     }
 }

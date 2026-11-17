@@ -60,7 +60,9 @@ class NeoNoteAppearanceTest {
             NeoSmartStore.validate(invalid)
             fail("Unrecognized font must be rejected")
         } catch(_:IllegalArgumentException) {}
-        assertTrue(NeoNotePresentation.FONT_KEYS.size==4)
+        assertTrue(NeoNotePresentation.FONT_KEYS.containsAll(
+            setOf("system","sans","serif","mono","amiri","tajawal",
+                "reem","montserrat","lora","oswald")))
     }
 
     @Test fun bilingualFontsPreserveIdentityOffsetsAndExistingMarkupSpans() {

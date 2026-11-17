@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 60,
-  "versionName": "4.18.0-premium-v56-notes-rehab",
-  "branch": "feat/v56-notes-editor-rehab-20261117",
-  "baseline": "c4c572954faab246e25642f8f822f36ef524037a",
-  "classification": "PERSISTENT-SIGNED v56 NOTES UX REHAB — physical-device acceptance pending"
+  "versionCode": 61,
+  "versionName": "4.19.0-premium-v57-notes-stability",
+  "branch": "feat/v57-notes-ux-stability-20261117",
+  "baseline": "64a581be048f7c320dfad0987df0996a4d490457",
+  "classification": "PERSISTENT-SIGNED v57 NOTES STABILITY — physical-device acceptance pending"
 }

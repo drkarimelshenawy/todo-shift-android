@@ -242,8 +242,8 @@ internal fun NeoNoteProToolbar(
             Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement=Arrangement.spacedBy(4.dp)) {
                 Text(neoLabel(
-                    "نسخ محلية مشفّرة حتى 12 إصدارًا. السجل غير مضمن بعد في النسخ الاحتياطية المنقولة بين الأجهزة.",
-                    "Up to 12 locally encrypted versions. History is not yet included in portable backups."),
+                    "سجل مشفّر حتى 12 إصدارًا. يُدرج في النسخة الاحتياطية المحمية بكلمة مرور فقط.",
+                    "Up to 12 encrypted revisions. Included only in password-protected backups."),
                     style=MaterialTheme.typography.bodySmall)
                 if(revisions.isEmpty()) Text(neoLabel("لا توجد نسخ سابقة",
                     "No previous versions yet"))

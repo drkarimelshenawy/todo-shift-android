@@ -594,8 +594,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 onClick={noteMoreMenu=false;appearanceOpen=true;noteKeyboard?.hide()}
                             )
                             DropdownMenuItem(
-                                text={Text(neoLabel("أدوات المستند","Document tools"))},
-                                onClick={noteMoreMenu=false;documentToolsOpen=!documentToolsOpen;noteKeyboard?.hide()}
+                                text={Text(if(documentToolsOpen)
+                                    neoLabel("إخفاء الأدوات المتقدمة","Hide advanced tools")
+                                    else neoLabel("أدوات متقدمة","Advanced tools"))},
+                                onClick={
+                                    noteMoreMenu=false
+                                    documentToolsOpen=!documentToolsOpen
+                                    if(documentToolsOpen && editing) floatingFormat=true
+                                }
                             )
 
                             DropdownMenuItem(
@@ -655,7 +661,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         }
                     }
                 }
-                if(documentToolsOpen) NeoNoteProToolbar(
+                val toolVisibility=neoNoteToolVisibility(
+                    editing=editing,
+                    hasTextSelection=rich.value.selection.min!=rich.value.selection.max,
+                    formattingRequested=floatingFormat,
+                    advancedRequested=documentToolsOpen
+                )
+                if(toolVisibility.showDocumentTools) NeoNoteProToolbar(
                     noteId=id,document=rich.value.text,
                     source=noteSource(),title=title,
                     onJump={start,end ->
@@ -690,6 +702,34 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     },
                     onError={error=it}
                 )
+                if(toolVisibility.showDocumentTools && editing) {
+                    Row(
+                        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                            .padding(horizontal=10.dp),
+                        horizontalArrangement=Arrangement.spacedBy(6.dp)
+                    ) {
+                        TextButton(onClick={
+                            if(advancedCanvas) {
+                                advancedCanvas=false
+                                a4Preview=false
+                            } else advancedCanvas=true
+                            noteKeyboard?.hide()
+                        }) {
+                            Text(if(advancedCanvas)
+                                neoLabel("العودة للكتابة","Back to writing")
+                                else neoLabel("تحرير الجداول والصور","Visual blocks"))
+                        }
+                        TextButton(onClick={
+                            a4Preview=!a4Preview
+                            if(a4Preview) advancedCanvas=true
+                            noteKeyboard?.hide()
+                        }) {
+                            Text(if(a4Preview)
+                                neoLabel("إلغاء معاينة A4","Exit A4 preview")
+                                else neoLabel("معاينة A4","A4 preview"))
+                        }
+                    }
+                }
                 if(mediaShelfVisible) NeoNoteMediaSection(
                     noteId=id,
                     editable=editing&&!pending&&!closing&&!rootWritePending,
@@ -707,7 +747,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     }
                 )
                 // Two dense, discoverable rows; always above the editor and soft keyboard.
-                if(editing && floatingFormat) {
+                if(toolVisibility.showFormatting) {
                     Surface(
                         modifier=Modifier.fillMaxWidth().padding(horizontal=8.dp,vertical=2.dp),
                         shape=androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
@@ -721,7 +761,12 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             canUndo=undo.isNotEmpty()&&!closing,
                             canRedo=redo.isNotEmpty()&&!closing,
                             direction=noteDirection,
-                            onDirectionChange={noteDirection=it;noteInputFocus.requestFocus()}
+                            onDirectionChange={noteDirection=it;noteInputFocus.requestFocus()},
+                            expanded=documentToolsOpen,
+                            onExpandedChange={enabled ->
+                                documentToolsOpen=enabled
+                                if(enabled) floatingFormat=true
+                            }
                         )
                     }
                 }

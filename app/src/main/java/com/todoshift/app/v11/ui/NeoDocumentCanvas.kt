@@ -3,6 +3,8 @@ package com.todoshift.app.v11.ui
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -19,6 +21,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.NeoAttachmentStore
@@ -43,7 +50,10 @@ internal fun NeoDocumentCanvas(
     ruled:Boolean=false,
     arabicFont:String="system",
     englishFont:String="system",
-    a4:Boolean=false
+    a4:Boolean=false,
+    inlineEditing:Boolean=false,
+    onParagraphEdited:((Int,String)->Unit)?=null,
+    onActiveParagraph:((NeoRichEditorState,(NeoRichEditorState)->Unit)->Unit)?=null
 ) {
     val blocks=remember(source){NeoDocumentBlocks.parse(source)}
     val pages=remember(blocks) {
@@ -80,7 +90,16 @@ internal fun NeoDocumentCanvas(
                     pageBlocks.forEach {block ->
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {
-                                SelectionContainer {
+                                if(inlineEditing && editable && !a4 && onParagraphEdited!=null) {
+                                    NeoEditableDocumentParagraph(
+                                        noteId=noteId,block=block,
+                                        direction=textDirection,ruled=ruled,
+                                        arabicFont=arabicFont,englishFont=englishFont,
+                                        onEdited=onParagraphEdited,
+                                        onActivated=onActiveParagraph,
+                                        onError=onError
+                                    )
+                                } else SelectionContainer {
                                     NeoNotePreview(block.source,
                                         textDirection=textDirection,
                                         ruled=ruled,arabicFont=arabicFont,
@@ -127,6 +146,65 @@ internal fun NeoDocumentCanvas(
             }
             }
         }
+    }
+}
+
+/**
+ * Each editable paragraph is a rich-text field in the same document flow as
+ * images and tables. The serialized [[neo-image:...]] handle is never an
+ * editable text row, but remains in the original source for backup/history.
+ */
+@Composable
+private fun NeoEditableDocumentParagraph(
+    noteId:String,
+    block:NeoDocumentBlocks.Block.Paragraph,
+    direction:TextDirection,
+    ruled:Boolean,
+    arabicFont:String,
+    englishFont:String,
+    onEdited:(Int,String)->Unit,
+    onActivated:((NeoRichEditorState,(NeoRichEditorState)->Unit)->Unit)?,
+    onError:(String)->Unit
+) {
+    var state by remember(noteId,block.startLine) {
+        mutableStateOf(NeoRichEditorState.open(block.source))
+    }
+    var focused by remember(noteId,block.startLine) {mutableStateOf(false)}
+    val edited by rememberUpdatedState(onEdited)
+    val activated by rememberUpdatedState(onActivated)
+    val errors by rememberUpdatedState(onError)
+    fun apply(next:NeoRichEditorState) {
+        state=next
+        // Do not serialize a half-composed Arabic word while IME is active.
+        if(next.value.composition==null) runCatching {
+            edited(block.startLine,next.stored())
+        }.onFailure {errors(it.message ?: "Could not save paragraph")}
+    }
+    LaunchedEffect(block.source) {
+        if(state.value.composition==null && state.stored()!=block.source)
+            state=NeoRichEditorState.open(block.source)
+    }
+    LaunchedEffect(focused,state) {
+        if(focused) activated?.invoke(state) {updated ->apply(updated)}
+    }
+    val rtl=direction!=TextDirection.Ltr
+    CompositionLocalProvider(LocalLayoutDirection provides
+        if(rtl) androidx.compose.ui.unit.LayoutDirection.Rtl
+        else androidx.compose.ui.unit.LayoutDirection.Ltr) {
+        BasicTextField(
+            value=state.value,
+            onValueChange={apply(state.input(it))},
+            modifier=Modifier.fillMaxWidth().heightIn(min=46.dp)
+                .onFocusChanged {focused=it.isFocused},
+            textStyle=MaterialTheme.typography.bodyLarge.copy(
+                color=MaterialTheme.colorScheme.onSurface,
+                lineHeight=if(ruled)34.sp else 28.sp,
+                textDirection=direction,
+                textAlign=if(rtl)TextAlign.Right else TextAlign.Left
+            ),
+            visualTransformation=NeoNoteTypefaces.visual(arabicFont,englishFont),
+            cursorBrush=androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+        )
     }
 }
 
@@ -238,6 +316,7 @@ private fun NeoDocumentImage(
     val context=LocalContext.current
     var bitmap by remember(noteId,image.name) {mutableStateOf<Bitmap?>(null)}
     var unavailable by remember(noteId,image.name) {mutableStateOf(false)}
+    var imageSelected by remember(noteId,image.name) {mutableStateOf(false)}
     LaunchedEffect(noteId,image.name) {
         bitmap=withContext(Dispatchers.IO) {
             runCatching {
@@ -268,7 +347,8 @@ private fun NeoDocumentImage(
                 Image(
                     bitmap!!.asImageBitmap(),contentDescription=neoLabel(
                         "صورة داخل المستند","Inline document image"),
-                    modifier=Modifier.fillMaxWidth(image.width/100f).heightIn(max=420.dp),
+                    modifier=Modifier.fillMaxWidth(image.width/100f).heightIn(max=420.dp)
+                        .clickable(enabled=editable){imageSelected=!imageSelected},
                     contentScale=ContentScale.Fit
                 )
             }
@@ -278,7 +358,7 @@ private fun NeoDocumentImage(
                 color=MaterialTheme.colorScheme.error,
                 style=MaterialTheme.typography.bodySmall)
         }
-        if(editable) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        if(editable && imageSelected) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             verticalAlignment=Alignment.CenterVertically,
             horizontalArrangement=Arrangement.spacedBy(3.dp)) {
             Text(neoLabel("حجم الصورة","Image width")+": "+image.width+"%",

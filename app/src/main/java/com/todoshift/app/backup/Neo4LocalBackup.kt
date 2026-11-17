@@ -43,6 +43,7 @@ class Neo4LocalBackup(context: Context) :
         )
     internal var restoreCheckpoint: (String) -> Unit = {}
     private val journal = AtomicFile(File(app.filesDir, "neo4-restore-journal.json"))
+    private val NOTE_HISTORY_SECTION="data/note-history-v54.json"
 
     private fun prefs(name: String) = app.getSharedPreferences(name, Context.MODE_PRIVATE)
 
@@ -60,7 +61,12 @@ class Neo4LocalBackup(context: Context) :
     override fun export(database: V11Database, output: OutputStream) = export(database, output, BackupSection.entries.toSet())
 
     fun export(database: V11Database, output: OutputStream, requestedScope: Set<BackupSection>) =
-        dataGate {
+        exportWithHistory(database,output,requestedScope,false)
+
+    private fun exportWithHistory(
+        database:V11Database,output:OutputStream,
+        requestedScope:Set<BackupSection>,includeHistory:Boolean
+    ) = dataGate {
             val scope = if (BackupSection.CASHBOOK in requestedScope) requestedScope + BackupSection.SALARY else requestedScope
             recoverIfNeeded()
             val confirmedDatabase = storage.load()
@@ -74,6 +80,12 @@ class Neo4LocalBackup(context: Context) :
                 if (BackupSection.SALARY !in scope) legacyJson.put("payments", JSONArray())
             }
             sections["data/legacy.json"] = bytes(legacyJson.toString())
+            if(includeHistory && BackupSection.TASKS in scope) {
+                val ids=database.dayItems.filter {it.type==DayItemTypeV11.NOTE}
+                    .map {it.id}
+                val history=NeoNoteHistoryStore(app).portableSnapshot(ids)
+                sections[NOTE_HISTORY_SECTION]=bytes(history.toString())
+            }
             if (BackupSection.CASHBOOK in scope) synchronized(Ledger::class.java) {
                 val ledger = Ledger(AndroidLedgerStore(app)); ledger.load()
                 sections["data/cashbook.bin"] = ledger.backup()
@@ -168,7 +180,7 @@ class Neo4LocalBackup(context: Context) :
     fun exportEncrypted(database: V11Database, output: OutputStream, scope: Set<BackupSection>, password: CharArray) {
         require(EncryptedBackup.validPassword(password)) { "Use a backup passphrase of at least 12 characters with at least four distinct characters" }
         val archive = ByteArrayOutputStream()
-        export(database, archive, scope)
+        exportWithHistory(database,archive,scope,true)
         val plain = archive.toByteArray()
         try { output.write(EncryptedBackup.encrypt(plain, password)); output.flush() }
         finally { plain.fill(0) }
@@ -233,6 +245,7 @@ class Neo4LocalBackup(context: Context) :
                         name == "data/v11.json" ||
                         name == "data/legacy.json" ||
                         name == "data/cashbook.bin" ||
+                        name == NOTE_HISTORY_SECTION ||
                         uiPreferences.any { name == "prefs/$it.json" } ||
                         (Neo4BackupFormat.safeAsset(name) || NeoAttachmentStore.safePath(name))
                 ) {
@@ -242,6 +255,8 @@ class Neo4LocalBackup(context: Context) :
                     readBounded(
                         zip,
                         if (name == "manifest.json") 128 * 1024
+                        else if(name==NOTE_HISTORY_SECTION)
+                            NeoNoteHistoryStore.MAX_PORTABLE_BYTES
                         else if (
                             Neo4BackupFormat.safeAsset(name) || NeoAttachmentStore.safePath(name)
                         )
@@ -361,6 +376,13 @@ class Neo4LocalBackup(context: Context) :
                     }
                 }
             }
+        }
+        all[NOTE_HISTORY_SECTION]?.let {history ->
+            NeoNoteHistoryStore(app).validatePortable(
+                json(history),
+                database.dayItems.filter {it.type==DayItemTypeV11.NOTE}
+                    .map {it.id}.toSet()
+            )
         }
         all["data/cashbook.bin"]?.let { validateCashSnapshot(it, null, RestoreMode.REPLACE) }
         val appearancePrefs = all["prefs/todo_shift_neo3_appearance.json"]?.let { json(it) } ?: JSONObject()
@@ -519,6 +541,7 @@ class Neo4LocalBackup(context: Context) :
                     name.startsWith("prefs/") -> BackupSection.SETTINGS in scope || (BackupSection.TASKS in scope && name == "prefs/${NeoSmartStore.NAME}.json")
                     name.startsWith("themes/") -> BackupSection.SETTINGS in scope
                     name.startsWith("attachments/") -> BackupSection.TASKS in scope
+                    name==NOTE_HISTORY_SECTION -> BackupSection.TASKS in scope
                     else -> true
                 }
             }.toMutableMap()
@@ -692,6 +715,20 @@ class Neo4LocalBackup(context: Context) :
                 throw failure
             }
             val warnings = mutableListOf<String>()
+            // Revision history is optional and is restored only after the
+            // core transaction has committed. Every version is encrypted
+            // immediately using the destination device's Keystore.
+            selectedSections[NOTE_HISTORY_SECTION]?.let {raw ->
+                runCatching {
+                    val ids=parsed.database.dayItems
+                        .filter{it.type==DayItemTypeV11.NOTE}
+                        .map{it.id}.toSet()
+                    val records=NeoNoteHistoryStore(app).validatePortable(json(raw),ids)
+                    NeoNoteHistoryStore(app).mergePortable(records)
+                }.onFailure {
+                    warnings += "Core data restored, but note history could not be re-encrypted; retry the encrypted restore"
+                }
+            }
             runCatching {
                     oldDatabase?.tasks?.forEach { ToDoShiftReminder.cancel(app, it.id) }
                     oldDatabase?.dayItems?.forEach { ToDoShiftReminder.cancel(app, it.id) }

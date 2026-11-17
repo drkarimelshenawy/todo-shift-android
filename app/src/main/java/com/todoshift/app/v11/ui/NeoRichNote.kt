@@ -1,5 +1,7 @@
 package com.todoshift.app.v11.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -299,19 +301,25 @@ private fun NeoFormatAction(
     }
 }
 
+private data class NeoEditorCheckboxHit(val index:Int,val x:Int,val y:Int,val checked:Boolean)
+
 @Composable
 internal fun NeoRuledNoteEditor(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     textDirection: androidx.compose.ui.text.style.TextDirection,
     focusRequester: androidx.compose.ui.focus.FocusRequester,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onChecklistToggle: ((Int)->Unit)?=null
 ) {
     val lineColor=MaterialTheme.colorScheme.outline.copy(alpha=0.33f)
     val cursorColor=MaterialTheme.colorScheme.primary
     val density=androidx.compose.ui.platform.LocalDensity.current
     val spacing=with(density) { 34.sp.toPx() }
     var bottoms by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<Float>>(emptyList()) }
+    var checkboxHits by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<List<NeoEditorCheckboxHit>>(emptyList())
+    }
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
         val pageHeight=maxHeight
         val density=androidx.compose.ui.platform.LocalDensity.current
@@ -371,6 +379,21 @@ internal fun NeoRuledNoteEditor(
                     val rect=result.getCursorRect(value.selection.start.coerceIn(0,value.text.length))
                     if(cursorTop!=rect.top) cursorTop=rect.top
                     if(cursorBottom!=rect.bottom) cursorBottom=rect.bottom
+                    if(onChecklistToggle!=null && value.composition==null) {
+                        val positions=mutableListOf<NeoEditorCheckboxHit>()
+                        var textOffset=0
+                        value.text.split('\n').forEachIndexed {index,line ->
+                            val prefix=NeoSmartLists.parse(line)
+                            if(prefix?.kind=="check" && textOffset<value.text.length) {
+                                val markerRect=result.getBoundingBox(textOffset)
+                                positions+=NeoEditorCheckboxHit(
+                                    index,markerRect.left.toInt(),markerRect.top.toInt(),prefix.checked
+                                )
+                            }
+                            textOffset+=line.length+1
+                        }
+                        if(checkboxHits!=positions) checkboxHits=positions
+                    } else if(checkboxHits.isNotEmpty()) checkboxHits=emptyList()
                 },
                 decorationBox={inner->
                     // The inner text box must occupy the entire page width.
@@ -403,6 +426,32 @@ internal fun NeoRuledNoteEditor(
                                 limits.copy(minWidth=width,maxWidth=width)
                             )
                             layout(width,child.height) {child.place(0,0)}
+                        }
+                        // The clickable Material checkbox is painted at the
+                        // text layout's actual glyph coordinates. No alternate
+                        // TextField is created: Arabic IME and caret stay intact.
+                        if(onChecklistToggle!=null) checkboxHits.forEach {hit ->
+                            Box(
+                                Modifier.offset {
+                                    androidx.compose.ui.unit.IntOffset(hit.x,hit.y)
+                                }.size(23.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surface,
+                                        androidx.compose.foundation.shape.RoundedCornerShape(3.dp)
+                                    )
+                                    .clickable {onChecklistToggle.invoke(hit.index)},
+                                contentAlignment=androidx.compose.ui.Alignment.Center
+                            ) {
+                                Icon(
+                                    if(hit.checked) Icons.Rounded.CheckBox
+                                    else Icons.Rounded.CheckBoxOutlineBlank,
+                                    contentDescription=if(hit.checked)
+                                        neoLabel("إلغاء تحديد البند","Uncheck item")
+                                    else neoLabel("تحديد البند","Check item"),
+                                    modifier=Modifier.size(21.dp),
+                                    tint=MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }

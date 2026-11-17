@@ -310,7 +310,10 @@ internal fun NeoRuledNoteEditor(
     textDirection: androidx.compose.ui.text.style.TextDirection,
     focusRequester: androidx.compose.ui.focus.FocusRequester,
     modifier: Modifier = Modifier,
-    onChecklistToggle: ((Int)->Unit)?=null
+    onChecklistToggle: ((Int)->Unit)?=null,
+    ruled:Boolean=true,
+    arabicFont:String="system",
+    englishFont:String="system"
 ) {
     val lineColor=MaterialTheme.colorScheme.outline.copy(alpha=0.33f)
     val cursorColor=MaterialTheme.colorScheme.primary
@@ -353,6 +356,7 @@ internal fun NeoRuledNoteEditor(
                 onValueChange=onValueChange,
                 modifier=Modifier.fillMaxWidth().heightIn(min=pageHeight)
                     .focusRequester(focusRequester).drawBehind {
+                        if(ruled) {
                         val first=bottoms.ifEmpty {listOf(spacing)}
                         first.forEach{y->
                             drawLine(lineColor,androidx.compose.ui.geometry.Offset(0f,y),
@@ -364,7 +368,9 @@ internal fun NeoRuledNoteEditor(
                                 androidx.compose.ui.geometry.Offset(size.width,y),strokeWidth=0.7.dp.toPx())
                             y+=spacing
                         }
+                        }
                     },
+                visualTransformation=NeoNoteTypefaces.visual(arabicFont,englishFont),
                 textStyle=MaterialTheme.typography.bodyLarge.copy(
                     color=MaterialTheme.colorScheme.onSurface,
                     lineHeight=34.sp,textDirection=textDirection,
@@ -513,13 +519,15 @@ internal fun NeoNotePreview(
     onCreateTask: ((Int, String) -> Unit)? = null,
     textDirection: androidx.compose.ui.text.style.TextDirection =
         androidx.compose.ui.text.style.TextDirection.ContentOrRtl,
-    ruled: Boolean = false
+    ruled: Boolean = false,
+    arabicFont:String="system",
+    englishFont:String="system"
 ) {
     val lineStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=34.sp,textDirection=textDirection)
     Column(verticalArrangement=Arrangement.spacedBy(0.dp)) {
         text.lines().forEachIndexed { index, rawLine ->
             val raw=noteDisplayText(rawLine)
-            val rendered=noteInline(raw)
+            val rendered=NeoNoteTypefaces.styled(noteInline(raw),arabicFont,englishFont)
             // Parse the visible, formatted content: stored <b>/<i>/font wrappers
             // must never break checklists or expose their markup in reading mode.
             // Both legacy Markdown and the new in-editor checkbox glyph

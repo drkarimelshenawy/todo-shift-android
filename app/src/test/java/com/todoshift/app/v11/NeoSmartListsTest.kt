@@ -65,4 +65,20 @@ class NeoSmartListsTest {
         assertNull(NeoSmartLists.onKeyboardEdit("مرحبًا","مرحبًا\n","مرحبًا\n".length))
         assertNull(NeoSmartLists.onKeyboardEdit("1. one","1. oneX","1. oneX".length))
     }
+
+    @Test fun completedRowsMoveToBottomOfEachBlockWithoutMovingLinkedTaskIds() {
+        val original="☑ Done <!--task:id-done-->\n☐ Pending <!--task:id-pending-->\nParagraph\n- [x] Old task\n- [ ] New task"
+        val actual=NeoSmartLists.moveCompletedToEnd(original)
+        assertEquals("☐ Pending <!--task:id-pending-->\n☑ Done <!--task:id-done-->\nParagraph\n- [ ] New task\n- [x] Old task",actual)
+        assertEquals(actual,NeoSmartLists.moveCompletedToEnd(actual))
+        assertEquals(original,NeoSmartLists.toggleChecklistLine(original,100,true))
+    }
+
+    @Test fun tickingCheckboxReordersOnlyIfRequested() {
+        val source="☐ First\n☐ Second\nNote footer"
+        assertEquals("☑ First\n☐ Second\nNote footer",NeoSmartLists.toggleChecklistLine(source,0))
+        assertEquals("☐ Second\n☑ First\nNote footer",NeoSmartLists.toggleChecklistLine(source,0,true))
+        assertEquals("☐ First\n☐ Second\nNote footer",
+            NeoSmartLists.toggleChecklistLine("☑ First\n☐ Second\nNote footer",0,true))
+    }
 }

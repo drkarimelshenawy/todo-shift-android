@@ -144,7 +144,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     }
     var floatingFormat by rememberSaveable { mutableStateOf(false) }
     var noteMoreMenu by remember { mutableStateOf(false) }
-    var noteMoreSection by remember {mutableStateOf("main")}
+    var noteSettingsOpen by rememberSaveable { mutableStateOf(false) }
     var documentAction by remember {mutableStateOf<String?>(null)}
     var formatInitialTab by remember {mutableIntStateOf(0)}
     var showFormatSheet by rememberSaveable {mutableStateOf(false)}
@@ -502,7 +502,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         }
     }
     Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
-        properties=DialogProperties(usePlatformDefaultWidth=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
+        properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
         // A full-screen dialog needs resize-aware IME handling: otherwise its footer
         // can stay underneath the keyboard on edge-to-edge Android devices.
         val view=androidx.compose.ui.platform.LocalView.current
@@ -512,7 +512,12 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
             onDispose {if(oldMode!=null)window?.setSoftInputMode(oldMode)}
         }
-        Surface(modifier=Modifier.fillMaxSize().navigationBarsPadding().imePadding(),color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface) {
+        Surface(
+            modifier=Modifier.fillMaxSize()
+                .statusBarsPadding()
+                .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars)),
+            color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface
+        ) {
             Box(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {
                     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
@@ -593,101 +598,43 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             Spacer(Modifier.weight(1f))
                         }
                         Box {
-                            IconButton(onClick={noteMoreSection="main";noteMoreMenu=true}) {
+                            IconButton(onClick={noteMoreMenu=true}) {
                                 Icon(androidx.compose.material.icons.Icons.Rounded.MoreVert,
                                     neoLabel("المزيد","More"))
                             }
-                            DropdownMenu(expanded=noteMoreMenu,onDismissRequest={noteMoreMenu=false}) {
-                                when(noteMoreSection) {
-                                    "main" -> {
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("بحث داخل الملاحظة","Find in note"))},
-                                            onClick={noteMoreMenu=false;documentAction="find"})
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("سجل التعديلات","Version history"))},
-                                            onClick={noteMoreMenu=false;documentAction="history"})
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("مشاركة وتصدير","Share & export"))},
-                                            onClick={noteMoreMenu=false;documentAction="export"})
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("مظهر الصفحة","Page appearance"))},
-                                            onClick={
-                                                noteMoreMenu=false
-                                                formatInitialTab=2;showFormatSheet=true
-                                                noteKeyboard?.hide()
-                                            })
-                                        HorizontalDivider()
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("المزيد من الإعدادات","More settings"))},
-                                            onClick={noteMoreSection="advanced"})
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("حفظ وإغلاق","Save and close"))},
-                                            enabled=!pending&&!rootWritePending,
-                                            onClick={
-                                                noteMoreMenu=false
-                                                scope.launch {keepDraft();if(persistNote(true)) onDismiss()}
-                                            })
-                                    }
-                                    else -> {
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("رجوع","Back"))},
-                                            onClick={noteMoreSection="main"})
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("فهرس العناوين","Document outline"))},
-                                            onClick={noteMoreMenu=false;documentAction="outline"})
-                                        DropdownMenuItem(
-                                            text={Text(if(a4Preview)
-                                                neoLabel("إنهاء معاينة A4","Exit A4 preview")
-                                                else neoLabel("معاينة A4 للقراءة","A4 reading preview"))},
-                                            onClick={
-                                                noteMoreMenu=false
-                                                a4Preview=!a4Preview
-                                                advancedCanvas=a4Preview
-                                                noteKeyboard?.hide()
-                                            })
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("إدارة المرفقات","Manage attachments"))},
-                                            onClick={noteMoreMenu=false;mediaShelfVisible=true;noteKeyboard?.hide()})
-                                        HorizontalDivider()
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("الورق المسطّر والخطوط","Paper ruling & fonts"))},
-                                            onClick={noteMoreMenu=false;appearanceOpen=true;noteKeyboard?.hide()})
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("لون الصفحة","Page color"))},
-                                            onClick={noteMoreMenu=false;paperPaletteOpen=true;noteKeyboard?.hide()})
-                                        DropdownMenuItem(
-                                            text={Text(if(previewHidden)
-                                                neoLabel("إظهار المعاينة","Show card preview")
-                                                else neoLabel("إخفاء المعاينة","Hide card preview"))},
-                                            onClick={noteMoreMenu=false;previewHidden=!previewHidden})
-                                        HorizontalDivider()
-                                        DropdownMenuItem(
-                                            text={Text(if(pinned)
-                                                neoLabel("إلغاء التثبيت","Unpin")
-                                                else neoLabel("تثبيت","Pin"))},
-                                            onClick={noteMoreMenu=false;pinned=!pinned})
-                                        DropdownMenuItem(
-                                            text={Text(if(locked)
-                                                neoLabel("إلغاء قفل الملاحظة","Unlock note")
-                                                else neoLabel("قفل الملاحظة","Lock note"))},
-                                            onClick={
-                                                noteMoreMenu=false
-                                                if(locked) locked=false else {
-                                                    val settings=V11SecurityStore(context.applicationContext).load()
-                                                    if(settings.mode!=V11LockMode.NONE || settings.biometricEnabled)
-                                                        locked=true
-                                                    else error=neoLiteral("فعّل PIN أو البصمة أولًا",
-                                                        "Set up PIN or biometrics first")
-                                                }
-                                            })
-                                        DropdownMenuItem(
-                                            text={Text(neoLabel("الخيارات والربط بالتقويم والمهام","Note options & links"))},
-                                            onClick={
-                                                noteMoreMenu=false;noteKeyboard?.hide()
-                                                editing=true;options=true;showFormatSheet=false
-                                            })
-                                    }
-                                }
+                            DropdownMenu(
+                                expanded=noteMoreMenu,
+                                onDismissRequest={noteMoreMenu=false}
+                            ) {
+                                DropdownMenuItem(
+                                    text={Text(neoLabel("بحث داخل الملاحظة","Find in note"))},
+                                    onClick={noteMoreMenu=false;documentAction="find"})
+                                DropdownMenuItem(
+                                    text={Text(neoLabel("سجل التعديلات","Version history"))},
+                                    onClick={noteMoreMenu=false;documentAction="history"})
+                                DropdownMenuItem(
+                                    text={Text(neoLabel("مشاركة وتصدير","Share & export"))},
+                                    onClick={noteMoreMenu=false;documentAction="export"})
+                                DropdownMenuItem(
+                                    text={Text(neoLabel("مظهر الصفحة","Page appearance"))},
+                                    onClick={
+                                        noteMoreMenu=false;formatInitialTab=2
+                                        showFormatSheet=true;noteKeyboard?.hide()
+                                    })
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text={Text(neoLabel("إعدادات إضافية","More settings"))},
+                                    onClick={
+                                        noteMoreMenu=false;noteKeyboard?.hide()
+                                        noteSettingsOpen=true
+                                    })
+                                DropdownMenuItem(
+                                    text={Text(neoLabel("حفظ وإغلاق","Save and close"))},
+                                    enabled=!pending&&!rootWritePending,
+                                    onClick={
+                                        noteMoreMenu=false
+                                        scope.launch {keepDraft();if(persistNote(true)) onDismiss()}
+                                    })
                             }
                         }
                     }
@@ -861,7 +808,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
               }
 
             }
-                    Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=2.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                    if(pending || error!=null) Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=2.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                         Text(
                             if(pending) neoLabel("جارٍ الحفظ…","Saving…")
                             else error ?: if(editVersion()!=lastSavedEdit) neoLabel("تعديلات قيد الحفظ","Changes pending save") else draftStatus,
@@ -978,6 +925,45 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         }
                     }
                 }
+                if(noteSettingsOpen) NeoNoteSettingsSheet(
+                    pinned=pinned,
+                    locked=locked,
+                    previewHidden=previewHidden,
+                    a4Preview=a4Preview,
+                    onOutline={noteSettingsOpen=false;documentAction="outline"},
+                    onA4={
+                        noteSettingsOpen=false;a4Preview=!a4Preview
+                        advancedCanvas=a4Preview;noteKeyboard?.hide()
+                    },
+                    onAttachments={
+                        noteSettingsOpen=false;mediaShelfVisible=true;noteKeyboard?.hide()
+                    },
+                    onRulingFonts={
+                        noteSettingsOpen=false;appearanceOpen=true;noteKeyboard?.hide()
+                    },
+                    onPageColor={
+                        noteSettingsOpen=false;paperPaletteOpen=true;noteKeyboard?.hide()
+                    },
+                    onPreviewHidden={
+                        noteSettingsOpen=false;previewHidden=!previewHidden
+                    },
+                    onPinned={noteSettingsOpen=false;pinned=!pinned},
+                    onLocked={
+                        noteSettingsOpen=false
+                        if(locked) locked=false else {
+                            val settings=V11SecurityStore(context.applicationContext).load()
+                            if(settings.mode!=V11LockMode.NONE || settings.biometricEnabled)
+                                locked=true
+                            else error=neoLiteral("فعّل PIN أو البصمة أولًا",
+                                "Set up PIN or biometrics first")
+                        }
+                    },
+                    onLinks={
+                        noteSettingsOpen=false;noteKeyboard?.hide()
+                        editing=true;options=true;showFormatSheet=false
+                    },
+                    onDismiss={noteSettingsOpen=false}
+                )
                 if(showFormatSheet && editing) NeoNoteFormatSheet(
                     state=activeText,
                     initialTab=formatInitialTab,

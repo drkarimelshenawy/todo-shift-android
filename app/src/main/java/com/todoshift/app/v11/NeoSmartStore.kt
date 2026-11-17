@@ -148,6 +148,17 @@ class NeoSmartStore(context: Context) {
         }
     }
 
+    fun notePresentation(noteId:String):NeoNotePresentation {
+        require(noteId.isNotBlank() && noteId.length<=200)
+        val record=snapshot().optJSONObject("notePresentations")
+            ?.optJSONObject(noteId) ?: return NeoNotePresentation()
+        return NeoNotePresentation(
+            ruled=if(record.has("ruled")) record.getBoolean("ruled") else null,
+            arabicFont=record.optString("ar").takeIf {it.isNotBlank()},
+            englishFont=record.optString("en").takeIf {it.isNotBlank()}
+        )
+    }
+
     /**
      * Favorites are separate from pinned notes and belong to the Notes
      * metadata exported with the Tasks/Notes backup section.
@@ -270,6 +281,18 @@ class NeoSmartStore(context: Context) {
                     for (j in 0 until titles.length()) require(
                         titles.getString(j).isNotBlank() && titles.getString(j).length <= 300
                     )
+                }
+            }
+            o.optJSONObject("notePresentations")?.let {presentations ->
+                require(presentations.length()<=5000)
+                presentations.keys().forEach {id ->
+                    require(id.isNotBlank() && id.length<=200)
+                    val value=presentations.getJSONObject(id)
+                    require(value.length()<=3)
+                    value.keys().forEach {key ->require(key in setOf("ruled","ar","en"))}
+                    if(value.has("ruled")) value.getBoolean("ruled")
+                    for(key in listOf("ar","en")) if(value.has(key))
+                        require(value.getString(key) in NeoNotePresentation.FONT_KEYS)
                 }
             }
             o.optJSONObject("noteFavorites")?.let {favorites ->

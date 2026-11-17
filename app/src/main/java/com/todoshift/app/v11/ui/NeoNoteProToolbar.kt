@@ -79,6 +79,21 @@ internal fun NeoNoteProToolbar(
             } catch(e:Exception) {onError(e.message ?: "Could not export PDF")}
         }
     }
+    val docxLauncher=rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    ) {uri ->
+        if(uri!=null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use {output ->
+                        NeoDocumentDocx.write(context,noteId,title,source,output)
+                    } ?: error("Cannot open DOCX output document")
+                }
+            } catch(e:Exception) {onError(e.message ?: "Could not export DOCX")}
+        }
+    }
     val exportName=title.ifBlank {"Note"}
         .replace(Regex("""[/\\:*?"<>|]"""),"_").take(55)
     var revisions by remember {mutableStateOf<List<NeoNoteHistoryStore.Revision>>(emptyList())}
@@ -107,6 +122,13 @@ internal fun NeoNoteProToolbar(
                         Modifier.size(20.dp))
                 }
                 DropdownMenu(expanded=exportOpen,onDismissRequest={exportOpen=false}) {
+                    DropdownMenuItem(
+                        text={Text(neoLabel("Word DOCX قابل للتحرير","Editable Word DOCX"))},
+                        onClick={
+                            exportOpen=false
+                            docxLauncher.launch(exportName+".docx")
+                        }
+                    )
                     DropdownMenuItem(
                         text={Text(neoLabel("PDF بحجم A4","PDF (A4)"))},
                         onClick={

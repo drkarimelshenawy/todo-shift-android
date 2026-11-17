@@ -17,14 +17,19 @@ internal object NeoNoteDocumentTools {
                 .count{it.isNotBlank()})
     }
 
-    fun headings(visible:String):List<Heading> {
+    fun headings(source:String):List<Heading> {
         val result=mutableListOf<Heading>()
+        // H1/H2/H3 prefixes are hidden during WYSIWYG editing. Discover them
+        // from the saved source, then map locations to visible caret offsets.
+        val mapped=NeoNoteVisualTransformation().filter(
+            androidx.compose.ui.text.AnnotatedString(source))
         var offset=0
-        visible.split('\n').forEach {line ->
+        source.split('\n').forEach {line ->
             val match=Regex("""^\s{0,3}(#{1,3})\s+(.+)$""").find(line)
             if(match!=null) {
                 result+=Heading(match.groupValues[1].length,
-                    match.groupValues[2].trim(),offset)
+                    NeoRichEditorState.open(line).value.text.trim(),
+                    mapped.offsetMapping.originalToTransformed(offset))
             }
             offset+=line.length+1
         }

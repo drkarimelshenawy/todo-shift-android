@@ -40,8 +40,12 @@ internal class NeoNoteHistoryStore(context: Context) {
             require(noteId.isNotBlank() && noteId.length<=200)
             require(oldTitle.length<=1000 && oldDetails.length<=300_000)
             val previous=revisions(noteId)
-            if(previous.firstOrNull()?.let{it.title==oldTitle && it.details==oldDetails}==true)
-                return@synchronized
+            // Autosave happens frequently; revisions must be meaningful
+            // checkpoints rather than filling the 12 slots while typing.
+            if(previous.firstOrNull()?.let {
+                (it.title==oldTitle && it.details==oldDetails) ||
+                    (savedAt-it.savedAt in 0 until MIN_INTERVAL_MS)
+            }==true) return@synchronized
             val next=(listOf(Revision(savedAt,oldTitle,oldDetails))+previous)
                 .distinctBy{it.title to it.details}.take(MAX_REVISIONS)
             val encoded=JSONArray()
@@ -54,6 +58,7 @@ internal class NeoNoteHistoryStore(context: Context) {
 
     companion object {
         const val MAX_REVISIONS=12
+        const val MIN_INTERVAL_MS=5*60*1000L
         private val monitor=Any()
     }
 }

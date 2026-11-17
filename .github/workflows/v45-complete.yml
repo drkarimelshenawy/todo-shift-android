@@ -1,8 +1,8 @@
-name: v51 Notes Library signed APK
+name: v52 Document Studio signed APK
 
 on:
   push:
-    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117, feat/v46-notes-completion-20261117, feat/v47-notes-quick-capture-20261117, feat/v48-rich-notes-media-20261117, feat/v49-notes-pro-editor-20261117, feat/v50-notes-quiet-editor-20261117, feat/v51-notes-library-hierarchy-20261117]
+    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117, feat/v46-notes-completion-20261117, feat/v47-notes-quick-capture-20261117, feat/v48-rich-notes-media-20261117, feat/v49-notes-pro-editor-20261117, feat/v50-notes-quiet-editor-20261117, feat/v51-notes-library-hierarchy-20261117, feat/v52-notes-document-blocks-20261117]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117' || github.ref == 'refs/heads/feat/v46-notes-completion-20261117' || github.ref == 'refs/heads/feat/v47-notes-quick-capture-20261117' || github.ref == 'refs/heads/feat/v48-rich-notes-media-20261117' || github.ref == 'refs/heads/feat/v49-notes-pro-editor-20261117' || github.ref == 'refs/heads/feat/v50-notes-quiet-editor-20261117' || github.ref == 'refs/heads/feat/v51-notes-library-hierarchy-20261117'
+    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117' || github.ref == 'refs/heads/feat/v46-notes-completion-20261117' || github.ref == 'refs/heads/feat/v47-notes-quick-capture-20261117' || github.ref == 'refs/heads/feat/v48-rich-notes-media-20261117' || github.ref == 'refs/heads/feat/v49-notes-pro-editor-20261117' || github.ref == 'refs/heads/feat/v50-notes-quiet-editor-20261117' || github.ref == 'refs/heads/feat/v51-notes-library-hierarchy-20261117' || github.ref == 'refs/heads/feat/v52-notes-document-blocks-20261117'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -81,6 +81,8 @@ jobs:
             --tests 'com.todoshift.app.v11.AttachmentBackupTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteProToolsTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteAppearanceTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoDocumentBlocksTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoDocumentPdfTest' \
             --tests 'com.todoshift.app.backup.EncryptedBackupTest' \
             --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
             --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \
@@ -114,11 +116,11 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v51-Library.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v52-Document-Studio.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-v51-Library-signed-APK
+          name: ToDoShift-v52-Document-Studio-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -126,17 +128,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v51-library-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v51-Library.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v50 — Quiet Notes Editor" --notes "Signed v51 library preview with nested colored folders, secure folder PIN access, breadcrumb navigation, folders-first sorting, safe reparent and legacy folder migration. Device acceptance pending. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+          TAG="v52-document-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v52-Document-Studio.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v52 — Document Studio" --notes "Signed v52 Document Studio: unified insert menu, editable Markdown tables, inline private images, A4 preview, offline PDF export and Android printing; backward-compatible rich note source. Device acceptance pending. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v51-library-${GITHUB_SHA:0:12}"
+          TAG="v52-document-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ToDoShift-v51-Library.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ToDoShift-v51-Library.apk "$RUNNER_TEMP/published/ToDoShift-v51-Library.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v51-Library.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ToDoShift-v52-Document-Studio.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v52-Document-Studio.apk "$RUNNER_TEMP/published/ToDoShift-v52-Document-Studio.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v52-Document-Studio.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

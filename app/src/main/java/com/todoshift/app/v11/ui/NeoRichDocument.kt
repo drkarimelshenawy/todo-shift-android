@@ -49,24 +49,30 @@ internal data class NeoRichEditorState(
 ) {
     init {require(value.text.length==characters.size)}
 
+    // Paint the existing character styles over an IME buffer without dropping its
+    // composition range. Earlier formatted lines must stay formatted while typing.
+    private fun styledBuffer(
+        buffer:AnnotatedString,styles:List<NeoRichCharStyle>
+    ):AnnotatedString=buildAnnotatedString {
+        append(buffer)
+        var index=0
+        while(index<styles.size) {
+            var until=index+1
+            while(until<styles.size && styles[until]==styles[index]) until++
+            if(styles[index]!=NeoRichCharStyle()) addStyle(styles[index].span(),index,until)
+            index=until
+        }
+    }
+
     private fun withValue(
         text:String,styles:List<NeoRichCharStyle>,selection:TextRange,
         tokens:List<NeoRichHiddenToken> = hidden,
         typing:NeoRichCharStyle? = pending,
         composition:TextRange? = null
-    ):NeoRichEditorState {
-        val rendered=buildAnnotatedString {
-            append(text)
-            var i=0
-            while(i<styles.size) {
-                var end=i+1
-                while(end<styles.size && styles[end]==styles[i]) end++
-                if(styles[i]!=NeoRichCharStyle()) addStyle(styles[i].span(),i,end)
-                i=end
-            }
-        }
-        return NeoRichEditorState(TextFieldValue(rendered,selection,composition),styles,tokens,typing)
-    }
+    ):NeoRichEditorState =
+        NeoRichEditorState(TextFieldValue(styledBuffer(AnnotatedString(text),styles),
+            selection,composition),styles,tokens,typing)
+
 
     /** Diff an IME edit and move its style ranges and linked-checklist anchors. */
     fun input(next:TextFieldValue):NeoRichEditorState {
@@ -103,7 +109,9 @@ internal data class NeoRichEditorState(
         // Replacing it with a newly serialized AnnotatedString on every Arabic
         // keystroke can invalidate composing spans and move the cursor.
         if(next.composition!=null) return copy(
-            value=next,characters=styles,hidden=tokens,pending=pending
+            value=TextFieldValue(styledBuffer(next.annotatedString,styles),
+                next.selection,next.composition),
+            characters=styles,hidden=tokens,pending=pending
         )
         val edited=withValue(after,styles,next.selection,tokens,pending,next.composition)
         val smart=NeoSmartLists.onKeyboardEdit(before,after,next.selection.start)

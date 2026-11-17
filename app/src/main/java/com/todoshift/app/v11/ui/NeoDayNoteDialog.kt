@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FormatPaint
 import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -349,21 +351,30 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         if(ruledOverride==null) " ✓" else "")
                 }
                 val fonts=listOf<String?>(null,"system","sans","serif","mono")
-                fun labelFont(key:String?):String=when(key) {
-                    null -> neoLabel("حسب إعدادات التطبيق","Follow app default")
-                    "sans" -> neoLabel("واضح (Sans)","Sans")
-                    "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
-                    "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
-                    else -> neoLabel("خط الجهاز","System default")
-                }
                 NeoChoice(
                     neoLabel("خط النص العربي","Arabic font"),
-                    fonts,arabicFontOverride,::labelFont,
+                    fonts,arabicFontOverride,{key ->
+                        when(key) {
+                            null -> neoLabel("حسب إعدادات التطبيق","Follow app default")
+                            "sans" -> neoLabel("واضح (Sans)","Sans")
+                            "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
+                            "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
+                            else -> neoLabel("خط الجهاز","System default")
+                        }
+                    },
                     {arabicFontOverride=it}
                 )
                 NeoChoice(
                     neoLabel("خط النص الإنجليزي","English font"),
-                    fonts,englishFontOverride,::labelFont,
+                    fonts,englishFontOverride,{key ->
+                        when(key) {
+                            null -> neoLabel("حسب إعدادات التطبيق","Follow app default")
+                            "sans" -> neoLabel("واضح (Sans)","Sans")
+                            "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
+                            "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
+                            else -> neoLabel("خط الجهاز","System default")
+                        }
+                    },
                     {englishFontOverride=it}
                 )
                 Text(neoLabel(

@@ -14,6 +14,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDate
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,10 +68,24 @@ class NeoNotesToolbarVisibilityDeviceTest {
             throw AssertionError(diagnostic+" -- "+failure.message,failure)
         }
         }
+        val closedBottom=rule.onNodeWithTag("notes_quick_bar")
+            .fetchSemanticsNode().boundsInWindow.bottom
         rule.onNodeWithTag("notes_body_input").performClick()
         rule.onNodeWithTag("notes_body_input").performTextInput("اختبار")
+        // Text entry alone does not prove that the software keyboard opened.
+        // Require the real toolbar to rise above the newly shown IME.
+        val moved=runCatching {
+            rule.waitUntil(12_000) {
+                rule.onNodeWithTag("notes_quick_bar")
+                    .fetchSemanticsNode().boundsInWindow.bottom < closedBottom-100f
+            }
+        }.isSuccess
         rule.waitForIdle()
         screenshot("02-open.png")
+        val openBottom=rule.onNodeWithTag("notes_quick_bar")
+            .fetchSemanticsNode().boundsInWindow.bottom
+        assertTrue("Software IME never moved the toolbar: closedBottom="+closedBottom+
+            ", openBottom="+openBottom, moved)
         rule.onNodeWithTag("notes_quick_bar").assertIsDisplayed()
     }
 }

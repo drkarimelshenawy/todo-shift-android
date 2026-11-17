@@ -83,7 +83,7 @@ class Neo4LocalBackup(context: Context) :
                 if (it == NeoSmartStore.NAME && BackupSection.SETTINGS !in scope) {
                     val original = NeoSmartStore(app).snapshot()
                     val noteMetadata = JSONObject().put("version", 1)
-                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites").forEach { key -> original.opt(key)?.let { value -> noteMetadata.put(key, value) } }
+                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites", "notePresentations").forEach { key -> original.opt(key)?.let { value -> noteMetadata.put(key, value) } }
                     captured = JSONObject().put("data", typed(noteMetadata.toString()))
                 }
                 sections["prefs/$it.json"] = bytes(captured.toString())
@@ -541,7 +541,7 @@ class Neo4LocalBackup(context: Context) :
                 selectedSections["prefs/${NeoSmartStore.NAME}.json"]?.let { raw ->
                     val incoming = JSONObject(json(raw).getJSONObject("data").getString("value"))
                     val retained = NeoSmartStore(app).snapshot()
-                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites").forEach { key ->
+                    listOf("noteColors", "noteBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites", "notePresentations").forEach { key ->
                         incoming.opt(key)?.let { value ->
                             if (key == "noteFolders" && value is JSONArray && mode == RestoreMode.MERGE) {
                                 val old = retained.optJSONArray(key) ?: JSONArray()
@@ -838,6 +838,7 @@ class Neo4LocalBackup(context: Context) :
         note: DayItemV11,
         color: String,
         border: Boolean,
+        presentation:NeoNotePresentation?=null,
         linkedTasks: List<TaskV11> = emptyList(),
         detachedTaskIds: Set<String> = emptySet(),
         checkpoint: (String) -> Unit = {},
@@ -891,6 +892,18 @@ class Neo4LocalBackup(context: Context) :
                     val borders = o.optJSONObject("noteBorders") ?: JSONObject()
                     borders.put(note.id, border)
                     o.put("noteBorders", borders)
+                    if(presentation!=null) {
+                        require(NeoNotePresentation.validFont(presentation.arabicFont) &&
+                            NeoNotePresentation.validFont(presentation.englishFont))
+                        val all=o.optJSONObject("notePresentations") ?: JSONObject()
+                        val current=JSONObject()
+                        presentation.ruled?.let {current.put("ruled",it)}
+                        presentation.arabicFont?.let {current.put("ar",it)}
+                        presentation.englishFont?.let {current.put("en",it)}
+                        if(current.length()==0) all.remove(note.id)
+                        else all.put(note.id,current)
+                        o.put("notePresentations",all)
+                    }
                 }
                 checkpoint("style")
                 journal.delete()

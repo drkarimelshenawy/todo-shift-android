@@ -807,7 +807,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             NeoDocumentCanvas(
                                 noteId=id,
                                 source=noteSource(),
-                                editable=editing&&!closing&&!pending&&!a4Preview,
+                                editable=editing&&!closing&&!a4Preview,
                                 inlineEditing=editing&&!a4Preview,
                                 onParagraphEdited={startLine,nextParagraph ->
                                     if(!closing) runCatching {

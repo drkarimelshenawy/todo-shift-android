@@ -16,7 +16,7 @@ internal object NeoNoteExporter {
     }
 
     private val permitted=Regex(
-        """ ?<!--task:[A-Za-z0-9_-]+-->|</?(?:b|i|u|s)>|<font color="#[0-9A-Fa-f]{6}">|</font>|<size sp="(?:14|16|18|20|24|28)">|</size>"""
+        """ ?<!--task:[A-Za-z0-9_-]+-->|</?(?:b|i|u|s)>|<font color="#[0-9A-Fa-f]{6}">|</font>|<size sp="(?:14|16|18|20|24|28)">|</size>|<face key="(?:amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>"""
     )
 
     private fun safeInline(source:String):String {
@@ -32,6 +32,22 @@ internal object NeoNoteExporter {
                     out.append("<span style=\"font-size:").append(size).append("pt\">")
                 }
                 token=="</size>" -> out.append("</span>")
+                token.startsWith("<face key=") -> {
+                    val font=token.substringAfter("key=\"").substringBefore('"')
+                    val family=when(font) {
+                        "amiri"->"Amiri, serif"
+                        "tajawal"->"Tajawal, sans-serif"
+                        "reem"->"'Reem Kufi', sans-serif"
+                        "montserrat"->"Montserrat, sans-serif"
+                        "lora"->"Lora, serif"
+                        "oswald"->"Oswald, sans-serif"
+                        "serif"->"serif"
+                        "mono"->"monospace"
+                        else->"sans-serif"
+                    }
+                    out.append("<span style=\"font-family:").append(family).append("\">")
+                }
+                token=="</face>" -> out.append("</span>")
                 else -> out.append(token)
             }
             cursor=match.range.last+1

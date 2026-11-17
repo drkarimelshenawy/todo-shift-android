@@ -10,7 +10,8 @@ data class NeoNotePresentation(
     val englishFont: String? = null
 ) {
     companion object {
-        val FONT_KEYS = setOf("system", "sans", "serif", "mono")
+        val FONT_KEYS = setOf("system", "sans", "serif", "mono",
+            "amiri", "tajawal", "reem", "montserrat", "lora", "oswald")
         fun validFont(value: String?):Boolean = value==null || value in FONT_KEYS
     }
 }

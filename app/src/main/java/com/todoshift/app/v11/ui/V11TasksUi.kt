@@ -49,13 +49,14 @@ fun V11TasksScreen(
     onDatabaseChange: (V11Database) -> Unit,
     initialAction: String? = null,
     initialTaskId: String? = null,
+    initialSharedNoteText: String? = null,
     financeAuthorized: Boolean = false,
     moneyVisible: Boolean = false,
     onQuickAction: (NeoQuickAction) -> Unit = {},
     onInitialActionHandled: () -> Unit = {},
 ) {
     if (LocalV11NeoEnabled.current) {
-        NeoPremiumTasksScreen(db, workplaces, onDatabaseChange, initialAction, initialTaskId, onInitialActionHandled)
+        NeoPremiumTasksScreen(db, workplaces, onDatabaseChange, initialAction, initialTaskId, onInitialActionHandled, initialSharedNoteText)
         return
     }
     val commit = rememberNeoCommit(onDatabaseChange)

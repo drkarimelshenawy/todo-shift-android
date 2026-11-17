@@ -131,21 +131,20 @@ internal object NeoSmartLists {
         val oldBreaks=before.count{it=='\n'}
         val newBreaks=after.count{it=='\n'}
         if(oldBreaks==newBreaks) return null
-        var start=0
-        while(start<before.length&&start<after.length&&before[start]==after[start]) start++
-        var oldEnd=before.length
-        var newEnd=after.length
-        while(oldEnd>start&&newEnd>start&&before[oldEnd-1]==after[newEnd-1]) {oldEnd--;newEnd--}
-        val inserted=after.substring(start,newEnd)
-        val removed=before.substring(start,oldEnd)
-        if(inserted!="\n"||removed.isNotEmpty()||caret!=start+1)
-            return Edit(resequence(after),caret).takeIf{it.text!=after}
-        val lineStart=before.lastIndexOf('\n',start-1)+1
-        val originalLine=before.substring(lineStart, (before.indexOf('\n',start).takeIf{it>=0} ?: before.length))
+        val insertion=(caret-1).coerceAtLeast(0)
+        // Check the keyboard's new cursor, not a common-prefix diff: inserting
+        // another newline beside an existing one otherwise selects the wrong row.
+        val committedEnter=caret in 1..after.length &&
+            after[insertion]=='\n' &&
+            after.removeRange(insertion,insertion+1)==before
+        if(!committedEnter) return Edit(resequence(after),caret).takeIf{it.text!=after}
+        val lineStart=before.lastIndexOf('\n',insertion-1)+1
+        val oldLineEnd=before.indexOf('\n',insertion).takeIf{it>=0} ?: before.length
+        val originalLine=before.substring(lineStart,oldLineEnd)
         val prefix=parse(originalLine) ?: return Edit(resequence(after),caret).takeIf{it.text!=after}
-        val preceding=before.substring(lineStart,start)
-        val next:Edit=if(preceding.drop(prefix.length.coerceAtMost(preceding.length)).isBlank()) {
-            // An empty numbered/checked row is the standard exit gesture.
+        val preceding=before.substring(lineStart,insertion)
+        val next=if(preceding.drop(prefix.length.coerceAtMost(preceding.length)).isBlank()) {
+            // Enter on an empty list row removes that marker and exits.
             val out=after.removeRange(lineStart,caret)
             Edit(out,lineStart)
         } else {
@@ -153,12 +152,11 @@ internal object NeoSmartLists {
             Edit(after.substring(0,caret)+appended+after.substring(caret),caret+appended.length)
         }
         val numberedText=resequence(next.text)
-        // Inserting a new list marker before the caret keeps it at the end
-        // of the marker; re-sequencing previous rows changes only their labels.
         val line=lineIndex(next.text,next.caret)
         val beforeCol=next.caret-next.text.split('\n').take(line).sumOf{it.length+1}
         val newLines=numberedText.split('\n')
-        val finalCaret=(newLines.take(line).sumOf{it.length+1}+beforeCol).coerceIn(0,numberedText.length)
+        val finalCaret=(newLines.take(line).sumOf{it.length+1}+beforeCol)
+            .coerceIn(0,numberedText.length)
         return Edit(numberedText,finalCaret)
     }
 

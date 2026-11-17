@@ -65,19 +65,24 @@ class NeoAttachmentStore(private val context: Context) {
                         data[0] == (-1).toByte() &&
                         data[1] == (-40).toByte() &&
                         data[2] == (-1).toByte() -> "image/jpeg"
+                    data.size >= 12 &&
+                        data.copyOfRange(4, 8).contentEquals("ftyp".toByteArray()) &&
+                        declaredMime in setOf("audio/mp4", "audio/x-m4a", "audio/m4a") ->
+                        "audio/mp4"
                     declaredMime == "text/plain" && data.none { it == 0.toByte() } -> {
                         Charsets.UTF_8.newDecoder()
                             .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
                             .decode(java.nio.ByteBuffer.wrap(data))
                         "text/plain"
                     }
-                    else -> error("Choose a valid PNG, JPEG, PDF or UTF-8 text file")
+                    else -> error("Choose a valid PNG, JPEG, PDF, M4A audio or UTF-8 text file")
                 }
             val ext =
                 when (mime) {
                     "image/jpeg" -> "jpg"
                     "image/png" -> "png"
                     "application/pdf" -> "pdf"
+                    "audio/mp4" -> "m4a"
                     else -> "txt"
                 }
             require(
@@ -165,7 +170,7 @@ class NeoAttachmentStore(private val context: Context) {
         const val MAX_FILE = 4 * 1024 * 1024
 
         fun safeName(name: String) =
-            name.matches(Regex("neo-attachment-[a-zA-Z0-9-]+[.](png|jpg|pdf|txt)"))
+            name.matches(Regex("neo-attachment-[a-zA-Z0-9-]+[.](png|jpg|pdf|txt|m4a)"))
 
         fun safePath(path: String) =
             path.startsWith("attachments/") && safeName(path.removePrefix("attachments/"))

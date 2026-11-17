@@ -13,6 +13,7 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         versionCode = 63
         versionName = "4.21.0-premium-v59-notes-toolbar-layout"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
@@ -61,6 +62,10 @@ dependencies {
     implementation(project(":cashbook-feature"))
     implementation(project(":cashbook-core"))
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation(platform("androidx.compose:compose-bom:2024.12.01"))

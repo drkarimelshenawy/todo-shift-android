@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
@@ -31,7 +32,7 @@ internal fun NeoNoteQuickBar(
     var inkOpen by remember { mutableStateOf(false) }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Surface(
-            modifier=Modifier.fillMaxWidth(),
+            modifier=Modifier.fillMaxWidth().testTag("notes_quick_bar"),
             tonalElevation=2.dp,
             color=MaterialTheme.colorScheme.surfaceContainerLow
         ) {

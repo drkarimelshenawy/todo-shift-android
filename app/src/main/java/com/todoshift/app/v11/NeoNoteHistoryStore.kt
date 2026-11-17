@@ -35,7 +35,7 @@ internal class NeoNoteHistoryStore(context: Context) {
      * Preserve the prior committed content only after the new note was
      * successfully saved. Avoid making a new version for metadata-only edits.
      */
-    fun savePrior(noteId:String,oldTitle:String,oldDetails:String,savedAt:Long) =
+    fun savePrior(noteId:String,oldTitle:String,oldDetails:String,savedAt:Long,force:Boolean=false) =
         synchronized(monitor) {
             require(noteId.isNotBlank() && noteId.length<=200)
             require(oldTitle.length<=1000 && oldDetails.length<=300_000)
@@ -44,7 +44,7 @@ internal class NeoNoteHistoryStore(context: Context) {
             // checkpoints rather than filling the 12 slots while typing.
             if(previous.firstOrNull()?.let {
                 (it.title==oldTitle && it.details==oldDetails) ||
-                    (savedAt-it.savedAt in 0 until MIN_INTERVAL_MS)
+                    (!force && savedAt-it.savedAt in 0 until MIN_INTERVAL_MS)
             }==true) return@synchronized
             val next=(listOf(Revision(savedAt,oldTitle,oldDetails))+previous)
                 .distinctBy{it.title to it.details}.take(MAX_REVISIONS)

@@ -27,6 +27,11 @@ import kotlinx.coroutines.withContext
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+private sealed interface NeoNoteLibraryEntry {
+    data class Folder(val value:NeoSmartStore.NoteFolder):NeoNoteLibraryEntry
+    data class Note(val value:DayItemV11):NeoNoteLibraryEntry
+}
+
 val LocalNeoTaskCompact = staticCompositionLocalOf { true }
 val LocalNeoTaskMove = staticCompositionLocalOf<((String,Int)->Unit)?> { null }
 
@@ -510,6 +515,46 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         (noteTag==null || (!note.noteLocked && note.noteTags.split(",").map {it.trim()}.contains(noteTag))) &&
                         (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
                     }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.createdAt};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
+    val displayedFolders=noteFolders.filter { folder ->
+        activeFolderId!="__all__" && activeFolderId!="__unfiled__" &&
+        folder.parentId==activeFolderId
+    }.filter {folder ->
+        noteSearch.isBlank() || folder.name.contains(noteSearch,true)
+    }
+    val libraryEntries:List<NeoNoteLibraryEntry> =
+        (displayedFolders.map{NeoNoteLibraryEntry.Folder(it)}+
+            visibleNotes.map{NeoNoteLibraryEntry.Note(it)}).sortedWith(
+            compareBy<NeoNoteLibraryEntry> {
+                if(foldersFirst && it is NeoNoteLibraryEntry.Folder) 0
+                else if(foldersFirst) 1 else 0
+            }.thenBy {
+                if(it is NeoNoteLibraryEntry.Note && it.value.notePinned) 0 else 1
+            }.thenComparator {a,b ->
+                when(noteSort) {
+                    "title" -> {
+                        val nameA=when(a){is NeoNoteLibraryEntry.Folder->a.value.name
+                            is NeoNoteLibraryEntry.Note->a.value.title}
+                        val nameB=when(b){is NeoNoteLibraryEntry.Folder->b.value.name
+                            is NeoNoteLibraryEntry.Note->b.value.title}
+                        nameA.lowercase().compareTo(nameB.lowercase())
+                    }
+                    "date" -> {
+                        val ta=when(a){is NeoNoteLibraryEntry.Folder->a.value.createdAt
+                            is NeoNoteLibraryEntry.Note->a.value.createdAt}
+                        val tb=when(b){is NeoNoteLibraryEntry.Folder->b.value.createdAt
+                            is NeoNoteLibraryEntry.Note->b.value.createdAt}
+                        tb.compareTo(ta)
+                    }
+                    else -> {
+                        val ta=when(a){is NeoNoteLibraryEntry.Folder->a.value.updatedAt
+                            is NeoNoteLibraryEntry.Note->a.value.updatedAt}
+                        val tb=when(b){is NeoNoteLibraryEntry.Folder->b.value.updatedAt
+                            is NeoNoteLibraryEntry.Note->b.value.updatedAt}
+                        tb.compareTo(ta)
+                    }
+                }
+            }
+        )
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalNeoTaskCompact provides options.compact,
             LocalNeoTaskMove provides if(options.sort==NeoTaskSort.MANUAL && optionsReady && !settingsBusy) { { id,delta ->
@@ -739,47 +784,68 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     }
                 } else {
                     item(key="note-folder-library") {
-                        Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                            Text(neoLabel("مكتبة الملاحظات","Notes Library"),
-                                style=MaterialTheme.typography.titleMedium)
-                            Row(
-                                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                horizontalArrangement=Arrangement.spacedBy(6.dp),
-                                verticalAlignment=Alignment.CenterVertically
-                            ) {
-                                FilterChip(selected=activeFolderId==null,onClick={activeFolderId=null},
-                                    label={Text(neoLabel("كل الملاحظات","All notes"))})
-                                noteFolders.forEach {folder ->
-                                    FilterChip(
-                                        selected=activeFolderId==folder.id,
-                                        onClick={activeFolderId=folder.id},
-                                        label={Text(
-                                            folder.name+" ("+noteFolderAssignments.values.count {it==folder.id}+")",
-                                            maxLines=1
-                                        )}
-                                    )
+                        Row(Modifier.fillMaxWidth(),
+                            verticalAlignment=Alignment.CenterVertically,
+                            horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                            val foldersById=noteFolders.associateBy{it.id}
+                            val path=mutableListOf<NeoSmartStore.NoteFolder>()
+                            var current=activeFolderId
+                            val visited=mutableSetOf<String>()
+                            while(current!=null && visited.add(current)) {
+                                val node=foldersById[current] ?: break
+                                path.add(node)
+                                current=node.parentId
+                            }
+                            TextButton(onClick={enterFolder(null)}) {
+                                Text(neoLabel("الملاحظات","Notes"))
+                            }
+                            path.asReversed().forEach {folder ->
+                                Text("›",color=MaterialTheme.colorScheme.onSurfaceVariant)
+                                TextButton(onClick={enterFolder(folder.id)}) {
+                                    Text(folder.name,maxLines=1)
                                 }
-                                FilterChip(
-                                    selected=activeFolderId=="__unfiled__",
-                                    onClick={activeFolderId="__unfiled__"},
-                                    label={Text(neoLabel("بدون مجلد","Unfiled"))}
-                                )
-                                AssistChip(
-                                    onClick={editingFolderId=null;folderName="";editFolderDialog=true},
-                                    label={Text(neoLabel("مجلد جديد +","New folder +"))}
-                                )
+                            }
+                            if(activeFolderId=="__all__")Text(neoLabel("كل الملاحظات","All notes"))
+                            if(activeFolderId=="__unfiled__")Text(neoLabel("بدون مجلد","Unfiled"))
+                            Spacer(Modifier.weight(1f))
+                            IconButton(onClick={initFolderEditor(null)}) {
+                                Icon(Icons.Rounded.CreateNewFolder,
+                                    neoLabel("إنشاء مجلد هنا","New folder here"))
                             }
                         }
                     }
-                    val notes=visibleNotes
-                    if(notes.isEmpty()) item {NeoEmptyState(neoLabel("لا توجد ملاحظات مطابقة","No matching notes"),neoLabel("غيّر البحث أو المجلد، أو أضف ملاحظة","Change search or folder, or add a note"))}
+                    if(libraryEntries.isEmpty()) item {
+                        NeoEmptyState(
+                            neoLabel("هذا المجلد فارغ","No items here"),
+                            neoLabel("أضف ملاحظة أو أنشئ فولدرًا جديدًا","Add a note or folder")
+                        )
+                    }
                     if(noteLayout=="grid" || noteLayout=="large") {
                         val columns=if(noteLayout=="grid") 3 else 2
-                        notes.chunked(columns).forEachIndexed {rowIndex,rowNotes ->
+                        libraryEntries.chunked(columns).forEachIndexed {rowIndex,rowNotes ->
                             item(key="note-grid-$rowIndex") {
                                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                                    rowNotes.forEach { note ->
+                                    rowNotes.forEach {entry ->
                                         Box(Modifier.weight(1f)) {
+                                        if(entry is NeoNoteLibraryEntry.Folder) {
+                                            NeoNoteFolderCard(entry.value,
+                                                count=noteFolderAssignments.values.count{
+                                                    it==entry.value.id
+                                                }+noteFolders.count{
+                                                    it.parentId==entry.value.id
+                                                },
+                                                onOpen={enterFolder(entry.value.id)},
+                                                onEdit={initFolderEditor(entry.value.id)},
+                                                onChild={enterFolder(entry.value.id);
+                                                    initFolderEditor(null)},
+                                                onMove={folderMoveId=entry.value.id},
+                                                onDelete={deleteFolderId=entry.value.id},
+                                                modifier=Modifier.fillMaxWidth().height(
+                                                    if(noteLayout=="grid") 142.dp else 184.dp
+                                                )
+                                            )
+                                        } else {
+                                        val note=(entry as NeoNoteLibraryEntry.Note).value
                             val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
                             val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
                             Card(modifier=Modifier
@@ -878,13 +944,31 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                 }
                             }
                                         }
+                                        }
                                     }
                                     repeat(columns-rowNotes.size) { Spacer(Modifier.weight(1f)) }
                                 }
                             }
                         }
                     } else {
-                        items(notes,key={it.id}) {note ->
+                        items(libraryEntries,key={entry->
+                            when(entry){
+                                is NeoNoteLibraryEntry.Folder->"folder:"+entry.value.id
+                                is NeoNoteLibraryEntry.Note->"note:"+entry.value.id
+                            }
+                        }) {entry ->
+                        if(entry is NeoNoteLibraryEntry.Folder) {
+                            NeoNoteFolderCard(entry.value,
+                                count=noteFolderAssignments.values.count{it==entry.value.id}+
+                                    noteFolders.count{it.parentId==entry.value.id},
+                                onOpen={enterFolder(entry.value.id)},
+                                onEdit={initFolderEditor(entry.value.id)},
+                                onChild={enterFolder(entry.value.id);initFolderEditor(null)},
+                                onMove={folderMoveId=entry.value.id},
+                                onDelete={deleteFolderId=entry.value.id}
+                            )
+                        } else {
+                        val note=(entry as NeoNoteLibraryEntry.Note).value
                         val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
                         val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
                         Card(modifier=Modifier
@@ -981,6 +1065,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         Text(note.date,style=MaterialTheme.typography.labelSmall,
                                             color=contentColor.copy(alpha=0.75f),maxLines=1)
                             }
+                        }
                         }
                         }
                     }

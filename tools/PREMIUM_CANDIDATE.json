@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 62,
-  "versionName": "4.20.0-premium-v58-notes-keyboard-menu",
-  "branch": "feat/v58-notes-keyboard-menu-fix-20261117",
-  "baseline": "3ac6e5fabdb1a80fe7f81fdee97a00843831c011",
-  "classification": "PERSISTENT-SIGNED v58 NOTES KEYBOARD/MENU — physical-device acceptance pending"
+  "versionCode": 63,
+  "versionName": "4.21.0-premium-v59-notes-toolbar-layout",
+  "branch": "feat/v59-notes-toolbar-layout-20261117",
+  "baseline": "6d94fd06c87f6c7f4526f1b2d2a11e4f67d631d1",
+  "classification": "PERSISTENT-SIGNED v59 NOTES TOOLBAR LAYOUT — physical-device acceptance pending"
 }

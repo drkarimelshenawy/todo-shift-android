@@ -1,8 +1,8 @@
-name: v56 Notes UX Rehab signed APK
+name: v57 Notes Stability signed APK
 
 on:
   push:
-    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117, feat/v46-notes-completion-20261117, feat/v47-notes-quick-capture-20261117, feat/v48-rich-notes-media-20261117, feat/v49-notes-pro-editor-20261117, feat/v50-notes-quiet-editor-20261117, feat/v51-notes-library-hierarchy-20261117, feat/v52-notes-document-blocks-20261117, feat/v53-fonts-docx-20261117, feat/v54-history-backup-20261117, feat/v55-notes-progressive-tools-20261117, feat/v56-notes-editor-rehab-20261117]
+    branches: [feat/v45-complete-specification, fix/v45-calendar-interactions-20261115, feat/v45-followup-ui-batch-20261115, feat/v45-followup-next-20261115, feat/v45-shift-card-sizing-20261115, feat/v45-note-toolbar-20261117, feat/v46-notes-smartlists-20261117, feat/v46-notes-completion-20261117, feat/v47-notes-quick-capture-20261117, feat/v48-rich-notes-media-20261117, feat/v49-notes-pro-editor-20261117, feat/v50-notes-quiet-editor-20261117, feat/v51-notes-library-hierarchy-20261117, feat/v52-notes-document-blocks-20261117, feat/v53-fonts-docx-20261117, feat/v54-history-backup-20261117, feat/v55-notes-progressive-tools-20261117, feat/v56-notes-editor-rehab-20261117, feat/v57-notes-ux-stability-20261117]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117' || github.ref == 'refs/heads/feat/v46-notes-completion-20261117' || github.ref == 'refs/heads/feat/v47-notes-quick-capture-20261117' || github.ref == 'refs/heads/feat/v48-rich-notes-media-20261117' || github.ref == 'refs/heads/feat/v49-notes-pro-editor-20261117' || github.ref == 'refs/heads/feat/v50-notes-quiet-editor-20261117' || github.ref == 'refs/heads/feat/v51-notes-library-hierarchy-20261117' || github.ref == 'refs/heads/feat/v52-notes-document-blocks-20261117' || github.ref == 'refs/heads/feat/v53-fonts-docx-20261117' || github.ref == 'refs/heads/feat/v54-history-backup-20261117' || github.ref == 'refs/heads/feat/v55-notes-progressive-tools-20261117' || github.ref == 'refs/heads/feat/v56-notes-editor-rehab-20261117'
+    if: github.ref == 'refs/heads/feat/v45-complete-specification' || github.ref == 'refs/heads/fix/v45-calendar-interactions-20261115' || github.ref == 'refs/heads/feat/v45-followup-ui-batch-20261115' || github.ref == 'refs/heads/feat/v45-followup-next-20261115' || github.ref == 'refs/heads/feat/v45-shift-card-sizing-20261115' || github.ref == 'refs/heads/feat/v45-note-toolbar-20261117' || github.ref == 'refs/heads/feat/v46-notes-smartlists-20261117' || github.ref == 'refs/heads/feat/v46-notes-completion-20261117' || github.ref == 'refs/heads/feat/v47-notes-quick-capture-20261117' || github.ref == 'refs/heads/feat/v48-rich-notes-media-20261117' || github.ref == 'refs/heads/feat/v49-notes-pro-editor-20261117' || github.ref == 'refs/heads/feat/v50-notes-quiet-editor-20261117' || github.ref == 'refs/heads/feat/v51-notes-library-hierarchy-20261117' || github.ref == 'refs/heads/feat/v52-notes-document-blocks-20261117' || github.ref == 'refs/heads/feat/v53-fonts-docx-20261117' || github.ref == 'refs/heads/feat/v54-history-backup-20261117' || github.ref == 'refs/heads/feat/v55-notes-progressive-tools-20261117' || github.ref == 'refs/heads/feat/v56-notes-editor-rehab-20261117' || github.ref == 'refs/heads/feat/v57-notes-ux-stability-20261117'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -121,11 +121,11 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v56-Notes-Rehab.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v57-Notes-Stability.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-v56-Notes-Rehab-signed-APK
+          name: ToDoShift-v57-Notes-Stability-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -133,17 +133,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v56-notes-rehab-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v56-Notes-Rehab.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v56 — Notes UX Rehabilitation" --notes "Signed v56 Notes: streamlined editor chrome with top undo/redo, keyboard-adjacent quick formatting, organized Format sheet and nested note/document settings, retaining ruling, page color, font and document tools. Preserves v54 encrypted history and existing note storage. Device acceptance pending. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
+          TAG="v57-notes-stability-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v57-Notes-Stability.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v57 — Notes Stability" --notes "Signed v57 Notes: IME-safe formatting, inline image and paragraph editing, simpler commands, contextual image controls and keyboard-aware toolbar. Page ruling, page colors, fonts and protected history preserved. Preserves v54 encrypted history and existing note storage. Device acceptance pending. Archive CRC/signature/identity verified. Source: $GITHUB_SHA. No emulator or physical-device acceptance in this revision."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v56-notes-rehab-${GITHUB_SHA:0:12}"
+          TAG="v57-notes-stability-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ToDoShift-v56-Notes-Rehab.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ToDoShift-v56-Notes-Rehab.apk "$RUNNER_TEMP/published/ToDoShift-v56-Notes-Rehab.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v56-Notes-Rehab.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ToDoShift-v57-Notes-Stability.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v57-Notes-Stability.apk "$RUNNER_TEMP/published/ToDoShift-v57-Notes-Stability.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v57-Notes-Stability.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

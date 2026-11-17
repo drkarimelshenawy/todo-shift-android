@@ -488,6 +488,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 }
                 NeoNoteProToolbar(
                     noteId=id,document=rich.value.text,
+                    source=noteSource(),title=title,
                     onJump={start,end ->
                         if(rich.value.composition==null) {
                             editing=true

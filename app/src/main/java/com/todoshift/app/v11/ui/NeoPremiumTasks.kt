@@ -98,6 +98,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var activeFolderId by rememberSaveable {mutableStateOf<String?>(null)}
     var noteFolders by remember {mutableStateOf<List<NeoSmartStore.NoteFolder>>(emptyList())}
     var noteFolderAssignments by remember {mutableStateOf<Map<String,String>>(emptyMap())}
+    var favoriteNoteIds by remember {mutableStateOf<Set<String>>(emptySet())}
     var folderRefresh by remember {mutableIntStateOf(0)}
     var folderBusy by remember {mutableStateOf(false)}
     var editFolderDialog by remember {mutableStateOf(false)}
@@ -108,11 +109,12 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var newNoteFolderTarget by remember {mutableStateOf<String?>(null)}
     LaunchedEffect(folderRefresh) {
         try {
-            val (folders,assignments)=withContext(Dispatchers.IO) {
-                store.noteFolders() to store.noteFolderAssignments()
+            val (folders,assignments,favorites)=withContext(Dispatchers.IO) {
+                Triple(store.noteFolders(),store.noteFolderAssignments(),store.noteFavorites())
             }
             noteFolders=folders
             noteFolderAssignments=assignments
+            favoriteNoteIds=favorites
             if(activeFolderId!=null && folders.none{it.id==activeFolderId}) activeFolderId=null
         } catch(failure:Exception) {
             error=failure.message ?: "Could not load note folders"
@@ -258,6 +260,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     listOf(
                         "active" to neoLabel("الملاحظات","Notes"),
                         "pinned" to neoLabel("المثبتة","Pinned"),
+                        "favorites" to neoLabel("المفضلة","Favorites"),
                         "archive" to neoLabel("الأرشيف","Archive"),
                         "trash" to neoLabel("المهملات","Trash"),
                         "hidden" to neoLabel("المخفية","Hidden")
@@ -326,7 +329,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         }
                     }
                 }
-                TextButton(onClick={noteFolder="active";noteTag=null}) {
+                TextButton(onClick={noteFolder="active";noteTag=null;activeFolderId=null}) {
                     Text(neoLabel("مسح فلاتر القسم والوسوم","Clear section and tag filters"))
                 }
             }
@@ -486,6 +489,17 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             ) {Text(neoLabel("حذف","Delete"))}
                             TextButton(enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
                                 onClick={moveNotesDialog=true}) {Text(neoLabel("نقل لمجلد","Move to folder"))}
+                            TextButton(
+                                enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
+                                onClick={
+                                    val ids=selectedNotes.toList()
+                                    val next=ids.any {it !in favoriteNoteIds}
+                                    updateFolder({store.setNoteFavorites(ids,next)},
+                                        neoLiteral("تم تحديث المفضلة","Favorites updated"))
+                                    selectedNotes=emptySet();noteSelectionMode=false
+                                }
+                            ) {Text(neoLabel("المفضلة","Favorite"))}
+
                             TextButton(onClick={selectedNotes=emptySet();noteSelectionMode=false}) {
                                 Text(neoLabel("إلغاء","Cancel"))
                             }
@@ -537,9 +551,17 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     FilterChip(
                                         selected=activeFolderId==folder.id,
                                         onClick={activeFolderId=folder.id},
-                                        label={Text(folder.name,maxLines=1)}
+                                        label={Text(
+                                            folder.name+" ("+noteFolderAssignments.values.count {it==folder.id}+")",
+                                            maxLines=1
+                                        )}
                                     )
                                 }
+                                FilterChip(
+                                    selected=activeFolderId=="__unfiled__",
+                                    onClick={activeFolderId="__unfiled__"},
+                                    label={Text(neoLabel("بدون مجلد","Unfiled"))}
+                                )
                                 AssistChip(
                                     onClick={editingFolderId=null;folderName="";editFolderDialog=true},
                                     label={Text(neoLabel("مجلد جديد +","New folder +"))}
@@ -549,8 +571,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     }
                     val notes=db.dayItems.filter { note ->
                         note.type==DayItemTypeV11.NOTE &&
-                        when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;"pinned"->note.notePinned&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
-                        (activeFolderId==null || noteFolderAssignments[note.id]==activeFolderId) &&
+                        when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;"pinned"->note.notePinned&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;"favorites"->note.id in favoriteNoteIds&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
+                        (activeFolderId==null || (activeFolderId=="__unfiled__" &&
+                            noteFolderAssignments[note.id]==null) ||
+                            noteFolderAssignments[note.id]==activeFolderId) &&
                         (noteTag==null || (!note.noteLocked && note.noteTags.split(",").map {it.trim()}.contains(noteTag))) &&
                         (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
                     }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.createdAt};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}

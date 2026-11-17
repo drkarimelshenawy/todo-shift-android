@@ -26,12 +26,16 @@ class NeoNotesToolbarVisibilityDeviceTest {
     private fun screenshot(name:String) {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         val dir=File(context.getExternalFilesDir(null),"notes-toolbar").apply {mkdirs()}
-        val bmp=InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+        val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
+        val bmp=automation.takeScreenshot()
         assertNotNull("Screen capture unavailable",bmp)
         FileOutputStream(File(dir,name)).use {
             bmp.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
         }
-        android.util.Log.i("NotesToolbarDeviceTest","screenshot="+File(dir,name).absolutePath)
+        // Shell-owned screenshot survives uninstall after a failed test.
+        val destination="/sdcard/Download/notes-toolbar-"+name
+        automation.executeShellCommand("screencap -p "+destination).close()
+        android.util.Log.i("NotesToolbarDeviceTest","screenshot="+destination)
     }
 
     @Test fun toolbarVisibleWhenKeyboardClosedAndOpen() {
@@ -49,7 +53,20 @@ class NeoNotesToolbarVisibilityDeviceTest {
         }
         rule.waitForIdle()
         screenshot("01-closed.png")
-        rule.onNodeWithTag("notes_quick_bar").assertIsDisplayed()
+        run {
+        val toolbar=rule.onNodeWithTag("notes_quick_bar")
+        val semantics=toolbar.fetchSemanticsNode()
+        val metrics=rule.activity.resources.displayMetrics
+        val diagnostic="NOTE_TOOLBAR_BOUNDS root="+semantics.boundsInRoot+
+            ", window="+semantics.boundsInWindow+
+            ", display="+metrics.widthPixels+"x"+metrics.heightPixels
+        android.util.Log.e("NotesToolbarDeviceTest",diagnostic)
+        try {
+            toolbar.assertIsDisplayed()
+        } catch(failure:AssertionError) {
+            throw AssertionError(diagnostic+" -- "+failure.message,failure)
+        }
+        }
         rule.onNodeWithTag("notes_body_input").performClick()
         rule.onNodeWithTag("notes_body_input").performTextInput("اختبار")
         rule.waitForIdle()

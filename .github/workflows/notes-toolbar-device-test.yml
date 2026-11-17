@@ -17,6 +17,10 @@ jobs:
   real-note-dialog:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [35, 36]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -47,7 +51,7 @@ jobs:
           TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
           TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
         with:
-          api-level: 35
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -56,12 +60,13 @@ jobs:
           script: |
             adb shell wm size 1080x2400
             adb shell wm density 440
+            adb shell settings put secure show_ime_with_hard_keyboard 1
             mkdir -p device-evidence
             bash -c 'gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace; status=$?; adb pull /sdcard/Download/notes-toolbar-01-closed.png device-evidence/ || true; adb pull /sdcard/Download/notes-toolbar-02-open.png device-evidence/ || true; adb logcat -d -s NotesViewport:I | tail -n 35 || true; exit "$status"'
       - name: Publish screenshot evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: notes-toolbar-emulator-screenshots
+          name: notes-toolbar-emulator-screenshots-api-${{ matrix.api-level }}
           path: device-evidence/
           if-no-files-found: warn

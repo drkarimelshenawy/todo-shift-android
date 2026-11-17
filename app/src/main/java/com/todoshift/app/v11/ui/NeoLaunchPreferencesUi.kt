@@ -38,27 +38,36 @@ fun NeoLaunchPreferencesUi() {
         runCatching {store.defaultNoteRuled=value}
             .onSuccess {ruled=value;failure=false}.onFailure {failure=true}
     }
-    val fonts=listOf("system","sans","serif","mono")
-    NeoChoice(neoLabel("الخط العربي الافتراضي","Default Arabic text font"),
-        fonts,arabicFont,{key ->
+    val arabicOptions=NeoNoteTypefaces.arabicChoices+
+        listOf(arabicFont).filter{it !in NeoNoteTypefaces.arabicChoices}
+    val englishOptions=NeoNoteTypefaces.englishChoices+
+        listOf(englishFont).filter{it !in NeoNoteTypefaces.englishChoices}
+    NeoChoice(neoLabel("الخط العربي الافتراضي","Default Arabic font"),
+        arabicOptions,arabicFont,{key ->
             when(key) {
-                "sans" -> neoLabel("واضح (Sans)","Sans")
-                "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
-                "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
-                else -> neoLabel("خط الجهاز","System default")
+                "amiri" -> "Amiri — "+neoLabel("نسخي كلاسيكي","Classical")
+                "tajawal" -> "Tajawal — "+neoLabel("حديث وواضح","Modern")
+                "reem" -> "Reem Kufi — "+neoLabel("كوفي مميز","Kufi")
+                "sans" -> neoLabel("Sans القديم","Legacy Sans")
+                "serif" -> neoLabel("Serif القديم","Legacy Serif")
+                "mono" -> neoLabel("Mono القديم","Legacy Mono")
+                else -> neoLabel("الخط الأساسي","Default")
             }
         },
         {value ->
             runCatching {store.defaultArabicNoteFont=value}
                 .onSuccess {arabicFont=value;failure=false}.onFailure {failure=true}
         })
-    NeoChoice(neoLabel("الخط الإنجليزي الافتراضي","Default English text font"),
-        fonts,englishFont,{key ->
+    NeoChoice(neoLabel("الخط الإنجليزي الافتراضي","Default English font"),
+        englishOptions,englishFont,{key ->
             when(key) {
-                "sans" -> neoLabel("واضح (Sans)","Sans")
-                "serif" -> neoLabel("كلاسيكي (Serif)","Serif")
-                "mono" -> neoLabel("ثابت العرض (Mono)","Monospace")
-                else -> neoLabel("خط الجهاز","System default")
+                "montserrat" -> "Montserrat — "+neoLabel("حديث","Modern")
+                "lora" -> "Lora — "+neoLabel("كلاسيكي","Literary")
+                "oswald" -> "Oswald — "+neoLabel("للعناوين","Display")
+                "sans" -> neoLabel("Sans القديم","Legacy Sans")
+                "serif" -> neoLabel("Serif القديم","Legacy Serif")
+                "mono" -> neoLabel("Mono القديم","Legacy Mono")
+                else -> neoLabel("الخط الأساسي","Default")
             }
         },
         {value ->
@@ -66,8 +75,8 @@ fun NeoLaunchPreferencesUi() {
                 .onSuccess {englishFont=value;failure=false}.onFailure {failure=true}
         })
     Text(neoLabel(
-        "الخطوط من عائلات Android المتاحة على الجهاز؛ قد يختلف شكلها من هاتف لآخر.",
-        "Fonts use installed Android families; appearance can vary by device."),
+        "الخطوط الستة الجديدة مرفقة داخل التطبيق، وتعمل دون إنترنت.",
+        "Six distinctive typefaces are bundled in the app and work offline."),
         style=androidx.compose.material3.MaterialTheme.typography.bodySmall)
     if (failure) Text(neoLabel("تعذر حفظ التفضيل؛ أعد المحاولة", "Preference could not be saved; retry"))
 }

@@ -149,6 +149,26 @@ class NeoSmartStore(context: Context) {
     }
 
     /**
+     * Favorites are separate from pinned notes and belong to the Notes
+     * metadata exported with the Tasks/Notes backup section.
+     */
+    fun noteFavorites():Set<String> =
+        snapshot().optJSONObject("noteFavorites")?.let {items ->
+            items.keys().asSequence().filter {items.optBoolean(it,false)}.toSet()
+        }.orEmpty()
+
+    fun setNoteFavorites(noteIds:Collection<String>,favorite:Boolean) {
+        require(noteIds.size<=1000 && noteIds.all {it.isNotBlank() && it.length<=150})
+        update {o ->
+            val favorites=o.optJSONObject("noteFavorites") ?: JSONObject()
+            noteIds.forEach {id ->
+                if(favorite) favorites.put(id,true) else favorites.remove(id)
+            }
+            o.put("noteFavorites",favorites)
+        }
+    }
+
+    /**
      * Folder identity and per-note membership live in the transactionally
      * backed-up Smart metadata. An unassigned note is always visible in All.
      * This is additive: no change to DayItemV11, note IDs or stored text.
@@ -250,6 +270,13 @@ class NeoSmartStore(context: Context) {
                     for (j in 0 until titles.length()) require(
                         titles.getString(j).isNotBlank() && titles.getString(j).length <= 300
                     )
+                }
+            }
+            o.optJSONObject("noteFavorites")?.let {favorites ->
+                require(favorites.length()<=5000)
+                favorites.keys().forEach {id ->
+                    require(id.isNotBlank() && id.length<=150)
+                    require(favorites.opt(id)==true)
                 }
             }
             val folderIds=mutableSetOf<String>()

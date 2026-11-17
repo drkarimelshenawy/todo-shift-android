@@ -93,4 +93,32 @@ class NeoNavigationTest {
         assertNull(NeoEntry.routed(Intent(Intent.ACTION_MAIN), 1))
         assertNotNull(NeoEntry.routed(Intent().putExtra("neo4_open_tab", 0), 2))
     }
+
+    @Test
+    fun textShareRoutesOnlyToNewNoteWithoutSavingDataOrExposingAttachmentUris() {
+        val share=Intent(Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT,"https://example.org/test")
+        val entry=NeoEntry.routed(share,123L)
+        assertNotNull(entry)
+        assertEquals(4,entry!!.tab)
+        assertEquals("new_note",entry.taskAction)
+        assertEquals("https://example.org/test",entry.sharedNoteText)
+        assertNull(entry.taskId)
+        assertNull(NeoEntry.routed(Intent(Intent.ACTION_SEND).setType("image/png")
+            .putExtra(Intent.EXTRA_TEXT,"private image"),2L))
+        assertNull(NeoEntry.routed(Intent(Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT,"   "),3L))
+    }
+
+    @Test
+    fun directNewNoteShortcutAndShareTextLimitAreRecognized() {
+        val shortcut=NeoEntry.routed(Intent(Intent.ACTION_VIEW)
+            .putExtra("todo_shift_task_action","new_note"),4L)
+        assertEquals("new_note",shortcut!!.taskAction)
+        assertNull(shortcut.sharedNoteText)
+        val huge="ن".repeat(18_000)
+        val shared=NeoEntry.routed(Intent(Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT,huge),5L)
+        assertEquals(16_000,shared!!.sharedNoteText!!.length)
+    }
 }

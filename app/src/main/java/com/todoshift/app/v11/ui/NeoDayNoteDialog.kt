@@ -528,13 +528,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 val rootBottom=(origin[1]+coords.boundsInWindow().bottom).roundToInt()
                 val occluded=(rootBottom-visible.bottom).coerceAtLeast(0)
                 if(bottomOcclusionPx!=occluded) bottomOcclusionPx=occluded
-                val inset=view.rootWindowInsets
+                val inset=androidx.core.view.ViewCompat.getRootWindowInsets(view)
                 android.util.Log.i("NotesViewport",
                     "rootBottom="+rootBottom+", visibleBottom="+visible.bottom+
                     ", reserve="+occluded+", nav="+
-                    (inset?.getInsets(android.view.WindowInsets.Type.navigationBars())?.bottom ?: -1)+
+                    (inset?.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())?.bottom ?: -1)+
                     ", ime="+
-                    (inset?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: -1))
+                    (inset?.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())?.bottom ?: -1))
             },
             color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface
         ) {

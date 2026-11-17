@@ -493,7 +493,23 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         ) {
                             // Long-press to select and copy text in read-only mode.
                             SelectionContainer {
-                                NeoNotePreview(body.text,textDirection=direction,ruled=true)
+                                NeoNotePreview(
+                                    body.text,
+                                    textDirection=direction,
+                                    ruled=true,
+                                    onChecklist={line ->
+                                        if(!pending) {
+                                            val rows=body.text.lines().toMutableList()
+                                            if(line in rows.indices) {
+                                                val changed=NeoSmartLists.toggleChecked(rows[line])
+                                                if(changed!=rows[line]) {
+                                                    rows[line]=changed
+                                                    edit(TextFieldValue(rows.joinToString("\n")))
+                                                }
+                                            }
+                                        }
+                                    }
+                                )
                             }
                             Spacer(Modifier.height(196.dp))
                         }
@@ -523,8 +539,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 Text(neoLabel("خيارات الملاحظة","Note options"),style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
                                 TextButton(onClick={options=false}) {Text(neoLabel("إغلاق","Close"))}
                             }
-            if(editing && (preview || body.text.lines().any {it.trimStart().startsWith("- [")})) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
-                if(!pending) { val lines=body.text.lines().toMutableList();val old=lines[line]; lines[line]=if(old.contains("[ ]")) old.replaceFirst("[ ]","[x]") else old.replaceFirst(Regex("\\[[xX]\\]"),"[ ]");edit(TextFieldValue(lines.joinToString("\n"))) }
+            if(editing && (preview || body.text.lines().any {NeoSmartLists.parse(it)?.kind=="check"})) NeoNotePreview(body.text, checklistsOnly=!preview, onChecklist={ line ->
+                if(!pending) { val lines=body.text.lines().toMutableList();if(line in lines.indices) {lines[line]=NeoSmartLists.toggleChecked(lines[line]);edit(TextFieldValue(lines.joinToString("\n")))}}
             },onCreateTask={line,label->
                 if(!pending) {val lines=body.text.lines().toMutableList()
                     val found=Regex("<!--task:([A-Za-z0-9_-]+)-->").find(lines[line])

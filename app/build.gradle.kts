@@ -14,8 +14,8 @@ android {
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 63
-        versionName = "4.21.0-premium-v59-notes-toolbar-layout"
+        versionCode = 64
+        versionName = "4.22.0-premium-v60-notes-toolbar-safe-area"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

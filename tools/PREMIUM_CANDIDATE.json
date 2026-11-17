@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 63,
-  "versionName": "4.21.0-premium-v59-notes-toolbar-layout",
-  "branch": "feat/v59-notes-toolbar-layout-20261117",
-  "baseline": "6d94fd06c87f6c7f4526f1b2d2a11e4f67d631d1",
-  "classification": "PERSISTENT-SIGNED v59 NOTES TOOLBAR LAYOUT — physical-device acceptance pending"
+  "versionCode": 64,
+  "versionName": "4.22.0-premium-v60-notes-toolbar-safe-area",
+  "branch": "feat/v60-notes-toolbar-safe-area-20261118",
+  "baseline": "700b0b4cccf615f6b3729fc9aec0705c4467c739",
+  "classification": "SIGNED v60 NOTES TOOLBAR IME SAFE AREA — Android 16 emulator keyboard visibility PASS, physical device acceptance pending"
 }

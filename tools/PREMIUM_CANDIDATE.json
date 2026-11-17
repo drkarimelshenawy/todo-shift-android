@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 52,
-  "versionName": "4.10.0-premium-v48-rich-notes",
-  "branch": "feat/v48-rich-notes-media-20261117",
-  "baseline": "482d7e58ef96dd64e35adeb44eb6885c8b07dd40",
-  "classification": "PERSISTENT-SIGNED v48 RICH NOTES MEDIA — physical-device acceptance pending"
+  "versionCode": 53,
+  "versionName": "4.11.0-premium-v49-pro-editor",
+  "branch": "feat/v49-notes-pro-editor-20261117",
+  "baseline": "f7f01804ea1d391c8512c79ec4b13e164942f8b2",
+  "classification": "PERSISTENT-SIGNED v49 NOTES PRO EDITOR — physical-device acceptance pending"
 }

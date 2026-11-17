@@ -23,6 +23,10 @@ import androidx.compose.material.icons.rounded.FormatSize
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.platform.LocalDensity
+import kotlin.math.roundToInt
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -507,6 +511,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         // system-bar and keyboard-safe bounds. The previous edge-to-edge Dialog
         // measured the footer down to the physical bottom of the display.
         val view=androidx.compose.ui.platform.LocalView.current
+        var bottomOcclusionPx by remember(view) {mutableIntStateOf(0)}
         DisposableEffect(view) {
             val window=(view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
             val previous=window?.attributes?.softInputMode
@@ -515,7 +520,22 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             onDispose { if(previous!=null) window?.setSoftInputMode(previous) }
         }
         Surface(
-            modifier=Modifier.fillMaxSize(),
+            modifier=Modifier.fillMaxSize().onGloballyPositioned {coords ->
+                val visible=android.graphics.Rect()
+                view.getWindowVisibleDisplayFrame(visible)
+                val origin=IntArray(2)
+                view.getLocationOnScreen(origin)
+                val rootBottom=(origin[1]+coords.boundsInWindow().bottom).roundToInt()
+                val occluded=(rootBottom-visible.bottom).coerceAtLeast(0)
+                if(bottomOcclusionPx!=occluded) bottomOcclusionPx=occluded
+                val inset=view.rootWindowInsets
+                android.util.Log.i("NotesViewport",
+                    "rootBottom="+rootBottom+", visibleBottom="+visible.bottom+
+                    ", reserve="+occluded+", nav="+
+                    (inset?.getInsets(android.view.WindowInsets.Type.navigationBars())?.bottom ?: -1)+
+                    ", ime="+
+                    (inset?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: -1))
+            },
             color=effectiveBackground?.let {androidx.compose.ui.graphics.Color(it)} ?: MaterialTheme.colorScheme.surface
         ) {
             Box(Modifier.fillMaxSize()) {
@@ -528,16 +548,23 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     containerColor=androidx.compose.ui.graphics.Color.Transparent,
                     bottomBar={
                         if(editing && !a4Preview) {
-                            NeoNoteQuickBar(
-                                state=activeText,
-                                enabled=!hasDocumentBlocks || focusedParagraph!=null,
-                                onChange=applyToActiveText,
-                                onFormat={
-                                    formatInitialTab=0
-                                    showFormatSheet=true
-                                    noteKeyboard?.hide()
-                                }
-                            )
+                            Column(Modifier.fillMaxWidth()) {
+                                NeoNoteQuickBar(
+                                    state=activeText,
+                                    enabled=!hasDocumentBlocks || focusedParagraph!=null,
+                                    onChange=applyToActiveText,
+                                    onFormat={
+                                        formatInitialTab=0
+                                        showFormatSheet=true
+                                        noteKeyboard?.hide()
+                                    }
+                                )
+                                // The dialog window may extend below the actually
+                                // visible area on API 35+. Reserve precisely the
+                                // occluded region reported by the Android window.
+                                val gap=with(LocalDensity.current){bottomOcclusionPx.toDp()}
+                                if(gap>0.dp) Spacer(Modifier.height(gap))
+                            }
                         }
                     }
                 ) {innerPadding ->

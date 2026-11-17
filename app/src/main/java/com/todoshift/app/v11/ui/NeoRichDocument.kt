@@ -179,6 +179,16 @@ internal data class NeoRichEditorState(
     fun stored():String {
         val text=value.text;val tokens=hidden.groupBy {it.position.coerceIn(0,text.length)}
         val out=StringBuilder()
+        // List prefixes are structure, not user-formatted words. Keeping their
+        // serialization outside rich spans preserves checklist recognition.
+        val listMarker=BooleanArray(text.length)
+        var lineOffset=0
+        text.split('\n').forEach {line ->
+            val prefix=NeoSmartLists.parse(line)
+            if(prefix!=null) for(j in 0 until prefix.length)
+                if(lineOffset+j in listMarker.indices) listMarker[lineOffset+j]=true
+            lineOffset+=line.length+1
+        }
         var open=emptyList<Pair<String,String>>()
         fun close() {open.asReversed().forEach{out.append(it.second)};open=emptyList()}
         for(i in 0..text.length) {
@@ -187,7 +197,7 @@ internal data class NeoRichEditorState(
             }
             if(i==text.length) break
             if(text[i]=='\n') {close();out.append('\n');continue}
-            val style=characters[i]
+            val style=if(listMarker[i]) NeoRichCharStyle() else characters[i]
             val tags=buildList {
                 if(style.bold)add("<b>" to "</b>")
                 if(style.italic)add("<i>" to "</i>")

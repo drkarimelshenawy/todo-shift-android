@@ -42,11 +42,11 @@ internal fun NeoNoteQuickBar(
                 horizontalArrangement=Arrangement.spacedBy(7.dp)
             ) {
                 NeoChromeIcon(Icons.Rounded.FormatBold,neoLabel("عريض","Bold"),
-                    state.active("bold")),enabled=enabled){onChange(state.toggle("bold"))}
+                    state.active("bold"),enabled=enabled){onChange(state.toggle("bold"))}
                 NeoChromeIcon(Icons.Rounded.FormatItalic,neoLabel("مائل","Italic"),
-                    state.active("italic")),enabled=enabled){onChange(state.toggle("italic"))}
+                    state.active("italic"),enabled=enabled){onChange(state.toggle("italic"))}
                 NeoChromeIcon(Icons.Rounded.FormatUnderlined,neoLabel("تسطير النص","Underline text"),
-                    state.active("underline")),enabled=enabled){onChange(state.toggle("underline"))}
+                    state.active("underline"),enabled=enabled){onChange(state.toggle("underline"))}
                 Box {
                     NeoChromeIcon(Icons.Rounded.FormatColorText,neoLabel("لون النص","Text color"),enabled=enabled) {
                         inkOpen=true
@@ -61,9 +61,9 @@ internal fun NeoNoteQuickBar(
                 }
                 VerticalDivider(Modifier.height(28.dp),thickness=1.dp)
                 NeoChromeIcon(Icons.Rounded.FormatListBulleted,neoLabel("قائمة نقطية","Bullet list"),
-                    state.listActive("bullet")),enabled=enabled){onChange(state.list("bullet"))}
+                    state.listActive("bullet"),enabled=enabled){onChange(state.list("bullet"))}
                 NeoChromeIcon(Icons.Rounded.CheckBox,neoLabel("قائمة اختيار","Checklist"),
-                    state.listActive("check")),enabled=enabled){onChange(state.list("check"))}
+                    state.listActive("check"),enabled=enabled){onChange(state.list("check"))}
                 FilledTonalButton(onClick=onFormat,contentPadding=PaddingValues(horizontal=12.dp)) {
                     Icon(Icons.Rounded.FormatSize,null,Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))

@@ -1112,7 +1112,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         }
         FloatingActionButton(onClick={if(notesTab) {
             initialNoteTitle="";initialNoteBody=""
-            newNoteFolderTarget=activeFolderId?.takeUnless{it=="__unfiled__"}
+            newNoteFolderTarget=activeFolderId?.takeUnless{
+                it=="__unfiled__" || it=="__all__"
+            }
             noteId=null;noteEditor=true
         } else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
@@ -1126,6 +1128,23 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     if (noteEditor) {
         val existing = db.dayItems.firstOrNull { it.id == noteId }
+        val noteDestination=existing?.id?.let{noteFolderAssignments[it]}
+        if(existing!=null && !authorizedFolder(noteDestination)) {
+            AlertDialog(
+                onDismissRequest={noteEditor=false;noteId=null},
+                title={Text(neoLabel("ملاحظة داخل مجلد مقفول","Note in locked folder"))},
+                text={Text(neoLabel(
+                    "يجب فتح المجلد بكلمة المرور أو النمط قبل عرض الملاحظة.",
+                    "Unlock the parent folder before viewing this note."))},
+                confirmButton={TextButton(onClick={
+                    noteEditor=false;noteId=null
+                    pendingUnlockFolder=noteDestination
+                }) {Text(neoLabel("فتح المجلد","Unlock folder"))}},
+                dismissButton={TextButton(onClick={noteEditor=false;noteId=null}) {
+                    Text(neoLabel("إلغاء","Cancel"))
+                }}
+            )
+        } else {
         CompositionLocalProvider(LocalNeoOpenNoteTask provides {taskId -> noteEditor=false;noteId=null;open(taskId)}) {
         NeoDayNoteDialog(existing?.date?.let { java.time.LocalDate.parse(it) } ?: today, existing,
             expectedDatabase = db, calendarId = existing?.calendarId ?: db.calendars.firstOrNull { it.visible }?.id,
@@ -1146,6 +1165,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                 newNoteFolderTarget=null
                 initialNoteTitle="";initialNoteBody=""
             }
+        }
         }
     }
     if(filters) AlertDialog(onDismissRequest={filters=false},title={Text(neoLiteral("فلاتر وعرض المهام","Task filters and view"))},text={

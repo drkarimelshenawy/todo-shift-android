@@ -56,4 +56,23 @@ class NeoNoteFolderStoreTest {
         try {NeoSmartStore.validate(invalid);fail("Orphan folder reference accepted")}
         catch(_:IllegalArgumentException) {}
     }
+
+    @Test fun favoriteNotesAreIndependentFromFoldersAndPersist() {
+        val store=NeoSmartStore(context)
+        val folder=store.createNoteFolder("Ward")
+        store.moveNotesToFolder(listOf("note-1"),folder.id)
+        store.setNoteFavorites(listOf("note-1","note-2"),true)
+        assertEquals(setOf("note-1","note-2"),NeoSmartStore(context).noteFavorites())
+        assertEquals(folder.id,store.noteFolderAssignments()["note-1"])
+        store.setNoteFavorites(listOf("note-1"),false)
+        assertEquals(setOf("note-2"),store.noteFavorites())
+        assertEquals(folder.id,store.noteFolderAssignments()["note-1"])
+    }
+
+    @Test fun invalidFavoriteValueIsRejectedDuringBackupValidation() {
+        val invalid=JSONObject().put("version",1)
+            .put("noteFavorites",JSONObject().put("note-1",false))
+        try {NeoSmartStore.validate(invalid);fail("False favorite metadata must not be imported")}
+        catch(_:IllegalArgumentException) {}
+    }
 }

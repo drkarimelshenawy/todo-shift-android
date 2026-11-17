@@ -12,18 +12,26 @@ internal object NeoDocumentBlocks {
     sealed interface Block {
         val startLine:Int
         val endLine:Int
+        /** Exact source version used to guard against overwriting concurrent edits. */
+        val sourceSnapshot:String
         data class Paragraph(
-            val source:String,override val startLine:Int,override val endLine:Int
+            val source:String,override val startLine:Int,override val endLine:Int,
+            override val sourceSnapshot:String
         ):Block
         data class Table(
             val cells:List<List<String>>,
-            override val startLine:Int,override val endLine:Int
+            override val startLine:Int,override val endLine:Int,
+            override val sourceSnapshot:String
         ):Block
         data class Image(
             val name:String,val width:Int,val align:String,
-            override val startLine:Int,override val endLine:Int
+            override val startLine:Int,override val endLine:Int,
+            override val sourceSnapshot:String
         ):Block
-        data class PageBreak(override val startLine:Int,override val endLine:Int):Block
+        data class PageBreak(
+            override val startLine:Int,override val endLine:Int,
+            override val sourceSnapshot:String
+        ):Block
     }
 
     private val imagePattern=Regex("""^\[\[neo-image:([A-Za-z0-9_.-]{1,110}):([0-9]{1,3}):(left|center|right)\]\]$""")
@@ -78,12 +86,12 @@ internal object NeoDocumentBlocks {
                 val width=img.groupValues[2].toIntOrNull()
                 if(width!=null && width in 25..100) {
                     blocks+=Block.Image(img.groupValues[1],width,img.groupValues[3],
-                        cursor,cursor+1)
+                        cursor,cursor+1,source)
                     cursor++;continue
                 }
             }
             if(lines[cursor]==PAGE_BREAK) {
-                blocks+=Block.PageBreak(cursor,cursor+1)
+                blocks+=Block.PageBreak(cursor,cursor+1,source)
                 cursor++;continue
             }
             val header=parseCells(lines[cursor])
@@ -98,7 +106,7 @@ internal object NeoDocumentBlocks {
                     data+=row;next++
                 }
                 if(data.size>=2) {
-                    blocks+=Block.Table(data,cursor,next)
+                    blocks+=Block.Table(data,cursor,next,source)
                     cursor=next;continue
                 }
             }
@@ -113,7 +121,7 @@ internal object NeoDocumentBlocks {
                 cursor++
             }
             blocks+=Block.Paragraph(lines.subList(start,cursor).joinToString("\n"),
-                start,cursor)
+                start,cursor,source)
         }
         return blocks
     }
@@ -122,7 +130,10 @@ internal object NeoDocumentBlocks {
         val rows=source.split('\n')
         require(block.startLine>=0 && block.endLine in 1..rows.size &&
             block.startLine<block.endLine)
-        require(parse(source).contains(block)) {"Document changed while editing the block"}
+        require(block.sourceSnapshot==source) {
+            "Document changed while editing the block"
+        }
+        require(parse(source).contains(block)) {"Document block was replaced"}
         return (rows.take(block.startLine)+newSource.split('\n')+
             rows.drop(block.endLine)).joinToString("\n")
     }

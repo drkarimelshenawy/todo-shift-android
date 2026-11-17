@@ -1,5 +1,7 @@
 package com.todoshift.app.v11.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +42,33 @@ internal fun NeoNoteProToolbar(
     var outlineOpen by remember {mutableStateOf(false)}
     var historyOpen by remember {mutableStateOf(false)}
     var chosen by remember {mutableStateOf<NeoNoteHistoryStore.Revision?>(null)}
+    var exportOpen by remember {mutableStateOf(false)}
+    val htmlLauncher=rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/html")) {uri ->
+        if(uri!=null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use {output ->
+                        output.write(NeoNoteExporter.html(title,source).toByteArray(Charsets.UTF_8))
+                    } ?: error("Cannot open output document")
+                }
+            } catch(e:Exception) {onError(e.message ?: "Could not export HTML")}
+        }
+    }
+    val textLauncher=rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")) {uri ->
+        if(uri!=null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use {output ->
+                        output.write(NeoNoteExporter.plain(source).toByteArray(Charsets.UTF_8))
+                    } ?: error("Cannot open output document")
+                }
+            } catch(e:Exception) {onError(e.message ?: "Could not export text")}
+        }
+    }
+    val exportName=title.ifBlank {"Note"}
+        .replace(Regex("""[/\\:*?"<>|]"""),"_").take(55)
     var revisions by remember {mutableStateOf<List<NeoNoteHistoryStore.Revision>>(emptyList())}
     val stats=remember(document) {NeoNoteDocumentTools.stats(document)}
     val results=remember(document,query) {NeoNoteDocumentTools.find(document,query)}
@@ -59,6 +88,29 @@ internal fun NeoNoteProToolbar(
                 modifier=Modifier.weight(1f),
                 color=MaterialTheme.colorScheme.onSurfaceVariant,
                 style=MaterialTheme.typography.labelSmall)
+            Box {
+                IconButton(modifier=Modifier.size(36.dp),onClick={exportOpen=true}) {
+                    Icon(Icons.Rounded.FileDownload,
+                        neoLabel("تصدير المستند","Export document"),
+                        Modifier.size(20.dp))
+                }
+                DropdownMenu(expanded=exportOpen,onDismissRequest={exportOpen=false}) {
+                    DropdownMenuItem(
+                        text={Text(neoLabel("HTML منسّق","Styled HTML"))},
+                        onClick={
+                            exportOpen=false
+                            htmlLauncher.launch(exportName+".html")
+                        }
+                    )
+                    DropdownMenuItem(
+                        text={Text(neoLabel("نص TXT","Plain text TXT"))},
+                        onClick={
+                            exportOpen=false
+                            textLauncher.launch(exportName+".txt")
+                        }
+                    )
+                }
+            }
             IconButton(modifier=Modifier.size(36.dp),onClick={findOpen=!findOpen}) {
                 Icon(Icons.Rounded.Search,neoLabel("بحث داخل المستند","Find in note"),
                     modifier=Modifier.size(20.dp))

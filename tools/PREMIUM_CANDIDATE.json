@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 57,
-  "versionName": "4.15.0-premium-v53-fonts-docx",
-  "branch": "feat/v53-fonts-docx-20261117",
-  "baseline": "422f931e4e0918ec7c1dd521dbcc53c3acba3955",
-  "classification": "PERSISTENT-SIGNED v53 BUNDLED FONTS DOCX — physical-device acceptance pending"
+  "versionCode": 58,
+  "versionName": "4.16.0-premium-v54-protected-history",
+  "branch": "feat/v54-history-backup-20261117",
+  "baseline": "8be3cbe0e656404edb29d853e99750ba74597117",
+  "classification": "PERSISTENT-SIGNED v54 PROTECTED HISTORY — physical-device acceptance pending"
 }

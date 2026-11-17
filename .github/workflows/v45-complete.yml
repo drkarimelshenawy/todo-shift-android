@@ -80,6 +80,7 @@ jobs:
             --tests 'com.todoshift.app.v11.NeoNoteFolderStoreTest' \
             --tests 'com.todoshift.app.v11.AttachmentBackupTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteProToolsTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNoteHeadingTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteToolVisibilityTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteAppearanceTest' \
             --tests 'com.todoshift.app.v11.ui.NeoDocumentBlocksTest' \

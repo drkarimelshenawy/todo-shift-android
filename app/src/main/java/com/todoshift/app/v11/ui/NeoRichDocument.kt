@@ -162,9 +162,12 @@ internal data class NeoRichEditorState(
         return input(TextFieldValue(edit.text,TextRange(edit.caret)))
     }
 
-    fun toggleChecklist():NeoRichEditorState {
+    fun toggleChecklist():NeoRichEditorState =
+        toggleChecklistAtLine(value.text.substring(0,value.selection.start.coerceIn(0,value.text.length)).count {it=='\n'})
+
+    /** One-tap checkbox from the visual editor; offsets and task anchors survive. */
+    fun toggleChecklistAtLine(index:Int):NeoRichEditorState {
         val lines=value.text.split('\n').toMutableList()
-        val index=value.text.substring(0,value.selection.start.coerceIn(0,value.text.length)).count{it=='\n'}
         if(index !in lines.indices) return this
         val updated=NeoSmartLists.toggleChecked(lines[index])
         if(updated==lines[index]) return this

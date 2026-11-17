@@ -13,8 +13,8 @@ android {
         applicationId = "com.todoshift.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 54
-        versionName = "4.12.0-premium-v50-calm-notes"
+        versionCode = 55
+        versionName = "4.13.0-premium-v51-library"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

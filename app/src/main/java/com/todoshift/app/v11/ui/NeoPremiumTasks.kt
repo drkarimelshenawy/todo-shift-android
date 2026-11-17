@@ -435,22 +435,30 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                     )
                 }
                 HorizontalDivider()
-                Text(neoLabel("مجلدات الملاحظات","Note folders"),style=MaterialTheme.typography.titleSmall)
-                TextButton(onClick={editingFolderId=null;folderName="";editFolderDialog=true}) {
+                Text(neoLabel("عرض المجلدات","Folders"),style=MaterialTheme.typography.titleSmall)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    FilterChip(selected=activeFolderId==null,
+                        onClick={enterFolder(null);noteControlsExpanded=false},
+                        label={Text(neoLabel("المكتبة الرئيسية","Root"))})
+                    FilterChip(selected=activeFolderId=="__all__",
+                        onClick={enterFolder("__all__");noteControlsExpanded=false},
+                        label={Text(neoLabel("كل الملاحظات","All notes"))})
+                    FilterChip(selected=activeFolderId=="__unfiled__",
+                        onClick={enterFolder("__unfiled__");noteControlsExpanded=false},
+                        label={Text(neoLabel("بدون مجلد","Unfiled"))})
+                }
+                TextButton(onClick={initFolderEditor(null);noteControlsExpanded=false}) {
                     Icon(Icons.Rounded.CreateNewFolder,contentDescription=null)
                     Spacer(Modifier.width(6.dp))
                     Text(neoLabel("مجلد جديد","New folder"))
                 }
-                noteFolders.forEach { folder ->
-                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        Text(folder.name,modifier=Modifier.weight(1f))
-                        IconButton(onClick={editingFolderId=folder.id;folderName=folder.name;editFolderDialog=true}) {
-                            Icon(Icons.Rounded.Edit,neoLabel("تعديل المجلد","Rename folder"))
-                        }
-                        IconButton(onClick={deleteFolderId=folder.id}) {
-                            Icon(Icons.Rounded.DeleteOutline,neoLabel("حذف المجلد","Delete folder"))
-                        }
-                    }
+                NeoSwitch(
+                    neoLabel("إظهار الفولدرات أولًا","Folders first"),
+                    foldersFirst
+                ) {
+                    foldersFirst=it
+                    folderSortPrefs.edit().putBoolean("folders_first",it).apply()
                 }
                 HorizontalDivider()
                 Text(neoLabel("الترتيب حسب","Sort by"),style=MaterialTheme.typography.titleSmall)
@@ -485,7 +493,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         }
                     }
                 }
-                TextButton(onClick={noteFolder="active";noteTag=null;activeFolderId=null}) {
+                TextButton(onClick={noteFolder="active";noteTag=null;enterFolder(null)}) {
                     Text(neoLabel("مسح فلاتر القسم والوسوم","Clear section and tag filters"))
                 }
             }
@@ -494,8 +502,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     val visibleNotes=db.dayItems.filter { note ->
                         note.type==DayItemTypeV11.NOTE &&
                         when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;"pinned"->note.notePinned&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;"favorites"->note.id in favoriteNoteIds&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
-                        (activeFolderId==null || (activeFolderId=="__unfiled__" &&
-                            noteFolderAssignments[note.id]==null) ||
+                        authorizedFolder(noteFolderAssignments[note.id]) &&
+                        (activeFolderId=="__all__" ||
+                            ((activeFolderId==null||activeFolderId=="__unfiled__") &&
+                                noteFolderAssignments[note.id]==null) ||
                             noteFolderAssignments[note.id]==activeFolderId) &&
                         (noteTag==null || (!note.noteLocked && note.noteTags.split(",").map {it.trim()}.contains(noteTag))) &&
                         (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))

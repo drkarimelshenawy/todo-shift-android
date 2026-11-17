@@ -177,6 +177,67 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
         confirmButton={TextButton(onClick={missing=false}) {Text(neoLiteral("إغلاق","Close"))}})
+    if(editFolderDialog) AlertDialog(
+        onDismissRequest={editFolderDialog=false},
+        title={Text(if(editingFolderId==null) neoLabel("مجلد جديد","New folder")
+            else neoLabel("تعديل اسم المجلد","Rename folder"))},
+        text={
+            OutlinedTextField(
+                value=folderName,onValueChange={folderName=it.take(60)},
+                label={Text(neoLabel("اسم المجلد","Folder name"))},singleLine=true
+            )
+        },
+        confirmButton={
+            TextButton(enabled=folderName.isNotBlank()&&!folderBusy&&!write.pending,onClick={
+                val id=editingFolderId
+                val name=folderName
+                updateFolder({
+                    if(id==null) {store.createNoteFolder(name);Unit}
+                    else store.renameNoteFolder(id,name)
+                },neoLiteral("تم حفظ المجلد","Folder saved"))
+                editFolderDialog=false
+            }) {Text(neoLabel("حفظ","Save"))}
+        },
+        dismissButton={TextButton(onClick={editFolderDialog=false}) {Text(neoLabel("إلغاء","Cancel"))}}
+    )
+    deleteFolderId?.let {folderId ->
+        AlertDialog(
+            onDismissRequest={deleteFolderId=null},
+            title={Text(neoLabel("حذف المجلد؟","Delete folder?"))},
+            text={Text(neoLabel("الملاحظات ستظل محفوظة في كل الملاحظات. لن يُحذف أي محتوى.",
+                "Notes stay in All Notes; no content will be deleted."))},
+            confirmButton={
+                TextButton(enabled=!folderBusy&&!write.pending,onClick={
+                    updateFolder({store.removeNoteFolder(folderId)},
+                        neoLiteral("تم حذف المجلد والملاحظات محفوظة","Folder deleted; notes preserved"))
+                    if(activeFolderId==folderId) activeFolderId=null
+                    deleteFolderId=null
+                }) {Text(neoLabel("حذف المجلد","Delete folder"))}
+            },
+            dismissButton={TextButton(onClick={deleteFolderId=null}) {Text(neoLabel("إلغاء","Cancel"))}}
+        )
+    }
+    if(moveNotesDialog) AlertDialog(
+        onDismissRequest={moveNotesDialog=false},
+        title={Text(neoLabel("نقل الملاحظات إلى مجلد","Move notes to folder"))},
+        text={
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                (listOf<NeoSmartStore.NoteFolder?>(null)+noteFolders).forEach {folder ->
+                    TextButton(enabled=!folderBusy&&!write.pending,onClick={
+                        val ids=selectedNotes.filter {id ->
+                            db.dayItems.any {it.id==id && it.type==DayItemTypeV11.NOTE && !it.noteLocked}
+                        }
+                        updateFolder({store.moveNotesToFolder(ids,folder?.id)},
+                            neoLiteral("تم نقل الملاحظات","Notes moved"))
+                        selectedNotes=emptySet()
+                        noteSelectionMode=false
+                        moveNotesDialog=false
+                    }) {Text(folder?.name ?: neoLabel("بدون مجلد","Unfiled"))}
+                }
+            }
+        },
+        confirmButton={TextButton(onClick={moveNotesDialog=false}) {Text(neoLabel("إغلاق","Close"))}}
+    )
     if(notesTab && noteControlsExpanded) {
         ModalBottomSheet(onDismissRequest={noteControlsExpanded=false}) {
             val noteTags=db.dayItems.filter {it.type==DayItemTypeV11.NOTE&&!it.noteLocked&&!it.noteHidden}

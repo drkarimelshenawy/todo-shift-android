@@ -1098,6 +1098,13 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         }
                                         Text(note.date,style=MaterialTheme.typography.labelSmall,
                                             color=contentColor.copy(alpha=0.75f),maxLines=1)
+                                        if(noteFolder=="trash") {
+                                            val left=NeoNoteTrashPolicy.daysRemaining(note,trashRetentionDays,System.currentTimeMillis())
+                                            Text(if(left==null) neoLabel("بدون موعد حذف تلقائي","No automatic deletion date")
+                                                else neoLabel("متبقي $left يوم","$left days remaining"),
+                                                style=MaterialTheme.typography.labelSmall,
+                                                color=contentColor.copy(alpha=0.75f),maxLines=1)
+                                        }
                                 }
                             }
                                         }
@@ -1281,6 +1288,13 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         }
                                         Text(note.date,style=MaterialTheme.typography.labelSmall,
                                             color=contentColor.copy(alpha=0.75f),maxLines=1)
+                                        if(noteFolder=="trash") {
+                                            val left=NeoNoteTrashPolicy.daysRemaining(note,trashRetentionDays,System.currentTimeMillis())
+                                            Text(if(left==null) neoLabel("بدون موعد حذف تلقائي","No automatic deletion date")
+                                                else neoLabel("متبقي $left يوم","$left days remaining"),
+                                                style=MaterialTheme.typography.labelSmall,
+                                                color=contentColor.copy(alpha=0.75f),maxLines=1)
+                                        }
                             }
                         }
                         }

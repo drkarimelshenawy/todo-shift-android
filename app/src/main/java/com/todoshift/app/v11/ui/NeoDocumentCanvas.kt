@@ -225,6 +225,16 @@ internal fun NeoDocumentCanvas(
                 }
                 }
             }
+            if(a4) {
+                Text(
+                    neoLabel("صفحة ${pageIndex+1} من ${pages.size}",
+                        "Page ${pageIndex+1} of ${pages.size}"),
+                    modifier=Modifier.fillMaxWidth().padding(top=6.dp),
+                    style=MaterialTheme.typography.labelSmall,
+                    color=MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign=TextAlign.Center
+                )
+            }
             if(overflowsA4) {
                 // The warning belongs outside the printable sheet: it must
                 // never alter page geometry or appear as document content.

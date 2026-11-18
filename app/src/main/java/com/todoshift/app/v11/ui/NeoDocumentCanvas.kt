@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.TextFieldValue
@@ -107,6 +109,14 @@ internal fun NeoDocumentCanvas(
                 shape=if(a4) androidx.compose.foundation.shape.RoundedCornerShape(3.dp)
                     else androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
             ) {
+                // A4 zoom must scale the printed text as well as the paper.
+                // Keep dp-based page geometry unchanged; only scale sp text
+                // inside the sheet to avoid applying zoom twice to margins.
+                val baseDensity=LocalDensity.current
+                CompositionLocalProvider(LocalDensity provides Density(
+                    density=baseDensity.density,
+                    fontScale=baseDensity.fontScale*(if(a4) zoomPercent/100f else 1f)
+                )) {
                 Column(Modifier.fillMaxWidth().padding(
                     horizontal=if(a4) pageWidth*42f/595f else 16.dp,
                     vertical=if(a4) pageWidth*42f/595f else 16.dp),
@@ -169,6 +179,7 @@ internal fun NeoDocumentCanvas(
                         }
                     }
 
+                }
                 }
             }
             }

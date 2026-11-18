@@ -26,6 +26,11 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.EventNote
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.Archive
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.*
@@ -303,7 +308,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         if(runCatching {LocalDate.parse(linkedDate)}.isFailure) {error="تاريخ الملاحظة غير صحيح / Invalid note date";return false}
         val reminderAt=if(reminder.isBlank()) null else try {java.time.LocalDateTime.parse(reminder).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()} catch(_:Exception) {error="تاريخ التذكير غير صحيح / Invalid reminder date";return false}
         val note=(expected.dayItems.firstOrNull {it.id==id} ?: DayItemV11(id,date.toString(),calendarId,DayItemTypeV11.NOTE,""))
-            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=noteSource(),reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,notePreviewHidden=previewHidden,noteBackground=background.takeIf {it.isNotBlank()},
+            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim().ifBlank { noteDisplayText(noteSource()).lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }?.take(72) ?: "" },details=noteSource(),reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,notePreviewHidden=previewHidden,noteBackground=background.takeIf {it.isNotBlank()},
                 noteTrashedAt=if(trashed) (expected.dayItems.firstOrNull{it.id==id}?.noteTrashedAt ?: System.currentTimeMillis()) else null,
                 noteDocumentA4=documentA4)
         val linkedTasks=taskSpecs.map {spec ->
@@ -1012,12 +1017,38 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     NeoChoice(neoLabel("ربط مهمة موجودة","Link existing task"),listOf<String?>(null)+linkable.map {it.id},selectedTaskLink,{key->linkable.firstOrNull {it.id==key}?.title ?: neoLabel("اختر مهمة","Choose task")},{selectedTaskLink=it})
                     TextButton(enabled=selectedTaskLink!=null&&!pending,onClick={existingTaskLinks=existingTaskLinks+requireNotNull(selectedTaskLink);selectedTaskLink=null}) {Text(neoLabel("ربط","Link"))}
                 }
-                NeoSwitch(neoLabel("تثبيت","Pin"),pinned){pinned=it}
-                NeoSwitch(neoLabel("أرشفة","Archive"),archived){archived=it}
+                Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.PushPin,contentDescription=null,
+                        tint=MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.weight(1f)) {
+                        NeoSwitch(neoLabel("تثبيت","Pin"),pinned){pinned=it}
+                    }
+                }
+                Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Archive,contentDescription=null,
+                        tint=MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.weight(1f)) {
+                        NeoSwitch(neoLabel("أرشفة","Archive"),archived){archived=it}
+                    }
+                }
                 val security=remember { V11SecurityStore(context.applicationContext) }
                 fun canProtect(): Boolean { val settings=security.load();return settings.mode!=V11LockMode.NONE || settings.biometricEnabled }
-                NeoSwitch(neoLabel("قفل الملاحظة بـ PIN أو البصمة","Lock note using PIN or biometrics"),locked){if(!it||canProtect())locked=it else error="Configure app PIN or biometrics in Settings before protecting a note"}
-                NeoSwitch(neoLabel("إخفاء مقتطف النص من بطاقة الملاحظة","Hide text excerpt on note card"),previewHidden){previewHidden=it}
+                Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Lock,contentDescription=null,tint=MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.weight(1f)) {
+                        NeoSwitch(neoLabel("قفل الملاحظة بـ PIN أو البصمة","Lock note using PIN or biometrics"),locked){if(!it||canProtect())locked=it else error="Configure app PIN or biometrics in Settings before protecting a note"}
+                    }
+                }
+                Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.VisibilityOff,contentDescription=null,tint=MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.weight(1f)) {
+                        NeoSwitch(neoLabel("إخفاء مقتطف النص من بطاقة الملاحظة","Hide text excerpt on note card"),previewHidden){previewHidden=it}
+                    }
+                }
                  NeoSwitch(neoLabel("إخفاء الملاحظة من القائمة","Hide note from list"),hidden){hidden=it}
                 Text(neoLabel("خلفية الملاحظة","Note background"))
                 Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {

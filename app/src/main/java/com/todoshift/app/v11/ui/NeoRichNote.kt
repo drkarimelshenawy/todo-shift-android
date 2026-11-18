@@ -60,7 +60,6 @@ internal fun NeoNoteFormatting(
     expanded:Boolean=false,onExpandedChange:(Boolean)->Unit={}
 ) {
     var lists by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
-    var headings by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
     var faceMenu by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
     var more by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf(false)}
     var morePage by androidx.compose.runtime.remember {androidx.compose.runtime.mutableStateOf("root")}
@@ -125,35 +124,6 @@ internal fun NeoNoteFormatting(
                 }
             }
 
-            Box {
-                NeoFormatAction(Icons.Rounded.Title,
-                    neoLabel("العناوين H1/H2/H3","Headings H1/H2/H3"),
-                    action={headings=true})
-                DropdownMenu(expanded=headings,onDismissRequest={headings=false}) {
-                    listOf(
-                        1 to neoLabel("عنوان رئيسي H1","Heading H1"),
-                        2 to neoLabel("عنوان فرعي H2","Heading H2"),
-                        3 to neoLabel("عنوان صغير H3","Heading H3"),
-                        0 to neoLabel("نص عادي","Normal paragraph")
-                    ).forEach {(level,label) ->
-                        DropdownMenuItem(text={Text(label)},onClick={
-                            headings=false
-                            val text=state.value.text
-                            val selection=state.value.selection
-                            val from=text.lastIndexOf('\n',selection.min-1)+1
-                            val to=text.indexOf('\n',selection.max).takeIf{it>=0} ?: text.length
-                            val selected=text.substring(from,to)
-                            val replacement=selected.split('\n').joinToString("\n") {line ->
-                                val clean=line.replaceFirst(Regex("^#{1,3} "), "")
-                                if(level==0) clean else "#".repeat(level)+" "+clean
-                            }
-                            val updated=text.replaceRange(from,to,replacement)
-                            change(state.input(TextFieldValue(updated,
-                                TextRange((from+replacement.length).coerceIn(0,updated.length)))))
-                        })
-                    }
-                }
-            }
             Box {
                 NeoFormatAction(Icons.Rounded.FormatListBulleted,
                     neoLabel("قوائم ذكية","Smart lists"),
@@ -389,6 +359,7 @@ internal fun NeoRuledNoteEditor(
     textDirection: androidx.compose.ui.text.style.TextDirection,
     focusRequester: androidx.compose.ui.focus.FocusRequester,
     modifier: Modifier = Modifier,
+    styles:List<NeoRichCharStyle> = emptyList(),
     onChecklistToggle: ((Int)->Unit)?=null,
     ruled:Boolean=true,
     arabicFont:String="system",
@@ -397,7 +368,9 @@ internal fun NeoRuledNoteEditor(
     val lineColor=MaterialTheme.colorScheme.outline.copy(alpha=0.33f)
     val cursorColor=MaterialTheme.colorScheme.primary
     val density=androidx.compose.ui.platform.LocalDensity.current
-    val spacing=with(density) { 34.sp.toPx() }
+    val rowHeight=if(ruled) 42.sp else 32.sp
+    val spacing=with(density) {rowHeight.toPx()}
+    val guideGap=with(density) {3.dp.toPx()}
     var bottoms by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<Float>>(emptyList()) }
     var checkboxHits by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf<List<NeoEditorCheckboxHit>>(emptyList())
@@ -409,7 +382,7 @@ internal fun NeoRuledNoteEditor(
         val viewportScroll=rememberScrollState()
         var cursorTop by androidx.compose.runtime.remember {androidx.compose.runtime.mutableFloatStateOf(0f)}
         var cursorBottom by androidx.compose.runtime.remember {androidx.compose.runtime.mutableFloatStateOf(0f)}
-        val bottomMargin=with(density){84.dp.toPx()}
+        val bottomMargin=with(density){120.dp.toPx()}
         // The cursor, not merely the bottom of a tall text field, must move above IME.
         androidx.compose.runtime.LaunchedEffect(value.selection,visibleHeight,cursorBottom,cursorTop,viewportScroll.maxValue) {
             val current=viewportScroll.value.toFloat()
@@ -438,21 +411,21 @@ internal fun NeoRuledNoteEditor(
                         if(ruled) {
                         val first=bottoms.ifEmpty {listOf(spacing)}
                         first.forEach{y->
-                            drawLine(lineColor,androidx.compose.ui.geometry.Offset(0f,y),
-                                androidx.compose.ui.geometry.Offset(size.width,y),strokeWidth=0.7.dp.toPx())
+                            drawLine(lineColor,androidx.compose.ui.geometry.Offset(0f,y+guideGap),
+                                androidx.compose.ui.geometry.Offset(size.width,y+guideGap),strokeWidth=0.7.dp.toPx())
                         }
                         var y=first.last()+spacing
                         while(y<size.height) {
-                            drawLine(lineColor,androidx.compose.ui.geometry.Offset(0f,y),
-                                androidx.compose.ui.geometry.Offset(size.width,y),strokeWidth=0.7.dp.toPx())
+                            drawLine(lineColor,androidx.compose.ui.geometry.Offset(0f,y+guideGap),
+                                androidx.compose.ui.geometry.Offset(size.width,y+guideGap),strokeWidth=0.7.dp.toPx())
                             y+=spacing
                         }
                         }
                     },
-                visualTransformation=NeoNoteTypefaces.visual(arabicFont,englishFont),
+                visualTransformation=NeoNoteTypefaces.richVisual(styles,arabicFont,englishFont),
                 textStyle=MaterialTheme.typography.bodyLarge.copy(
                     color=MaterialTheme.colorScheme.onSurface,
-                    lineHeight=if(ruled) 34.sp else 28.sp,textDirection=textDirection,
+                    lineHeight=rowHeight,textDirection=textDirection,
                     textAlign=if(textDirection==androidx.compose.ui.text.style.TextDirection.Ltr)
                         androidx.compose.ui.text.style.TextAlign.Left
                     else androidx.compose.ui.text.style.TextAlign.Right
@@ -494,7 +467,7 @@ internal fun NeoRuledNoteEditor(
                             neoLabel("اكتب ملاحظتك هنا…","Write your note here…"),
                             modifier=Modifier.fillMaxWidth(),
                             color=MaterialTheme.colorScheme.onSurfaceVariant,
-                            style=MaterialTheme.typography.bodyLarge.copy(lineHeight=if(ruled) 34.sp else 28.sp,
+                            style=MaterialTheme.typography.bodyLarge.copy(lineHeight=rowHeight,
                                 textDirection=textDirection,
                                 textAlign=if(textDirection==androidx.compose.ui.text.style.TextDirection.Ltr)
                                     androidx.compose.ui.text.style.TextAlign.Left
@@ -564,7 +537,7 @@ private fun NeoRuledParagraph(
         content,
         modifier=modifier.fillMaxWidth().drawBehind {
             bounds.forEach {bottom ->
-                val y=(bottom-1.dp.toPx()).coerceAtLeast(0f)
+                val y=(bottom+3.dp.toPx()).coerceAtLeast(0f)
                 drawLine(
                     line,
                     androidx.compose.ui.geometry.Offset(0f,y),
@@ -602,8 +575,12 @@ internal fun NeoNotePreview(
     arabicFont:String="system",
     englishFont:String="system"
 ) {
-    val paraLineHeight=if(ruled) 34.sp else 28.sp
-    val lineStyle=MaterialTheme.typography.bodyLarge.copy(lineHeight=paraLineHeight,textDirection=textDirection)
+    val paraLineHeight=if(ruled) 42.sp else 32.sp
+    val lineStyle=MaterialTheme.typography.bodyLarge.copy(
+        lineHeight=paraLineHeight,textDirection=textDirection,
+        textAlign=if(textDirection==androidx.compose.ui.text.style.TextDirection.Ltr)
+            androidx.compose.ui.text.style.TextAlign.Left
+        else androidx.compose.ui.text.style.TextAlign.Right)
     Column(verticalArrangement=Arrangement.spacedBy(0.dp)) {
         text.lines().forEachIndexed { index, rawLine ->
             val raw=noteDisplayText(rawLine)
@@ -689,13 +666,13 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         // Keep the portable source unchanged while hiding paired HTML tags in the editor.
         data class OpenMark(val kind:String,val start:Int,val end:Int,val style:SpanStyle)
         val opened=mutableListOf<OpenMark>()
-        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<size sp="(14|16|18|20|24|28)">|</size>|<face key="(amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>|<b>|</b>|<i>|</i>|<u>|</u>|<s>|</s>""").findAll(source).forEach { token ->
+        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<size sp="([0-9]{1,3})">|</size>|<face key="(amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>|<b>|</b>|<i>|</i>|<u>|</u>|<s>|</s>""").findAll(source).forEach { token ->
             val raw=token.value
             val kind=when {raw.startsWith("<font ")||raw=="</font>" -> "font";raw.startsWith("<size ")||raw=="</size>" -> "size";raw.startsWith("<face ")||raw=="</face>" -> "face";raw=="<b>"||raw=="</b>" -> "b";raw=="<i>"||raw=="</i>" -> "i";raw=="<u>"||raw=="</u>" -> "u";else -> "s"}
             if(!raw.startsWith("</")) {
                 val style=when(kind) {
                     "font" -> SpanStyle(color=Color(android.graphics.Color.parseColor(token.groupValues[1])))
-                    "size" -> SpanStyle(fontSize=token.groupValues[2].toInt().sp)
+                    "size" -> SpanStyle(fontSize=(token.groupValues[2].toIntOrNull() ?: 16).coerceIn(8,72).sp)
                     "face" -> SpanStyle(fontFamily=NeoNoteTypefaces.family(token.groupValues[3]))
                     "b" -> SpanStyle(fontWeight=FontWeight.Bold)
                     "i" -> SpanStyle(fontStyle=FontStyle.Italic)

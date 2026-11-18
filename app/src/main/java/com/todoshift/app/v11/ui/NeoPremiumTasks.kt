@@ -1,3 +1,8 @@
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.DriveFileMove
+import androidx.compose.material.icons.rounded.CreateNewFolder
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.FolderOpen
 package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
@@ -1648,17 +1653,22 @@ private fun NeoNoteFolderCard(
                         }
                         DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
                             DropdownMenuItem(text={Text(neoLabel("فتح","Open"))},
+                                leadingIcon={Icon(Icons.Rounded.FolderOpen,contentDescription=null)},
                                 onClick={menu=false;onOpen()})
                             DropdownMenuItem(text={Text(neoLabel("تعديل الاسم واللون والقفل",
                                 "Edit name, color and lock"))},
+                                leadingIcon={Icon(Icons.Rounded.Edit,contentDescription=null)},
                                 onClick={menu=false;onEdit()})
                             DropdownMenuItem(text={Text(neoLabel("مجلد فرعي جديد","New subfolder"))},
+                                leadingIcon={Icon(Icons.Rounded.CreateNewFolder,contentDescription=null)},
                                 onClick={menu=false;onChild()})
                             DropdownMenuItem(text={Text(neoLabel("نقل المجلد","Move folder"))},
+                                leadingIcon={Icon(Icons.Rounded.DriveFileMove,contentDescription=null)},
                                 onClick={menu=false;onMove()})
                             HorizontalDivider()
                             DropdownMenuItem(text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
                                 "Delete folder (keep contents)"))},
+                                leadingIcon={Icon(Icons.Rounded.DeleteOutline,contentDescription=null)},
                                 onClick={menu=false;onDelete()})
                         }
                     }

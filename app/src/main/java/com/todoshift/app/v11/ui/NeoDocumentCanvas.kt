@@ -85,13 +85,13 @@ internal fun NeoDocumentCanvas(
                     vertical=if(a4) 32.dp else 0.dp),
                     verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     if(a4) Text(
-                        neoLabel("معاينة A4 تقريبية • صفحة ","Approximate A4 preview • page ")+(pageIndex+1),
+                        neoLabel("مستند A4 • صفحة ","A4 document • page ")+(pageIndex+1),
                         style=MaterialTheme.typography.labelSmall,color=Color.Gray
                     )
                     pageBlocks.forEach {block ->
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {
-                                if(inlineEditing && editable && !a4 && onParagraphEdited!=null) {
+                                if(inlineEditing && editable && onParagraphEdited!=null) {
                                     NeoEditableDocumentParagraph(
                                         noteId=noteId,block=block,
                                         direction=textDirection,ruled=ruled,

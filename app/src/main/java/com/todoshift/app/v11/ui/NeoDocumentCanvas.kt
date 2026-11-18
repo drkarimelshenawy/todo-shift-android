@@ -147,7 +147,7 @@ internal fun NeoDocumentCanvas(
                                 if(inlineEditing && editable && onParagraphEdited!=null) {
                                     NeoEditableDocumentParagraph(
                                         noteId=noteId,block=block,
-                                        direction=textDirection,ruled=ruled,
+                                        direction=textDirection,ruled=ruled,a4=a4,
                                         arabicFont=arabicFont,englishFont=englishFont,
                                         onEdited=onParagraphEdited,
                                         onActivated=onActiveParagraph,
@@ -224,6 +224,7 @@ private fun NeoEditableDocumentParagraph(
     block:NeoDocumentBlocks.Block.Paragraph,
     direction:TextDirection,
     ruled:Boolean,
+    a4:Boolean,
     arabicFont:String,
     englishFont:String,
     onEdited:(Int,String)->Unit,
@@ -259,7 +260,7 @@ private fun NeoEditableDocumentParagraph(
         BasicTextField(
             value=state.value,
             onValueChange={apply(state.input(it))},
-            modifier=Modifier.fillMaxWidth().heightIn(min=46.dp)
+            modifier=Modifier.fillMaxWidth().heightIn(min=if(a4) 18.dp else 46.dp)
                 .onFocusChanged {focused=it.isFocused}
                 .drawBehind {
                     if(ruled) {
@@ -278,7 +279,10 @@ private fun NeoEditableDocumentParagraph(
             },
             textStyle=MaterialTheme.typography.bodyLarge.copy(
                 color=MaterialTheme.colorScheme.onSurface,
-                lineHeight=if(ruled)42.sp else 32.sp,
+                // PDF paragraphs use 12pt text with approximately 18pt leading.
+                // Keep the on-sheet editor close to that scale in A4 mode.
+                fontSize=if(a4)12.sp else MaterialTheme.typography.bodyLarge.fontSize,
+                lineHeight=if(a4)18.sp else if(ruled)42.sp else 32.sp,
                 textDirection=direction,
                 textAlign=if(rtl)TextAlign.Right else TextAlign.Left
             ),

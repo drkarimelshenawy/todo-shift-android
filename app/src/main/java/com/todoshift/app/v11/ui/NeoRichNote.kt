@@ -370,7 +370,9 @@ internal fun NeoRuledNoteEditor(
     val density=androidx.compose.ui.platform.LocalDensity.current
     val rowHeight=if(ruled) 42.sp else 32.sp
     val spacing=with(density) {rowHeight.toPx()}
-    val guideGap=with(density) {3.dp.toPx()}
+    // Use the measured text-line bottom directly; a fixed positive offset
+    // makes the rule appear below the baseline and drifts across font scales.
+    val guideGap=with(density) {0.dp.toPx()}
     var bottoms by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<Float>>(emptyList()) }
     var checkboxHits by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf<List<NeoEditorCheckboxHit>>(emptyList())

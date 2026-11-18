@@ -86,6 +86,55 @@ class NeoRichNoteEditingTest {
         assertFalse(state.value.text.contains("<b>"))
     }
 
+    @Test fun arabicBoldIsVisibleWhileTheImeIsStillComposingTheWord() {
+        var note=NeoRichEditorState.open("").toggle("bold")
+        val ime=TextFieldValue("عربي",TextRange(4),TextRange(0,4))
+        note=note.input(ime)
+        // Do not mutate the buffer owned by the software keyboard.
+        assertEquals(ime.annotatedString,note.value.annotatedString)
+        assertEquals(TextRange(0,4),note.value.composition)
+        // But all composing letters must already *look* bold, before a space.
+        val visual=com.todoshift.app.v11.ui.NeoNoteTypefaces
+            .richVisual(note.characters,"system","system")
+            .filter(note.value.annotatedString).text
+        assertTrue(visual.spanStyles.any {
+            it.start==0 && it.end==4 &&
+                it.item.fontWeight==androidx.compose.ui.text.font.FontWeight.Bold
+        })
+        note=note.input(TextFieldValue("عربي",TextRange(4)))
+        note=note.input(TextFieldValue("عربي\n",TextRange(5)))
+        assertEquals("عربي\n",note.value.text)
+        assertTrue(note.characters.take(4).all {it.bold})
+        // Enter must work without adding a space after the word first.
+        assertEquals(note.value.text,NeoRichEditorState.open(note.stored()).value.text)
+    }
+
+    @Test fun arbitrarySupportedFontSizeMarkupDoesNotShowAsLiteralText() {
+        val original="<size sp=\"22\">سطر بحجم خاص</size>\n<size sp=\"17\">كلمة</size>"
+        val reopened=NeoRichEditorState.open(original)
+        assertEquals("سطر بحجم خاص\nكلمة",reopened.value.text)
+        assertTrue(reopened.characters.take("سطر بحجم خاص".length).all {it.size==22})
+        assertEquals(17,reopened.characters.last().size)
+        assertFalse(reopened.value.text.contains("<size"))
+        assertEquals(reopened.value.text,NeoRichEditorState.open(reopened.stored()).value.text)
+    }
+
+    @Test fun existingBoldLineDoesNotContaminateNextUnformattedArabicLine() {
+        val source="<b>السطر الأول</b>\nالسطر الثاني"
+        var state=NeoRichEditorState.open(source)
+        val text=state.value.text
+        state=state.input(TextFieldValue(text+" حرف",TextRange(text.length+4),
+            TextRange(text.length+1,text.length+4)))
+        val rendered=com.todoshift.app.v11.ui.NeoNoteTypefaces
+            .richVisual(state.characters,"system","system")
+            .filter(state.value.annotatedString).text
+        assertTrue(rendered.spanStyles.any {
+            it.start==0 && it.end>="السطر الأول".length &&
+                it.item.fontWeight==androidx.compose.ui.text.font.FontWeight.Bold
+        })
+        assertTrue(state.characters.drop("السطر الأول\n".length).all {!it.bold})
+    }
+
     @Test fun arabicCompositionRetainsBoldSpansInEarlierParagraph() {
         val stored="<b>عنوان عريض</b>\nسطر جديد"
         var state=NeoRichEditorState.open(stored)

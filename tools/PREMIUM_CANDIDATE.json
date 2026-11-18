@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 68,
-  "versionName": "4.25.1-premium-v63.1-notes-workflow-a4",
-  "branch": "feat/v63-notes-workflow-a4-20261118",
+  "versionCode": 69,
+  "versionName": "4.26.0-premium-v64-notes-rtl-navigation",
+  "branch": "fix/v64-notes-rtl-navigation-20261118",
   "baseline": "ea6c54d0d35e5352327ece6c69ee588566a10e2c",
-  "classification": "v63.1 NOTES WORKFLOW + A4 BETA — formatting accessible in reading mode; device acceptance pending"
+  "classification": "v64 NOTES RTL NAVIGATION TEST BUILD — partial fixes; device acceptance pending"
 }

@@ -127,6 +127,11 @@ class NeoNotesToolbarVisibilityDeviceTest {
                     )
                 }
             }
+            // An unrelated date-keyed draft must not pop over a fresh note.
+            rule.waitForIdle()
+            rule.onNodeWithTag("notes_draft_conflict").assertDoesNotExist()
+            rule.onNodeWithTag("notes_more_menu").performClick()
+            rule.onNodeWithTag("notes_recover_old_draft_action").performClick()
             rule.waitUntil(12_000) {
                 rule.onAllNodesWithTag("notes_draft_conflict")
                     .fetchSemanticsNodes().isNotEmpty()

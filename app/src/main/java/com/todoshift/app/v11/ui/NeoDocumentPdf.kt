@@ -91,7 +91,10 @@ internal object NeoDocumentPdf {
                 canvas.restore()
                 y+=height
             }
-            y+=space
+            // Paragraph spacing must not push the cursor beyond the
+            // printable page boundary. The next text block will start on
+            // a fresh sheet rather than inheriting an overflowing baseline.
+            y=(y+space).coerceAtMost(PAGE_HEIGHT-MARGIN)
         }
         try {
             newPage()

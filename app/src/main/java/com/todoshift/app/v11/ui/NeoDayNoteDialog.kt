@@ -799,7 +799,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             unfocusedIndicatorColor=androidx.compose.ui.graphics.Color.Transparent
                         )
                     )
-                } else if(title.isNotBlank()) {
+                } else if(title.isNotBlank() && !documentA4) {
                     Text(title,modifier=Modifier.fillMaxWidth().padding(
                         horizontal=20.dp,vertical=8.dp),
                         style=MaterialTheme.typography.titleLarge.copy(fontWeight=androidx.compose.ui.text.font.FontWeight.Bold,textAlign=androidx.compose.ui.text.style.TextAlign.Center))
@@ -908,6 +908,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             NeoDocumentCanvas(
                                 noteId=id,
                                 source=noteSource(),
+                                documentTitle=title,
                                 editable=editing&&!closing,
                                 inlineEditing=editing,
                                 onParagraphEdited={startLine,nextParagraph ->

@@ -159,7 +159,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var selectionActionsExpanded by remember {mutableStateOf(false)}
     var pendingPermanentDelete by remember {mutableStateOf<Set<String>>(emptySet())}
     var pendingCardUnlock by remember {mutableStateOf<String?>(null)}
-    BackHandler(enabled=notesTab && noteSelectionMode && !noteEditor && !moveNotesDialog && !confirmTrash && pendingPermanentDelete.isEmpty()) {
+    BackHandler(enabled=notesTab && noteSelectionMode && !noteEditor && !moveNotesDialog && pendingPermanentDelete.isEmpty()) {
         selectedNotes=emptySet();noteSelectionMode=false;selectionActionsExpanded=false
     }
     fun authorizedFolder(id:String?):Boolean {
@@ -260,8 +260,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         val next=NeoNoteTrashPolicy.remove(db,valid)
         commit(next) {
             selectedNotes=emptySet();noteSelectionMode=false;pendingPermanentDelete=emptySet()
-            notice=if(automated) neoLabel("تم تنظيف المهملات المنتهية","Expired trash cleaned")
-                else neoLabel("تم الحذف النهائي","Permanently deleted")
+            notice=if(automated) neoLiteral("تم تنظيف المهملات المنتهية","Expired trash cleaned")
+                else neoLiteral("تم الحذف النهائي","Permanently deleted")
             scope.launch(Dispatchers.IO) {
                 runCatching {store.moveNotesToFolder(valid,null);store.setNoteFavorites(valid,false)}
                 runCatching {NeoNoteHistoryStore(context.applicationContext).remove(valid)}
@@ -306,7 +306,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             if(sec.mode==V11LockMode.NONE && !sec.biometricEnabled) Surface {Text(neoLabel("أعد إعداد PIN أو البصمة أولًا","Set up PIN or biometrics first"),Modifier.padding(20.dp))}
             else V11AccountsUnlockScreen(sec,noteSecurity) {
                 changed(db.copy(dayItems=db.dayItems.map{if(it.id==target) it.copy(noteLocked=false,updatedAt=System.currentTimeMillis()) else it}),
-                    neoLabel("تم إلغاء قفل الملاحظة","Note unlocked"))
+                    neoLiteral("تم إلغاء قفل الملاحظة","Note unlocked"))
                 pendingCardUnlock=null
             }
         }
@@ -1046,15 +1046,15 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                                 changed(db.copy(dayItems=db.dayItems.map{item ->
                                                     if(item.id==note.id) item.copy(notePreviewHidden=!note.notePreviewHidden,
                                                         updatedAt=System.currentTimeMillis()) else item
-                                                }),neoLabel("تم تحديث المعاينة","Card preview updated"))
+                                                }),neoLiteral("تم تحديث المعاينة","Card preview updated"))
                                             },
                                             onLock={
                                                 if(note.noteLocked) pendingCardUnlock=note.id
                                                 else if(noteSecuritySettings.mode!=V11LockMode.NONE || noteSecuritySettings.biometricEnabled)
                                                     changed(db.copy(dayItems=db.dayItems.map{item ->
                                                         if(item.id==note.id) item.copy(noteLocked=true,updatedAt=System.currentTimeMillis()) else item
-                                                    }),neoLabel("تم قفل الملاحظة","Note locked"))
-                                                else error=neoLabel("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
+                                                    }),neoLiteral("تم قفل الملاحظة","Note locked"))
+                                                else error=neoLiteral("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
                                             },
                                             onDeleteForever={pendingPermanentDelete=setOf(note.id)},
                                             onCreateA4={
@@ -1066,19 +1066,19 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                                     if(copied.isSuccess) {
                                                         val now=System.currentTimeMillis()
                                                         val item=note.copy(id=copyId,
-                                                            title=note.title.ifBlank{neoLabel("مستند A4","A4 document")}+" (A4)",
+                                                            title=note.title.ifBlank{neoLiteral("مستند A4","A4 document")}+" (A4)",
                                                             details=copied.getOrThrow(),createdAt=now,updatedAt=now,
                                                             noteDocumentA4=true,noteTrashed=false,noteTrashedAt=null,
                                                             noteArchived=false,notePinned=false,noteLocked=false,noteHidden=false)
                                                         commit(db.copy(dayItems=db.dayItems+item)) {
-                                                            notice=neoLabel("تم إنشاء نسخة A4 منفصلة","Separate A4 copy created")
+                                                            notice=neoLiteral("تم إنشاء نسخة A4 منفصلة","Separate A4 copy created")
                                                             val parent=noteFolderAssignments[note.id]
                                                             if(parent!=null) scope.launch(Dispatchers.IO){
                                                                 runCatching{store.moveNotesToFolder(listOf(copyId),parent)}
                                                                 folderRefresh++
                                                             }
                                                         }
-                                                    } else error=neoLabel("فشل نسخ المرفقات؛ لم تتغير الملاحظة الأصلية",
+                                                    } else error=neoLiteral("فشل نسخ المرفقات؛ لم تتغير الملاحظة الأصلية",
                                                         "Could not copy media; source note unchanged")
                                                 }
                                             }
@@ -1236,15 +1236,15 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                                 changed(db.copy(dayItems=db.dayItems.map{item ->
                                                     if(item.id==note.id) item.copy(notePreviewHidden=!note.notePreviewHidden,
                                                         updatedAt=System.currentTimeMillis()) else item
-                                                }),neoLabel("تم تحديث المعاينة","Card preview updated"))
+                                                }),neoLiteral("تم تحديث المعاينة","Card preview updated"))
                                             },
                                             onLock={
                                                 if(note.noteLocked) pendingCardUnlock=note.id
                                                 else if(noteSecuritySettings.mode!=V11LockMode.NONE || noteSecuritySettings.biometricEnabled)
                                                     changed(db.copy(dayItems=db.dayItems.map{item ->
                                                         if(item.id==note.id) item.copy(noteLocked=true,updatedAt=System.currentTimeMillis()) else item
-                                                    }),neoLabel("تم قفل الملاحظة","Note locked"))
-                                                else error=neoLabel("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
+                                                    }),neoLiteral("تم قفل الملاحظة","Note locked"))
+                                                else error=neoLiteral("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
                                             },
                                             onDeleteForever={pendingPermanentDelete=setOf(note.id)},
                                             onCreateA4={
@@ -1256,19 +1256,19 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                                     if(copied.isSuccess) {
                                                         val now=System.currentTimeMillis()
                                                         val item=note.copy(id=copyId,
-                                                            title=note.title.ifBlank{neoLabel("مستند A4","A4 document")}+" (A4)",
+                                                            title=note.title.ifBlank{neoLiteral("مستند A4","A4 document")}+" (A4)",
                                                             details=copied.getOrThrow(),createdAt=now,updatedAt=now,
                                                             noteDocumentA4=true,noteTrashed=false,noteTrashedAt=null,
                                                             noteArchived=false,notePinned=false,noteLocked=false,noteHidden=false)
                                                         commit(db.copy(dayItems=db.dayItems+item)) {
-                                                            notice=neoLabel("تم إنشاء نسخة A4 منفصلة","Separate A4 copy created")
+                                                            notice=neoLiteral("تم إنشاء نسخة A4 منفصلة","Separate A4 copy created")
                                                             val parent=noteFolderAssignments[note.id]
                                                             if(parent!=null) scope.launch(Dispatchers.IO){
                                                                 runCatching{store.moveNotesToFolder(listOf(copyId),parent)}
                                                                 folderRefresh++
                                                             }
                                                         }
-                                                    } else error=neoLabel("فشل نسخ المرفقات؛ لم تتغير الملاحظة الأصلية",
+                                                    } else error=neoLiteral("فشل نسخ المرفقات؛ لم تتغير الملاحظة الأصلية",
                                                         "Could not copy media; source note unchanged")
                                                 }
                                             }
@@ -1339,7 +1339,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             item.copy(noteArchived=if(noteFolder=="trash") item.noteArchived else !restoring,
                                 noteTrashed=false,noteTrashedAt=null,updatedAt=System.currentTimeMillis())
                         else item
-                    }),neoLabel("تم تحديث الأرشيف","Archive updated"))
+                    }),neoLiteral("تم تحديث الأرشيف","Archive updated"))
                     selectedNotes=emptySet();noteSelectionMode=false
                 }) {Icon(if(noteFolder=="archive"||noteFolder=="trash") Icons.Rounded.Restore else Icons.Rounded.Archive,
                     neoLabel("أرشفة أو استعادة","Archive or restore"))}

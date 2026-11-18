@@ -160,11 +160,15 @@ internal fun NeoDocumentCanvas(
                     // Show it on the actual A4 sheet instead of above the sheet.
                     if(a4 && pageIndex==0 && documentTitle.isNotBlank()) {
                         Text(documentTitle,
-                            modifier=Modifier.fillMaxWidth().padding(bottom=12.dp)
+                            modifier=Modifier.fillMaxWidth().padding(bottom=3.dp)
                                 .onSizeChanged { size ->
                                     if(titleHeightPx!=size.height) titleHeightPx=size.height
                                 },
+                            // PDF prints the title at 18pt. Use matching A4
+                            // typography instead of theme-dependent titleLarge.
                             style=MaterialTheme.typography.titleLarge.copy(
+                                fontSize=18.sp,
+                                lineHeight=24.sp,
                                 color=Color(0xFF202126),
                                 textAlign=TextAlign.Center))
                     }

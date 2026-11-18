@@ -75,16 +75,20 @@ internal object NeoDocumentPdf {
             val text=sourceText.ifBlank{" "}
             val wrapped=layout(text)
             for(index in 0 until wrapped.lineCount) {
-                val start=wrapped.getLineStart(index)
-                val end=wrapped.getLineEnd(index)
-                val piece=text.substring(start,end).trimEnd('\n')
-                val line=layout(piece)
-                val height=line.height.toFloat()+1f
+                // Render each line from the ORIGINAL shaped layout. Rebuilding a
+                // new layout from a substring can change Arabic shaping, bidi
+                // direction and word wrapping at the PDF page boundary.
+                val lineTop=wrapped.getLineTop(index)
+                val lineBottom=wrapped.getLineBottom(index)
+                val height=(lineBottom-lineTop).toFloat()+1f
                 ensure(height)
-                page!!.canvas.save()
-                page!!.canvas.translate(MARGIN,y)
-                line.draw(page!!.canvas)
-                page!!.canvas.restore()
+                val canvas=page!!.canvas
+                canvas.save()
+                canvas.translate(MARGIN,y)
+                canvas.clipRect(0f,0f,CONTENT_WIDTH,height)
+                canvas.translate(0f,-lineTop.toFloat())
+                wrapped.draw(canvas)
+                canvas.restore()
                 y+=height
             }
             y+=space

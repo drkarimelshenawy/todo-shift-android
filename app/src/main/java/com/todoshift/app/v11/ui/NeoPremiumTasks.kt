@@ -1002,6 +1002,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             archived=note.noteArchived,
                                             trashed=note.noteTrashed,
                                             locked=note.noteLocked,
+                                            previewHidden=note.notePreviewHidden,
                                             busy=folderBusy||write.pending,
                                             onOpen={noteId=note.id;noteEditor=true},
                                             onFavorite={
@@ -1020,8 +1021,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             onArchive={
                                                 changed(db.copy(dayItems=db.dayItems.map {item ->
                                                     if(item.id==note.id) item.copy(
-                                                        noteArchived=if(note.noteTrashed) false else !note.noteArchived,
-                                                        noteTrashed=false,
+                                                        noteArchived=if(note.noteTrashed) note.noteArchived else !note.noteArchived,
+                                                        noteTrashed=false,noteTrashedAt=null,
                                                         updatedAt=System.currentTimeMillis()) else item
                                                 }),neoLiteral("تم تحديث الأرشيف","Archive updated"))
                                             },
@@ -1033,7 +1034,22 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             },
                                             onTrash={
                                                 selectedNotes=setOf(note.id);confirmTrash=true
-                                            }
+                                            },
+                                            onPreview={
+                                                changed(db.copy(dayItems=db.dayItems.map{item ->
+                                                    if(item.id==note.id) item.copy(notePreviewHidden=!note.notePreviewHidden,
+                                                        updatedAt=System.currentTimeMillis()) else item
+                                                }),neoLabel("تم تحديث المعاينة","Card preview updated"))
+                                            },
+                                            onLock={
+                                                if(note.noteLocked) pendingCardUnlock=note.id
+                                                else if(noteSecuritySettings.mode!=V11LockMode.NONE || noteSecuritySettings.biometricEnabled)
+                                                    changed(db.copy(dayItems=db.dayItems.map{item ->
+                                                        if(item.id==note.id) item.copy(noteLocked=true,updatedAt=System.currentTimeMillis()) else item
+                                                    }),neoLabel("تم قفل الملاحظة","Note locked"))
+                                                else error=neoLabel("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
+                                            },
+                                            onDeleteForever={pendingPermanentDelete=setOf(note.id)}
                                         )
                                     }
                                         // Password locking and hiding an excerpt are independent settings.
@@ -1144,6 +1160,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             archived=note.noteArchived,
                                             trashed=note.noteTrashed,
                                             locked=note.noteLocked,
+                                            previewHidden=note.notePreviewHidden,
                                             busy=folderBusy||write.pending,
                                             onOpen={noteId=note.id;noteEditor=true},
                                             onFavorite={
@@ -1162,8 +1179,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             onArchive={
                                                 changed(db.copy(dayItems=db.dayItems.map {item ->
                                                     if(item.id==note.id) item.copy(
-                                                        noteArchived=if(note.noteTrashed) false else !note.noteArchived,
-                                                        noteTrashed=false,
+                                                        noteArchived=if(note.noteTrashed) note.noteArchived else !note.noteArchived,
+                                                        noteTrashed=false,noteTrashedAt=null,
                                                         updatedAt=System.currentTimeMillis()) else item
                                                 }),neoLiteral("تم تحديث الأرشيف","Archive updated"))
                                             },
@@ -1175,7 +1192,22 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             },
                                             onTrash={
                                                 selectedNotes=setOf(note.id);confirmTrash=true
-                                            }
+                                            },
+                                            onPreview={
+                                                changed(db.copy(dayItems=db.dayItems.map{item ->
+                                                    if(item.id==note.id) item.copy(notePreviewHidden=!note.notePreviewHidden,
+                                                        updatedAt=System.currentTimeMillis()) else item
+                                                }),neoLabel("تم تحديث المعاينة","Card preview updated"))
+                                            },
+                                            onLock={
+                                                if(note.noteLocked) pendingCardUnlock=note.id
+                                                else if(noteSecuritySettings.mode!=V11LockMode.NONE || noteSecuritySettings.biometricEnabled)
+                                                    changed(db.copy(dayItems=db.dayItems.map{item ->
+                                                        if(item.id==note.id) item.copy(noteLocked=true,updatedAt=System.currentTimeMillis()) else item
+                                                    }),neoLabel("تم قفل الملاحظة","Note locked"))
+                                                else error=neoLabel("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
+                                            },
+                                            onDeleteForever={pendingPermanentDelete=setOf(note.id)}
                                         )
                                 }
                                         // Password locking and hiding an excerpt are independent settings.
@@ -1211,6 +1243,40 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             newNoteChoice=true
         } else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
+        }
+        if(notesTab && noteSelectionMode) Surface(
+            modifier=Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal=8.dp,vertical=8.dp),
+            shape=MaterialTheme.shapes.large,
+            color=MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation=4.dp,shadowElevation=5.dp
+        ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal=5.dp,vertical=6.dp),
+                horizontalArrangement=Arrangement.SpaceEvenly,verticalAlignment=Alignment.CenterVertically) {
+                IconButton(onClick={selectedNotes=emptySet();noteSelectionMode=false;selectionActionsExpanded=false}) {
+                    Icon(Icons.Rounded.Close,neoLabel("إلغاء التحديد","Cancel selection"))}
+                Text(selectedNotes.size.toString(),style=MaterialTheme.typography.titleMedium)
+                IconButton(onClick={
+                    val available=visibleNotes.filterNot{it.noteLocked}.map{it.id}.toSet()
+                    selectedNotes=if(selectedNotes.containsAll(available)) emptySet() else available
+                }) {Icon(Icons.Rounded.SelectAll,neoLabel("تحديد الكل","Select all"))}
+                IconButton(enabled=selectedNotes.isNotEmpty()&&!write.pending,onClick={moveNotesDialog=true}) {
+                    Icon(Icons.Rounded.DriveFileMove,neoLabel("نقل إلى مجلد","Move to folder"))}
+                IconButton(enabled=selectedNotes.isNotEmpty()&&!write.pending,onClick={
+                    val restoring=noteFolder=="archive"||noteFolder=="trash"
+                    changed(db.copy(dayItems=db.dayItems.map{item ->
+                        if(item.id in selectedNotes && !item.noteLocked)
+                            item.copy(noteArchived=if(noteFolder=="trash") item.noteArchived else !restoring,
+                                noteTrashed=false,noteTrashedAt=null,updatedAt=System.currentTimeMillis())
+                        else item
+                    }),neoLabel("تم تحديث الأرشيف","Archive updated"))
+                    selectedNotes=emptySet();noteSelectionMode=false
+                }) {Icon(if(noteFolder=="archive"||noteFolder=="trash") Icons.Rounded.Restore else Icons.Rounded.Archive,
+                    neoLabel("أرشفة أو استعادة","Archive or restore"))}
+                IconButton(enabled=selectedNotes.isNotEmpty()&&!write.pending,onClick={
+                    if(noteFolder=="trash") pendingPermanentDelete=selectedNotes else confirmTrash=true
+                }) {Icon(Icons.Rounded.Delete,if(noteFolder=="trash")
+                    neoLabel("حذف نهائي","Delete forever") else neoLabel("نقل للمهملات","Move to Trash"))}
+            }
         }
     }
     if(newNoteChoice) AlertDialog(
@@ -1322,6 +1388,7 @@ private fun NeoNoteCardMenu(
     archived:Boolean,
     trashed:Boolean,
     locked:Boolean,
+    previewHidden:Boolean,
     busy:Boolean,
     onOpen:()->Unit,
     onFavorite:()->Unit,
@@ -1329,7 +1396,10 @@ private fun NeoNoteCardMenu(
     onArchive:()->Unit,
     onMove:()->Unit,
     onSelect:()->Unit,
-    onTrash:()->Unit
+    onTrash:()->Unit,
+    onPreview:()->Unit,
+    onLock:()->Unit,
+    onDeleteForever:()->Unit
 ) {
     var expanded by remember {mutableStateOf(false)}
     Box {
@@ -1357,6 +1427,16 @@ private fun NeoNoteCardMenu(
                 onClick={expanded=false;onPin()}
             )
             DropdownMenuItem(
+                enabled=!busy,
+                text={Text(if(locked) neoLabel("فتح القفل بعد التحقق","Unlock after authentication")
+                    else neoLabel("قفل الملاحظة","Lock note"))},
+                onClick={expanded=false;onLock()})
+            DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(if(previewHidden) neoLabel("إظهار معاينة الملاحظة","Show note preview")
+                    else neoLabel("إخفاء معاينة الملاحظة","Hide note preview"))},
+                onClick={expanded=false;onPreview()})
+            DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(if(archived||trashed) neoLabel("استعادة","Restore")
                     else neoLabel("أرشفة","Archive"))},
@@ -1376,6 +1456,11 @@ private fun NeoNoteCardMenu(
                 enabled=!locked&&!busy,
                 text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},
                 onClick={expanded=false;onTrash()}
+            )
+            else DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(neoLabel("حذف نهائي","Delete forever"))},
+                onClick={expanded=false;onDeleteForever()}
             )
         }
     }

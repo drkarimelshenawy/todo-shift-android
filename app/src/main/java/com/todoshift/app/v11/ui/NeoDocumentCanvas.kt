@@ -67,10 +67,31 @@ internal fun NeoDocumentCanvas(
     }
     val background=if(a4) Color.White else MaterialTheme.colorScheme.surface
     val contentColor=if(a4) Color(0xFF202126) else MaterialTheme.colorScheme.onSurface
+    var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
     Column(verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
+        if(a4) {
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Center,
+                verticalAlignment=Alignment.CenterVertically) {
+                IconButton(onClick={zoomPercent=(zoomPercent-10).coerceAtLeast(70)},
+                    enabled=zoomPercent>70) {
+                    Icon(Icons.Rounded.ZoomOut,contentDescription=neoLabel("تصغير الصفحة","Zoom out"))
+                }
+                Text("$zoomPercent%",style=MaterialTheme.typography.labelLarge)
+                IconButton(onClick={zoomPercent=(zoomPercent+10).coerceAtMost(160)},
+                    enabled=zoomPercent<160) {
+                    Icon(Icons.Rounded.ZoomIn,contentDescription=neoLabel("تكبير الصفحة","Zoom in"))
+                }
+                TextButton(onClick={zoomPercent=100}) {Text(neoLabel("إعادة الضبط","Reset"))}
+            }
+        }
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val viewportWidth=maxWidth
+        Column(Modifier.fillMaxWidth().then(if(a4) Modifier.horizontalScroll(rememberScrollState())
+            else Modifier),verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
         pages.forEachIndexed {pageIndex,pageBlocks ->
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val a4Height=maxWidth*297f/210f
+            val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
+            Box(Modifier.width(pageWidth)) {
+            val a4Height=pageWidth*297f/210f
             Surface(
                 modifier=if(a4) Modifier.fillMaxWidth().padding(horizontal=6.dp)
                     .heightIn(min=a4Height)
@@ -146,6 +167,8 @@ internal fun NeoDocumentCanvas(
                 }
             }
             }
+        }
+        }
         }
     }
 }

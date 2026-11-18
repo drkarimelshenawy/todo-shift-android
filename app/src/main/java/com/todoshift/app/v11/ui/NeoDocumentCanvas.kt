@@ -61,6 +61,25 @@ internal fun NeoDocumentCanvas(
     onActiveParagraph:((NeoRichEditorState,(NeoRichEditorState)->Unit)->Unit)?=null
 ) {
     val blocks=remember(source){NeoDocumentBlocks.parse(source)}
+    // Read-only A4 sheets can paginate individual source lines without
+    // changing stored text or the editable paragraph's source range.
+    // Editing keeps original blocks intact to preserve IME composition,
+    // cursor positions and rich-text serialization.
+    val displayBlocks=remember(blocks,a4,inlineEditing,editable) {
+        if(!a4 || (inlineEditing && editable)) blocks
+        else blocks.flatMap { block ->
+            if(block is NeoDocumentBlocks.Block.Paragraph && '\\n' in block.source) {
+                block.source.split('\\n').mapIndexed { index,line ->
+                    NeoDocumentBlocks.Block.Paragraph(
+                        source=line,
+                        startLine=block.startLine+index,
+                        endLine=block.startLine+index+1,
+                        sourceHash=block.sourceHash
+                    )
+                }
+            } else listOf(block)
+        }
+    }
     // Heights are measured from the real Compose content, not guessed from
     // character counts. Page breaks are presentation-only; source is unchanged.
     var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
@@ -96,10 +115,10 @@ internal fun NeoDocumentCanvas(
         val availableHeightPx=with(LocalDensity.current) {
             (sheetWidth*(297f/210f-84f/595f)).roundToPx()
         }
-        val pages=remember(blocks,a4,availableHeightPx,titleHeightPx,measuredBlockHeights.toMap()) {
+        val pages=remember(displayBlocks,a4,availableHeightPx,titleHeightPx,measuredBlockHeights.toMap()) {
             val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
             var used=if(a4 && documentTitle.isNotBlank()) titleHeightPx else 0
-            blocks.forEach { block ->
+            displayBlocks.forEach { block ->
                 if(block is NeoDocumentBlocks.Block.PageBreak) {
                     result.add(mutableListOf())
                     used=0

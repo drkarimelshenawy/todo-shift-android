@@ -611,8 +611,14 @@ internal fun NeoNotePreview(
                         },lineStyle,ruled=ruled
                     )
                 } else {
-                    Row(verticalAlignment=androidx.compose.ui.Alignment.Top) {
-                        Checkbox(
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        androidx.compose.ui.platform.LocalLayoutDirection provides
+                            if(textDirection==androidx.compose.ui.text.style.TextDirection.Ltr)
+                                androidx.compose.ui.unit.LayoutDirection.Ltr
+                            else androidx.compose.ui.unit.LayoutDirection.Rtl
+                    ) {
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.Top) {
+                        Checkbox;
                             checked=done,
                             onCheckedChange=onChecklist?.let{callback->{_:Boolean->callback(index)}},
                             enabled=onChecklist!=null
@@ -622,6 +628,7 @@ internal fun NeoNotePreview(
                             Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task")
                                 else neoLabel("إلى مهمة","To task"))
                         }
+                    }
                     }
                 }
             } else if(!checklistsOnly) {

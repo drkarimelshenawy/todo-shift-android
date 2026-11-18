@@ -197,6 +197,10 @@ internal fun NeoDocumentCanvas(
                                 textAlign=TextAlign.Center))
                     }
                     pageBlocks.forEach {block ->
+                        // Keep each editor's identity stable as measured blocks
+                        // move between sheets; otherwise Compose can reuse a
+                        // different paragraph's IME state at the same position.
+                        androidx.compose.runtime.key(block.startLine,block.endLine) {
                         Box(Modifier.fillMaxWidth().onSizeChanged { size ->
                             if(measuredBlockHeights[block.startLine]!=size.height)
                                 measuredBlockHeights[block.startLine]=size.height
@@ -246,6 +250,7 @@ internal fun NeoDocumentCanvas(
                                 )
                             }
                             is NeoDocumentBlocks.Block.PageBreak -> Unit
+                        }
                         }
                         }
                     }

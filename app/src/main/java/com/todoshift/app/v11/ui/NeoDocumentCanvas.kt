@@ -105,7 +105,7 @@ internal fun NeoDocumentCanvas(
                 mutableIntStateOf(0)
             }
             val maxContentHeightPx=with(LocalDensity.current) {
-                (a4Height-2f*pageWidth*42f/595f).roundToPx()
+                (a4Height-pageWidth*(84f/595f)).roundToPx()
             }
             val overflowsA4=a4 && contentHeightPx>maxContentHeightPx+2
             Surface(

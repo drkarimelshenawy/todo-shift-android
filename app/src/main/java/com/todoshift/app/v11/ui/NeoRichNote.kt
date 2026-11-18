@@ -620,7 +620,7 @@ internal fun NeoNotePreview(
                             else androidx.compose.ui.unit.LayoutDirection.Rtl
                     ) {
                     Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.Top) {
-                        Checkbox;
+                        Checkbox(
                             checked=done,
                             onCheckedChange=onChecklist?.let{callback->{_:Boolean->callback(index)}},
                             enabled=onChecklist!=null

@@ -234,7 +234,7 @@ internal fun NeoDocumentCanvas(
                                 }
                             }
                             is NeoDocumentBlocks.Block.Table -> {
-                                NeoDocumentTable(block,editable,{rows ->
+                                NeoDocumentTable(block,editable,a4,{rows ->
                                     runCatching {
                                         onSourceChange(NeoDocumentBlocks.replace(source,block,
                                             NeoDocumentBlocks.serializeTable(rows)))
@@ -378,12 +378,13 @@ private fun NeoEditableDocumentParagraph(
 private fun NeoDocumentTable(
     table:NeoDocumentBlocks.Block.Table,
     editable:Boolean,
+    a4:Boolean,
     onSave:(List<List<String>>)->Unit
 ) {
     var editor by remember {mutableStateOf(false)}
     Column(Modifier.fillMaxWidth(),
         verticalArrangement=Arrangement.spacedBy(4.dp)) {
-        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+        if(!a4 && editable) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             Text(neoLabel("جدول","Table"),style=MaterialTheme.typography.labelSmall,
                 modifier=Modifier.weight(1f))
             if(editable) TextButton(onClick={editor=true}) {
@@ -392,12 +393,18 @@ private fun NeoDocumentTable(
                 Text(neoLabel("تعديل الجدول","Edit table"))
             }
         }
-        Column(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            // A4 tables use the printable page width, not a fixed 110dp
+            // per column that could silently clip exported columns.
+            val cellWidth=if(a4) maxWidth/table.cells.first().size else 110.dp
+            Column(Modifier.fillMaxWidth().then(
+                if(a4) Modifier else Modifier.horizontalScroll(rememberScrollState())
+            )) {
             table.cells.forEachIndexed {rowIndex,row ->
                 Row {
                     row.forEach {value ->
                         Surface(
-                            modifier=Modifier.width(110.dp).heightIn(min=36.dp),
+                            modifier=Modifier.width(cellWidth).heightIn(min=if(a4) 24.dp else 36.dp),
                             color=if(rowIndex==0)
                                 MaterialTheme.colorScheme.surfaceContainerHigh
                                 else MaterialTheme.colorScheme.surface,
@@ -406,10 +413,11 @@ private fun NeoDocumentTable(
                         ) {
                             Text(value.ifEmpty{" "},Modifier.padding(6.dp),
                                 style=MaterialTheme.typography.bodySmall,
-                                maxLines=4)
+                                maxLines=if(a4) Int.MAX_VALUE else 4)
                         }
                     }
                 }
+            }
             }
         }
     }

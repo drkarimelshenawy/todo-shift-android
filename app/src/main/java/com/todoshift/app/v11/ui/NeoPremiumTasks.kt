@@ -768,6 +768,13 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                 if(notesTab) DropdownMenuItem(
                                     text={Text(neoLabel("سلة المهملات","Trash"))},
                                     onClick={sharedMenu=false;noteFolder="trash";enterFolder(null)})
+                                if(notesTab && noteFolder=="trash") DropdownMenuItem(
+                                    text={Text(neoLabel("إفراغ سلة المهملات","Empty Trash"))},
+                                    enabled=db.dayItems.any{it.type==DayItemTypeV11.NOTE && it.noteTrashed && !it.noteLocked} && !write.pending,
+                                    onClick={
+                                        sharedMenu=false
+                                        pendingPermanentDelete=db.dayItems.filter{it.type==DayItemTypeV11.NOTE && it.noteTrashed && !it.noteLocked}.map{it.id}.toSet()
+                                    })
                                 if(notesTab) DropdownMenuItem(
                                     text={Text(if(noteSelectionMode) neoLabel("إلغاء تحديد الملاحظات","Exit selection")
                                         else neoLabel("تحديد الملاحظات","Select notes"))},
@@ -1049,7 +1056,32 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                                     }),neoLabel("تم قفل الملاحظة","Note locked"))
                                                 else error=neoLabel("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
                                             },
-                                            onDeleteForever={pendingPermanentDelete=setOf(note.id)}
+                                            onDeleteForever={pendingPermanentDelete=setOf(note.id)},
+                                            onCreateA4={
+                                                if(!write.pending) scope.launch {
+                                                    val copyId=java.util.UUID.randomUUID().toString()
+                                                    val copied=runCatching{withContext(Dispatchers.IO){
+                                                        NeoNoteDraftRecovery.copyMedia(context.applicationContext,note.id,copyId,note.details)
+                                                    }}
+                                                    if(copied.isSuccess) {
+                                                        val now=System.currentTimeMillis()
+                                                        val item=note.copy(id=copyId,
+                                                            title=note.title.ifBlank{neoLabel("مستند A4","A4 document")}+" (A4)",
+                                                            details=copied.getOrThrow(),createdAt=now,updatedAt=now,
+                                                            noteDocumentA4=true,noteTrashed=false,noteTrashedAt=null,
+                                                            noteArchived=false,notePinned=false,noteLocked=false,noteHidden=false)
+                                                        commit(db.copy(dayItems=db.dayItems+item)) {
+                                                            notice=neoLabel("تم إنشاء نسخة A4 منفصلة","Separate A4 copy created")
+                                                            val parent=noteFolderAssignments[note.id]
+                                                            if(parent!=null) scope.launch(Dispatchers.IO){
+                                                                runCatching{store.moveNotesToFolder(listOf(copyId),parent)}
+                                                                folderRefresh++
+                                                            }
+                                                        }
+                                                    } else error=neoLabel("فشل نسخ المرفقات؛ لم تتغير الملاحظة الأصلية",
+                                                        "Could not copy media; source note unchanged")
+                                                }
+                                            }
                                         )
                                     }
                                         // Password locking and hiding an excerpt are independent settings.
@@ -1207,7 +1239,32 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                                     }),neoLabel("تم قفل الملاحظة","Note locked"))
                                                 else error=neoLabel("فعّل PIN أو البصمة من الإعدادات أولًا","Set up PIN or biometrics in Settings first")
                                             },
-                                            onDeleteForever={pendingPermanentDelete=setOf(note.id)}
+                                            onDeleteForever={pendingPermanentDelete=setOf(note.id)},
+                                            onCreateA4={
+                                                if(!write.pending) scope.launch {
+                                                    val copyId=java.util.UUID.randomUUID().toString()
+                                                    val copied=runCatching{withContext(Dispatchers.IO){
+                                                        NeoNoteDraftRecovery.copyMedia(context.applicationContext,note.id,copyId,note.details)
+                                                    }}
+                                                    if(copied.isSuccess) {
+                                                        val now=System.currentTimeMillis()
+                                                        val item=note.copy(id=copyId,
+                                                            title=note.title.ifBlank{neoLabel("مستند A4","A4 document")}+" (A4)",
+                                                            details=copied.getOrThrow(),createdAt=now,updatedAt=now,
+                                                            noteDocumentA4=true,noteTrashed=false,noteTrashedAt=null,
+                                                            noteArchived=false,notePinned=false,noteLocked=false,noteHidden=false)
+                                                        commit(db.copy(dayItems=db.dayItems+item)) {
+                                                            notice=neoLabel("تم إنشاء نسخة A4 منفصلة","Separate A4 copy created")
+                                                            val parent=noteFolderAssignments[note.id]
+                                                            if(parent!=null) scope.launch(Dispatchers.IO){
+                                                                runCatching{store.moveNotesToFolder(listOf(copyId),parent)}
+                                                                folderRefresh++
+                                                            }
+                                                        }
+                                                    } else error=neoLabel("فشل نسخ المرفقات؛ لم تتغير الملاحظة الأصلية",
+                                                        "Could not copy media; source note unchanged")
+                                                }
+                                            }
                                         )
                                 }
                                         // Password locking and hiding an excerpt are independent settings.
@@ -1399,7 +1456,8 @@ private fun NeoNoteCardMenu(
     onTrash:()->Unit,
     onPreview:()->Unit,
     onLock:()->Unit,
-    onDeleteForever:()->Unit
+    onDeleteForever:()->Unit,
+    onCreateA4:()->Unit
 ) {
     var expanded by remember {mutableStateOf(false)}
     Box {
@@ -1452,6 +1510,10 @@ private fun NeoNoteCardMenu(
                 text={Text(neoLabel("تحديد مع ملاحظات أخرى","Select multiple"))},
                 onClick={expanded=false;onSelect()}
             )
+            if(!trashed) DropdownMenuItem(
+                enabled=!locked&&!busy,
+                text={Text(neoLabel("إنشاء نسخة كمستند A4","Create A4 document copy"))},
+                onClick={expanded=false;onCreateA4()})
             if(!trashed) DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},

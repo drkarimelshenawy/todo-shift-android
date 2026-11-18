@@ -192,7 +192,7 @@ fun NeoRescueSettings(
                     }
                     "TODAY_STYLE" -> NeoTodayPreferences(p, update)
                     "PAINT_STYLE" -> Neo4PaintStudio(p, update)
-                    "LAUNCH" -> NeoLaunchPreferencesUi()
+                    "LAUNCH" -> NeoLandingPreferencesUi()
                     "PERFORMANCE" ->
                         NeoChoice(
                             neoLabel("وضع الأداء", "Performance mode"),

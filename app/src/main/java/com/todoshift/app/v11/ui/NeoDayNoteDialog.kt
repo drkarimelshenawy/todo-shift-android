@@ -21,6 +21,13 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Undo
 import androidx.compose.material.icons.rounded.Redo
 import androidx.compose.material.icons.rounded.FormatSize
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.EventNote
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -707,27 +714,34 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 Icon(androidx.compose.material.icons.Icons.Rounded.MoreVert,
                                     neoLabel("المزيد","More"))
                             }
+                            CompositionLocalProvider(LocalLayoutDirection provides if (neoLabel("ar","en")=="ar") LayoutDirection.Rtl else LayoutDirection.Ltr) {
                             DropdownMenu(
                                 expanded=noteMoreMenu,
                                 onDismissRequest={noteMoreMenu=false}
                             ) {
                                 DropdownMenuItem(
                                     text={Text(neoLabel("بحث داخل الملاحظة","Find in note"))},
+                                    leadingIcon={Icon(Icons.Rounded.Search, contentDescription=null)},
                                     onClick={noteMoreMenu=false;documentAction="find"})
                                 DropdownMenuItem(
                                     text={Text(neoLabel("سجل التعديلات","Version history"))},
+                                    leadingIcon={Icon(Icons.Rounded.History, contentDescription=null)},
                                     onClick={noteMoreMenu=false;documentAction="history"})
                                 DropdownMenuItem(
                                     text={Text(neoLabel("مشاركة وتصدير","Share & export"))},
+                                    leadingIcon={Icon(Icons.Rounded.Share, contentDescription=null)},
                                     onClick={noteMoreMenu=false;documentAction="export"})
                                 DropdownMenuItem(
                                     text={Text(neoLabel("الصور والمرفقات","Images and attachments"))},
+                                    leadingIcon={Icon(Icons.Rounded.AttachFile, contentDescription=null)},
                                     onClick={noteMoreMenu=false;mediaShelfVisible=true;noteKeyboard?.hide()})
                                 DropdownMenuItem(
                                     text={Text(neoLabel("تنسيق الصفحة","Page formatting"))},
+                                    leadingIcon={Icon(Icons.Rounded.Description, contentDescription=null)},
                                     onClick={noteMoreMenu=false;editing=true;formatInitialTab=2;showFormatSheet=true;noteKeyboard?.hide()})
                                 DropdownMenuItem(
                                     text={Text(neoLabel("الربط بالمهام والتقويم","Task and calendar links"))},
+                                    leadingIcon={Icon(Icons.Rounded.EventNote, contentDescription=null)},
                                     onClick={noteMoreMenu=false;noteKeyboard?.hide();editing=true;options=true})
                                 if(existing==null) DropdownMenuItem(
                                     modifier=Modifier.testTag("notes_recover_old_draft_action"),
@@ -744,6 +758,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                                 "No readable old draft found")
                                         }
                                     })
+                            }
                             }
                         }
                     }

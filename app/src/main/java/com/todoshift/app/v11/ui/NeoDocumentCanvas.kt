@@ -65,7 +65,7 @@ internal fun NeoDocumentCanvas(
         }
         result
     }
-    val background=if(a4) Color.White else MaterialTheme.colorScheme.surface
+    val background=if(a4) Color.White else MaterialTheme.colorScheme.surfaceContainerLow
     val contentColor=if(a4) Color(0xFF202126) else MaterialTheme.colorScheme.onSurface
     var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
     Column(verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
@@ -97,13 +97,13 @@ internal fun NeoDocumentCanvas(
                     .heightIn(min=a4Height)
                     else Modifier.fillMaxWidth(),
                 color=background,contentColor=contentColor,
-                shadowElevation=if(a4) 3.dp else 0.dp,
+                shadowElevation=if(a4) 3.dp else 1.dp,
                 shape=if(a4) androidx.compose.foundation.shape.RoundedCornerShape(3.dp)
-                    else MaterialTheme.shapes.extraSmall
+                    else androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
             ) {
                 Column(Modifier.fillMaxWidth().padding(
-                    horizontal=if(a4) 22.dp else 0.dp,
-                    vertical=if(a4) 32.dp else 0.dp),
+                    horizontal=if(a4) pageWidth*42f/595f else 16.dp,
+                    vertical=if(a4) pageWidth*42f/595f else 16.dp),
                     verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     if(a4) Text(
                         neoLabel("مستند A4 • صفحة ","A4 document • page ")+(pageIndex+1),

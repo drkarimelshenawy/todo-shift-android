@@ -101,6 +101,30 @@ internal object NeoNoteTypefaces {
         }
     }
 
+    /**
+     * Overlay user styles only in the visual layer while an Arabic IME composes
+     * text. The actual TextFieldValue, selection and composition stay untouched.
+     */
+    fun richVisual(
+        characters:List<NeoRichCharStyle>,
+        arabic:String,
+        english:String
+    ):VisualTransformation=VisualTransformation {source ->
+        val formatted=buildAnnotatedString {
+            append(source.text)
+            var index=0
+            val count=minOf(source.length,characters.size)
+            while(index<count) {
+                val mark=characters[index]
+                var end=index+1
+                while(end<count && characters[end]==mark) end++
+                if(mark!=NeoRichCharStyle()) addStyle(mark.span(),index,end)
+                index=end
+            }
+        }
+        TransformedText(styled(formatted,arabic,english),OffsetMapping.Identity)
+    }
+
     fun visual(arabic:String,english:String)=VisualTransformation {source ->
         TransformedText(styled(source,arabic,english),OffsetMapping.Identity)
     }

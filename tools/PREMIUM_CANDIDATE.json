@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 65,
-  "versionName": "4.23.0-premium-v61-notes-editor-stability",
-  "branch": "feat/v61-notes-editor-stability-20261118",
-  "baseline": "dc2c11e3296b9c5a7b05d2403c5075a20620f6a7",
-  "classification": "SIGNED v61 NOTES EDITOR REFINEMENT — build and Android emulator tests pending; physical device acceptance required"
+  "versionCode": 66,
+  "versionName": "4.24.0-premium-v62-notes-save-recovery",
+  "branch": "fix/v62-notes-conflict-exit-20261118",
+  "baseline": "05333788ce5ceafb321d01479949896b67f788e4",
+  "classification": "SIGNED v62 NOTE DRAFT CONFLICT AND SAFE EXIT — CI pending, preserves original notes and encrypted drafts"
 }

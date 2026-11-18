@@ -68,8 +68,8 @@ internal fun NeoDocumentCanvas(
     val displayBlocks=remember(blocks,a4,inlineEditing,editable) {
         if(!a4 || (inlineEditing && editable)) blocks
         else blocks.flatMap { block ->
-            if(block is NeoDocumentBlocks.Block.Paragraph && '\\n' in block.source) {
-                block.source.split('\\n').mapIndexed { index,line ->
+            if(block is NeoDocumentBlocks.Block.Paragraph && '\n' in block.source) {
+                block.source.split('\n').mapIndexed { index,line ->
                     NeoDocumentBlocks.Block.Paragraph(
                         source=line,
                         startLine=block.startLine+index,

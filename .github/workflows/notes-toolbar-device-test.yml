@@ -7,6 +7,7 @@ on:
       - feat/v60-notes-toolbar-safe-area-20261118
       - feat/v61-notes-editor-stability-20261118
       - fix/v62-notes-conflict-exit-20261118
+      - feat/v63-notes-workflow-a4-20261118
     paths:
       - 'app/**'
       - '.github/workflows/notes-toolbar-device-test.yml'

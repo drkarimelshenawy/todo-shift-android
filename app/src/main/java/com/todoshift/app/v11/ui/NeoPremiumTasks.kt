@@ -179,6 +179,20 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         activeFolderId=id;noteSearch="";searchExpanded=false
         selectedNotes=emptySet();noteSelectionMode=false
     }
+    // Android Back navigates the notes hierarchy before leaving the Tasks/Notes tab.
+    BackHandler(enabled=notesTab && !noteEditor && !noteSelectionMode &&
+        !moveNotesDialog && pendingPermanentDelete.isEmpty() &&
+        (activeFolderId!=null || noteFolder!="active")) {
+        when {
+            activeFolderId!=null -> {
+                val parent=noteFolders.firstOrNull {it.id==activeFolderId}?.parentId
+                enterFolder(parent)
+            }
+            noteFolder!="active" -> {
+                noteFolder="active";noteTag=null;enterFolder(null)
+            }
+        }
+    }
     fun initFolderEditor(id:String?) {
         val existing=noteFolders.firstOrNull{it.id==id}
         editingFolderId=id
@@ -597,7 +611,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         (noteSearch.isBlank() || (!note.noteLocked && listOf(note.title,note.details,note.noteTags).any {it.contains(noteSearch,true)}))
                     }.let { notes -> when(noteSort){"title"->notes.sortedBy {if(it.notePrivate) "" else it.title};"date"->notes.sortedByDescending {it.createdAt};else->notes.sortedByDescending {it.updatedAt}} }.sortedByDescending {it.notePinned}
     val displayedFolders=noteFolders.filter { folder ->
-        activeFolderId!="__all__" && activeFolderId!="__unfiled__" &&
+        noteFolder=="active" && activeFolderId!="__all__" && activeFolderId!="__unfiled__" &&
         folder.parentId==activeFolderId
     }.filter {folder ->
         noteSearch.isBlank() || folder.name.contains(noteSearch,true)
@@ -764,10 +778,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                 )
                                 if(notesTab) DropdownMenuItem(
                                     text={Text(neoLabel("الأرشيف","Archive"))},
-                                    onClick={sharedMenu=false;noteFolder="archive";enterFolder(null)})
+                                    onClick={sharedMenu=false;enterFolder(null);noteFolder="archive";noteTag=null})
                                 if(notesTab) DropdownMenuItem(
                                     text={Text(neoLabel("سلة المهملات","Trash"))},
-                                    onClick={sharedMenu=false;noteFolder="trash";enterFolder(null)})
+                                    onClick={sharedMenu=false;enterFolder(null);noteFolder="trash";noteTag=null})
                                 if(notesTab && noteFolder=="trash") DropdownMenuItem(
                                     text={Text(neoLabel("إفراغ سلة المهملات","Empty Trash"))},
                                     enabled=db.dayItems.any{it.type==DayItemTypeV11.NOTE && it.noteTrashed && !it.noteLocked} && !write.pending,
@@ -1560,12 +1574,12 @@ private fun NeoNoteFolderCard(
     val textInk=if(androidx.core.graphics.ColorUtils.calculateLuminance(
         android.graphics.Color.parseColor(folder.color))<0.42)
         androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF112B45)
-    // The folder itself is the tile: a raised tab and full-width colored folder body.
+    // Compact folder silhouette, with a small tab and no oversized emoji.
     Column(modifier,verticalArrangement=Arrangement.spacedBy(0.dp)) {
         Surface(
-            modifier=Modifier.padding(start=12.dp).width(100.dp).height(17.dp),
+            modifier=Modifier.padding(start=12.dp).width(62.dp).height(10.dp),
             color=accent,shape=androidx.compose.foundation.shape.RoundedCornerShape(
-                topStart=11.dp,topEnd=11.dp)
+                topStart=7.dp,topEnd=7.dp)
         ){}
         Surface(
             modifier=Modifier.fillMaxWidth().weight(1f),
@@ -1577,8 +1591,8 @@ private fun NeoNoteFolderCard(
             Column(Modifier.fillMaxSize().padding(12.dp),
                 verticalArrangement=Arrangement.SpaceBetween) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                    Text(if(folder.locked) "🔒" else "📂",
-                        style=MaterialTheme.typography.titleMedium)
+                    Icon(if(folder.locked) Icons.Rounded.Lock else Icons.Rounded.Folder,
+                        contentDescription=null,modifier=Modifier.size(22.dp),tint=textInk)
                     Spacer(Modifier.weight(1f))
                     Box {
                         IconButton(onClick={menu=true},modifier=Modifier.size(36.dp)) {

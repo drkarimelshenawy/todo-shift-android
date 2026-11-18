@@ -1549,6 +1549,7 @@ private fun NeoNoteCardMenu(
         DropdownMenu(expanded=expanded,onDismissRequest={expanded=false}) {
             DropdownMenuItem(
                 text={Text(neoLabel("فتح الملاحظة","Open note"))},
+                leadingIcon={Icon(Icons.Rounded.FolderOpen,contentDescription=null)},
                 onClick={expanded=false;onOpen()}
             )
             HorizontalDivider()
@@ -1556,52 +1557,62 @@ private fun NeoNoteCardMenu(
                 enabled=!locked&&!busy,
                 text={Text(if(favorite) neoLabel("إزالة من المفضلة","Remove favorite")
                     else neoLabel("إضافة للمفضلة","Add favorite"))},
+                leadingIcon={Icon(Icons.Rounded.StarOutline,contentDescription=null)},
                 onClick={expanded=false;onFavorite()}
             )
             DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(if(pinned) neoLabel("إلغاء التثبيت","Unpin")
                     else neoLabel("تثبيت","Pin"))},
+                leadingIcon={Icon(Icons.Rounded.PushPin,contentDescription=null)},
                 onClick={expanded=false;onPin()}
             )
             DropdownMenuItem(
                 enabled=!busy,
                 text={Text(if(locked) neoLabel("فتح القفل بعد التحقق","Unlock after authentication")
                     else neoLabel("قفل الملاحظة","Lock note"))},
+                leadingIcon={Icon(Icons.Rounded.LockOutline,contentDescription=null)},
                 onClick={expanded=false;onLock()})
             DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(if(previewHidden) neoLabel("إظهار معاينة الملاحظة","Show note preview")
                     else neoLabel("إخفاء معاينة الملاحظة","Hide note preview"))},
+                leadingIcon={Icon(Icons.Rounded.VisibilityOff,contentDescription=null)},
                 onClick={expanded=false;onPreview()})
             DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(if(archived||trashed) neoLabel("استعادة","Restore")
                     else neoLabel("أرشفة","Archive"))},
+                leadingIcon={Icon(Icons.Rounded.Archive,contentDescription=null)},
                 onClick={expanded=false;onArchive()}
             )
             DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(neoLabel("نقل إلى مجلد","Move to folder"))},
+                leadingIcon={Icon(Icons.Rounded.DriveFileMove,contentDescription=null)},
                 onClick={expanded=false;onMove()}
             )
             DropdownMenuItem(
                 enabled=!locked,
                 text={Text(neoLabel("تحديد مع ملاحظات أخرى","Select multiple"))},
+                leadingIcon={Icon(Icons.Rounded.Checklist,contentDescription=null)},
                 onClick={expanded=false;onSelect()}
             )
             if(!trashed) DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(neoLabel("إنشاء نسخة كمستند A4","Create A4 document copy"))},
+                leadingIcon={Icon(Icons.Rounded.Description,contentDescription=null)},
                 onClick={expanded=false;onCreateA4()})
             if(!trashed) DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},
+                leadingIcon={Icon(Icons.Rounded.DeleteOutline,contentDescription=null)},
                 onClick={expanded=false;onTrash()}
             )
             else DropdownMenuItem(
                 enabled=!locked&&!busy,
                 text={Text(neoLabel("حذف نهائي","Delete forever"))},
+                leadingIcon={Icon(Icons.Rounded.DeleteForever,contentDescription=null)},
                 onClick={expanded=false;onDeleteForever()}
             )
         }

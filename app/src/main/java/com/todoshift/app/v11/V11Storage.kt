@@ -415,6 +415,8 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
                         put("notePinned", item.notePinned)
                         put("noteArchived", item.noteArchived)
                         put("noteTrashed", item.noteTrashed)
+                        put("noteTrashedAt", item.noteTrashedAt ?: JSONObject.NULL)
+                        put("noteDocumentA4",item.noteDocumentA4)
                         put("noteHidden", item.noteHidden)
                         put("noteLocked", item.noteLocked)
                         put("noteTags", item.noteTags)
@@ -926,6 +928,8 @@ class V11Storage internal constructor(private val prefs: SharedPreferences, priv
                 notePinned = o.optBoolean("notePinned", false),
                 noteArchived = o.optBoolean("noteArchived", false),
                 noteTrashed = o.optBoolean("noteTrashed", false),
+                noteTrashedAt = if(o.has("noteTrashedAt") && !o.isNull("noteTrashedAt")) o.optLong("noteTrashedAt") else null,
+                noteDocumentA4 = o.optBoolean("noteDocumentA4",false),
                 noteHidden = o.optBoolean("noteHidden", false),
                 noteLocked = o.optBoolean("noteLocked", false),
                 noteTags = o.optString("noteTags", ""),

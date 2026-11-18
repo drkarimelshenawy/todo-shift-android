@@ -85,10 +85,13 @@ internal fun NeoDocumentCanvas(
     var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
     // Width and font scale affect wrapping; never paginate with stale
     // measurements from a different zoom level.
-    val measuredBlockHeights=remember(noteId,source,a4,zoomPercent,inlineEditing,editable) {
+    var viewportWidthPx by remember(noteId) { mutableIntStateOf(0) }
+    val measuredBlockHeights=remember(
+        noteId,source,a4,zoomPercent,inlineEditing,editable,viewportWidthPx
+    ) {
         mutableStateMapOf<Int,Int>()
     }
-    var titleHeightPx by remember(noteId,documentTitle,a4,zoomPercent) {
+    var titleHeightPx by remember(noteId,documentTitle,a4,zoomPercent,viewportWidthPx) {
         mutableIntStateOf(0)
     }
     val background=if(a4) Color.White else MaterialTheme.colorScheme.surfaceContainerLow
@@ -109,7 +112,9 @@ internal fun NeoDocumentCanvas(
                 TextButton(onClick={zoomPercent=100}) {Text(neoLabel("إعادة الضبط","Reset"))}
             }
         }
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        BoxWithConstraints(Modifier.fillMaxWidth().onSizeChanged { size ->
+            if(viewportWidthPx!=size.width) viewportWidthPx=size.width
+        }) {
         val viewportWidth=maxWidth
         val sheetWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
         val availableHeightPx=with(LocalDensity.current) {

@@ -5,6 +5,7 @@ on:
     branches:
       - test/notes-toolbar-visibility-20261117
       - feat/v60-notes-toolbar-safe-area-20261118
+      - feat/v61-notes-editor-stability-20261118
     paths:
       - 'app/**'
       - '.github/workflows/notes-toolbar-device-test.yml'
@@ -20,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: [36]
+        api-level: [35, 36]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

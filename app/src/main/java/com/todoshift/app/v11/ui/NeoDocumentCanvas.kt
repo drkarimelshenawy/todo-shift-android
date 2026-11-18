@@ -63,6 +63,9 @@ internal fun NeoDocumentCanvas(
             if(block is NeoDocumentBlocks.Block.PageBreak) result.add(mutableListOf())
             else result.last().add(block)
         }
+        // Match PDF export: a terminal page-break does not create a blank
+        // final page, but intentional blank pages in the middle remain.
+        if(result.size>1 && result.last().isEmpty()) result.removeAt(result.lastIndex)
         result
     }
     val background=if(a4) Color.White else MaterialTheme.colorScheme.surfaceContainerLow

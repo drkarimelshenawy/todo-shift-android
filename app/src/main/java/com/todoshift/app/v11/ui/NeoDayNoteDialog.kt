@@ -703,7 +703,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             Spacer(Modifier.weight(1f))
                         }
                         Box {
-                            IconButton(onClick={noteMoreMenu=true}) {
+                            IconButton(modifier=Modifier.testTag("notes_more_menu"),onClick={noteMoreMenu=true}) {
                                 Icon(androidx.compose.material.icons.Icons.Rounded.MoreVert,
                                     neoLabel("المزيد","More"))
                             }
@@ -730,6 +730,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     text={Text(neoLabel("الربط بالمهام والتقويم","Task and calendar links"))},
                                     onClick={noteMoreMenu=false;noteKeyboard?.hide();editing=true;options=true})
                                 if(existing==null) DropdownMenuItem(
+                                    modifier=Modifier.testTag("notes_recover_old_draft_action"),
                                     text={Text(neoLabel("استرجاع مسودة قديمة","Recover an older draft"))},
                                     onClick={
                                         noteMoreMenu=false

@@ -4,6 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -13,6 +15,8 @@ import androidx.test.uiautomator.UiDevice
 import android.view.KeyEvent
 import kotlin.math.roundToInt
 import com.todoshift.app.v11.V11Database
+import com.todoshift.app.v11.NeoNoteDraftStore
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDate
@@ -103,4 +107,41 @@ class NeoNotesToolbarVisibilityDeviceTest {
             ", openBottom="+openBottom, moved)
         rule.onNodeWithTag("notes_quick_bar").assertIsDisplayed()
     }
+    @Test fun staleDateScopedDraftCannotTrapNewNoteOrOverwriteAnotherNote() {
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        val drafts=NeoNoteDraftStore(context)
+        val day=LocalDate.of(2026,11,20)
+        val key="new-2026-11-20-0"
+        val earlier=JSONObject()
+            .put("id","unrelated-original-note")
+            .put("source","<new>")
+            .put("editVersion","fixture-untouched")
+            .put("title","Earlier separate note")
+            .put("details","Text from another note")
+        drafts.save(key,earlier)
+        try {
+            rule.setContent {
+                MaterialTheme {
+                    NeoDayNoteDialog(
+                        date=day,existing=null,expectedDatabase=V11Database(),
+                        calendarId=null,onDismiss={},onSave={}
+                    )
+                }
+            }
+            rule.waitUntil(12_000) {
+                rule.onAllNodesWithTag("notes_draft_conflict")
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+            rule.onNodeWithTag("notes_draft_conflict").assertIsDisplayed()
+            rule.onNodeWithTag("notes_continue_current").performClick()
+            rule.waitForIdle()
+            rule.onNodeWithTag("notes_draft_conflict").assertDoesNotExist()
+            rule.onNodeWithTag("notes_body_input").assertIsDisplayed()
+            // Ignoring this draft must not erase somebody else's encrypted data.
+            assertTrue(drafts.read(key)?.optString("id")=="unrelated-original-note")
+        } finally {
+            drafts.remove(key)
+        }
+    }
+
 }

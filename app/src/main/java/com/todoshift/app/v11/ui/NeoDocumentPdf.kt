@@ -156,9 +156,14 @@ internal object NeoDocumentPdf {
                                         inPreferredConfig=Bitmap.Config.RGB_565})
                                 if(image!=null) {
                                     try {
-                                        val width=CONTENT_WIDTH*(block.width/100f)
-                                        val height=(width*image.height/image.width)
-                                            .coerceAtMost((PAGE_HEIGHT-2*MARGIN)*.72f)
+                                        // Preserve image aspect ratio when a tall attachment
+                                        // must be scaled down to fit the printable A4 area.
+                                        val requestedWidth=CONTENT_WIDTH*(block.width/100f)
+                                        val naturalHeight=requestedWidth*image.height/image.width
+                                        val maxHeight=(PAGE_HEIGHT-2*MARGIN)*.72f
+                                        val scale=if(naturalHeight>maxHeight) maxHeight/naturalHeight else 1f
+                                        val width=requestedWidth*scale
+                                        val height=naturalHeight*scale
                                         ensure(height+8f)
                                         val x=when(block.align) {
                                             "left"->MARGIN

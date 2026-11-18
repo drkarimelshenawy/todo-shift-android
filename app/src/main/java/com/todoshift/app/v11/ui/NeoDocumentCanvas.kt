@@ -190,19 +190,21 @@ internal fun NeoDocumentCanvas(
                         }
                     }
                     }
-                    if(overflowsA4) {
-                        Text(
-                            neoLabel(
-                                "تنبيه: محتوى الصفحة أطول من A4؛ سيُقسَّم عند تصدير PDF.",
-                                "Page exceeds A4; PDF export will paginate the content."
-                            ),
-                            modifier=Modifier.fillMaxWidth().padding(top=8.dp),
-                            color=Color(0xFF9A3412),
-                            style=MaterialTheme.typography.labelSmall
-                        )
-                    }
                 }
                 }
+            }
+            if(overflowsA4) {
+                // The warning belongs outside the printable sheet: it must
+                // never alter page geometry or appear as document content.
+                Text(
+                    neoLabel(
+                        "تنبيه: محتوى الصفحة أطول من A4؛ سيُقسَّم عند تصدير PDF.",
+                        "Page exceeds A4; PDF export will paginate the content."
+                    ),
+                    modifier=Modifier.fillMaxWidth().padding(top=8.dp),
+                    color=Color(0xFF9A3412),
+                    style=MaterialTheme.typography.labelSmall
+                )
             }
             }
         }

@@ -105,10 +105,6 @@ internal fun NeoDocumentCanvas(
                     horizontal=if(a4) pageWidth*42f/595f else 16.dp,
                     vertical=if(a4) pageWidth*42f/595f else 16.dp),
                     verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                    if(a4) Text(
-                        neoLabel("مستند A4 • صفحة ","A4 document • page ")+(pageIndex+1),
-                        style=MaterialTheme.typography.labelSmall,color=Color.Gray
-                    )
                     pageBlocks.forEach {block ->
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {
@@ -157,13 +153,7 @@ internal fun NeoDocumentCanvas(
                             is NeoDocumentBlocks.Block.PageBreak -> Unit
                         }
                     }
-                    if(a4) {
-                        Spacer(Modifier.height(26.dp))
-                        Text((pageIndex+1).toString(),
-                            style=MaterialTheme.typography.labelSmall,
-                            modifier=Modifier.align(Alignment.CenterHorizontally),
-                            color=Color.Gray)
-                    }
+
                 }
             }
             }

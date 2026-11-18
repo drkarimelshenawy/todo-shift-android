@@ -202,6 +202,7 @@ private fun NeoEditableDocumentParagraph(
         if(focused) activated?.invoke(state) {updated ->apply(updated)}
     }
     val rtl=direction!=TextDirection.Ltr
+    var measuredLines by remember { mutableStateOf<List<Float>>(emptyList()) }
     CompositionLocalProvider(LocalLayoutDirection provides
         if(rtl) androidx.compose.ui.unit.LayoutDirection.Rtl
         else androidx.compose.ui.unit.LayoutDirection.Ltr) {
@@ -212,18 +213,19 @@ private fun NeoEditableDocumentParagraph(
                 .onFocusChanged {focused=it.isFocused}
                 .drawBehind {
                     if(ruled) {
-                        val rowHeight=42.sp.toPx()
                         val ink=Color.Gray.copy(alpha=0.27f)
-                        var baseline=rowHeight
-                        while(baseline<size.height) {
-                            drawLine(ink,
-                                androidx.compose.ui.geometry.Offset(0f,baseline+3.dp.toPx()),
-                                androidx.compose.ui.geometry.Offset(size.width,baseline+3.dp.toPx()),
+                        measuredLines.forEach { bottom ->
+                            if(bottom<=size.height) drawLine(ink,
+                                androidx.compose.ui.geometry.Offset(0f,bottom),
+                                androidx.compose.ui.geometry.Offset(size.width,bottom),
                                 strokeWidth=0.7.dp.toPx())
-                            baseline+=rowHeight
                         }
                     }
                 },
+            onTextLayout={layout ->
+                val next=(0 until layout.lineCount).map { layout.getLineBottom(it) }
+                if(measuredLines!=next) measuredLines=next
+            },
             textStyle=MaterialTheme.typography.bodyLarge.copy(
                 color=MaterialTheme.colorScheme.onSurface,
                 lineHeight=if(ruled)42.sp else 32.sp,

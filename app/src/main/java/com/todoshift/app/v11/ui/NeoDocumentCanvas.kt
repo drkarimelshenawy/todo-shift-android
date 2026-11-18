@@ -125,7 +125,7 @@ internal fun NeoDocumentCanvas(
             val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
             Column(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
-            var contentHeightPx by remember(noteId,pageIndex,source,zoomPercent) {
+            var contentHeightPx by remember(noteId,pageIndex,pageBlocks.map { it.startLine },source,zoomPercent) {
                 mutableIntStateOf(0)
             }
             val maxContentHeightPx=with(LocalDensity.current) {

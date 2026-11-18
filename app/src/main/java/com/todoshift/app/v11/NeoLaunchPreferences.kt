@@ -31,6 +31,11 @@ class NeoLaunchPreferences(context: Context) {
             check(prefs.edit().putString("note_font_en",value).commit())
         }
 
+    /** 0 means keep notes in Trash until manually deleted. */
+    var noteTrashRetentionDays: Int
+        get() = prefs.getInt("note_trash_days", 30).takeIf { it in setOf(0,7,15,30,60,90) } ?: 30
+        set(value) { require(value in setOf(0,7,15,30,60,90)); check(prefs.edit().putInt("note_trash_days",value).commit()) }
+
     var openNotes: Boolean
         get() = prefs.getBoolean("notes", false)
         set(value) { check(prefs.edit().putBoolean("notes", value).commit()) }

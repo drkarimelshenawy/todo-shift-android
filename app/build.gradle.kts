@@ -14,8 +14,8 @@ android {
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 64
-        versionName = "4.22.0-premium-v60-notes-toolbar-safe-area"
+        versionCode = 65
+        versionName = "4.23.0-premium-v61-notes-editor-stability"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

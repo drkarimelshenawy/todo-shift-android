@@ -131,6 +131,19 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var linkedDate by rememberSaveable {mutableStateOf(existing?.date ?: date.toString())}
     var linkedCalendar by rememberSaveable {mutableStateOf(existing?.calendarId ?: calendarId)}
     var background by rememberSaveable { mutableStateOf(existing?.noteBackground.orEmpty()) }
+    // Only new notes inherit the card/calendar color until the paper is customized.
+    // Existing notes retain their stored appearance without silent migration.
+    var paperCustomized by rememberSaveable(id) {
+        mutableStateOf(existing?.noteBackground?.isNotBlank()==true)
+    }
+    fun selectPaperColor(hex:String) {
+        background=hex
+        paperCustomized=true
+    }
+    fun selectCardColor(hex:String) {
+        color=hex
+        if(existing==null && !paperCustomized) background=hex
+    }
     val launchPrefs=remember {NeoLaunchPreferences(context.applicationContext)}
     val savedPresentation=remember(id) {styleStore.notePresentation(id)}
     var ruledOverride by rememberSaveable(id) {mutableStateOf(savedPresentation.ruled)}
@@ -522,7 +535,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 val swatch=if(hex.isBlank()) MaterialTheme.colorScheme.surface
                                     else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
                                 Surface(
-                                    onClick={background=hex;paperPaletteOpen=false},
+                                    onClick={selectPaperColor(hex);paperPaletteOpen=false},
                                     modifier=Modifier.size(48.dp),
                                     shape=androidx.compose.foundation.shape.CircleShape,
                                     color=swatch,
@@ -1052,9 +1065,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                  NeoSwitch(neoLabel("إخفاء الملاحظة من القائمة","Hide note from list"),hidden){hidden=it}
                 Text(neoLabel("خلفية الملاحظة","Note background"))
                 Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                    listOf("" to neoLabel("افتراضي","Default"),"#FFF4B8" to neoLabel("أصفر","Yellow"),"#D9EFDA" to neoLabel("أخضر","Green"),"#D6E9FF" to neoLabel("أزرق","Blue"),"#F9DCE9" to neoLabel("وردي","Pink"),"#E8DDF5" to neoLabel("بنفسجي","Purple"),"#FFE1C3" to neoLabel("برتقالي","Orange"),"#E3E6EB" to neoLabel("رمادي","Gray")).forEach {(value,label) -> FilterChip(background==value,{background=value},label={Text(label)},colors=FilterChipDefaults.filterChipColors(containerColor=if(value.isBlank()) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(value))))}
+                    listOf("" to neoLabel("افتراضي","Default"),"#FFF4B8" to neoLabel("أصفر","Yellow"),"#D9EFDA" to neoLabel("أخضر","Green"),"#D6E9FF" to neoLabel("أزرق","Blue"),"#F9DCE9" to neoLabel("وردي","Pink"),"#E8DDF5" to neoLabel("بنفسجي","Purple"),"#FFE1C3" to neoLabel("برتقالي","Orange"),"#E3E6EB" to neoLabel("رمادي","Gray")).forEach {(value,label) -> FilterChip(background==value,{selectPaperColor(value)},label={Text(label)},colors=FilterChipDefaults.filterChipColors(containerColor=if(value.isBlank()) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(value))))}
                 }
-                OutlinedTextField(color,{color=it},label={Text(neoLabel("لون التقويم #RRGGBB","Calendar color #RRGGBB"))})
+                OutlinedTextField(color,{selectCardColor(it)},label={Text(neoLabel("لون التقويم #RRGGBB","Calendar color #RRGGBB"))})
             }
             if(editing) Row {
                 TextButton(onClick={val content=rich.value.text;(context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(title,content))}) {Text(neoLabel("نسخ","Copy"))}

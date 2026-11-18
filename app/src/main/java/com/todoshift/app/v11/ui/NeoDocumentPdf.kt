@@ -101,7 +101,8 @@ internal object NeoDocumentPdf {
             val attachments=NeoAttachmentStore(context).list()
                 .filter{it.owner==noteId && it.mime.startsWith("image/")}
                 .map{it.name}.toSet()
-            NeoDocumentBlocks.parse(source).forEach {block ->
+            val documentBlocks=NeoDocumentBlocks.parse(source)
+            documentBlocks.forEachIndexed {index,block ->
                 when(block) {
                     is NeoDocumentBlocks.Block.Paragraph -> {
                         block.source.split('\n').forEach {line ->
@@ -115,7 +116,10 @@ internal object NeoDocumentPdf {
                                 if(line.isBlank()) 5f else 3f)
                         }
                     }
-                    is NeoDocumentBlocks.Block.PageBreak -> newPage()
+                    // A terminal page-break marker should not produce an empty
+                    // trailing sheet in the exported PDF.
+                    is NeoDocumentBlocks.Block.PageBreak ->
+                        if(index<documentBlocks.lastIndex) newPage()
                     is NeoDocumentBlocks.Block.Table -> {
                         val columns=block.cells.first().size
                         val width=CONTENT_WIDTH/columns

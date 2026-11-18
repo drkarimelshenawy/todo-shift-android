@@ -22,8 +22,8 @@ class NeoNoteDraftIdentityTest {
     @Test fun olderOptionalPreviewFingerprintRemainsRecoverable() {
         assertTrue(NeoNoteDraftIdentity.canAutoRecover(
             "note-1","note-1",
-            "DayItem(notePreviewHidden=false)".replace(", notePreviewHidden=false",""),
-            "DayItem(notePreviewHidden=false)",null))
+            "DayItem(id=1)",
+            "DayItem(id=1, notePreviewHidden=false)",null))
     }
 
     @Test fun blankOrMissingDraftIdentityIsNotSafeToApply() {

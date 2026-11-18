@@ -10,7 +10,19 @@ class NeoLaunchPreferences(context: Context) {
         set(value) { require(value in 0..4); check(prefs.edit().putInt("landing", value).commit()) }
     var defaultNoteBackground:String
         get()=prefs.getString("note_background","").orEmpty()
-        set(value) {require(value.isBlank() || value.matches(Regex("#[0-9a-fA-F]{6}")));check(prefs.edit().putString("note_background",value).commit())}
+        set(value) {
+            require(value.isBlank() || value.matches(Regex("#[0-9a-fA-F]{6}")))
+            // Freeze the old shared background as the card default on first edit.
+            val edit=prefs.edit()
+            if(!prefs.contains("note_card_background"))
+                edit.putString("note_card_background",prefs.getString("note_background",""))
+            check(edit.putString("note_background",value).commit())
+        }
+    var defaultNoteCardBackground:String
+        get()=prefs.getString("note_card_background",
+            prefs.getString("note_background","")).orEmpty()
+        set(value) {require(value.isBlank() || value.matches(Regex("#[0-9a-fA-F]{6}")))
+            check(prefs.edit().putString("note_card_background",value).commit())}
     var defaultNoteRuled:Boolean
         get()=prefs.getBoolean("note_ruled",true)
         set(value) {check(prefs.edit().putBoolean("note_ruled",value).commit())}

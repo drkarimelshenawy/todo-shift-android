@@ -131,10 +131,10 @@ internal object NeoDocumentPdf {
                             paint.textSize=if(header) 11f else 10f
                             val layouts=row.map{layout(it,textWidth)}
                             val height=(layouts.maxOf{it.height}+12f).coerceAtLeast(25f)
-                            require(height<PAGE_HEIGHT-2*MARGIN) {
+                            require(height<=PAGE_HEIGHT-2*MARGIN) {
                                 "Table cell is too tall for A4; split the cell"
                             }
-                            ensure(height+2f)
+                            ensure(height)
                             row.forEachIndexed {column,_ ->
                                 val x=MARGIN+column*width
                                 val canvas=page!!.canvas
@@ -157,7 +157,7 @@ internal object NeoDocumentPdf {
                                 paint.textSize=10f
                                 val rowHeight=(row.maxOf{layout(it,textWidth).height}+12f)
                                     .coerceAtLeast(25f)
-                                if(y+rowHeight+2f>PAGE_HEIGHT-MARGIN) {
+                                if(y+rowHeight>PAGE_HEIGHT-MARGIN) {
                                     newPage()
                                     // Avoid an orphaned repeated header when a
                                     // very tall row cannot share the same sheet.

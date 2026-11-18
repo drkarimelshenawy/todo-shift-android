@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.focus.onFocusChanged
@@ -100,6 +101,13 @@ internal fun NeoDocumentCanvas(
             val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
             Box(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
+            var contentHeightPx by remember(noteId,pageIndex,source,zoomPercent) {
+                mutableIntStateOf(0)
+            }
+            val maxContentHeightPx=with(LocalDensity.current) {
+                (a4Height-2f*pageWidth*42f/595f).roundToPx()
+            }
+            val overflowsA4=a4 && contentHeightPx>maxContentHeightPx+2
             Surface(
                 modifier=if(a4) Modifier.fillMaxWidth()
                     .heightIn(min=a4Height)
@@ -121,6 +129,9 @@ internal fun NeoDocumentCanvas(
                     horizontal=if(a4) pageWidth*42f/595f else 16.dp,
                     vertical=if(a4) pageWidth*42f/595f else 16.dp),
                     verticalArrangement=Arrangement.spacedBy(if(a4) 0.dp else 6.dp)) {
+                    Column(Modifier.fillMaxWidth().onSizeChanged {
+                        if(contentHeightPx!=it.height) contentHeightPx=it.height
+                    },verticalArrangement=Arrangement.spacedBy(0.dp)) {
                     // PDF export prints the document title at the start of page 1.
                     // Show it on the actual A4 sheet instead of above the sheet.
                     if(a4 && pageIndex==0 && documentTitle.isNotBlank()) {
@@ -178,7 +189,18 @@ internal fun NeoDocumentCanvas(
                             is NeoDocumentBlocks.Block.PageBreak -> Unit
                         }
                     }
-
+                    }
+                    if(overflowsA4) {
+                        Text(
+                            neoLabel(
+                                "تنبيه: محتوى الصفحة أطول من A4؛ سيُقسَّم عند تصدير PDF.",
+                                "Page exceeds A4; PDF export will paginate the content."
+                            ),
+                            modifier=Modifier.fillMaxWidth().padding(top=8.dp),
+                            color=Color(0xFF9A3412),
+                            style=MaterialTheme.typography.labelSmall
+                        )
+                    }
                 }
                 }
             }

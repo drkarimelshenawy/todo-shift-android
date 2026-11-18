@@ -602,8 +602,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     val visibleNotes=db.dayItems.filter { note ->
                         note.type==DayItemTypeV11.NOTE &&
                         when(noteFolder) {"archive"->note.noteArchived&&!note.noteTrashed&&!note.noteHidden;"trash"->note.noteTrashed&&!note.noteHidden;"hidden"->hiddenAuthorized&&note.noteHidden;"pinned"->note.notePinned&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;"favorites"->note.id in favoriteNoteIds&&!note.noteHidden&&!note.noteArchived&&!note.noteTrashed;else->!note.noteArchived&&!note.noteTrashed&&!note.noteHidden} &&
-                        authorizedFolder(noteFolderAssignments[note.id]) &&
-                        (activeFolderId=="__all__" ||
+                        (noteFolder=="trash" || authorizedFolder(noteFolderAssignments[note.id])) &&
+                        (noteFolder=="trash" || activeFolderId=="__all__" ||
                             ((activeFolderId==null||activeFolderId=="__unfiled__") &&
                                 noteFolderAssignments[note.id]==null) ||
                             noteFolderAssignments[note.id]==activeFolderId) &&
@@ -658,9 +658,19 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start=12.dp,end=12.dp,top=8.dp,bottom=96.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 item(key="task-header") {
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        if(notesTab && !noteSelectionMode && (noteFolder!="active" || activeFolderId!=null)) {
+                            IconButton(onClick={
+                                if(activeFolderId!=null) enterFolder(noteFolders.firstOrNull{it.id==activeFolderId}?.parentId)
+                                else {noteFolder="active";noteTag=null;enterFolder(null)}
+                            }) {
+                                Icon(Icons.Rounded.ArrowBack,neoLabel("الرجوع للملاحظات","Back to notes"))
+                            }
+                        }
                         Text(
                             if(notesTab && noteSelectionMode)
                                 neoLabel("محدد: ","Selected: ")+selectedNotes.size
+                            else if(notesTab && noteFolder=="trash") neoLabel("🗑 سلة المهملات · استعادة أو حذف نهائي","🗑 Trash · Restore or permanently delete")
+                            else if(notesTab && noteFolder=="archive") neoLabel("الأرشيف","Archive")
                             else neoLabel("المهام والملاحظات","Tasks & notes"),
                             Modifier.weight(1f),style=MaterialTheme.typography.titleMedium
                         )

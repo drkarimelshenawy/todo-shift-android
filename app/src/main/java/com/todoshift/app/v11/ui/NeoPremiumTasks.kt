@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -100,6 +101,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     var preferencesOpen by remember { mutableStateOf(false) }
     var noteEditor by rememberSaveable { mutableStateOf(false) }
+    var newNoteDocumentA4 by rememberSaveable {mutableStateOf(false)}
+    var newNoteChoice by remember {mutableStateOf(false)}
     var noteId by rememberSaveable { mutableStateOf<String?>(null) }
     var initialNoteTitle by rememberSaveable {mutableStateOf("")}
     var initialNoteBody by rememberSaveable {mutableStateOf("")}
@@ -154,6 +157,11 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     var noteSelectionMode by remember {mutableStateOf(false)}
     var selectedNotes by remember {mutableStateOf(setOf<String>())}
     var selectionActionsExpanded by remember {mutableStateOf(false)}
+    var pendingPermanentDelete by remember {mutableStateOf<Set<String>>(emptySet())}
+    var pendingCardUnlock by remember {mutableStateOf<String?>(null)}
+    BackHandler(enabled=notesTab && noteSelectionMode && !noteEditor && !moveNotesDialog && !confirmTrash && pendingPermanentDelete.isEmpty()) {
+        selectedNotes=emptySet();noteSelectionMode=false;selectionActionsExpanded=false
+    }
     fun authorizedFolder(id:String?):Boolean {
         if(id==null || id=="__all__" || id=="__unfiled__")return true
         val index=noteFolders.associateBy{it.id}
@@ -224,6 +232,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             "new_note" -> {
                 notesTab=true
                 noteId=null
+                newNoteDocumentA4=false
                 initialNoteTitle=""
                 initialNoteBody=initialSharedNoteText.orEmpty().take(16_000)
                 newNoteFolderTarget=null
@@ -244,6 +253,30 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         if(write.pending) return
         commit(next) { undoCandidate=next;notice=message }
     }
+    fun purgeNotes(ids:Set<String>,automated:Boolean=false) {
+        if(write.pending || ids.isEmpty()) return
+        val valid=ids.filter {id-> db.dayItems.any{it.id==id && it.noteTrashed && it.type==DayItemTypeV11.NOTE}}.toSet()
+        if(valid.isEmpty()) return
+        val next=NeoNoteTrashPolicy.remove(db,valid)
+        commit(next) {
+            selectedNotes=emptySet();noteSelectionMode=false;pendingPermanentDelete=emptySet()
+            notice=if(automated) neoLabel("تم تنظيف المهملات المنتهية","Expired trash cleaned")
+                else neoLabel("تم الحذف النهائي","Permanently deleted")
+            scope.launch(Dispatchers.IO) {
+                runCatching {store.moveNotesToFolder(valid,null);store.setNoteFavorites(valid,false)}
+                runCatching {NeoNoteHistoryStore(context.applicationContext).remove(valid)}
+                runCatching {NeoNoteDraftStore(context.applicationContext).let{drafts->valid.forEach{drafts.remove(it)}}}
+                runCatching {NeoAttachmentStore(context.applicationContext).purgeOwners(valid)}
+            }
+        }
+    }
+    val trashRetentionDays=NeoLaunchPreferences(context).noteTrashRetentionDays
+    LaunchedEffect(db.dayItems,trashRetentionDays,noteEditor,write.pending) {
+        if(!noteEditor && !write.pending) {
+            val ids=NeoNoteTrashPolicy.expiredIds(db.dayItems,trashRetentionDays,System.currentTimeMillis())
+            if(ids.isNotEmpty()) purgeNotes(ids,automated=true)
+        }
+    }
 
     fun updateFolder(action:()->Unit,message:String) {
         if(folderBusy||write.pending) return
@@ -258,7 +291,27 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
             } finally {folderBusy=false}
         }
     }
-    if(confirmTrash) AlertDialog(onDismissRequest={confirmTrash=false;if(!noteSelectionMode)selectedNotes=emptySet()},title={Text(neoLabel("نقل المحدد إلى المهملات؟","Move selected notes to trash?"))},text={Text(neoLabel("يمكن استعادتها من المهملات","You can restore them from Trash"))},confirmButton={TextButton(onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteTrashed=true,updatedAt=System.currentTimeMillis()) else it}),neoLiteral("نُقلت إلى المهملات","Moved to Trash"));selectedNotes=emptySet();noteSelectionMode=false;confirmTrash=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrash=false;if(!noteSelectionMode)selectedNotes=emptySet()}) {Text(neoLabel("إلغاء","Cancel"))}})
+    if(pendingPermanentDelete.isNotEmpty()) AlertDialog(
+        onDismissRequest={pendingPermanentDelete=emptySet()},
+        title={Text(neoLabel("حذف نهائي؟","Delete permanently?"))},
+        text={Text(neoLabel("سيتم حذف الملاحظات المحددة نهائيًا، مع مرفقاتها وسجل تعديلاتها. لا يمكن التراجع.",
+            "These notes, attachments and histories will be deleted permanently. This cannot be undone."))},
+        confirmButton={TextButton(enabled=!write.pending,onClick={purgeNotes(pendingPermanentDelete)}) {
+            Text(neoLabel("حذف نهائي","Delete forever"))}},
+        dismissButton={TextButton(onClick={pendingPermanentDelete=emptySet()}) {Text(neoLabel("إلغاء","Cancel"))}})
+    pendingCardUnlock?.let{ target ->
+        androidx.compose.ui.window.Dialog(onDismissRequest={pendingCardUnlock=null},
+            properties=androidx.compose.ui.window.DialogProperties(securePolicy=androidx.compose.ui.window.SecureFlagPolicy.SecureOn)) {
+            val sec=noteSecurity.load()
+            if(sec.mode==V11LockMode.NONE && !sec.biometricEnabled) Surface {Text(neoLabel("أعد إعداد PIN أو البصمة أولًا","Set up PIN or biometrics first"),Modifier.padding(20.dp))}
+            else V11AccountsUnlockScreen(sec,noteSecurity) {
+                changed(db.copy(dayItems=db.dayItems.map{if(it.id==target) it.copy(noteLocked=false,updatedAt=System.currentTimeMillis()) else it}),
+                    neoLabel("تم إلغاء قفل الملاحظة","Note unlocked"))
+                pendingCardUnlock=null
+            }
+        }
+    }
+    if(confirmTrash) AlertDialog(onDismissRequest={confirmTrash=false;if(!noteSelectionMode)selectedNotes=emptySet()},title={Text(neoLabel("نقل المحدد إلى المهملات؟","Move selected notes to trash?"))},text={Text(neoLabel("يمكن استعادتها من المهملات","You can restore them from Trash"))},confirmButton={TextButton(onClick={changed(db.copy(dayItems=db.dayItems.map {if(it.id in selectedNotes&&!it.noteLocked) it.copy(noteTrashed=true,noteTrashedAt=it.noteTrashedAt ?: System.currentTimeMillis(),updatedAt=System.currentTimeMillis()) else it}),neoLiteral("نُقلت إلى المهملات","Moved to Trash"));selectedNotes=emptySet();noteSelectionMode=false;confirmTrash=false}) {Text(neoLabel("نقل","Move"))}},dismissButton={TextButton(onClick={confirmTrash=false;if(!noteSelectionMode)selectedNotes=emptySet()}) {Text(neoLabel("إلغاء","Cancel"))}})
     if(preferencesOpen) AlertDialog(onDismissRequest={preferencesOpen=false},title={Text(neoLabel("المهام والملاحظات","Tasks & Notes"))},text={Column {NeoLaunchPreferencesUi()}},confirmButton={TextButton(onClick={preferencesOpen=false}) {Text(neoLabel("تم","Done"))}})
     if(missing) AlertDialog(onDismissRequest={missing=false},title={Text(neoLiteral("المهمة غير متاحة","Task unavailable"))},
         confirmButton={TextButton(onClick={missing=false}) {Text(neoLiteral("إغلاق","Close"))}})
@@ -642,7 +695,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                             val restore=noteFolder=="archive"||noteFolder=="trash"
                                             changed(db.copy(dayItems=db.dayItems.map {
                                                 if(it.id in selectedNotes && !it.noteLocked)
-                                                    it.copy(noteArchived=!restore,noteTrashed=false,
+                                                    it.copy(noteArchived=if(noteFolder=="trash") it.noteArchived else !restore,noteTrashed=false,noteTrashedAt=null,
                                                         updatedAt=System.currentTimeMillis())
                                                 else it
                                             }),neoLiteral("تم تحديث الملاحظات","Notes updated"))
@@ -667,6 +720,11 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         onClick={
                                             selectionActionsExpanded=false;moveNotesDialog=true
                                         }
+                                    )
+                                    if(noteFolder=="trash") DropdownMenuItem(
+                                        enabled=selectedNotes.isNotEmpty()&&!write.pending,
+                                        text={Text(neoLabel("حذف المحدد نهائيًا","Delete selected permanently"))},
+                                        onClick={selectionActionsExpanded=false;pendingPermanentDelete=selectedNotes}
                                     )
                                     if(noteFolder!="trash") DropdownMenuItem(
                                         enabled=selectedNotes.isNotEmpty()&&!write.pending,
@@ -704,6 +762,12 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         if(notesTab) noteControlsExpanded=true else filters=true
                                     }
                                 )
+                                if(notesTab) DropdownMenuItem(
+                                    text={Text(neoLabel("الأرشيف","Archive"))},
+                                    onClick={sharedMenu=false;noteFolder="archive";enterFolder(null)})
+                                if(notesTab) DropdownMenuItem(
+                                    text={Text(neoLabel("سلة المهملات","Trash"))},
+                                    onClick={sharedMenu=false;noteFolder="trash";enterFolder(null)})
                                 if(notesTab) DropdownMenuItem(
                                     text={Text(if(noteSelectionMode) neoLabel("إلغاء تحديد الملاحظات","Exit selection")
                                         else neoLabel("تحديد الملاحظات","Select notes"))},
@@ -1143,16 +1207,22 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                 }
             }
         }
-        FloatingActionButton(onClick={if(notesTab) {
-            initialNoteTitle="";initialNoteBody=""
-            newNoteFolderTarget=activeFolderId?.takeUnless{
-                it=="__unfiled__" || it=="__all__"
-            }
-            noteId=null;noteEditor=true
+        if(!notesTab || !noteSelectionMode) FloatingActionButton(onClick={if(notesTab) {
+            newNoteChoice=true
         } else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
         }
     }
+    if(newNoteChoice) AlertDialog(
+        onDismissRequest={newNoteChoice=false},
+        title={Text(neoLabel("إنشاء جديد","Create new"))},
+        text={Column {
+            TextButton(onClick={newNoteChoice=false;newNoteDocumentA4=false;initialNoteTitle="";initialNoteBody="";newNoteFolderTarget=activeFolderId?.takeUnless{it=="__all__"||it=="__unfiled__"};noteId=null;noteEditor=true}) {
+                Icon(Icons.Rounded.NoteAdd,null);Spacer(Modifier.width(8.dp));Text(neoLabel("ملاحظة عادية","Standard note"))}
+            TextButton(onClick={newNoteChoice=false;newNoteDocumentA4=true;initialNoteTitle="";initialNoteBody="";newNoteFolderTarget=activeFolderId?.takeUnless{it=="__all__"||it=="__unfiled__"};noteId=null;noteEditor=true}) {
+                Icon(Icons.Rounded.Description,null);Spacer(Modifier.width(8.dp));Text(neoLabel("مستند A4 (تجريبي)","A4 document (beta)"))}
+        }},
+        confirmButton={TextButton(onClick={newNoteChoice=false}) {Text(neoLabel("إلغاء","Cancel"))}})
     if(hiddenUnlock) androidx.compose.ui.window.Dialog(onDismissRequest={hiddenUnlock=false},properties=androidx.compose.ui.window.DialogProperties(securePolicy=androidx.compose.ui.window.SecureFlagPolicy.SecureOn)) {
         val security=remember {V11SecurityStore(context.applicationContext)}
         val settings=security.load()
@@ -1185,7 +1255,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                 noteEditor=false;noteId=null;initialNoteTitle="";initialNoteBody=""
             },
             initialTitle=if(existing==null) initialNoteTitle else "",
-            initialBody=if(existing==null) initialNoteBody else ""
+            initialBody=if(existing==null) initialNoteBody else "",
+            initialDocumentA4=existing?.noteDocumentA4 ?: newNoteDocumentA4
         ) { saved ->
                 noteEditor = false; noteId = null
                 if(existing==null) {

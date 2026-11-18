@@ -85,7 +85,7 @@ internal fun NeoDocumentCanvas(
     var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
     // Width and font scale affect wrapping; never paginate with stale
     // measurements from a different zoom level.
-    val measuredBlockHeights=remember(noteId,source,a4,zoomPercent) {
+    val measuredBlockHeights=remember(noteId,source,a4,zoomPercent,inlineEditing,editable) {
         mutableStateMapOf<Int,Int>()
     }
     var titleHeightPx by remember(noteId,documentTitle,a4,zoomPercent) {
@@ -144,7 +144,7 @@ internal fun NeoDocumentCanvas(
             val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
             Column(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
-            var contentHeightPx by remember(noteId,pageIndex,pageBlocks.map { it.startLine },source,zoomPercent) {
+            var contentHeightPx by remember(noteId,pageIndex,pageBlocks.map { it.startLine },source,zoomPercent,inlineEditing,editable) {
                 mutableIntStateOf(0)
             }
             val maxContentHeightPx=with(LocalDensity.current) {

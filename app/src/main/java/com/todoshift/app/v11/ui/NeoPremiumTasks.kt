@@ -1637,30 +1637,33 @@ private fun NeoNoteFolderCard(
     val textInk=if(androidx.core.graphics.ColorUtils.calculateLuminance(
         android.graphics.Color.parseColor(folder.color))<0.42)
         androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF112B45)
-    // Compact folder silhouette, with a small tab and no oversized emoji.
+    // Keep the folder tab on the leading edge in both Arabic and English.
+    // Avoid a tall, saturated block: a subtle paper-like body lets the title lead.
+    val folderSurface=MaterialTheme.colorScheme.surfaceContainerLow
     Column(modifier,verticalArrangement=Arrangement.spacedBy(0.dp)) {
         Surface(
-            modifier=Modifier.padding(start=12.dp).width(62.dp).height(10.dp),
+            modifier=Modifier.padding(start=12.dp).width(48.dp).height(8.dp),
             color=accent,shape=androidx.compose.foundation.shape.RoundedCornerShape(
                 topStart=7.dp,topEnd=7.dp)
         ){}
         Surface(
             modifier=Modifier.fillMaxWidth().weight(1f),
-            color=accent,contentColor=textInk,
+            color=folderSurface,contentColor=MaterialTheme.colorScheme.onSurface,
             shape=androidx.compose.foundation.shape.RoundedCornerShape(
-                topStart=3.dp,topEnd=13.dp,bottomStart=13.dp,bottomEnd=13.dp),
-            shadowElevation=3.dp,onClick=onOpen
+                topStart=3.dp,topEnd=12.dp,bottomStart=12.dp,bottomEnd=12.dp),
+            border=androidx.compose.foundation.BorderStroke(1.dp,accent.copy(alpha=0.65f)),
+            shadowElevation=1.dp,onClick=onOpen
         ) {
             Column(Modifier.fillMaxSize().padding(12.dp),
                 verticalArrangement=Arrangement.SpaceBetween) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     Icon(if(folder.locked) Icons.Rounded.Lock else Icons.Rounded.Folder,
-                        contentDescription=null,modifier=Modifier.size(22.dp),tint=textInk)
+                        contentDescription=null,modifier=Modifier.size(20.dp),tint=accent)
                     Spacer(Modifier.weight(1f))
                     Box {
                         IconButton(onClick={menu=true},modifier=Modifier.size(36.dp)) {
                             Icon(Icons.Rounded.MoreVert,neoLabel("خيارات المجلد","Folder options"),
-                                tint=textInk)
+                                tint=MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
                             DropdownMenuItem(text={Text(neoLabel("فتح","Open"))},
@@ -1686,10 +1689,10 @@ private fun NeoNoteFolderCard(
                 }
                 Column(verticalArrangement=Arrangement.spacedBy(3.dp)) {
                     Text(folder.name,maxLines=2,
-                        style=MaterialTheme.typography.titleMedium,color=textInk)
+                        style=MaterialTheme.typography.titleSmall,color=MaterialTheme.colorScheme.onSurface)
                     Text(if(count<0) neoLabel("مقفول","Locked")
                         else neoLabel("$count عنصر","$count items"),
-                        style=MaterialTheme.typography.labelSmall,color=textInk.copy(alpha=0.85f))
+                        style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

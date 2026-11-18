@@ -46,7 +46,7 @@ val LocalNeoOpenNoteTask = staticCompositionLocalOf<((String) -> Unit)?> {null}
 val LocalNeoNoteCommitted = staticCompositionLocalOf<(V11Database) -> Unit> { {} }
 
 @Composable
-fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, initialTitle:String="", initialBody:String="", onSave: (DayItemV11) -> Unit) {
+fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, initialTitle:String="", initialBody:String="", initialDocumentA4:Boolean=false, onSave: (DayItemV11) -> Unit) {
     val context = LocalContext.current
     val security = remember { V11SecurityStore(context.applicationContext) }
     val editorState=androidx.compose.runtime.saveable.rememberSaveableStateHolder()
@@ -74,12 +74,12 @@ fun NeoDayNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V
         }
         return
     }
-    editorState.SaveableStateProvider(existing?.id ?: "new-note") {NeoRichNoteDialog(date, existing, expectedDatabase, calendarId, onDismiss, onSave, {editorLocked=it}, initialTitle, initialBody)}
+    editorState.SaveableStateProvider(existing?.id ?: "new-note") {NeoRichNoteDialog(date, existing, expectedDatabase, calendarId, onDismiss, onSave, {editorLocked=it}, initialTitle, initialBody,initialDocumentA4)}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, onProtectionChanged:(Boolean)->Unit, initialTitle:String, initialBody:String) {
+private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDatabase: V11Database, calendarId: String?, onDismiss: () -> Unit, onSave: (DayItemV11) -> Unit, onProtectionChanged:(Boolean)->Unit, initialTitle:String, initialBody:String,initialDocumentA4:Boolean) {
     val context=LocalContext.current
     val styleStore=remember { NeoSmartStore(context.applicationContext) }
     val drafts=remember { NeoNoteDraftStore(context.applicationContext) }
@@ -95,7 +95,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var id by rememberSaveable(existing?.id) { mutableStateOf(existing?.id ?: UUID.randomUUID().toString()) }
     // Resolve legacy date-key conflicts without overwriting old encrypted drafts.
     var draftKey by rememberSaveable(existing?.id) {
-        mutableStateOf(existing?.id ?: "new-$date-${calendarId?.hashCode() ?: 0}")
+        mutableStateOf(existing?.id ?: id)
     }
     var recoveredLegacyKey by remember {mutableStateOf<Pair<String,String>?>(null)}
 
@@ -114,6 +114,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var locked by rememberSaveable { mutableStateOf(existing?.noteLocked ?: false) }
     var hidden by rememberSaveable { mutableStateOf(existing?.noteHidden ?: false) }
     var previewHidden by rememberSaveable { mutableStateOf(existing?.notePreviewHidden ?: false) }
+    var documentA4 by rememberSaveable(existing?.id) {mutableStateOf(existing?.noteDocumentA4 ?: initialDocumentA4)}
     var calendarLinked by rememberSaveable {mutableStateOf(existing?.noteCalendarLinked ?: true)}
     var linkedDate by rememberSaveable {mutableStateOf(existing?.date ?: date.toString())}
     var linkedCalendar by rememberSaveable {mutableStateOf(existing?.calendarId ?: calendarId)}
@@ -252,7 +253,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     calendarLinked=recovered.optBoolean("calendarLinked",calendarLinked);linkedDate=recovered.optString("linkedDate",linkedDate)
                     linkedCalendar=if(recovered.has("linkedCalendar")) recovered.optString("linkedCalendar").takeIf {it.isNotBlank()} else linkedCalendar
                     pinned=recovered.optBoolean("pinned",pinned); archived=recovered.optBoolean("archived",archived)
-                    trashed=recovered.optBoolean("trashed",trashed); locked=recovered.optBoolean("locked",locked);hidden=recovered.optBoolean("hidden",hidden);previewHidden=recovered.optBoolean("previewHidden",previewHidden)
+                    trashed=recovered.optBoolean("trashed",trashed); locked=recovered.optBoolean("locked",locked);hidden=recovered.optBoolean("hidden",hidden);previewHidden=recovered.optBoolean("previewHidden",previewHidden); documentA4=recovered.optBoolean("documentA4",documentA4)
                     detachedTasks=recovered.optJSONArray("detachedTasks")?.let {a->(0 until a.length()).map {a.getString(it)}} ?: emptyList()
                     existingTaskLinks=recovered.optJSONArray("existingTaskLinks")?.let {a->(0 until a.length()).map {a.getString(it)}} ?: emptyList()
                     taskSpecs=recovered.optJSONArray("taskSpecs")?.let { array->(0 until array.length()).map {array.getString(it)} } ?: taskSpecs
@@ -275,7 +276,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 "Could not read encrypted draft; it has not been deleted.")
         }
     }
-    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride)).toString()
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,documentA4,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
         while(pending) delay(10)
         if(rootWritePending || !draftReady || conflictingDraft!=null) return false
@@ -294,7 +295,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         if(runCatching {LocalDate.parse(linkedDate)}.isFailure) {error="تاريخ الملاحظة غير صحيح / Invalid note date";return false}
         val reminderAt=if(reminder.isBlank()) null else try {java.time.LocalDateTime.parse(reminder).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()} catch(_:Exception) {error="تاريخ التذكير غير صحيح / Invalid reminder date";return false}
         val note=(expected.dayItems.firstOrNull {it.id==id} ?: DayItemV11(id,date.toString(),calendarId,DayItemTypeV11.NOTE,""))
-            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=noteSource(),reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,notePreviewHidden=previewHidden,noteBackground=background.takeIf {it.isNotBlank()})
+            .copy(date=linkedDate,calendarId=linkedCalendar,noteCalendarLinked=calendarLinked,title=title.trim(),details=noteSource(),reminderAt=reminderAt,updatedAt=System.currentTimeMillis(),noteTags=tags,notePinned=pinned,noteArchived=archived,noteTrashed=trashed,noteLocked=locked,noteHidden=hidden,notePreviewHidden=previewHidden,noteBackground=background.takeIf {it.isNotBlank()},
+                noteTrashedAt=if(trashed) (expected.dayItems.firstOrNull{it.id==id}?.noteTrashedAt ?: System.currentTimeMillis()) else null,
+                noteDocumentA4=documentA4)
         val linkedTasks=taskSpecs.map {spec ->
             val key=spec.substringBefore('\n'); val label=spec.substringAfter('\n')
             val taskId=UUID.nameUUIDFromBytes(("note-checklist:$id:$key").toByteArray(Charsets.UTF_8)).toString()
@@ -354,7 +357,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     suspend fun keepDraft():Boolean {
       return try {
         val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",noteSource()).put("tags",tags)
-            .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden).put("previewHidden",previewHidden)
+            .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden).put("previewHidden",previewHidden).put("documentA4",documentA4)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
         ruledOverride?.let {value.put("ruledOverride",it)}
         arabicFontOverride?.let {value.put("arabicFontOverride",it)}
@@ -379,7 +382,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             else if(draftWritten) exitWithDraft=next
         }
     }
-    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride) {
+    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride,documentA4) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
@@ -597,7 +600,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     contentWindowInsets=WindowInsets(0,0,0,0),
                     containerColor=androidx.compose.ui.graphics.Color.Transparent,
                     bottomBar={
-                        if(editing && !a4Preview) {
+                        if(editing) {
                             Column(Modifier.fillMaxWidth()) {
                                 NeoNoteQuickBar(
                                     state=activeText,
@@ -635,7 +638,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
                         horizontalArrangement=Arrangement.spacedBy(2.dp)
                     ) {
-                        if(editing && a4Preview) {
+                        if(false && editing && a4Preview) {
                             TextButton(onClick={a4Preview=false;advancedCanvas=false}) {
                                 Text(neoLabel("العودة للكتابة","Back to writing"))
                             }
@@ -717,25 +720,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     text={Text(neoLabel("مشاركة وتصدير","Share & export"))},
                                     onClick={noteMoreMenu=false;documentAction="export"})
                                 DropdownMenuItem(
-                                    text={Text(neoLabel("مظهر الصفحة","Page appearance"))},
-                                    onClick={
-                                        noteMoreMenu=false;formatInitialTab=2
-                                        showFormatSheet=true;noteKeyboard?.hide()
-                                    })
-                                HorizontalDivider()
+                                    text={Text(neoLabel("الصور والمرفقات","Images and attachments"))},
+                                    onClick={noteMoreMenu=false;mediaShelfVisible=true;noteKeyboard?.hide()})
                                 DropdownMenuItem(
-                                    text={Text(neoLabel("إعدادات إضافية","More settings"))},
-                                    onClick={
-                                        noteMoreMenu=false;noteKeyboard?.hide()
-                                        noteSettingsOpen=true
-                                    })
+                                    text={Text(neoLabel("تنسيق الصفحة","Page formatting"))},
+                                    onClick={noteMoreMenu=false;formatInitialTab=2;showFormatSheet=true;noteKeyboard?.hide()})
                                 DropdownMenuItem(
-                                    text={Text(neoLabel("حفظ وإغلاق","Save and close"))},
-                                    enabled=!pending&&!rootWritePending,
-                                    onClick={
-                                        noteMoreMenu=false
-                                        requestSafeExit(onDismiss)
-                                    })
+                                    text={Text(neoLabel("الربط بالمهام والتقويم","Task and calendar links"))},
+                                    onClick={noteMoreMenu=false;noteKeyboard?.hide();editing=true;options=true})
                             }
                         }
                     }
@@ -830,7 +822,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             else androidx.compose.ui.text.style.TextDirection.Ltr
                         }
                     }
-                    if(editing && !advancedCanvas && !hasDocumentBlocks) {
+                    if(editing && !documentA4 && !advancedCanvas && !hasDocumentBlocks) {
                         NeoRuledNoteEditor(
                             value=rich.value,
                             styles=rich.characters,
@@ -856,13 +848,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     } else {
                         Column(
                             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                                .padding(horizontal=if(a4Preview) 4.dp else 16.dp)
+                                .padding(horizontal=if(documentA4) 4.dp else 16.dp)
                         ) {
                             NeoDocumentCanvas(
                                 noteId=id,
                                 source=noteSource(),
-                                editable=editing&&!closing&&!a4Preview,
-                                inlineEditing=editing&&!a4Preview,
+                                editable=editing&&!closing,
+                                inlineEditing=editing,
                                 onParagraphEdited={startLine,nextParagraph ->
                                     if(!closing) runCatching {
                                         NeoDocumentBlocks.replaceParagraphAt(
@@ -885,7 +877,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 ruled=ruledPaper,
                                 arabicFont=arabicTypeface,
                                 englishFont=englishTypeface,
-                                a4=a4Preview,
+                                a4=documentA4,
                                 onChecklist={line ->
                                     if(!pending) {
                                         val current=noteSource()
@@ -1113,7 +1105,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                             archived=stale.optBoolean("archived",archived)
                                             trashed=stale.optBoolean("trashed",trashed)
                                             hidden=stale.optBoolean("hidden",hidden)
-                                            previewHidden=stale.optBoolean("previewHidden",previewHidden)
+                                            previewHidden=stale.optBoolean("previewHidden",previewHidden); documentA4=stale.optBoolean("documentA4",documentA4)
                                             // A copy must not silently claim old task identities.
                                             taskSpecs=emptyList()
                                             detachedTasks=emptyList()

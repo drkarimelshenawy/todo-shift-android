@@ -44,6 +44,7 @@ internal fun NeoDocumentCanvas(
     noteId:String,
     source:String,
     editable:Boolean,
+    documentTitle:String="",
     onSourceChange:(String)->Unit,
     onError:(String)->Unit,
     onChecklist:((Int)->Unit)?=null,
@@ -110,6 +111,15 @@ internal fun NeoDocumentCanvas(
                     horizontal=if(a4) pageWidth*42f/595f else 16.dp,
                     vertical=if(a4) pageWidth*42f/595f else 16.dp),
                     verticalArrangement=Arrangement.spacedBy(if(a4) 0.dp else 6.dp)) {
+                    // PDF export prints the document title at the start of page 1.
+                    // Show it on the actual A4 sheet instead of above the sheet.
+                    if(a4 && pageIndex==0 && documentTitle.isNotBlank()) {
+                        Text(documentTitle,
+                            modifier=Modifier.fillMaxWidth().padding(bottom=12.dp),
+                            style=MaterialTheme.typography.titleLarge.copy(
+                                color=Color(0xFF202126),
+                                textAlign=TextAlign.Center))
+                    }
                     pageBlocks.forEach {block ->
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {

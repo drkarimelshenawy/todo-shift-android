@@ -199,13 +199,13 @@ private fun NeoEditableDocumentParagraph(
                 .onFocusChanged {focused=it.isFocused}
                 .drawBehind {
                     if(ruled) {
-                        val rowHeight=34.sp.toPx()
+                        val rowHeight=42.sp.toPx()
                         val ink=Color.Gray.copy(alpha=0.27f)
                         var baseline=rowHeight
                         while(baseline<size.height) {
                             drawLine(ink,
-                                androidx.compose.ui.geometry.Offset(0f,baseline),
-                                androidx.compose.ui.geometry.Offset(size.width,baseline),
+                                androidx.compose.ui.geometry.Offset(0f,baseline+3.dp.toPx()),
+                                androidx.compose.ui.geometry.Offset(size.width,baseline+3.dp.toPx()),
                                 strokeWidth=0.7.dp.toPx())
                             baseline+=rowHeight
                         }
@@ -213,11 +213,11 @@ private fun NeoEditableDocumentParagraph(
                 },
             textStyle=MaterialTheme.typography.bodyLarge.copy(
                 color=MaterialTheme.colorScheme.onSurface,
-                lineHeight=if(ruled)34.sp else 28.sp,
+                lineHeight=if(ruled)42.sp else 32.sp,
                 textDirection=direction,
                 textAlign=if(rtl)TextAlign.Right else TextAlign.Left
             ),
-            visualTransformation=NeoNoteTypefaces.visual(arabicFont,englishFont),
+            visualTransformation=NeoNoteTypefaces.richVisual(state.characters,arabicFont,englishFont),
             cursorBrush=androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
         )
     }

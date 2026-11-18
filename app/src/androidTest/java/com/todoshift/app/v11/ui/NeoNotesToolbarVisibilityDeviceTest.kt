@@ -57,6 +57,8 @@ class NeoNotesToolbarVisibilityDeviceTest {
         }
         rule.waitForIdle()
         screenshot("01-closed.png")
+        rule.onNodeWithTag("notes_font_smaller").assertIsDisplayed()
+        rule.onNodeWithTag("notes_font_larger").assertIsDisplayed()
         run {
         val toolbar=rule.onNodeWithTag("notes_quick_bar")
         val semantics=toolbar.fetchSemanticsNode()
@@ -93,6 +95,8 @@ class NeoNotesToolbarVisibilityDeviceTest {
         }.isSuccess
         rule.waitForIdle()
         screenshot("02-open.png")
+        rule.onNodeWithTag("notes_font_smaller").assertIsDisplayed()
+        rule.onNodeWithTag("notes_font_larger").assertIsDisplayed()
         val openBottom=rule.onNodeWithTag("notes_quick_bar")
             .fetchSemanticsNode().boundsInWindow.bottom
         assertTrue("Software IME never moved the toolbar: closedBottom="+closedBottom+

@@ -133,7 +133,7 @@ internal fun NeoDocumentCanvas(
                     val height=measuredBlockHeights[block.startLine] ?: 0
                     if(a4 && height>0 && used+height>availableHeightPx &&
                         (result.last().isNotEmpty() ||
-                            (result.size==1 && used>0))) {
+                            (result.size==1 && used>0 && height<=availableHeightPx))) {
                         // The first sheet can contain only the title. Never
                         // let a tall first block overflow it merely because
                         // the current block list is still empty.
@@ -155,7 +155,7 @@ internal fun NeoDocumentCanvas(
             val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
             Column(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
-            var contentHeightPx by remember(noteId,pageIndex,pageBlocks.map { it.startLine },source,zoomPercent,inlineEditing,editable) {
+            var contentHeightPx by remember(noteId,pageIndex,pageBlocks.map { it.startLine },source,zoomPercent,inlineEditing,editable,viewportWidthPx) {
                 mutableIntStateOf(0)
             }
             val maxContentHeightPx=with(LocalDensity.current) {
@@ -391,10 +391,10 @@ private fun NeoDocumentTable(
     a4:Boolean,
     onSave:(List<List<String>>)->Unit
 ) {
-    var editor by remember {mutableStateOf(false)}
+    var editor by remember(table.startLine,table.sourceHash) {mutableStateOf(false)}
     Column(Modifier.fillMaxWidth(),
         verticalArrangement=Arrangement.spacedBy(4.dp)) {
-        if(!a4 && editable) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+        if(editable) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             Text(neoLabel("جدول","Table"),style=MaterialTheme.typography.labelSmall,
                 modifier=Modifier.weight(1f))
             if(editable) TextButton(onClick={editor=true}) {
@@ -432,7 +432,7 @@ private fun NeoDocumentTable(
         }
     }
     if(editor) {
-        var cells by remember(table.startLine) {mutableStateOf(table.cells)}
+        var cells by remember(table.startLine,table.sourceHash) {mutableStateOf(table.cells)}
         AlertDialog(
             onDismissRequest={editor=false},
             title={Text(neoLabel("تحرير الجدول","Edit table"))},

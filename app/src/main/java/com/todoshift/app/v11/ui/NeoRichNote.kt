@@ -537,7 +537,9 @@ private fun NeoRuledParagraph(
         content,
         modifier=modifier.fillMaxWidth().drawBehind {
             bounds.forEach {bottom ->
-                val y=(bottom+3.dp.toPx()).coerceAtLeast(0f)
+                // Preview text has no extra space after its last line; keep the
+                // guide inside the paragraph bounds to prevent clipping.
+                val y=(bottom-2.dp.toPx()).coerceAtLeast(0f)
                 drawLine(
                     line,
                     androidx.compose.ui.geometry.Offset(0f,y),

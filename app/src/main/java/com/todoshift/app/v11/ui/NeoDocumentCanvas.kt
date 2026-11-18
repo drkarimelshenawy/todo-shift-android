@@ -99,7 +99,7 @@ internal fun NeoDocumentCanvas(
             // At 100% fit the page to the available width; zooming in increases
             // the measured sheet width and enables horizontal scrolling.
             val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
-            Box(Modifier.width(pageWidth)) {
+            Column(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
             var contentHeightPx by remember(noteId,pageIndex,source,zoomPercent) {
                 mutableIntStateOf(0)

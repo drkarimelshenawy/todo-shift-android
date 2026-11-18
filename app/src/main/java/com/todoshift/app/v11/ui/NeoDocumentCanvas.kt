@@ -316,6 +316,9 @@ private fun NeoEditableDocumentParagraph(
         mutableStateOf(NeoRichEditorState.open(block.source))
     }
     var focused by remember(noteId,block.startLine) {mutableStateOf(false)}
+    // IME composition is deliberately not serialized mid-word. Flush the
+    // completed local draft when focus leaves this paragraph so switching
+    // pages/fields cannot silently discard the last composed characters.
     val edited by rememberUpdatedState(onEdited)
     val activated by rememberUpdatedState(onActivated)
     val errors by rememberUpdatedState(onError)
@@ -342,7 +345,14 @@ private fun NeoEditableDocumentParagraph(
             value=state.value,
             onValueChange={apply(state.input(it))},
             modifier=Modifier.fillMaxWidth().heightIn(min=if(a4) 18.dp else 46.dp)
-                .onFocusChanged {focused=it.isFocused}
+                .onFocusChanged {
+                    val wasFocused=focused
+                    focused=it.isFocused
+                    if(wasFocused && !it.isFocused && state.stored()!=block.source) {
+                        runCatching { edited(block.startLine,state.stored()) }
+                            .onFailure { errors(it.message ?: "Could not save paragraph") }
+                    }
+                }
                 .drawBehind {
                     if(ruled) {
                         val ink=Color.Gray.copy(alpha=0.27f)

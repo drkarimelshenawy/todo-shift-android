@@ -320,7 +320,7 @@ private fun NeoEditableDocumentParagraph(
                 if(measuredLines!=next) measuredLines=next
             },
             textStyle=MaterialTheme.typography.bodyLarge.copy(
-                color=MaterialTheme.colorScheme.onSurface,
+                color=if(a4) Color(0xFF202126) else MaterialTheme.colorScheme.onSurface,
                 // PDF paragraphs use 12pt text with approximately 18pt leading.
                 // Keep the on-sheet editor close to that scale in A4 mode.
                 fontSize=if(a4)12.sp else MaterialTheme.typography.bodyLarge.fontSize,
@@ -329,7 +329,8 @@ private fun NeoEditableDocumentParagraph(
                 textAlign=if(rtl)TextAlign.Right else TextAlign.Left
             ),
             visualTransformation=NeoNoteTypefaces.richVisual(state.characters,arabicFont,englishFont),
-            cursorBrush=androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary)
+            cursorBrush=androidx.compose.ui.graphics.SolidColor(
+                if(a4) Color(0xFF174EA6) else MaterialTheme.colorScheme.primary)
         )
     }
 }

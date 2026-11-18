@@ -379,8 +379,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         }
         scope.launch {
             val draftWritten=keepDraft()
-            persistNote(true) // onSave/onDismiss are already invoked by successful persistence
-            else if(draftWritten) exitWithDraft=next
+            val saved=persistNote(true) // Successful persistence invokes onSave/onDismiss.
+            if(!saved && draftWritten) exitWithDraft=next
         }
     }
     LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,documentA4,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride,documentA4) {
@@ -740,7 +740,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                             if(old.isSuccess && old.getOrNull()!=null) {
                                                 legacyRecoveryKey=oldKey
                                                 conflictingDraft=old.getOrNull()
-                                            } else error=neoLabel("لا توجد مسودة قديمة متاحة أو تعذرت قراءتها",
+                                            } else error=neoLiteral("لا توجد مسودة قديمة متاحة أو تعذرت قراءتها",
                                                 "No readable old draft found")
                                         }
                                     })

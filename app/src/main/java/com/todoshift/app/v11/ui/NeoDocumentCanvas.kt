@@ -93,7 +93,7 @@ internal fun NeoDocumentCanvas(
             Box(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
             Surface(
-                modifier=if(a4) Modifier.fillMaxWidth().padding(horizontal=6.dp)
+                modifier=if(a4) Modifier.fillMaxWidth()
                     .heightIn(min=a4Height)
                     else Modifier.fillMaxWidth(),
                 color=background,contentColor=contentColor,

@@ -138,6 +138,11 @@ internal class NeoNoteHistoryStore(context: Context) {
         }
     }
 
+    /** Invoked only after the owning note was permanently removed from the database. */
+    fun remove(ids:Collection<String>) = synchronized(monitor) {
+        ids.filter{it.isNotBlank()}.forEach{drafts.remove(key(it))}
+    }
+
     companion object {
         const val MAX_REVISIONS=12
         const val MAX_PORTABLE_NOTES=500

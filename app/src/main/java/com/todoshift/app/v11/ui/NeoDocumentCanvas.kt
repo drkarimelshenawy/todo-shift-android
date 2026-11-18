@@ -132,7 +132,11 @@ internal fun NeoDocumentCanvas(
                 } else {
                     val height=measuredBlockHeights[block.startLine] ?: 0
                     if(a4 && height>0 && used+height>availableHeightPx &&
-                        result.last().isNotEmpty()) {
+                        (result.last().isNotEmpty() ||
+                            (result.size==1 && used>0))) {
+                        // The first sheet can contain only the title. Never
+                        // let a tall first block overflow it merely because
+                        // the current block list is still empty.
                         result.add(mutableListOf())
                         used=0
                     }

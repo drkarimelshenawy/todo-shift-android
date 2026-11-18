@@ -14,8 +14,8 @@ android {
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 66
-        versionName = "4.24.0-premium-v62-notes-save-recovery"
+        versionCode = 67
+        versionName = "4.25.0-premium-v63-notes-workflow-a4"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

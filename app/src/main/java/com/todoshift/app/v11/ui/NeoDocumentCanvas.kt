@@ -411,18 +411,24 @@ private fun NeoDocumentTable(
                 if(a4) Modifier else Modifier.horizontalScroll(rememberScrollState())
             )) {
             table.cells.forEachIndexed {rowIndex,row ->
-                Row {
+                Row(Modifier.height(IntrinsicSize.Min)) {
                     row.forEach {value ->
                         Surface(
-                            modifier=Modifier.width(cellWidth).heightIn(min=if(a4) 24.dp else 36.dp),
-                            color=if(rowIndex==0)
+                            modifier=Modifier.width(cellWidth)
+                                .then(if(a4) Modifier.fillMaxHeight().heightIn(min=25.dp)
+                                    else Modifier.heightIn(min=36.dp)),
+                            color=if(a4) Color.White else if(rowIndex==0)
                                 MaterialTheme.colorScheme.surfaceContainerHigh
                                 else MaterialTheme.colorScheme.surface,
                             border=androidx.compose.foundation.BorderStroke(
                                 0.5.dp,MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Text(value.ifEmpty{" "},Modifier.padding(6.dp),
-                                style=MaterialTheme.typography.bodySmall,
+                                style=if(a4) MaterialTheme.typography.bodySmall.copy(
+                                    fontSize=if(rowIndex==0) 11.sp else 10.sp,
+                                    lineHeight=if(rowIndex==0) 14.sp else 13.sp,
+                                    color=Color(0xFF202126)
+                                ) else MaterialTheme.typography.bodySmall,
                                 maxLines=if(a4) Int.MAX_VALUE else 4)
                         }
                     }

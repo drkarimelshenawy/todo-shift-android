@@ -725,7 +725,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     onClick={noteMoreMenu=false;mediaShelfVisible=true;noteKeyboard?.hide()})
                                 DropdownMenuItem(
                                     text={Text(neoLabel("تنسيق الصفحة","Page formatting"))},
-                                    onClick={noteMoreMenu=false;formatInitialTab=2;showFormatSheet=true;noteKeyboard?.hide()})
+                                    onClick={noteMoreMenu=false;editing=true;formatInitialTab=2;showFormatSheet=true;noteKeyboard?.hide()})
                                 DropdownMenuItem(
                                     text={Text(neoLabel("الربط بالمهام والتقويم","Task and calendar links"))},
                                     onClick={noteMoreMenu=false;noteKeyboard?.hide();editing=true;options=true})

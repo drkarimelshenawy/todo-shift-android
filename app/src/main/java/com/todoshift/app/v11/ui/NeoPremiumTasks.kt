@@ -1571,7 +1571,7 @@ private fun NeoNoteCardMenu(
                 enabled=!busy,
                 text={Text(if(locked) neoLabel("فتح القفل بعد التحقق","Unlock after authentication")
                     else neoLabel("قفل الملاحظة","Lock note"))},
-                leadingIcon={Icon(Icons.Rounded.LockOutline,contentDescription=null)},
+                leadingIcon={Icon(Icons.Rounded.Lock,contentDescription=null)},
                 onClick={expanded=false;onLock()})
             DropdownMenuItem(
                 enabled=!locked&&!busy,

@@ -127,8 +127,8 @@ internal object NeoDocumentPdf {
                         val columns=block.cells.first().size
                         val width=CONTENT_WIDTH/columns
                         val textWidth=(width-12f).toInt().coerceAtLeast(14)
-                        block.cells.forEachIndexed {index,row ->
-                            paint.textSize=if(index==0) 11f else 10f
+                        fun drawTableRow(row:List<String>,header:Boolean) {
+                            paint.textSize=if(header) 11f else 10f
                             val layouts=row.map{layout(it,textWidth)}
                             val height=(layouts.maxOf{it.height}+12f).coerceAtLeast(25f)
                             require(height<PAGE_HEIGHT-2*MARGIN) {
@@ -145,6 +145,20 @@ internal object NeoDocumentPdf {
                                 canvas.restore()
                             }
                             y+=height
+                        }
+                        block.cells.forEachIndexed {rowIndex,row ->
+                            if(rowIndex>0 && y>MARGIN) {
+                                paint.textSize=10f
+                                val rowHeight=(row.maxOf{layout(it,textWidth).height}+12f)
+                                    .coerceAtLeast(25f)
+                                if(y+rowHeight+2f>PAGE_HEIGHT-MARGIN) {
+                                    newPage()
+                                    // Reprint the table header so subsequent A4
+                                    // sheets remain readable independently.
+                                    drawTableRow(block.cells.first(),header=true)
+                                }
+                            }
+                            drawTableRow(row,header=rowIndex==0)
                         }
                         y+=8f
                     }

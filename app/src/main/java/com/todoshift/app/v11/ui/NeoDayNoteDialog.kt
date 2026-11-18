@@ -794,6 +794,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     if(editing && !advancedCanvas && !hasDocumentBlocks) {
                         NeoRuledNoteEditor(
                             value=rich.value,
+                            styles=rich.characters,
                             onValueChange={if(!closing) editRich(rich.input(it))},
                             onChecklistToggle={line ->
                                 if(!closing && rich.value.composition==null) {
@@ -855,6 +856,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     }
                                 }
                             )
+                            // Keep two readable lines of scroll room beneath the final
+                            // paragraph, also when the formatting bar or IME is present.
+                            Spacer(Modifier.height(124.dp))
                         }
                     }
                 }

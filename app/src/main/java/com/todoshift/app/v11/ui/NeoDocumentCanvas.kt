@@ -402,6 +402,7 @@ private fun NeoDocumentTable(
                 Icon(Icons.Rounded.Edit,null,Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(neoLabel("تعديل الجدول","Edit table"))
+            }
         }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // A4 tables use the printable page width, not a fixed 110dp

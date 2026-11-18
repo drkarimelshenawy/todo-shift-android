@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.*
@@ -173,6 +174,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var conflictingDraft by remember { mutableStateOf<JSONObject?>(null) }
     var draftRecoveryError by remember {mutableStateOf<String?>(null)}
     var exitWithDraft by remember {mutableStateOf<(() -> Unit)?>(null)}
+    var resolvingConflict by remember {mutableStateOf(false)}
     val undo=remember { mutableStateListOf<TextFieldValue>() }; val redo=remember { mutableStateListOf<TextFieldValue>() }
     fun edit(next: TextFieldValue) {
         if(next.text!=body.text) { undo.add(body); if(undo.size>50) undo.removeAt(0); redo.clear() }
@@ -330,13 +332,19 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         "Saved; history checkpoint unavailable")
                 }
             }
-            withContext(Dispatchers.IO) {
-                drafts.removeIfVersion(draftKey,savedEdit)
-                recoveredLegacyKey?.let {(oldKey,oldVersion) ->
-                    drafts.removeIfVersion(oldKey,oldVersion)
+            // Cleanup of stale drafts is optional after data was committed.
+            try {
+                withContext(Dispatchers.IO) {
+                    drafts.removeIfVersion(draftKey,savedEdit)
+                    recoveredLegacyKey?.let {(oldKey,oldVersion) ->
+                        drafts.removeIfVersion(oldKey,oldVersion)
+                    }
                 }
+                recoveredLegacyKey=null
+            } catch(_:Exception) {
+                draftStatus=neoLiteral("تم الحفظ؛ تنظيف مسودة قديمة تعذر",
+                    "Note saved; old draft cleanup unavailable")
             }
-            recoveredLegacyKey=null
             if(close) onSave(note)
             true
         } catch(cancelled:CancellationException) {throw cancelled}
@@ -1003,12 +1011,6 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 TextButton(onClick={context.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT,listOf(title,noteDisplayText(body.text)).filter {it.isNotBlank()}.joinToString("\n")),null))}) {Text(neoLabel("مشاركة","Share"))}
             }
             Text(if(pending) neoLabel("جارٍ الحفظ…","Saving…") else if(editVersion()!=lastSavedEdit) neoLabel("تعديلات قيد الحفظ","Changes pending save") else draftStatus,style=MaterialTheme.typography.labelSmall)
-            conflictingDraft?.let { recovered ->
-                TextButton(onClick={
-                    id=UUID.randomUUID().toString();title=recovered.optString("title");body=TextFieldValue(recovered.optString("details"));tags=recovered.optString("tags")
-                    taskSpecs=emptyList();conflictingDraft=null;error=null;draftReady=true
-                }) {Text(neoLabel("استرجاع المسودة كملاحظة جديدة","Recover draft as a new note"))}
-            }
             error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
 
                         }
@@ -1066,6 +1068,132 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     onPageColor={showFormatSheet=false;paperPaletteOpen=true},
                     onDismiss={showFormatSheet=false}
                 )
+                // A blocked save must never hide the recovery action in settings.
+                conflictingDraft?.let {stale ->
+                    AlertDialog(
+                        modifier=Modifier.testTag("notes_draft_conflict"),
+                        onDismissRequest={if(!resolvingConflict) onDismiss()},
+                        title={Text(neoLabel("تعارض المسودات","Draft conflict"))},
+                        text={Text(neoLabel(
+                            "هناك مسودة قديمة أو تخص ملاحظة أخرى. لن تُستبدل البيانات المحفوظة. اختر الاستعادة كنسخة جديدة، أو متابعة الملاحظة الحالية، أو الخروج دون حذف المسودة.",
+                            "An old or unrelated draft exists. Saved data will not be overwritten. Recover as a copy, continue the current note or leave safely."))},
+                        confirmButton={
+                            TextButton(
+                                modifier=Modifier.testTag("notes_recover_copy"),
+                                enabled=!resolvingConflict,
+                                onClick={
+                                    resolvingConflict=true
+                                    scope.launch {
+                                        try {
+                                            val oldKey=draftKey
+                                            val oldId=stale.optString("id")
+                                            val newId=UUID.randomUUID().toString()
+                                            val copied=withContext(Dispatchers.IO) {
+                                                NeoNoteDraftRecovery.copyMedia(
+                                                    context.applicationContext,oldId,newId,
+                                                    stale.optString("details"))
+                                            }
+                                            id=newId
+                                            draftKey="recovered-"+newId
+                                            sourceRevision="<new>"
+                                            title=stale.optString("title")
+                                            body=TextFieldValue(copied)
+                                            rich=NeoRichEditorState.open(copied)
+                                            lastEditorCommit=copied
+                                            richDirty=false
+                                            tags=stale.optString("tags")
+                                            linkedDate=stale.optString("linkedDate",linkedDate)
+                                            linkedCalendar=stale.optString("linkedCalendar")
+                                                .takeIf {it.isNotBlank()}
+                                            calendarLinked=stale.optBoolean("calendarLinked",calendarLinked)
+                                            background=stale.optString("background",background)
+                                            color=stale.optString("color",color)
+                                            border=stale.optBoolean("border",border)
+                                            pinned=stale.optBoolean("pinned",pinned)
+                                            archived=stale.optBoolean("archived",archived)
+                                            trashed=stale.optBoolean("trashed",trashed)
+                                            hidden=stale.optBoolean("hidden",hidden)
+                                            previewHidden=stale.optBoolean("previewHidden",previewHidden)
+                                            // A copy must not silently claim old task identities.
+                                            taskSpecs=emptyList()
+                                            detachedTasks=emptyList()
+                                            existingTaskLinks=emptyList()
+                                            expectedMetadata=styleStore.snapshot().toString()
+                                            val oldVersion=stale.optString("editVersion")
+                                            recoveredLegacyKey=if(oldVersion.isNotBlank())
+                                                oldKey to oldVersion else null
+                                            conflictingDraft=null
+                                            draftReady=true
+                                            error=null
+                                            editing=true
+                                        } catch(failure:Exception) {
+                                            error=neoLiteral(
+                                                "تعذر نسخ المسودة ومرفقاتها. الأصل لا يزال محفوظًا.",
+                                                "Cannot copy this draft and its media; the original remains intact.")+
+                                                " "+(failure.message ?: "")
+                                        } finally {
+                                            resolvingConflict=false
+                                        }
+                                    }
+                                }
+                            ) {Text(neoLabel("استرجاع كنسخة جديدة","Recover as new note"))}
+                        },
+                        dismissButton={
+                            Column {
+                                TextButton(
+                                    modifier=Modifier.testTag("notes_continue_current"),
+                                    enabled=!resolvingConflict,
+                                    onClick={
+                                        draftKey="current-"+UUID.randomUUID().toString()
+                                        conflictingDraft=null
+                                        error=null
+                                        draftReady=true
+                                    }
+                                ) {Text(neoLabel("متابعة الملاحظة الحالية","Continue current note"))}
+                                TextButton(enabled=!resolvingConflict,onClick=onDismiss) {
+                                    Text(neoLabel("خروج دون حذف المسودة","Leave; keep draft"))
+                                }
+                            }
+                        }
+                    )
+                }
+                draftRecoveryError?.let {
+                    AlertDialog(
+                        onDismissRequest=onDismiss,
+                        title={Text(neoLabel("المسودة غير قابلة للقراءة","Draft unreadable"))},
+                        text={Text(neoLabel(
+                            "تعذر قراءة المسودة المشفرة؛ لم تُحذف. يمكنك متابعة الملاحظة الحالية دون الكتابة فوقها.",
+                            "The encrypted draft could not be read, but was not deleted. You may continue without overwriting it."))},
+                        confirmButton={
+                            TextButton(onClick={
+                                draftKey="current-"+UUID.randomUUID().toString()
+                                draftRecoveryError=null
+                                draftReady=true
+                                error=null
+                            }) {Text(neoLabel("متابعة الحالية","Continue current"))}
+                        },
+                        dismissButton={TextButton(onClick=onDismiss) {
+                            Text(neoLabel("خروج آمن","Leave safely"))}}
+                    )
+                }
+                exitWithDraft?.let { leave ->
+                    AlertDialog(
+                        modifier=Modifier.testTag("notes_safe_exit_prompt"),
+                        onDismissRequest={exitWithDraft=null},
+                        title={Text(neoLabel("فشل الحفظ النهائي","Note save failed"))},
+                        text={Text(neoLabel(
+                            "الملاحظة لم تُحدَّث، لكن هناك مسودة مشفرة محفوظة. ارجع للتحرير أو اخرج مع الاحتفاظ بالمسودة.",
+                            "The note was not updated, but an encrypted draft was saved. Keep editing or leave with the draft preserved."))},
+                        confirmButton={
+                            TextButton(
+                                modifier=Modifier.testTag("notes_leave_with_draft"),
+                                onClick={exitWithDraft=null;leave()}
+                            ) {Text(neoLabel("خروج مع المسودة","Leave with saved draft"))}
+                        },
+                        dismissButton={TextButton(onClick={exitWithDraft=null}) {
+                            Text(neoLabel("متابعة التحرير","Keep editing"))}}
+                    )
+                }
             }
         }
     }

@@ -113,6 +113,9 @@ data class DayItemV11(
     val noteCalendarLinked:Boolean = true,
     /** Hide the card excerpt, while keeping the note visible and freely openable. */
     val notePreviewHidden: Boolean = false,
+    /** Null for legacy deleted notes: never silently expire unknown deletion dates. */
+    val noteTrashedAt: Long? = null,
+    val noteDocumentA4: Boolean = false,
 ) {
     val notePrivate: Boolean get() = type == DayItemTypeV11.NOTE && (noteLocked || noteHidden)
     val noteVisible: Boolean get() = type != DayItemTypeV11.NOTE || (!noteArchived && !noteTrashed && !noteHidden)

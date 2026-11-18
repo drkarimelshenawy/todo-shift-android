@@ -174,6 +174,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var error by remember { mutableStateOf<String?>(null) }
     var conflictingDraft by remember { mutableStateOf<JSONObject?>(null) }
     var draftRecoveryError by remember {mutableStateOf<String?>(null)}
+    var legacyRecoveryKey by remember {mutableStateOf<String?>(null)}
     var exitWithDraft by remember {mutableStateOf<(() -> Unit)?>(null)}
     var resolvingConflict by remember {mutableStateOf(false)}
     val undo=remember { mutableStateListOf<TextFieldValue>() }; val redo=remember { mutableStateListOf<TextFieldValue>() }
@@ -378,11 +379,11 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         }
         scope.launch {
             val draftWritten=keepDraft()
-            if(persistNote(true)) next()
+            persistNote(true) // onSave/onDismiss are already invoked by successful persistence
             else if(draftWritten) exitWithDraft=next
         }
     }
-    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride,documentA4) {
+    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,documentA4,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride,documentA4) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
@@ -728,6 +729,20 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 DropdownMenuItem(
                                     text={Text(neoLabel("الربط بالمهام والتقويم","Task and calendar links"))},
                                     onClick={noteMoreMenu=false;noteKeyboard?.hide();editing=true;options=true})
+                                if(existing==null) DropdownMenuItem(
+                                    text={Text(neoLabel("استرجاع مسودة قديمة","Recover an older draft"))},
+                                    onClick={
+                                        noteMoreMenu=false
+                                        scope.launch {
+                                            val oldKey="new-$date-${calendarId?.hashCode() ?: 0}"
+                                            val old=runCatching{withContext(Dispatchers.IO){drafts.read(oldKey)}}
+                                            if(old.isSuccess && old.getOrNull()!=null) {
+                                                legacyRecoveryKey=oldKey
+                                                conflictingDraft=old.getOrNull()
+                                            } else error=neoLabel("لا توجد مسودة قديمة متاحة أو تعذرت قراءتها",
+                                                "No readable old draft found")
+                                        }
+                                    })
                             }
                         }
                     }
@@ -1066,9 +1081,14 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         modifier=Modifier.testTag("notes_draft_conflict"),
                         onDismissRequest={if(!resolvingConflict) onDismiss()},
                         title={Text(neoLabel("تعارض المسودات","Draft conflict"))},
-                        text={Text(neoLabel(
-                            "هناك مسودة قديمة أو تخص ملاحظة أخرى. لن تُستبدل البيانات المحفوظة. اختر الاستعادة كنسخة جديدة، أو متابعة الملاحظة الحالية، أو الخروج دون حذف المسودة.",
-                            "An old or unrelated draft exists. Saved data will not be overwritten. Recover as a copy, continue the current note or leave safely."))},
+                        text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                            Text(neoLabel(
+                                "هناك مسودة قديمة قد تكون تابعة لملاحظة أخرى. لن نحذفها أو نستبدل البيانات المحفوظة.",
+                                "An old draft may belong to another note. It will not be deleted or replace saved data."))
+                            TextButton(enabled=!resolvingConflict,onClick={conflictingDraft=null;legacyRecoveryKey=null}) {
+                                Text(neoLabel("خروج من الاسترجاع مع الاحتفاظ بالمسودة","Close recovery and keep draft"))
+                            }
+                        }},
                         confirmButton={
                             TextButton(
                                 modifier=Modifier.testTag("notes_recover_copy"),
@@ -1077,7 +1097,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     resolvingConflict=true
                                     scope.launch {
                                         try {
-                                            val oldKey=draftKey
+                                            val oldKey=legacyRecoveryKey ?: draftKey
                                             val oldId=stale.optString("id")
                                             val newId=UUID.randomUUID().toString()
                                             val copied=withContext(Dispatchers.IO) {
@@ -1112,8 +1132,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                             existingTaskLinks=emptyList()
                                             expectedMetadata=styleStore.snapshot().toString()
                                             val oldVersion=stale.optString("editVersion")
-                                            recoveredLegacyKey=if(oldVersion.isNotBlank())
-                                                oldKey to oldVersion else null
+                                            // The historical encrypted source remains untouched.
+                                            recoveredLegacyKey=null
+                                            legacyRecoveryKey=null
                                             conflictingDraft=null
                                             draftReady=true
                                             error=null
@@ -1131,21 +1152,16 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             ) {Text(neoLabel("استرجاع كنسخة جديدة","Recover as new note"))}
                         },
                         dismissButton={
-                            Column {
-                                TextButton(
-                                    modifier=Modifier.testTag("notes_continue_current"),
-                                    enabled=!resolvingConflict,
-                                    onClick={
-                                        draftKey="current-"+UUID.randomUUID().toString()
-                                        conflictingDraft=null
-                                        error=null
-                                        draftReady=true
-                                    }
-                                ) {Text(neoLabel("متابعة الملاحظة الحالية","Continue current note"))}
-                                TextButton(enabled=!resolvingConflict,onClick=onDismiss) {
-                                    Text(neoLabel("خروج دون حذف المسودة","Leave; keep draft"))
+                            TextButton(
+                                modifier=Modifier.testTag("notes_continue_current"),
+                                enabled=!resolvingConflict,
+                                onClick={
+                                    conflictingDraft=null
+                                    legacyRecoveryKey=null
+                                    error=null
+                                    draftReady=true
                                 }
-                            }
+                            ) {Text(neoLabel("متابعة الملاحظة الحالية","Continue current note"))}
                         }
                     )
                 }

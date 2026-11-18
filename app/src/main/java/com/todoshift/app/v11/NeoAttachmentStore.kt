@@ -146,6 +146,23 @@ class NeoAttachmentStore(private val context: Context) {
         }
     }
 
+    /** Purge private files only after the owning note has been deleted successfully. */
+    fun purgeOwners(ids:Set<String>) =
+        synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {
+            if(ids.isNotEmpty()) {
+                val matching=list().filter{it.owner in ids}
+                metadata.update { o ->
+                    val a=o.optJSONArray("attachments") ?: JSONArray()
+                    o.put("attachments",JSONArray((0 until a.length()).map{a.getJSONObject(it)}
+                        .filterNot{it.optString("owner") in ids}))
+                }
+                matching.forEach { attachment ->
+                    if(safeName(attachment.name))
+                        File(context.filesDir,"attachments/${attachment.name}").delete()
+                }
+            }
+        }
+
     /** Inventory includes detached private files; nothing is removed automatically. */
     fun detachedNames(): Set<String> =
         synchronized(com.todoshift.app.backup.Neo4DataGate.monitor) {

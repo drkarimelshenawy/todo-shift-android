@@ -146,6 +146,12 @@ internal object NeoDocumentPdf {
                             }
                             y+=height
                         }
+                        // Calculate the header height before deciding whether
+                        // a continued table can fit a header AND its next row.
+                        paint.textSize=11f
+                        val headerHeight=(block.cells.first().maxOf {
+                            layout(it,textWidth).height
+                        }+12f).coerceAtLeast(25f)
                         block.cells.forEachIndexed {rowIndex,row ->
                             if(rowIndex>0 && y>MARGIN) {
                                 paint.textSize=10f
@@ -153,9 +159,10 @@ internal object NeoDocumentPdf {
                                     .coerceAtLeast(25f)
                                 if(y+rowHeight+2f>PAGE_HEIGHT-MARGIN) {
                                     newPage()
-                                    // Reprint the table header so subsequent A4
-                                    // sheets remain readable independently.
-                                    drawTableRow(block.cells.first(),header=true)
+                                    // Avoid an orphaned repeated header when a
+                                    // very tall row cannot share the same sheet.
+                                    if(MARGIN+headerHeight+rowHeight+4f<=PAGE_HEIGHT-MARGIN)
+                                        drawTableRow(block.cells.first(),header=true)
                                 }
                             }
                             drawTableRow(row,header=rowIndex==0)

@@ -10,6 +10,7 @@ fun NeoLaunchPreferencesUi() {
     val context = LocalContext.current
     val store = remember { NeoLaunchPreferences(context) }
     var noteBackground by remember {mutableStateOf(store.defaultNoteBackground)}
+    var cardBackground by remember {mutableStateOf(store.defaultNoteCardBackground)}
     var ruled by remember {mutableStateOf(store.defaultNoteRuled)}
     var arabicFont by remember {mutableStateOf(store.defaultArabicNoteFont)}
     var englishFont by remember {mutableStateOf(store.defaultEnglishNoteFont)}
@@ -20,9 +21,13 @@ fun NeoLaunchPreferencesUi() {
         listOf(false,true), notes,
         { if(it) neoLabel("الملاحظات", "Notes") else neoLabel("المهام", "Tasks") },
         { value -> runCatching { store.openNotes = value }.onSuccess { notes=value;failure=false }.onFailure { failure=true } })
-    NeoChoice(neoLabel("خلفية الملاحظات الافتراضية","Default note background"),listOf("","#FFF4B8","#D9EFDA","#D6E9FF","#F9DCE9","#E8DDF5","#FFE1C3","#E3E6EB"),noteBackground,
+    NeoChoice(neoLabel("لون صفحة الملاحظة الافتراضي","Default note page color"),listOf("","#FFF4B8","#D9EFDA","#D6E9FF","#F9DCE9","#E8DDF5","#FFE1C3","#E3E6EB"),noteBackground,
         {when(it){""->neoLabel("حسب المظهر","Follow theme");"#FFF4B8"->neoLabel("أصفر","Yellow");"#D9EFDA"->neoLabel("أخضر","Green");"#D6E9FF"->neoLabel("أزرق","Blue");"#F9DCE9"->neoLabel("وردي","Pink");"#E8DDF5"->neoLabel("بنفسجي","Purple");"#FFE1C3"->neoLabel("برتقالي","Orange");else->neoLabel("رمادي","Gray")}},
         {value->runCatching {store.defaultNoteBackground=value}.onSuccess {noteBackground=value;failure=false}.onFailure {failure=true}})
+    NeoChoice(neoLabel("لون بطاقة الملاحظة الافتراضي","Default note card color"),
+        listOf("","#FFF4B8","#D9EFDA","#D6E9FF","#F9DCE9","#E8DDF5","#FFE1C3","#E3E6EB"),cardBackground,
+        {when(it){""->neoLabel("حسب المظهر","Follow theme");"#FFF4B8"->neoLabel("أصفر","Yellow");"#D9EFDA"->neoLabel("أخضر","Green");"#D6E9FF"->neoLabel("أزرق","Blue");"#F9DCE9"->neoLabel("وردي","Pink");"#E8DDF5"->neoLabel("بنفسجي","Purple");"#FFE1C3"->neoLabel("برتقالي","Orange");else->neoLabel("رمادي","Gray")}},
+        {value->runCatching{store.defaultNoteCardBackground=value}.onSuccess{cardBackground=value;failure=false}.onFailure{failure=true}})
     NeoSwitch(
         neoLabel("ورق مسطّر افتراضيًا للملاحظات الجديدة",
             "Ruled paper by default for notes"),ruled

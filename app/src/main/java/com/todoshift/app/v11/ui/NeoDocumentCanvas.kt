@@ -89,6 +89,8 @@ internal fun NeoDocumentCanvas(
         Column(Modifier.fillMaxWidth().then(if(a4) Modifier.horizontalScroll(rememberScrollState())
             else Modifier),verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
         pages.forEachIndexed {pageIndex,pageBlocks ->
+            // At 100% fit the page to the available width; zooming in increases
+            // the measured sheet width and enables horizontal scrolling.
             val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
             Box(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
@@ -104,7 +106,7 @@ internal fun NeoDocumentCanvas(
                 Column(Modifier.fillMaxWidth().padding(
                     horizontal=if(a4) pageWidth*42f/595f else 16.dp,
                     vertical=if(a4) pageWidth*42f/595f else 16.dp),
-                    verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                    verticalArrangement=Arrangement.spacedBy(if(a4) 0.dp else 6.dp)) {
                     pageBlocks.forEach {block ->
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {

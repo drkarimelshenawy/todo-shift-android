@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
@@ -29,7 +31,19 @@ internal fun NeoNoteQuickBar(
     onFormat: () -> Unit,
     enabled:Boolean=true
 ) {
-    var inkOpen by remember { mutableStateOf(false) }
+    var inkOpen by remember {mutableStateOf(false)}
+    var listsOpen by remember {mutableStateOf(false)}
+    var selectedList by rememberSaveable {mutableStateOf("bullet")}
+    val kinds=listOf(
+        Triple("bullet",Icons.Rounded.FormatListBulleted,neoLabel("نقاط","Bullets")),
+        Triple("number",Icons.Rounded.FormatListNumbered,neoLabel("أرقام","Numbers")),
+        Triple("letter",Icons.Rounded.SortByAlpha,neoLabel("حروف","Letters")),
+        Triple("check",Icons.Rounded.CheckBox,neoLabel("قائمة مهام","Checklist"))
+    )
+    val active=kinds.firstOrNull{state.listActive(it.first)}?.first
+    val shown=active ?: selectedList
+    val shownIcon=kinds.first{it.first==shown}.second
+    val currentSize=(state.effective().size ?: 16).coerceIn(10,72)
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Surface(
             modifier=Modifier.fillMaxWidth().testTag("notes_quick_bar"),
@@ -38,9 +52,9 @@ internal fun NeoNoteQuickBar(
         ) {
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                    .padding(horizontal=8.dp,vertical=4.dp),
+                    .padding(horizontal=4.dp,vertical=5.dp),
                 verticalAlignment=Alignment.CenterVertically,
-                horizontalArrangement=Arrangement.spacedBy(7.dp)
+                horizontalArrangement=Arrangement.spacedBy(2.dp)
             ) {
                 NeoChromeIcon(Icons.Rounded.FormatBold,neoLabel("عريض","Bold"),
                     state.active("bold"),enabled=enabled){onChange(state.toggle("bold"))}
@@ -49,26 +63,94 @@ internal fun NeoNoteQuickBar(
                 NeoChromeIcon(Icons.Rounded.FormatUnderlined,neoLabel("تسطير النص","Underline text"),
                     state.active("underline"),enabled=enabled){onChange(state.toggle("underline"))}
                 Box {
-                    NeoChromeIcon(Icons.Rounded.FormatColorText,neoLabel("لون النص","Text color"),enabled=enabled) {
+                    NeoChromeIcon(Icons.Rounded.FormatColorText,
+                        neoLabel("اختيار لون الخط","Text color"),enabled=enabled) {
                         inkOpen=true
                     }
                     DropdownMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
-                        neoInkChoices().forEach {(name,hex) ->
-                            DropdownMenuItem(text={Text(name)},onClick={
-                                inkOpen=false;onChange(state.ink(hex))
-                            })
+                        Column(Modifier.padding(10.dp),
+                            verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                            neoInkChoices().chunked(3).forEach {colors ->
+                                Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                                    colors.forEach {(name,hex) ->
+                                        val selected=state.effective().color==hex
+                                        Surface(
+                                            onClick={inkOpen=false;onChange(state.ink(hex))},
+                                            enabled=enabled,
+                                            shape=androidx.compose.foundation.shape.CircleShape,
+                                            modifier=Modifier.size(34.dp).semantics {
+                                                contentDescription=name
+                                            },
+                                            color=Color(android.graphics.Color.parseColor(hex)),
+                                            border=BorderStroke(if(selected) 3.dp else 1.dp,
+                                                if(selected) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.outline)
+                                        ) {
+                                            if(selected) Box(contentAlignment=Alignment.Center) {
+                                                Icon(Icons.Rounded.Check,null,Modifier.size(17.dp),
+                                                    tint=if(hex=="#222222") Color.White else Color.Black)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                VerticalDivider(Modifier.height(28.dp),thickness=1.dp)
-                NeoChromeIcon(Icons.Rounded.FormatListBulleted,neoLabel("قائمة نقطية","Bullet list"),
-                    state.listActive("bullet"),enabled=enabled){onChange(state.list("bullet"))}
-                NeoChromeIcon(Icons.Rounded.CheckBox,neoLabel("قائمة اختيار","Checklist"),
-                    state.listActive("check"),enabled=enabled){onChange(state.list("check"))}
-                // Compact icon instead of a wide button; all daily controls
-                // fit on a typical phone without clipping the Format action.
+                VerticalDivider(Modifier.height(25.dp),thickness=1.dp)
+                Box {
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        NeoChromeIcon(shownIcon,
+                            neoLabel("تفعيل نوع القائمة","Toggle selected list"),
+                            selected=active==shown,enabled=enabled) {
+                            onChange(state.list(shown))
+                        }
+                        IconButton(
+                            onClick={listsOpen=true},enabled=enabled,
+                            modifier=Modifier.size(23.dp)
+                        ) {
+                            Icon(Icons.Rounded.ArrowDropDown,
+                                neoLabel("اختيار نوع القائمة","Choose list type"),
+                                modifier=Modifier.size(19.dp))
+                        }
+                    }
+                    DropdownMenu(expanded=listsOpen,onDismissRequest={listsOpen=false}) {
+                        kinds.forEach {(kind,icon,label) ->
+                            DropdownMenuItem(
+                                text={Text(label)},leadingIcon={Icon(icon,null)},
+                                onClick={
+                                    listsOpen=false
+                                    selectedList=kind
+                                    if(active!=null && active!=kind)
+                                        onChange(state.list(kind))
+                                }
+                            )
+                        }
+                    }
+                }
+                VerticalDivider(Modifier.height(25.dp),thickness=1.dp)
+                IconButton(
+                    onClick={onChange(state.fontSize((currentSize-1).coerceAtLeast(10)))},
+                    enabled=enabled && currentSize>10,
+                    modifier=Modifier.size(28.dp).testTag("notes_font_smaller")
+                ) {
+                    Icon(Icons.Rounded.Remove,
+                        neoLabel("تصغير الخط","Smaller text"),Modifier.size(19.dp))
+                }
+                Text(currentSize.toString(),
+                    modifier=Modifier.widthIn(min=20.dp),
+                    textAlign=androidx.compose.ui.text.style.TextAlign.Center,
+                    style=MaterialTheme.typography.labelMedium)
+                IconButton(
+                    onClick={onChange(state.fontSize((currentSize+1).coerceAtMost(72)))},
+                    enabled=enabled && currentSize<72,
+                    modifier=Modifier.size(28.dp).testTag("notes_font_larger")
+                ) {
+                    Icon(Icons.Rounded.Add,
+                        neoLabel("تكبير الخط","Larger text"),Modifier.size(19.dp))
+                }
                 NeoChromeIcon(Icons.Rounded.FormatSize,
-                    neoLabel("لوحة التنسيق","Format panel")) { onFormat() }
+                    neoLabel("لوحة التنسيق","Format panel")) {onFormat()}
             }
         }
     }
@@ -79,14 +161,14 @@ private fun NeoChromeIcon(
     icon:ImageVector,description:String,selected:Boolean=false,enabled:Boolean=true,onClick:()->Unit
 ) {
     Surface(
-        onClick=onClick,enabled=enabled,modifier=Modifier.size(42.dp),
-        shape=RoundedCornerShape(12.dp),
+        onClick=onClick,enabled=enabled,modifier=Modifier.size(35.dp),
+        shape=RoundedCornerShape(10.dp),
         color=if(selected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surface,
         border=if(selected) BorderStroke(1.dp,MaterialTheme.colorScheme.primary) else null
     ) {
         Box(contentAlignment=Alignment.Center) {
-            Icon(icon,contentDescription=description,modifier=Modifier.size(21.dp))
+            Icon(icon,contentDescription=description,modifier=Modifier.size(20.dp))
         }
     }
 }
@@ -135,8 +217,7 @@ internal fun NeoNoteFormatSheet(
 ) {
     var tab by remember(initialTab) {mutableIntStateOf(initialTab)}
     var fontMenu by remember {mutableStateOf(false)}
-    val currentSize=state.effective().size ?: 16
-    val sizes=listOf(14,16,18,20,24,28)
+    val currentSize=(state.effective().size ?: 16).coerceIn(10,72)
     val sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)
     ModalBottomSheet(onDismissRequest=onDismiss,sheetState=sheetState) {
         Column(
@@ -163,18 +244,6 @@ internal fun NeoNoteFormatSheet(
             HorizontalDivider()
             when(tab) {
                 0 -> {
-                    Text(neoLabel("نمط النص","Text style"),
-                        style=MaterialTheme.typography.titleSmall)
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                        listOf(
-                            0 to neoLabel("عادي","Normal"),
-                            1 to "H1",2 to "H2",3 to "H3"
-                        ).forEach {(level,label) ->
-                            AssistChip(onClick={onChange(neoNoteHeading(state,level))},
-                                label={Text(label)})
-                        }
-                    }
                     Text(neoLabel("الخط للنص المحدد","Selected text font"),
                         style=MaterialTheme.typography.titleSmall)
                     Box {
@@ -200,12 +269,12 @@ internal fun NeoNoteFormatSheet(
                         horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                         Text(neoLabel("حجم الخط","Font size"),modifier=Modifier.weight(1f))
                         IconButton(onClick={
-                            val next=sizes.lastOrNull{it<currentSize} ?: sizes.first()
+                            val next=(currentSize-1).coerceAtLeast(10)
                             onChange(state.fontSize(next))
                         }) {Icon(Icons.Rounded.Remove,neoLabel("تصغير","Decrease"))}
                         Text(currentSize.toString())
                         IconButton(onClick={
-                            val next=sizes.firstOrNull{it>currentSize} ?: sizes.last()
+                            val next=(currentSize+1).coerceAtMost(72)
                             onChange(state.fontSize(next))
                         }) {Icon(Icons.Rounded.Add,neoLabel("تكبير","Increase"))}
                     }

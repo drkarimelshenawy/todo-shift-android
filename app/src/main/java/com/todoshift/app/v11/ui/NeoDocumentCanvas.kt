@@ -61,16 +61,10 @@ internal fun NeoDocumentCanvas(
     onActiveParagraph:((NeoRichEditorState,(NeoRichEditorState)->Unit)->Unit)?=null
 ) {
     val blocks=remember(source){NeoDocumentBlocks.parse(source)}
-    val pages=remember(blocks) {
-        val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
-        blocks.forEach {block ->
-            if(block is NeoDocumentBlocks.Block.PageBreak) result.add(mutableListOf())
-            else result.last().add(block)
-        }
-        // Match PDF export: a terminal page-break does not create a blank
-        // final page, but intentional blank pages in the middle remain.
-        if(result.size>1 && result.last().isEmpty()) result.removeAt(result.lastIndex)
-        result
+    // Heights are measured from the real Compose content, not guessed from
+    // character counts. Page breaks are presentation-only; source is unchanged.
+    val measuredBlockHeights=remember(noteId,source,a4) {
+        mutableStateMapOf<Int,Int>()
     }
     val background=if(a4) Color.White else MaterialTheme.colorScheme.surfaceContainerLow
     val contentColor=if(a4) Color(0xFF202126) else MaterialTheme.colorScheme.onSurface
@@ -93,6 +87,31 @@ internal fun NeoDocumentCanvas(
         }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
         val viewportWidth=maxWidth
+        val sheetWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
+        val availableHeightPx=with(LocalDensity.current) {
+            (sheetWidth*(297f/210f-84f/595f)).roundToPx()
+        }
+        val pages=remember(blocks,a4,availableHeightPx,measuredBlockHeights.toMap()) {
+            val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
+            var used=if(a4 && documentTitle.isNotBlank()) 60 else 0
+            blocks.forEach { block ->
+                if(block is NeoDocumentBlocks.Block.PageBreak) {
+                    result.add(mutableListOf())
+                    used=0
+                } else {
+                    val height=measuredBlockHeights[block.startLine] ?: 0
+                    if(a4 && height>0 && used+height>availableHeightPx &&
+                        result.last().isNotEmpty()) {
+                        result.add(mutableListOf())
+                        used=0
+                    }
+                    result.last().add(block)
+                    used+=height
+                }
+            }
+            if(result.size>1 && result.last().isEmpty()) result.removeAt(result.lastIndex)
+            result
+        }
         Column(Modifier.fillMaxWidth().then(if(a4) Modifier.horizontalScroll(rememberScrollState())
             else Modifier),verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
         pages.forEachIndexed {pageIndex,pageBlocks ->
@@ -142,6 +161,10 @@ internal fun NeoDocumentCanvas(
                                 textAlign=TextAlign.Center))
                     }
                     pageBlocks.forEach {block ->
+                        Box(Modifier.fillMaxWidth().onSizeChanged { size ->
+                            if(measuredBlockHeights[block.startLine]!=size.height)
+                                measuredBlockHeights[block.startLine]=size.height
+                        }) {
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {
                                 if(inlineEditing && editable && onParagraphEdited!=null) {
@@ -187,6 +210,7 @@ internal fun NeoDocumentCanvas(
                                 )
                             }
                             is NeoDocumentBlocks.Block.PageBreak -> Unit
+                        }
                         }
                     }
                     }

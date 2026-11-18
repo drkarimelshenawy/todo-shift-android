@@ -1,4 +1,4 @@
-name: v63 Notes Workflow A4 signed APK
+name: v63.1 Notes Workflow A4 signed APK
 
 on:
   push:
@@ -122,11 +122,11 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v63-Notes-Workflow-A4.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ToDoShift-v63.1-Notes-Workflow-A4.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ToDoShift-v63-Notes-Workflow-A4-signed-APK
+          name: ToDoShift-v63.1-Notes-Workflow-A4-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -134,17 +134,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v63-notes-workflow-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v63-Notes-Workflow-A4.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v63 — Notes Workflow and A4 Beta" --notes "Signed v63 Notes: merged editor actions, default Notes settings, sticky multi-selection, note card controls, folder presentation, Trash retention and permanent delete, and experimental editable A4 documents. Existing backup and finance data retained. A4 automatic pagination and Word-grade fidelity are not claimed. Physical-device acceptance pending. APK signature and published bytes verified. Source: $GITHUB_SHA."
+          TAG="v63.1-notes-workflow-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ToDoShift-v63.1-Notes-Workflow-A4.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v63.1 — Notes Workflow and A4 Beta" --notes "Signed v63.1 Notes: page formatting also opens correctly from reading mode. merged editor actions, default Notes settings, sticky multi-selection, note card controls, folder presentation, Trash retention and permanent delete, and experimental editable A4 documents. Existing backup and finance data retained. A4 automatic pagination and Word-grade fidelity are not claimed. Physical-device acceptance pending. APK signature and published bytes verified. Source: $GITHUB_SHA."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v63-notes-workflow-${GITHUB_SHA:0:12}"
+          TAG="v63.1-notes-workflow-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ToDoShift-v63-Notes-Workflow-A4.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ToDoShift-v63-Notes-Workflow-A4.apk "$RUNNER_TEMP/published/ToDoShift-v63-Notes-Workflow-A4.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v63-Notes-Workflow-A4.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ToDoShift-v63.1-Notes-Workflow-A4.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ToDoShift-v63.1-Notes-Workflow-A4.apk "$RUNNER_TEMP/published/ToDoShift-v63.1-Notes-Workflow-A4.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ToDoShift-v63.1-Notes-Workflow-A4.apk'); assert z.testzip() is None"
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

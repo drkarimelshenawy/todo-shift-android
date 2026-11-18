@@ -395,13 +395,13 @@ private fun NeoDocumentTable(
     Column(Modifier.fillMaxWidth(),
         verticalArrangement=Arrangement.spacedBy(4.dp)) {
         if(editable) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-            Text(neoLabel("جدول","Table"),style=MaterialTheme.typography.labelSmall,
+            if(!a4) Text(neoLabel("جدول","Table"),style=MaterialTheme.typography.labelSmall,
                 modifier=Modifier.weight(1f))
-            if(editable) TextButton(onClick={editor=true}) {
+            else Spacer(Modifier.weight(1f))
+            TextButton(onClick={editor=true}) {
                 Icon(Icons.Rounded.Edit,null,Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(neoLabel("تعديل الجدول","Edit table"))
-            }
         }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             // A4 tables use the printable page width, not a fixed 110dp

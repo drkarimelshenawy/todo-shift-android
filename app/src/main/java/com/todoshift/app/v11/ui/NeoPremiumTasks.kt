@@ -1479,49 +1479,59 @@ private fun NeoNoteFolderCard(
 ) {
     var menu by remember {mutableStateOf(false)}
     val accent=remember(folder.color) {
-        androidx.compose.ui.graphics.Color(
-            android.graphics.Color.parseColor(folder.color))
+        androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(folder.color))
     }
-    Card(modifier=modifier,colors=CardDefaults.cardColors(
-        containerColor=MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Row(Modifier.fillMaxSize().padding(12.dp),
-            verticalAlignment=Alignment.CenterVertically,
-            horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick=onOpen,modifier=Modifier.size(48.dp)) {
-                Icon(if(folder.locked) Icons.Rounded.FolderOff
-                    else Icons.Rounded.Folder,
-                    contentDescription=neoLabel("فتح المجلد","Open folder"),
-                    tint=accent,modifier=Modifier.size(39.dp))
-            }
-            Column(Modifier.weight(1f)) {
-                TextButton(onClick=onOpen,contentPadding=PaddingValues(0.dp)) {
-                    Text(folder.name,maxLines=1,
+    val textInk=if(androidx.core.graphics.ColorUtils.calculateLuminance(
+        android.graphics.Color.parseColor(folder.color))<0.42)
+        androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF112B45)
+    // The folder itself is the tile: a raised tab and full-width colored folder body.
+    Column(modifier,verticalArrangement=Arrangement.spacedBy(0.dp)) {
+        Surface(
+            modifier=Modifier.padding(start=12.dp).width(100.dp).height(17.dp),
+            color=accent,shape=androidx.compose.foundation.shape.RoundedCornerShape(
+                topStart=11.dp,topEnd=11.dp)
+        ){}
+        Surface(
+            modifier=Modifier.fillMaxWidth().weight(1f),
+            color=accent,contentColor=textInk,
+            shape=androidx.compose.foundation.shape.RoundedCornerShape(
+                topStart=3.dp,topEnd=13.dp,bottomStart=13.dp,bottomEnd=13.dp),
+            shadowElevation=3.dp,onClick=onOpen
+        ) {
+            Column(Modifier.fillMaxSize().padding(12.dp),
+                verticalArrangement=Arrangement.SpaceBetween) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                    Text(if(folder.locked) "🔒" else "📂",
                         style=MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.weight(1f))
+                    Box {
+                        IconButton(onClick={menu=true},modifier=Modifier.size(36.dp)) {
+                            Icon(Icons.Rounded.MoreVert,neoLabel("خيارات المجلد","Folder options"),
+                                tint=textInk)
+                        }
+                        DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
+                            DropdownMenuItem(text={Text(neoLabel("فتح","Open"))},
+                                onClick={menu=false;onOpen()})
+                            DropdownMenuItem(text={Text(neoLabel("تعديل الاسم واللون والقفل",
+                                "Edit name, color and lock"))},
+                                onClick={menu=false;onEdit()})
+                            DropdownMenuItem(text={Text(neoLabel("مجلد فرعي جديد","New subfolder"))},
+                                onClick={menu=false;onChild()})
+                            DropdownMenuItem(text={Text(neoLabel("نقل المجلد","Move folder"))},
+                                onClick={menu=false;onMove()})
+                            HorizontalDivider()
+                            DropdownMenuItem(text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
+                                "Delete folder (keep contents)"))},
+                                onClick={menu=false;onDelete()})
+                        }
+                    }
                 }
-                Text((if(count<0) neoLabel("مقفول","Locked")
-                    else neoLabel("$count عنصر","$count items"))+
-                    if(folder.locked) "  🔒" else "",
-                    style=MaterialTheme.typography.labelSmall)
-            }
-            Box {
-                IconButton(onClick={menu=true},modifier=Modifier.size(36.dp)) {
-                    Icon(Icons.Rounded.MoreVert,neoLabel("خيارات المجلد","Folder options"))
-                }
-                DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
-                    DropdownMenuItem(text={Text(neoLabel("فتح","Open"))},
-                        onClick={menu=false;onOpen()})
-                    DropdownMenuItem(text={Text(neoLabel("تعديل الاسم واللون والقفل",
-                        "Edit name, color and lock"))},
-                        onClick={menu=false;onEdit()})
-                    DropdownMenuItem(text={Text(neoLabel("مجلد فرعي جديد",
-                        "New subfolder"))},
-                        onClick={menu=false;onChild()})
-                    DropdownMenuItem(text={Text(neoLabel("نقل المجلد","Move folder"))},
-                        onClick={menu=false;onMove()})
-                    HorizontalDivider()
-                    DropdownMenuItem(text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
-                        "Delete folder (keep contents)"))},
-                        onClick={menu=false;onDelete()})
+                Column(verticalArrangement=Arrangement.spacedBy(3.dp)) {
+                    Text(folder.name,maxLines=2,
+                        style=MaterialTheme.typography.titleMedium,color=textInk)
+                    Text(if(count<0) neoLabel("مقفول","Locked")
+                        else neoLabel("$count عنصر","$count items"),
+                        style=MaterialTheme.typography.labelSmall,color=textInk.copy(alpha=0.85f))
                 }
             }
         }

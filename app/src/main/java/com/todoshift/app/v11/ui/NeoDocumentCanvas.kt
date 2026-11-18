@@ -63,12 +63,17 @@ internal fun NeoDocumentCanvas(
     val blocks=remember(source){NeoDocumentBlocks.parse(source)}
     // Heights are measured from the real Compose content, not guessed from
     // character counts. Page breaks are presentation-only; source is unchanged.
-    val measuredBlockHeights=remember(noteId,source,a4) {
+    var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
+    // Width and font scale affect wrapping; never paginate with stale
+    // measurements from a different zoom level.
+    val measuredBlockHeights=remember(noteId,source,a4,zoomPercent) {
         mutableStateMapOf<Int,Int>()
+    }
+    var titleHeightPx by remember(noteId,documentTitle,a4,zoomPercent) {
+        mutableIntStateOf(0)
     }
     val background=if(a4) Color.White else MaterialTheme.colorScheme.surfaceContainerLow
     val contentColor=if(a4) Color(0xFF202126) else MaterialTheme.colorScheme.onSurface
-    var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
     Column(verticalArrangement=Arrangement.spacedBy(if(a4) 12.dp else 2.dp)) {
         if(a4) {
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.Center,
@@ -91,9 +96,9 @@ internal fun NeoDocumentCanvas(
         val availableHeightPx=with(LocalDensity.current) {
             (sheetWidth*(297f/210f-84f/595f)).roundToPx()
         }
-        val pages=remember(blocks,a4,availableHeightPx,measuredBlockHeights.toMap()) {
+        val pages=remember(blocks,a4,availableHeightPx,titleHeightPx,measuredBlockHeights.toMap()) {
             val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
-            var used=if(a4 && documentTitle.isNotBlank()) 60 else 0
+            var used=if(a4 && documentTitle.isNotBlank()) titleHeightPx else 0
             blocks.forEach { block ->
                 if(block is NeoDocumentBlocks.Block.PageBreak) {
                     result.add(mutableListOf())
@@ -155,7 +160,10 @@ internal fun NeoDocumentCanvas(
                     // Show it on the actual A4 sheet instead of above the sheet.
                     if(a4 && pageIndex==0 && documentTitle.isNotBlank()) {
                         Text(documentTitle,
-                            modifier=Modifier.fillMaxWidth().padding(bottom=12.dp),
+                            modifier=Modifier.fillMaxWidth().padding(bottom=12.dp)
+                                .onSizeChanged { size ->
+                                    if(titleHeightPx!=size.height) titleHeightPx=size.height
+                                },
                             style=MaterialTheme.typography.titleLarge.copy(
                                 color=Color(0xFF202126),
                                 textAlign=TextAlign.Center))

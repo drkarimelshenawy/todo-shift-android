@@ -1376,14 +1376,51 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
     }
     if(newNoteChoice) AlertDialog(
         onDismissRequest={newNoteChoice=false},
-        title={Text(neoLabel("إنشاء جديد","Create new"))},
-        text={Column {
-            TextButton(onClick={newNoteChoice=false;newNoteDocumentA4=false;initialNoteTitle="";initialNoteBody="";newNoteFolderTarget=activeFolderId?.takeUnless{it=="__all__"||it=="__unfiled__"};noteId=null;noteEditor=true}) {
-                Icon(Icons.Rounded.NoteAdd,null);Spacer(Modifier.width(8.dp));Text(neoLabel("ملاحظة عادية","Standard note"))}
-            TextButton(onClick={newNoteChoice=false;newNoteDocumentA4=true;initialNoteTitle="";initialNoteBody="";newNoteFolderTarget=activeFolderId?.takeUnless{it=="__all__"||it=="__unfiled__"};noteId=null;noteEditor=true}) {
-                Icon(Icons.Rounded.Description,null);Spacer(Modifier.width(8.dp));Text(neoLabel("مستند A4 (تجريبي)","A4 document (beta)"))}
-        }},
-        confirmButton={TextButton(onClick={newNoteChoice=false}) {Text(neoLabel("إلغاء","Cancel"))}})
+        icon={Icon(Icons.Rounded.PostAdd,contentDescription=null)},
+        title={Text(neoLabel("اختيار نوع الملاحظة","Choose a document type"))},
+        text={
+            Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                listOf(
+                    Triple(false,neoLabel("ملاحظة عادية","Standard note"),
+                        neoLabel("ورقة مرنة للكتابة السريعة والقوائم","Flexible page for quick writing and lists")),
+                    Triple(true,neoLabel("مستند A4","A4 document"),
+                        neoLabel("صفحة بحجم الطباعة — وضع تجريبي","Print-sized page — experimental mode"))
+                ).forEach { (a4,label,description) ->
+                    Surface(
+                        onClick={
+                            newNoteChoice=false;newNoteDocumentA4=a4
+                            initialNoteTitle="";initialNoteBody=""
+                            newNoteFolderTarget=activeFolderId?.takeUnless{
+                                it=="__all__"||it=="__unfiled__"
+                            }
+                            noteId=null;noteEditor=true
+                        },
+                        modifier=Modifier.fillMaxWidth(),
+                        shape=androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                        color=MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation=2.dp
+                    ) {
+                        Row(Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment=Alignment.CenterVertically,
+                            horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            Icon(if(a4) Icons.Rounded.Description else Icons.Rounded.StickyNote2,
+                                contentDescription=null,modifier=Modifier.size(30.dp),
+                                tint=MaterialTheme.colorScheme.primary)
+                            Column(Modifier.weight(1f)) {
+                                Text(label,style=MaterialTheme.typography.titleMedium)
+                                Text(description,style=MaterialTheme.typography.bodySmall,
+                                    color=MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.Rounded.ChevronLeft,contentDescription=null)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton={TextButton(onClick={newNoteChoice=false}) {
+            Text(neoLabel("إلغاء","Cancel"))
+        }}
+    )
     if(hiddenUnlock) androidx.compose.ui.window.Dialog(onDismissRequest={hiddenUnlock=false},properties=androidx.compose.ui.window.DialogProperties(securePolicy=androidx.compose.ui.window.SecureFlagPolicy.SecureOn)) {
         val security=remember {V11SecurityStore(context.applicationContext)}
         val settings=security.load()

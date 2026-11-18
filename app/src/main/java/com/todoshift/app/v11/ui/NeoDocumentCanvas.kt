@@ -63,6 +63,8 @@ internal fun NeoDocumentCanvas(
     val blocks=remember(source){NeoDocumentBlocks.parse(source)}
     // Read-only A4 sheets can paginate individual source lines without
     // changing stored text or the editable paragraph's source range.
+    // A single soft-wrapped line can still exceed one sheet; do not claim
+    // full WYSIWYG pagination until text-layout splitting is implemented.
     // Editing keeps original blocks intact to preserve IME composition,
     // cursor positions and rich-text serialization.
     val displayBlocks=remember(blocks,a4,inlineEditing,editable) {
@@ -273,8 +275,8 @@ internal fun NeoDocumentCanvas(
                 // never alter page geometry or appear as document content.
                 Text(
                     neoLabel(
-                        "تنبيه: محتوى الصفحة أطول من A4؛ سيُقسَّم عند تصدير PDF.",
-                        "Page exceeds A4; PDF export will paginate the content."
+                        "تنبيه: بعض المحتوى يتجاوز حدود ورقة A4. راجع ملف PDF قبل مشاركته.",
+                        "Some content exceeds A4 bounds. Review the exported PDF before sharing."
                     ),
                     modifier=Modifier.fillMaxWidth().padding(top=8.dp),
                     color=Color(0xFF9A3412),

@@ -740,7 +740,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     leadingIcon={Icon(Icons.Rounded.Description, contentDescription=null)},
                                     onClick={noteMoreMenu=false;editing=true;formatInitialTab=2;showFormatSheet=true;noteKeyboard?.hide()})
                                 DropdownMenuItem(
-                                    text={Text(neoLabel("الربط بالمهام والتقويم","Task and calendar links"))},
+                                    text={Text(neoLabel("خيارات الملاحظة","Note options"))},
                                     leadingIcon={Icon(Icons.Rounded.EventNote, contentDescription=null)},
                                     onClick={noteMoreMenu=false;noteKeyboard?.hide();editing=true;options=true})
                                 if(existing==null) DropdownMenuItem(
@@ -766,7 +766,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 if(editing) {
                     TextField(
                         title,{if(!closing)title=it},singleLine=true,
-                        placeholder={Text(neoLabel("عنوان اختياري","Optional title"))},
+                        textStyle=MaterialTheme.typography.titleLarge.copy(fontWeight=androidx.compose.ui.text.font.FontWeight.Bold,textAlign=androidx.compose.ui.text.style.TextAlign.Center),
+                        placeholder={Text(neoLabel("عنوان الملاحظة","Note title"),modifier=Modifier.fillMaxWidth(),textAlign=androidx.compose.ui.text.style.TextAlign.Center)},
                         modifier=Modifier.fillMaxWidth().padding(horizontal=14.dp),
                         colors=TextFieldDefaults.colors(
                             focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,
@@ -778,7 +779,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 } else if(title.isNotBlank()) {
                     Text(title,modifier=Modifier.fillMaxWidth().padding(
                         horizontal=20.dp,vertical=8.dp),
-                        style=MaterialTheme.typography.titleMedium)
+                        style=MaterialTheme.typography.titleLarge.copy(fontWeight=androidx.compose.ui.text.font.FontWeight.Bold,textAlign=androidx.compose.ui.text.style.TextAlign.Center))
                 }
                 NeoNoteProToolbar(
                     noteId=id,document=rich.value.text,
@@ -950,7 +951,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 TextButton(onClick={options=false}) {Text(neoLabel("إغلاق","Close"))}
                             }
                             NeoSwitch(
-                                neoLabel("نقل عناصر Checklist المكتملة إلى آخر المجموعة",
+                                neoLabel("نقل عناصر قائمة التحقق المكتملة إلى نهاية القائمة",
                                     "Move completed checklist items to the end"),
                                 moveCompletedChecklistItems
                             ) {enabled ->
@@ -1011,23 +1012,18 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     NeoChoice(neoLabel("ربط مهمة موجودة","Link existing task"),listOf<String?>(null)+linkable.map {it.id},selectedTaskLink,{key->linkable.firstOrNull {it.id==key}?.title ?: neoLabel("اختر مهمة","Choose task")},{selectedTaskLink=it})
                     TextButton(enabled=selectedTaskLink!=null&&!pending,onClick={existingTaskLinks=existingTaskLinks+requireNotNull(selectedTaskLink);selectedTaskLink=null}) {Text(neoLabel("ربط","Link"))}
                 }
-                OutlinedTextField(reminder,{reminder=it},label={Text(neoLabel("تذكير اختياري: 2026-11-14T18:30","Optional reminder: 2026-11-14T18:30"))})
-                if(reminder.isNotBlank()) NeoItemReminderRecurrenceControls(id)
-                OutlinedTextField(tags,{tags=it},label={Text(neoLabel("وسوم مفصولة بفواصل","Tags, comma separated"))})
                 NeoSwitch(neoLabel("تثبيت","Pin"),pinned){pinned=it}
                 NeoSwitch(neoLabel("أرشفة","Archive"),archived){archived=it}
-                NeoSwitch(neoLabel("سلة المهملات (يمكن الاستعادة)","Trash (recoverable)"),trashed){if(it) confirmTrashNote=true else trashed=false}
                 val security=remember { V11SecurityStore(context.applicationContext) }
                 fun canProtect(): Boolean { val settings=security.load();return settings.mode!=V11LockMode.NONE || settings.biometricEnabled }
                 NeoSwitch(neoLabel("قفل الملاحظة بـ PIN أو البصمة","Lock note using PIN or biometrics"),locked){if(!it||canProtect())locked=it else error="Configure app PIN or biometrics in Settings before protecting a note"}
-                NeoSwitch(neoLabel("إخفاء معاينة المحتوى في الكروت","Hide card preview"),previewHidden){previewHidden=it}
+                NeoSwitch(neoLabel("إخفاء مقتطف النص من بطاقة الملاحظة","Hide text excerpt on note card"),previewHidden){previewHidden=it}
                  NeoSwitch(neoLabel("إخفاء الملاحظة من القائمة","Hide note from list"),hidden){hidden=it}
                 Text(neoLabel("خلفية الملاحظة","Note background"))
                 Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
                     listOf("" to neoLabel("افتراضي","Default"),"#FFF4B8" to neoLabel("أصفر","Yellow"),"#D9EFDA" to neoLabel("أخضر","Green"),"#D6E9FF" to neoLabel("أزرق","Blue"),"#F9DCE9" to neoLabel("وردي","Pink"),"#E8DDF5" to neoLabel("بنفسجي","Purple"),"#FFE1C3" to neoLabel("برتقالي","Orange"),"#E3E6EB" to neoLabel("رمادي","Gray")).forEach {(value,label) -> FilterChip(background==value,{background=value},label={Text(label)},colors=FilterChipDefaults.filterChipColors(containerColor=if(value.isBlank()) MaterialTheme.colorScheme.surface else androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(value))))}
                 }
                 OutlinedTextField(color,{color=it},label={Text(neoLabel("لون التقويم #RRGGBB","Calendar color #RRGGBB"))})
-                NeoSwitch(neoLabel("حد حول النص","Text border"),border){border=it}
             }
             if(editing) Row {
                 TextButton(onClick={val content=rich.value.text;(context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(title,content))}) {Text(neoLabel("نسخ","Copy"))}

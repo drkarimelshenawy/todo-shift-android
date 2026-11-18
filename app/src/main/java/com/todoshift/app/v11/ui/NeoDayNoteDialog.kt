@@ -92,7 +92,11 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var lastSavedEdit by remember {mutableStateOf<String?>(null)}
     val rootWritePending=LocalNeoEditorWriteState.current.pending
     var id by rememberSaveable(existing?.id) { mutableStateOf(existing?.id ?: UUID.randomUUID().toString()) }
-    val draftKey=remember { existing?.id ?: "new-$date-${calendarId?.hashCode() ?: 0}" }
+    // Resolve legacy date-key conflicts without overwriting old encrypted drafts.
+    var draftKey by rememberSaveable(existing?.id) {
+        mutableStateOf(existing?.id ?: "new-$date-${calendarId?.hashCode() ?: 0}")
+    }
+    var recoveredLegacyKey by remember {mutableStateOf<Pair<String,String>?>(null)}
 
 
     var color by rememberSaveable { mutableStateOf(styleStore.noteColor(id)) }
@@ -167,6 +171,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
     var draftStatus by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var conflictingDraft by remember { mutableStateOf<JSONObject?>(null) }
+    var draftRecoveryError by remember {mutableStateOf<String?>(null)}
+    var exitWithDraft by remember {mutableStateOf<(() -> Unit)?>(null)}
     val undo=remember { mutableStateListOf<TextFieldValue>() }; val redo=remember { mutableStateListOf<TextFieldValue>() }
     fun edit(next: TextFieldValue) {
         if(next.text!=body.text) { undo.add(body); if(undo.size>50) undo.removeAt(0); redo.clear() }
@@ -235,13 +241,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             if(recovered!=null) {
                 val currentSource=expectedDatabase.dayItems.firstOrNull {it.id==recovered.optString("id")}?.toString()
                 val savedSource=recovered.optString("source")
-                // The new optional preview field changes the data-class toString().
-                // Accept older draft source fingerprints without that default field.
-                val legacyCurrentSource=currentSource?.replace(", notePreviewHidden=false","")
-                val legacyRevision=sourceRevision.replace(", notePreviewHidden=false","")
-                if(savedSource==sourceRevision || savedSource==currentSource ||
-                    savedSource==legacyRevision || savedSource==legacyCurrentSource ||
-                    (legacyCurrentSource!=null && savedSource==legacyCurrentSource.replace(", noteCalendarLinked=true",""))) {
+                // A matching "<new>" source is not proof of matching identity.
+                if(NeoNoteDraftIdentity.canAutoRecover(
+                    recovered.optString("id"),id,savedSource,sourceRevision,currentSource)) {
                     sourceRevision=recovered.optString("source",sourceRevision)
                     id=recovered.optString("id",id); title=recovered.optString("title",title)
                     body=TextFieldValue(recovered.optString("details",body.text)); tags=recovered.optString("tags",tags)
@@ -259,11 +261,17 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     draftStatus="تم استرجاع المسودة / Draft recovered"
                 } else {
                     conflictingDraft=recovered
-                    error="Stored note changed since this draft. Recover the draft as a separate note to preserve both versions."
+                    error=neoLiteral(
+                        "مسودة قديمة أو تخص ملاحظة أخرى. اختر الاستعادة أو المتابعة.",
+                        "An older or unrelated draft exists. Recover or continue safely.")
                 }
             }
-            draftReady=error==null
-        } catch(failure: Exception) { error="Unable to recover note draft: ${failure.message}" }
+            draftReady=conflictingDraft==null && draftRecoveryError==null && error==null
+        } catch(failure: Exception) {
+            draftRecoveryError=failure.message ?: "Unknown draft read error"
+            error=neoLiteral("تعذر قراءة المسودة المشفرة؛ لم يتم حذفها.",
+                "Could not read encrypted draft; it has not been deleted.")
+        }
     }
     fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
@@ -322,15 +330,21 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         "Saved; history checkpoint unavailable")
                 }
             }
-            withContext(Dispatchers.IO) {drafts.removeIfVersion(draftKey,savedEdit)}
+            withContext(Dispatchers.IO) {
+                drafts.removeIfVersion(draftKey,savedEdit)
+                recoveredLegacyKey?.let {(oldKey,oldVersion) ->
+                    drafts.removeIfVersion(oldKey,oldVersion)
+                }
+            }
+            recoveredLegacyKey=null
             if(close) onSave(note)
             true
         } catch(cancelled:CancellationException) {throw cancelled}
         catch(_:Exception) {error="تعذر الحفظ؛ التعديلات والمسودة محفوظة لإعادة المحاولة / Save failed; edits and draft retained";false}
         finally {pending=false;closing=false}
     }
-    suspend fun keepDraft() {
-      try {
+    suspend fun keepDraft():Boolean {
+      return try {
         val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",noteSource()).put("tags",tags)
             .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden).put("previewHidden",previewHidden)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
@@ -338,7 +352,24 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         arabicFontOverride?.let {value.put("arabicFontOverride",it)}
         englishFontOverride?.let {value.put("englishFontOverride",it)}
         withContext(Dispatchers.IO+NonCancellable) { drafts.save(draftKey,value) }
-      } catch(_:Exception) {error="تعذر حفظ المسودة؛ لن تُحذف التعديلات / Draft save failed; edits retained"}
+        true
+      } catch(_:Exception) {
+          error=neoLiteral("تعذر حفظ المسودة؛ انسخ المحتوى قبل الخروج",
+              "Draft save failed; copy the content before leaving.")
+          false
+      }
+    }
+    fun requestSafeExit(next:()->Unit) {
+        if(conflictingDraft!=null || draftRecoveryError!=null) {
+            // No changes were made to the conflicting file. It remains recoverable.
+            next()
+            return
+        }
+        scope.launch {
+            val draftWritten=keepDraft()
+            if(persistNote(true)) next()
+            else if(draftWritten) exitWithDraft=next
+        }
     }
     LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
@@ -362,7 +393,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         lifecycle.addObserver(observer)
         onDispose {lifecycle.removeObserver(observer)}
     }
-    neoRegisterLeaveGuard {next -> scope.launch {keepDraft();if(persistNote(true)) next()} }
+    neoRegisterLeaveGuard {next -> requestSafeExit(next) }
     if(verifyLinkedTasks) Dialog(onDismissRequest={verifyLinkedTasks=false},properties=DialogProperties(securePolicy=SecureFlagPolicy.SecureOn)) {
         V11AccountsUnlockScreen(linkedTaskSecurity.load(),linkedTaskSecurity) {linkedTasksAuthorized=true;verifyLinkedTasks=false}
     }
@@ -505,7 +536,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             else editRich(next)
         }
     }
-    Dialog(onDismissRequest={if(!pending&&!rootWritePending) scope.launch {keepDraft();if(persistNote(true)) onDismiss()}},
+    Dialog(onDismissRequest={if(!pending&&!rootWritePending) requestSafeExit(onDismiss)},
         properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=true,securePolicy=if(locked||V11SecurityStore(context).load().let {it.protectTasks||it.protectNotes||it.protectApplication}) SecureFlagPolicy.SecureOn else SecureFlagPolicy.Inherit)) {
         // The Android Window, rather than a child padding modifier, owns the
         // system-bar and keyboard-safe bounds. The previous edge-to-edge Dialog
@@ -695,7 +726,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     enabled=!pending&&!rootWritePending,
                                     onClick={
                                         noteMoreMenu=false
-                                        scope.launch {keepDraft();if(persistNote(true)) onDismiss()}
+                                        requestSafeExit(onDismiss)
                                     })
                             }
                         }

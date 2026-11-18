@@ -137,12 +137,17 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         mutableStateOf(existing?.noteBackground?.isNotBlank()==true)
     }
     fun selectPaperColor(hex:String) {
-        background=hex
-        paperCustomized=true
+        // "Default" returns new notes to automatic card/paper synchronization.
+        paperCustomized=hex.isNotBlank()
+        background=if(hex.isBlank() && existing==null && color.matches(Regex("#[0-9a-fA-F]{6}")))
+            color else hex
     }
     fun selectCardColor(hex:String) {
         color=hex
-        if(existing==null && !paperCustomized) background=hex
+        // Text fields emit incomplete hex values while typing. Never propagate an
+        // incomplete value to the paper background or its color parser.
+        if(existing==null && !paperCustomized && hex.matches(Regex("#[0-9a-fA-F]{6}")))
+            background=hex
     }
     val launchPrefs=remember {NeoLaunchPreferences(context.applicationContext)}
     val savedPresentation=remember(id) {styleStore.notePresentation(id)}

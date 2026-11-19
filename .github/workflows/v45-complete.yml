@@ -60,7 +60,7 @@ jobs:
           TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
         run: |
           test -n "$TODOSHIFT_SIGNING_PASSWORD"
-          gradle --no-daemon -I tools/premium_qa.init.gradle :cashbook-core:check :app:testDebugUnitTest \
+          gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle :cashbook-core:check :app:testDebugUnitTest \
             --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest' \
             --tests 'com.todoshift.app.v11.SalaryReceiptOperationsTest' \
             --tests 'com.todoshift.app.v11.FixedSalaryIntegrityTest' \

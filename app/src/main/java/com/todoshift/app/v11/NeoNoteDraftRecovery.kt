@@ -22,6 +22,9 @@ internal object NeoNoteDraftRecovery {
         }
     }
 
+    internal fun missingImageNames(referenced:Set<String>,available:Set<String>):Set<String> =
+        referenced - available
+
     fun copyMedia(context:Context,oldId:String,newId:String,source:String):String {
         require(oldId.isNotBlank() && newId.isNotBlank() && oldId!=newId)
         val store=NeoAttachmentStore(context.applicationContext)
@@ -35,11 +38,17 @@ internal object NeoNoteDraftRecovery {
             // Parse the document once rather than rescanning it for every
             // attachment owned by the original note. An image-free draft
             // needs no attachment enumeration or copying at all.
-            if (referencedNames.isNotEmpty()) store.list()
-                .filter { it.owner == oldId && it.name in referencedNames }
-                .forEach { media ->
+            if (referencedNames.isNotEmpty()) {
+                val mediaToCopy = store.list()
+                    .filter { it.owner == oldId && it.name in referencedNames }
+                val missing = missingImageNames(referencedNames, mediaToCopy.map { it.name }.toSet())
+                // Never report a recovered copy as complete when image blocks
+                // still point at the original owner or at missing files.
+                check(missing.isEmpty()) { "Recovery source attachments are missing" }
+                mediaToCopy.forEach { media ->
                 val imported=store.import(newId,store.uri(media.name))
                 text=replaceImageReference(text,media.name,imported.name)
+                }
             }
         } catch (failure:Exception) {
             try {

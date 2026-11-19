@@ -123,8 +123,12 @@ internal object NeoDocumentPdf {
                     // A terminal page-break marker should not produce an empty
                     // trailing sheet in the exported PDF.
                     is NeoDocumentBlocks.Block.PageBreak ->
-                        if(documentBlocks.drop(index+1).any {
-                            it !is NeoDocumentBlocks.Block.PageBreak
+                        if(documentBlocks.drop(index+1).any { next ->
+                            when(next) {
+                                is NeoDocumentBlocks.Block.PageBreak -> false
+                                is NeoDocumentBlocks.Block.Paragraph -> next.source.isNotBlank()
+                                else -> true
+                            }
                         }) newPage()
                     is NeoDocumentBlocks.Block.Table -> {
                         val columns=block.cells.first().size

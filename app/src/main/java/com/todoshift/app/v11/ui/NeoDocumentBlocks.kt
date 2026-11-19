@@ -172,7 +172,10 @@ internal object NeoDocumentBlocks {
 
     fun safePreview(source:String):String=source.lines().joinToString("\n") {line->
         when {
-            imagePattern.matches(line) -> "[Image]"
+            imagePattern.matchEntire(line)?.let { match ->
+                NeoAttachmentStore.safeName(match.groupValues[1]) &&
+                    (match.groupValues[2].toIntOrNull() in 25..100)
+            } == true -> "[Image]"
             line==PAGE_BREAK -> ""
             else -> line
         }

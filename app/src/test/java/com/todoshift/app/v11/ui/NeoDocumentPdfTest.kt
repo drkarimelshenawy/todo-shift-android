@@ -131,4 +131,16 @@ class NeoDocumentPdfTest {
         assertEquals("Outro",(blocks[2] as NeoDocumentBlocks.Block.Paragraph).source)
     }
 
+    @Test fun previewMasksOnlyValidImageBlocksNotMalformedOrInlineReferences() {
+        val valid=NeoDocumentBlocks.image(
+            "neo-attachment-01234567-89ab-cdef-0123-456789abcdef.png")
+        val invalidWidth=valid.replace(":80:",":999:")
+        val prose="Text "+valid
+        val preview=NeoDocumentBlocks.safePreview(
+            listOf(valid,invalidWidth,prose).joinToString("\n"))
+        assertEquals(listOf("[Image]",invalidWidth,prose).joinToString("\n"),preview)
+        assertEquals(1,NeoDocumentBlocks.parse(valid+"\n"+invalidWidth)
+            .filterIsInstance<NeoDocumentBlocks.Block.Image>().size)
+    }
+
 }

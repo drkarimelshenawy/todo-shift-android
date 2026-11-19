@@ -114,4 +114,21 @@ class NeoDocumentPdfTest {
         assertEquals("Body\n"+NeoDocumentBlocks.PAGE_BREAK,updated)
     }
 
+    @Test fun malformedTableSyntaxStaysInParagraphWithoutLosingLines() {
+        val source="Intro\n| A | B |\n| --- | --- |\n| only one |\nOutro"
+        val blocks=NeoDocumentBlocks.parse(source)
+        assertEquals(1,blocks.size)
+        assertEquals(source,(blocks.single() as NeoDocumentBlocks.Block.Paragraph).source)
+    }
+
+    @Test fun validTableFollowingProseRemainsEditableSeparateBlock() {
+        val table=NeoDocumentBlocks.serializeTable(listOf(
+            listOf("الاسم","Name"),listOf("محمد","Mohamed")
+        ))
+        val blocks=NeoDocumentBlocks.parse("Intro\n"+table+"\nOutro")
+        assertEquals(3,blocks.size)
+        assertTrue(blocks[1] is NeoDocumentBlocks.Block.Table)
+        assertEquals("Outro",(blocks[2] as NeoDocumentBlocks.Block.Paragraph).source)
+    }
+
 }

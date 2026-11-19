@@ -76,6 +76,15 @@ internal object NeoDocumentBlocks {
         return cells.takeIf{it.size in 1..MAX_COLUMNS && it.all{v->v.length<=250}}
     }
 
+    /** A table starts only when its header, separator and first data row agree. */
+    private fun isTableStart(lines:List<String>,index:Int):Boolean {
+        if(index+2>=lines.size)return false
+        val header=parseCells(lines[index]) ?: return false
+        val firstRow=parseCells(lines[index+2]) ?: return false
+        return firstRow.size==header.size && separator.matches(lines[index+1]) &&
+            lines[index+1].count{it=='|'}==header.size+1
+    }
+
     private fun digest(source:String):String =
         java.security.MessageDigest.getInstance("SHA-256")
             .digest(source.toByteArray(Charsets.UTF_8))
@@ -101,9 +110,7 @@ internal object NeoDocumentBlocks {
                 cursor++;continue
             }
             val header=parseCells(lines[cursor])
-            if(header!=null && cursor+2<lines.size &&
-                separator.matches(lines[cursor+1]) &&
-                lines[cursor+1].count{it=='|'}==header.size+1) {
+            if(header!=null && isTableStart(lines,cursor)) {
                 val data=mutableListOf(header)
                 var next=cursor+2
                 while(next<lines.size && data.size<MAX_ROWS) {
@@ -121,9 +128,7 @@ internal object NeoDocumentBlocks {
             while(cursor<lines.size) {
                 val line=lines[cursor]
                 if(line==PAGE_BREAK || imagePattern.matches(line))break
-                if(cursor+2<lines.size &&
-                    parseCells(line)!=null &&
-                    separator.matches(lines[cursor+1]))break
+                if(isTableStart(lines,cursor))break
                 cursor++
             }
             blocks+=Block.Paragraph(lines.subList(start,cursor).joinToString("\n"),

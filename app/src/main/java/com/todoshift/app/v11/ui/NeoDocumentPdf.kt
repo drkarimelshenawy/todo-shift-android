@@ -129,7 +129,12 @@ internal object NeoDocumentPdf {
                                 is NeoDocumentBlocks.Block.Paragraph -> next.source.isNotBlank()
                                 else -> true
                             }
-                        }) newPage()
+                        }) {
+                            // Avoid a blank sheet if a manual break follows
+                            // an automatic page transition or another break.
+                            // Keep the source marker intact for later editing.
+                            if(y>MARGIN) newPage()
+                        }
                     is NeoDocumentBlocks.Block.Table -> {
                         val columns=block.cells.first().size
                         val width=CONTENT_WIDTH/columns

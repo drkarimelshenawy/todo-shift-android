@@ -1,5 +1,7 @@
 package com.todoshift.app.v11.ui
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -30,6 +32,22 @@ class NeoDocumentPdfDeviceTest {
                         renderer.openPage(index).use { page ->
                             assertEquals("A4 width in PDF points", 595, page.width)
                             assertEquals("A4 height in PDF points", 842, page.height)
+                            // Page dimensions alone cannot prove that content was drawn.
+                            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+                            try {
+                                bitmap.eraseColor(Color.WHITE)
+                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
+                                var inkPixels = 0
+                                for (py in 0 until bitmap.height step 4) {
+                                    for (px in 0 until bitmap.width step 4) {
+                                        val pixel = bitmap.getPixel(px, py)
+                                        if (Color.red(pixel) < 220 || Color.green(pixel) < 220 || Color.blue(pixel) < 220) inkPixels++
+                                    }
+                                }
+                                assertTrue("PDF page ${index + 1} rendered blank", inkPixels > 0)
+                            } finally {
+                                bitmap.recycle()
+                            }
                         }
                     }
                 }
@@ -51,6 +69,15 @@ class NeoDocumentPdfDeviceTest {
             "Body\n" + NeoDocumentBlocks.PAGE_BREAK, expectedMinimumPages = 1
         )
         assertEquals("Trailing page break created an empty page", baseline, withTrailingBreak)
+    }
+
+    @Test fun repeatedTerminalBreaksDoNotCreateEmptyPdfPages() {
+        val baseline = verifyPdf("Body", expectedMinimumPages = 1)
+        val repeated = verifyPdf(
+            "Body\n" + NeoDocumentBlocks.PAGE_BREAK + "\n" + NeoDocumentBlocks.PAGE_BREAK,
+            expectedMinimumPages = 1
+        )
+        assertEquals("Repeated terminal breaks created blank pages", baseline, repeated)
     }
 
     @Test fun longMultilingualTableCellExportsReadableA4Pages() {

@@ -154,4 +154,27 @@ class NeoDocumentPdfTest {
         assertEquals(source,NeoDocumentBlocks.safePreview(source))
     }
 
+    @Test fun editingMultilineArabicParagraphPreservesFollowingMediaAndPageBreak() {
+        val image=NeoDocumentBlocks.image(
+            "neo-attachment-01234567-89ab-cdef-0123-456789abcdef.png")
+        val source="أول سطر\nثاني سطر\n"+image+"\n"+
+            NeoDocumentBlocks.PAGE_BREAK+"\nالخاتمة"
+        val changed=NeoDocumentBlocks.replaceParagraphAt(
+            source,0,"أول سطر محرر\nسطر إضافي\nثاني سطر")
+        assertEquals("أول سطر محرر\nسطر إضافي\nثاني سطر\n"+image+"\n"+
+            NeoDocumentBlocks.PAGE_BREAK+"\nالخاتمة",changed)
+        val blocks=NeoDocumentBlocks.parse(changed)
+        assertEquals(1,blocks.filterIsInstance<NeoDocumentBlocks.Block.Image>().size)
+        assertEquals(1,blocks.filterIsInstance<NeoDocumentBlocks.Block.PageBreak>().size)
+        assertEquals("الخاتمة",(blocks.last() as NeoDocumentBlocks.Block.Paragraph).source)
+    }
+
+    @Test fun emptyParagraphEditDoesNotRemoveAdjacentPageBreak() {
+        val source="مقدمة\n"+NeoDocumentBlocks.PAGE_BREAK+"\nنهاية"
+        val changed=NeoDocumentBlocks.replaceParagraphAt(source,0,"")
+        assertEquals("\n"+NeoDocumentBlocks.PAGE_BREAK+"\nنهاية",changed)
+        assertEquals(1,NeoDocumentBlocks.parse(changed)
+            .filterIsInstance<NeoDocumentBlocks.Block.PageBreak>().size)
+    }
+
 }

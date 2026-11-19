@@ -122,7 +122,7 @@ internal fun NeoDocumentCanvas(
         val availableHeightPx=with(LocalDensity.current) {
             (sheetWidth*(297f/210f-84f/595f)).roundToPx()
         }
-        val pages=remember(displayBlocks,a4,availableHeightPx,titleHeightPx,measuredBlockHeights.toMap()) {
+        val pages=remember(displayBlocks,a4,availableHeightPx,titleHeightPx,documentTitle,measuredBlockHeights.toMap()) {
             val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
             var used=if(a4 && documentTitle.isNotBlank()) titleHeightPx else 0
             displayBlocks.forEach { block ->
@@ -144,7 +144,11 @@ internal fun NeoDocumentCanvas(
                     used+=height
                 }
             }
-            if(result.size>1 && result.last().isEmpty()) result.removeAt(result.lastIndex)
+            // Preserve a deliberate final page break: an empty last sheet is
+            // a valid blank page, while an accidental overflow page is not.
+            if(result.size>1 && result.last().isEmpty() &&
+                displayBlocks.lastOrNull() !is NeoDocumentBlocks.Block.PageBreak)
+                result.removeAt(result.lastIndex)
             result
         }
         Column(Modifier.fillMaxWidth().then(if(a4) Modifier.horizontalScroll(rememberScrollState())

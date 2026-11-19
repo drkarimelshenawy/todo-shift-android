@@ -1,0 +1,26 @@
+package com.todoshift.app.v11
+
+import org.junit.Assert.*
+import org.junit.Test
+
+class NeoNoteDraftRecoveryTest {
+    private val original="neo-attachment-12345678-1234-1234-1234-123456789abc.jpg"
+    private val imported="neo-attachment-abcdefab-1234-1234-1234-123456789abc.jpg"
+
+    @Test fun onlyRealImageBlocksAreRecovered() {
+        val text="Mention $original in prose\n[[neo-image:$original:80:center]]\n" +
+            "prefix [[neo-image:$original:80:center]]\n[[neo-image:$original:120:center]]"
+        assertEquals(setOf(original),NeoNoteDraftRecovery.referencedImageNames(text))
+        val result=NeoNoteDraftRecovery.replaceImageReference(text,original,imported)
+        assertTrue(result.contains("Mention $original in prose"))
+        assertTrue(result.contains("[[neo-image:$imported:80:center]]"))
+        assertTrue(result.contains("prefix [[neo-image:$original:80:center]]"))
+        assertTrue(result.contains("[[neo-image:$original:120:center]]"))
+    }
+
+    @Test fun unrelatedImageBlocksStayUnchanged() {
+        val other="neo-attachment-99999999-1234-1234-1234-123456789abc.png"
+        val text="[[neo-image:$other:40:left]]"
+        assertEquals(text,NeoNoteDraftRecovery.replaceImageReference(text,original,imported))
+    }
+}

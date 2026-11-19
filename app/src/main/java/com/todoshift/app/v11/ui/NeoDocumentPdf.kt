@@ -139,11 +139,27 @@ internal object NeoDocumentPdf {
                             // slices, preserving every line and the cell borders.
                             var offset=0f
                             while(offset<height) {
+                                // Never cut a shaped text line halfway across
+                                // pages: choose the last common safe baseline
+                                // boundary that fits the remaining page.
+                                if(PAGE_HEIGHT-MARGIN-y<25f) newPage()
                                 val available=PAGE_HEIGHT-MARGIN-y
-                                if(available<25f) newPage()
-                                val slice=(height-offset).coerceAtMost(
-                                    PAGE_HEIGHT-MARGIN-y
-                                )
+                                val remaining=height-offset
+                                val slice=if(remaining<=available) remaining else {
+                                    val boundary=layouts.flatMap { shaped ->
+                                        (0 until shaped.lineCount).map { line ->
+                                            shaped.getLineBottom(line).toFloat()+6f
+                                        }
+                                    }.filter { it>offset+1f && it-offset<=available-1f }
+                                        .maxOrNull()
+                                    // If no full shaped line fits, move to a
+                                    // fresh sheet rather than clipping a glyph.
+                                    if(boundary==null && y>MARGIN) {
+                                        newPage()
+                                        (height-offset).coerceAtMost(PAGE_HEIGHT-MARGIN-y)
+                                    } else (boundary?.minus(offset) ?: available)
+                                        .coerceAtMost(available)
+                                }
                                 row.forEachIndexed {column,_ ->
                                     val x=MARGIN+column*width
                                     val canvas=page!!.canvas

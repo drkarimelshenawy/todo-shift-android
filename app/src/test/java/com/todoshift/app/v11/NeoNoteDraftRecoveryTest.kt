@@ -41,4 +41,12 @@ class NeoNoteDraftRecoveryTest {
         assertTrue(result.endsWith("[[neo-image:$imported:80:center]]"))
     }
 
+    @Test fun missingRecoveryAttachmentsAreDetectedBeforeImport() {
+        val other="neo-attachment-99999999-1234-1234-1234-123456789abc.png"
+        val refs=NeoNoteDraftRecovery.referencedImageNames(
+            "[[neo-image:$original:80:center]]\n[[neo-image:$other:50:left]]")
+        assertEquals(setOf(other),NeoNoteDraftRecovery.missingImageNames(refs,setOf(original)))
+        assertTrue(NeoNoteDraftRecovery.missingImageNames(refs,refs).isEmpty())
+        assertTrue(NeoNoteDraftRecovery.missingImageNames(emptySet(),emptySet()).isEmpty())
+    }
 }

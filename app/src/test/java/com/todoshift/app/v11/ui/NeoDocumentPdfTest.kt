@@ -42,13 +42,13 @@ class NeoDocumentPdfTest {
         assertEquals(800,NeoNoteDocumentTools.stats(text).words)
     }
     @Test fun trailingBreaksDoNotConsumeOrAlterEarlierContent() {
-        val original="عنوان عربي\\nEnglish body\\n"+NeoDocumentBlocks.PAGE_BREAK+
-            "\\n"+NeoDocumentBlocks.PAGE_BREAK
+        val original="عنوان عربي\nEnglish body\n"+NeoDocumentBlocks.PAGE_BREAK+
+            "\n"+NeoDocumentBlocks.PAGE_BREAK
         val blocks=NeoDocumentBlocks.parse(original)
         assertEquals(2,blocks.filterIsInstance<NeoDocumentBlocks.Block.PageBreak>().size)
-        assertEquals("عنوان عربي\\nEnglish body",
+        assertEquals("عنوان عربي\nEnglish body",
             (blocks.first() as NeoDocumentBlocks.Block.Paragraph).source)
-        assertEquals(original,blocks.joinToString("\\n") { block ->
+        assertEquals(original,blocks.joinToString("\n") { block ->
             when(block) {
                 is NeoDocumentBlocks.Block.Paragraph -> block.source
                 is NeoDocumentBlocks.Block.PageBreak -> NeoDocumentBlocks.PAGE_BREAK

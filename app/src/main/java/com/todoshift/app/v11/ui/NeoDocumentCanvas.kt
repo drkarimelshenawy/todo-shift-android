@@ -396,17 +396,20 @@ private fun NeoDocumentTable(
     var editor by remember(table.startLine,table.sourceHash) {mutableStateOf(false)}
     Column(Modifier.fillMaxWidth(),
         verticalArrangement=Arrangement.spacedBy(4.dp)) {
-        if(editable) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-            if(!a4) Text(neoLabel("جدول","Table"),style=MaterialTheme.typography.labelSmall,
+        // In A4, controls must not consume printable page height:
+        // tap the table itself to edit, while normal notes retain the toolbar.
+        if(editable && !a4) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+            Text(neoLabel("جدول","Table"),style=MaterialTheme.typography.labelSmall,
                 modifier=Modifier.weight(1f))
-            else Spacer(Modifier.weight(1f))
             TextButton(onClick={editor=true}) {
                 Icon(Icons.Rounded.Edit,null,Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(neoLabel("تعديل الجدول","Edit table"))
             }
         }
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
+        BoxWithConstraints(Modifier.fillMaxWidth().then(
+            if(a4 && editable) Modifier.clickable { editor=true } else Modifier
+        )) {
             // A4 tables use the printable page width, not a fixed 110dp
             // per column that could silently clip exported columns.
             val cellWidth=if(a4) maxWidth/table.cells.first().size else 110.dp

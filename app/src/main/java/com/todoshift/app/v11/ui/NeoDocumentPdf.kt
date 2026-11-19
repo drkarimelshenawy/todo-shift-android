@@ -131,20 +131,30 @@ internal object NeoDocumentPdf {
                             paint.textSize=if(header) 11f else 10f
                             val layouts=row.map{layout(it,textWidth)}
                             val height=(layouts.maxOf{it.height}+12f).coerceAtLeast(25f)
-                            require(height<=PAGE_HEIGHT-2*MARGIN) {
-                                "Table cell is too tall for A4; split the cell"
+                            // A long table cell must not abort PDF export.
+                            // Render the same shaped layouts in successive A4
+                            // slices, preserving every line and the cell borders.
+                            var offset=0f
+                            while(offset<height) {
+                                val available=PAGE_HEIGHT-MARGIN-y
+                                if(available<25f) newPage()
+                                val slice=(height-offset).coerceAtMost(
+                                    PAGE_HEIGHT-MARGIN-y
+                                )
+                                row.forEachIndexed {column,_ ->
+                                    val x=MARGIN+column*width
+                                    val canvas=page!!.canvas
+                                    canvas.drawRect(x,y,x+width,y+slice,borderPaint)
+                                    canvas.save()
+                                    canvas.clipRect(x+1f,y+1f,x+width-1f,y+slice-1f)
+                                    canvas.translate(x+6f,y+6f-offset)
+                                    layouts[column].draw(canvas)
+                                    canvas.restore()
+                                }
+                                y+=slice
+                                offset+=slice
+                                if(offset<height) newPage()
                             }
-                            ensure(height)
-                            row.forEachIndexed {column,_ ->
-                                val x=MARGIN+column*width
-                                val canvas=page!!.canvas
-                                canvas.drawRect(x,y,x+width,y+height,borderPaint)
-                                canvas.save()
-                                canvas.translate(x+6f,y+6f)
-                                layouts[column].draw(canvas)
-                                canvas.restore()
-                            }
-                            y+=height
                         }
                         // Calculate the header height before deciding whether
                         // a continued table can fit a header AND its next row.

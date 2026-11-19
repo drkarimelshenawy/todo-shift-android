@@ -240,8 +240,10 @@ internal fun NeoDocumentCanvas(
                                     runCatching {
                                         onSourceChange(NeoDocumentBlocks.replace(source,block,
                                             NeoDocumentBlocks.serializeTable(rows)))
-                                    }.onFailure {
+                                        true
+                                    }.getOrElse {
                                         onError(it.message ?: "Table could not be saved")
+                                        false
                                     }
                                 })
                             }
@@ -397,7 +399,7 @@ private fun NeoDocumentTable(
     table:NeoDocumentBlocks.Block.Table,
     editable:Boolean,
     a4:Boolean,
-    onSave:(List<List<String>>)->Unit
+    onSave:(List<List<String>>)->Boolean
 ) {
     var editor by remember(table.startLine,table.sourceHash) {mutableStateOf(false)}
     Column(Modifier.fillMaxWidth(),
@@ -497,7 +499,7 @@ private fun NeoDocumentTable(
                     }
                 }
             },
-            confirmButton={TextButton(onClick={onSave(cells);editor=false}) {
+            confirmButton={TextButton(onClick={if(onSave(cells)) editor=false}) {
                 Text(neoLabel("حفظ الجدول","Save table"))
             }},
             dismissButton={TextButton(onClick={editor=false}) {

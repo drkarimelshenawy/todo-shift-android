@@ -146,7 +146,7 @@ internal fun NeoDocumentCanvas(
             }
             // Match PDF export: a trailing explicit page break must not
             // create an extra blank printed sheet.
-            if(result.size>1 && result.last().isEmpty()) result.removeAt(result.lastIndex)
+            while(result.size>1 && result.last().isEmpty()) result.removeAt(result.lastIndex)
             result
         }
         Column(Modifier.fillMaxWidth().then(if(a4) Modifier.horizontalScroll(rememberScrollState())

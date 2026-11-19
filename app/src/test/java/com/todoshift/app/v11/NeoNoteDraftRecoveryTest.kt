@@ -23,4 +23,22 @@ class NeoNoteDraftRecoveryTest {
         val text="[[neo-image:$other:40:left]]"
         assertEquals(text,NeoNoteDraftRecovery.replaceImageReference(text,original,imported))
     }
+    @Test fun windowsLineEndingsKeepImageReferencesAndProseIntact() {
+        val source="Mention $original in prose\r\n[[neo-image:$original:75:right]]\r\nEnd"
+        assertEquals(setOf(original),NeoNoteDraftRecovery.referencedImageNames(source))
+        val result=NeoNoteDraftRecovery.replaceImageReference(source,original,imported)
+        assertEquals("Mention $original in prose\r\n[[neo-image:$imported:75:right]]\r\nEnd",result)
+    }
+
+    @Test fun malformedAndInlineImageTokensAreNotRewritten() {
+        val source="prefix [[neo-image:$original:80:center]]\n" +
+            "[[neo-image:$original:80:center]] trailing text\n" +
+            "[[neo-image:$original:80:center]]"
+        assertEquals(setOf(original),NeoNoteDraftRecovery.referencedImageNames(source))
+        val result=NeoNoteDraftRecovery.replaceImageReference(source,original,imported)
+        assertTrue(result.contains("prefix [[neo-image:$original:80:center]]"))
+        assertTrue(result.contains("[[neo-image:$original:80:center]] trailing text"))
+        assertTrue(result.endsWith("[[neo-image:$imported:80:center]]"))
+    }
+
 }

@@ -125,17 +125,25 @@ internal fun NeoDocumentCanvas(
         val pages=remember(displayBlocks,a4,availableHeightPx,titleHeightPx,documentTitle,measuredBlockHeights.toMap()) {
             val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
             var used=if(a4 && documentTitle.isNotBlank()) titleHeightPx else 0
+            // Precompute whether real content follows each block. Scanning the
+            // remainder of the document for every manual break was quadratic
+            // for long notes containing many page breaks.
+            val contentAfter=BooleanArray(displayBlocks.size)
+            var seenContent=false
+            for(index in displayBlocks.indices.reversed()) {
+                contentAfter[index]=seenContent
+                val block=displayBlocks[index]
+                if(when(block) {
+                    is NeoDocumentBlocks.Block.PageBreak -> false
+                    is NeoDocumentBlocks.Block.Paragraph -> block.source.isNotBlank()
+                    else -> true
+                }) seenContent=true
+            }
             displayBlocks.forEachIndexed { index,block ->
                 if(block is NeoDocumentBlocks.Block.PageBreak) {
-                    // A break followed only by empty paragraphs is terminal:
-                    // preserve the source, but do not show a blank A4 sheet.
-                    val hasFollowingContent=displayBlocks.drop(index+1).any { next ->
-                        when(next) {
-                            is NeoDocumentBlocks.Block.PageBreak -> false
-                            is NeoDocumentBlocks.Block.Paragraph -> next.source.isNotBlank()
-                            else -> true
-                        }
-                    }
+                    // Preserve terminal breaks in source without showing an
+                    // extra blank A4 sheet.
+                    val hasFollowingContent=contentAfter[index]
                     if(hasFollowingContent || !a4) {
                         // Consecutive manual breaks (or a break immediately
                         // after an automatic page transition) must not create

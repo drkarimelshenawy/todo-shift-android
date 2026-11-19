@@ -137,8 +137,16 @@ internal fun NeoDocumentCanvas(
                         }
                     }
                     if(hasFollowingContent || !a4) {
-                        result.add(mutableListOf())
-                        used=0
+                        // Consecutive manual breaks (or a break immediately
+                        // after an automatic page transition) must not create
+                        // an empty A4 sheet. The document title on page one
+                        // counts as visible content, even without body blocks.
+                        val hasVisiblePageContent=result.last().isNotEmpty() ||
+                            (result.size==1 && a4 && documentTitle.isNotBlank())
+                        if(!a4 || hasVisiblePageContent) {
+                            result.add(mutableListOf())
+                            used=0
+                        }
                     }
                 } else {
                     val height=measuredBlockHeights[block.startLine] ?: 0

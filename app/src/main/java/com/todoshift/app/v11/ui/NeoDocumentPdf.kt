@@ -146,12 +146,20 @@ internal object NeoDocumentPdf {
                                 val available=PAGE_HEIGHT-MARGIN-y
                                 val remaining=height-offset
                                 val slice=if(remaining<=available) remaining else {
-                                    val boundary=layouts.flatMap { shaped ->
-                                        (0 until shaped.lineCount).map { line ->
+                                    // Every cell must stop at a complete
+                                    // shaped line. Taking the largest boundary
+                                    // across all cells can slice a line in a
+                                    // different column with taller glyphs.
+                                    val boundary=layouts.mapNotNull { shaped ->
+                                        val bottoms=(0 until shaped.lineCount).map { line ->
                                             shaped.getLineBottom(line).toFloat()+6f
                                         }
-                                    }.filter { it>offset+1f && it-offset<=available-1f }
-                                        .maxOrNull()
+                                        if(bottoms.lastOrNull()?.let { it<=offset+1f }==true)
+                                            null // This cell is already complete.
+                                        else bottoms.filter {
+                                            it>offset+1f && it-offset<=available-1f
+                                        }.maxOrNull()
+                                    }.minOrNull()
                                     // If no full shaped line fits, move to a
                                     // fresh sheet rather than clipping a glyph.
                                     if(boundary==null && y>MARGIN) {

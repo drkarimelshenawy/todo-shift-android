@@ -13,8 +13,10 @@ internal object NeoNoteDraftRecovery {
         var text=source
         // A failed import must not leave a partially recovered media owner.
         // The new owner is unique to this recovery operation.
+        // Only import files actually referenced by the recovered draft: stale
+        // owner attachments must not consume quota or cause recovery to fail.
         try {
-            store.list().filter {it.owner==oldId}.forEach {media ->
+            store.list().filter { it.owner == oldId && source.contains(it.name) }.forEach { media ->
                 val imported=store.import(newId,store.uri(media.name))
                 text=text.replace(media.name,imported.name)
             }

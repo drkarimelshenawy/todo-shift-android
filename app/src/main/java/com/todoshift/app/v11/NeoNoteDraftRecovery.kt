@@ -31,7 +31,13 @@ internal object NeoNoteDraftRecovery {
         // Only import files actually referenced by the recovered draft: stale
         // owner attachments must not consume quota or cause recovery to fail.
         try {
-            store.list().filter { it.owner == oldId && referencedImageNames(source).contains(it.name) }.forEach { media ->
+            val referencedNames = referencedImageNames(source)
+            // Parse the document once rather than rescanning it for every
+            // attachment owned by the original note. An image-free draft
+            // needs no attachment enumeration or copying at all.
+            if (referencedNames.isNotEmpty()) store.list()
+                .filter { it.owner == oldId && it.name in referencedNames }
+                .forEach { media ->
                 val imported=store.import(newId,store.uri(media.name))
                 text=replaceImageReference(text,media.name,imported.name)
             }

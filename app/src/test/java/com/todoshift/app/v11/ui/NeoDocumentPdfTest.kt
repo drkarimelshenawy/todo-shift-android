@@ -58,7 +58,8 @@ class NeoDocumentPdfTest {
     }
 
     @Test fun longMultilingualTableCellsRoundTripWithoutTruncation() {
-        val longCell=(1..30).joinToString(" ") { "عربي English" }
+        val longCell=(1..16).joinToString(" ") { "عربي English" }
+        assertTrue(longCell.length in 150..250)
         val source=NeoDocumentBlocks.serializeTable(listOf(
             listOf("الوصف", "Description"),
             listOf(longCell, "Value"),

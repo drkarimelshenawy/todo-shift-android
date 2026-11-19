@@ -71,4 +71,19 @@ class NeoDocumentPdfTest {
         assertEquals(source,NeoDocumentBlocks.serializeTable(table.cells))
     }
 
+    @Test fun insertingAtDocumentEndDoesNotCreateUnwantedBlankParagraph() {
+        val original="عنوان\nBody"
+        val updated=NeoDocumentBlocks.insert(original,original.length,
+            NeoDocumentBlocks.PAGE_BREAK)
+        assertEquals("عنوان\nBody\n"+NeoDocumentBlocks.PAGE_BREAK,updated)
+        assertEquals(1,NeoDocumentBlocks.parse(updated)
+            .filterIsInstance<NeoDocumentBlocks.Block.PageBreak>().size)
+    }
+
+    @Test fun insertingBetweenLinesKeepsExistingTextAndNewline() {
+        val original="First\nSecond"
+        val updated=NeoDocumentBlocks.insert(original,2,NeoDocumentBlocks.PAGE_BREAK)
+        assertEquals("First\n"+NeoDocumentBlocks.PAGE_BREAK+"\nSecond",updated)
+    }
+
 }

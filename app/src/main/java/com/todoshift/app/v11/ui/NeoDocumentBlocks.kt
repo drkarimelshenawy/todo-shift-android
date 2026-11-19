@@ -162,7 +162,7 @@ internal object NeoDocumentBlocks {
         val before=source.substring(0,lineEnd)
         val after=source.substring(lineEnd)
         return before+(if(before.isNotEmpty()&&!before.endsWith('\n')) "\n" else "")+
-            block+(if(after.startsWith("\n")) "" else "\n")+after
+            block+(if(after.isEmpty() || after.startsWith("\n")) "" else "\n")+after
     }
 
     fun safePreview(source:String):String=source.lines().joinToString("\n") {line->

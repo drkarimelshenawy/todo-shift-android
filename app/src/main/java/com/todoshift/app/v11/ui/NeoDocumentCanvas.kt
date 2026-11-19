@@ -331,8 +331,12 @@ private fun NeoEditableDocumentParagraph(
             edited(block.startLine,next.stored())
         }.onFailure {errors(it.message ?: "Could not save paragraph")}
     }
-    LaunchedEffect(block.source) {
-        if(state.value.composition==null && state.stored()!=block.source)
+    // An asynchronous parent source refresh must not overwrite an active
+    // paragraph's local draft (including its cursor and IME composition).
+    // Once focus leaves, the completed draft is flushed by onFocusChanged.
+    LaunchedEffect(block.source,focused) {
+        if(!focused && state.value.composition==null &&
+            state.stored()!=block.source)
             state=NeoRichEditorState.open(block.source)
     }
     LaunchedEffect(focused,state) {

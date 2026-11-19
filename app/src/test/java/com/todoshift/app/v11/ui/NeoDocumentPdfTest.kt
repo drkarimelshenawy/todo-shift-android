@@ -41,4 +41,33 @@ class NeoDocumentPdfTest {
         assertEquals(paragraph,text)
         assertEquals(800,NeoNoteDocumentTools.stats(text).words)
     }
+    @Test fun trailingBreaksDoNotConsumeOrAlterEarlierContent() {
+        val original="عنوان عربي\\nEnglish body\\n"+NeoDocumentBlocks.PAGE_BREAK+
+            "\\n"+NeoDocumentBlocks.PAGE_BREAK
+        val blocks=NeoDocumentBlocks.parse(original)
+        assertEquals(2,blocks.filterIsInstance<NeoDocumentBlocks.Block.PageBreak>().size)
+        assertEquals("عنوان عربي\\nEnglish body",
+            (blocks.first() as NeoDocumentBlocks.Block.Paragraph).source)
+        assertEquals(original,blocks.joinToString("\\n") { block ->
+            when(block) {
+                is NeoDocumentBlocks.Block.Paragraph -> block.source
+                is NeoDocumentBlocks.Block.PageBreak -> NeoDocumentBlocks.PAGE_BREAK
+                else -> error("Unexpected block")
+            }
+        })
+    }
+
+    @Test fun longMultilingualTableCellsRoundTripWithoutTruncation() {
+        val longCell=(1..30).joinToString(" ") { "عربي English" }
+        val source=NeoDocumentBlocks.serializeTable(listOf(
+            listOf("الوصف", "Description"),
+            listOf(longCell, "Value"),
+            listOf("آخر صف", "Final row")
+        ))
+        val table=NeoDocumentBlocks.parse(source).single()
+            as NeoDocumentBlocks.Block.Table
+        assertEquals(longCell,table.cells[1][0])
+        assertEquals(source,NeoDocumentBlocks.serializeTable(table.cells))
+    }
+
 }

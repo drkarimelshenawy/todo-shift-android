@@ -133,10 +133,12 @@ internal fun NeoDocumentCanvas(
                     val height=measuredBlockHeights[block.startLine] ?: 0
                     if(a4 && height>0 && used+height>availableHeightPx &&
                         (result.last().isNotEmpty() ||
-                            (result.size==1 && used>0 && height<=availableHeightPx))) {
-                        // The first sheet can contain only the title. Never
-                        // let a tall first block overflow it merely because
-                        // the current block list is still empty.
+                            (result.size==1 && used>0))) {
+                        // Even an oversized first paragraph must start below
+                        // the title on a fresh sheet. Keeping it beside the
+                        // title would clip more of the editable content.
+                        // Splitting a single soft-wrapped line remains a
+                        // separate text-layout pagination requirement.
                         result.add(mutableListOf())
                         used=0
                     }

@@ -125,10 +125,21 @@ internal fun NeoDocumentCanvas(
         val pages=remember(displayBlocks,a4,availableHeightPx,titleHeightPx,documentTitle,measuredBlockHeights.toMap()) {
             val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
             var used=if(a4 && documentTitle.isNotBlank()) titleHeightPx else 0
-            displayBlocks.forEach { block ->
+            displayBlocks.forEachIndexed { index,block ->
                 if(block is NeoDocumentBlocks.Block.PageBreak) {
-                    result.add(mutableListOf())
-                    used=0
+                    // A break followed only by empty paragraphs is terminal:
+                    // preserve the source, but do not show a blank A4 sheet.
+                    val hasFollowingContent=displayBlocks.drop(index+1).any { next ->
+                        when(next) {
+                            is NeoDocumentBlocks.Block.PageBreak -> false
+                            is NeoDocumentBlocks.Block.Paragraph -> next.source.isNotBlank()
+                            else -> true
+                        }
+                    }
+                    if(hasFollowingContent || !a4) {
+                        result.add(mutableListOf())
+                        used=0
+                    }
                 } else {
                     val height=measuredBlockHeights[block.startLine] ?: 0
                     if(a4 && height>0 && used+height>availableHeightPx &&

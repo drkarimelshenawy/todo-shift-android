@@ -61,19 +61,19 @@ internal object NeoDocumentPdf {
             if(page==null)newPage()
             if(y+height>PAGE_HEIGHT-MARGIN && y>MARGIN)newPage()
         }
-        fun layout(text:String,width:Int=CONTENT_WIDTH.toInt()):StaticLayout {
+        fun layout(text:String,width:Int=CONTENT_WIDTH.toInt(),center:Boolean=false):StaticLayout {
             val value=text.ifEmpty{" "}
             return StaticLayout.Builder.obtain(value,0,value.length,paint,width)
-                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setAlignment(if(center) Layout.Alignment.ALIGN_CENTER else Layout.Alignment.ALIGN_NORMAL)
                 .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
                 .setIncludePad(false).build()
         }
-        fun printText(sourceText:String,size:Float=12f,space:Float=4f) {
+        fun printText(sourceText:String,size:Float=12f,space:Float=4f,center:Boolean=false) {
             paint.textSize=size
             // Split at actual shaped layout line boundaries, so long text
             // can paginate without clipping a whole multi-line paragraph.
             val text=sourceText.ifBlank{" "}
-            val wrapped=layout(text)
+            val wrapped=layout(text,center=center)
             for(index in 0 until wrapped.lineCount) {
                 // Render each line from the ORIGINAL shaped layout. Rebuilding a
                 // new layout from a substring can change Arabic shaping, bidi
@@ -99,7 +99,8 @@ internal object NeoDocumentPdf {
         try {
             newPage()
             if(title.isNotBlank()) {
-                printText(title,18f,14f)
+                // Keep the printed title aligned with the centered A4 canvas title.
+                printText(title,18f,3f,center=true)
             }
             val attachments=NeoAttachmentStore(context).list()
                 .filter{it.owner==noteId && it.mime.startsWith("image/")}

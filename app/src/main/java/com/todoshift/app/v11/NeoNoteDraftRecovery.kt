@@ -8,7 +8,7 @@ import android.content.Context
  */
 internal object NeoNoteDraftRecovery {
     // Match only complete document image blocks, never filenames mentioned in prose.
-    private val imageBlock=Regex("""(?m)^\\[\\[neo-image:(neo-attachment-[A-Za-z0-9-]+\\.(?:png|jpg|pdf|txt|m4a)):([0-9]{1,3}):(left|center|right)\\]\\]$""")
+    private val imageBlock=Regex("""(?m)^\[\[neo-image:(neo-attachment-[A-Za-z0-9-]+\.(?:png|jpg|pdf|txt|m4a)):([0-9]{1,3}):(left|center|right)\]\](?=\r?$)""")
 
     internal fun referencedImageNames(source:String):Set<String> =
         imageBlock.findAll(source).map { it.groupValues[1] }.toSet()

@@ -11,9 +11,20 @@ internal object NeoNoteDraftRecovery {
         require(oldId.isNotBlank() && newId.isNotBlank() && oldId!=newId)
         val store=NeoAttachmentStore(context.applicationContext)
         var text=source
-        store.list().filter {it.owner==oldId}.forEach {media ->
-            val imported=store.import(newId,store.uri(media.name))
-            text=text.replace(media.name,imported.name)
+        // A failed import must not leave a partially recovered media owner.
+        // The new owner is unique to this recovery operation.
+        try {
+            store.list().filter {it.owner==oldId}.forEach {media ->
+                val imported=store.import(newId,store.uri(media.name))
+                text=text.replace(media.name,imported.name)
+            }
+        } catch (failure:Exception) {
+            try {
+                store.purgeOwners(setOf(newId))
+            } catch (cleanupFailure:Exception) {
+                failure.addSuppressed(cleanupFailure)
+            }
+            throw failure
         }
         // Linked checklist task ids belong to the original note. This copy
         // keeps the visible checklist but does not silently relink tasks.

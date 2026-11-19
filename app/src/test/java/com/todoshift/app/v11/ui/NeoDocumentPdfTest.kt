@@ -143,4 +143,15 @@ class NeoDocumentPdfTest {
             .filterIsInstance<NeoDocumentBlocks.Block.Image>().size)
     }
 
+    @Test fun malformedImageMarkerStaysInSameParagraphWithoutPhantomBlock() {
+        val image=NeoDocumentBlocks.image(
+            "neo-attachment-01234567-89ab-cdef-0123-456789abcdef.png")
+        val invalid=image.replace(":80:",":999:")
+        val source="قبل\n"+invalid+"\nبعد"
+        val blocks=NeoDocumentBlocks.parse(source)
+        assertEquals(1,blocks.size)
+        assertEquals(source,(blocks.single() as NeoDocumentBlocks.Block.Paragraph).source)
+        assertEquals(source,NeoDocumentBlocks.safePreview(source))
+    }
+
 }

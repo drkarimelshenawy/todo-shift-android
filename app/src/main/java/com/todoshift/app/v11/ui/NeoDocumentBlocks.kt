@@ -127,7 +127,10 @@ internal object NeoDocumentBlocks {
             cursor++
             while(cursor<lines.size) {
                 val line=lines[cursor]
-                if(line==PAGE_BREAK || imagePattern.matches(line))break
+                if(line==PAGE_BREAK || imagePattern.matchEntire(line)?.let { match ->
+                    NeoAttachmentStore.safeName(match.groupValues[1]) &&
+                        (match.groupValues[2].toIntOrNull() in 25..100)
+                }==true)break
                 if(isTableStart(lines,cursor))break
                 cursor++
             }

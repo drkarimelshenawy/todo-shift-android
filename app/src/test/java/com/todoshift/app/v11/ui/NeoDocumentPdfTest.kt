@@ -86,4 +86,32 @@ class NeoDocumentPdfTest {
         assertEquals("First\n"+NeoDocumentBlocks.PAGE_BREAK+"\nSecond",updated)
     }
 
+    @Test fun editingParagraphPreservesAdjacentTableAndManualPageBreak() {
+        val table=NeoDocumentBlocks.table(3,2)
+        val original="Before\n"+table+"\n"+NeoDocumentBlocks.PAGE_BREAK+"\nAfter"
+        val updated=NeoDocumentBlocks.replaceParagraphAt(original,0,"Edited")
+        assertEquals("Edited\n"+table+"\n"+NeoDocumentBlocks.PAGE_BREAK+"\nAfter",updated)
+        assertEquals(1,NeoDocumentBlocks.parse(updated)
+            .filterIsInstance<NeoDocumentBlocks.Block.Table>().size)
+    }
+
+    @Test fun replacingParagraphRejectsStaleDocumentVersion() {
+        val original="First\n"+NeoDocumentBlocks.PAGE_BREAK+"\nLast"
+        val stale=NeoDocumentBlocks.parse(original).first()
+        val changed="Changed\n"+NeoDocumentBlocks.PAGE_BREAK+"\nLast"
+        try {
+            NeoDocumentBlocks.replace(changed,stale,"Accidental overwrite")
+            fail("Stale document edits must not overwrite newer changes")
+        } catch(expected:IllegalArgumentException) {
+            assertTrue(expected.message.orEmpty().contains("Document changed"))
+        }
+    }
+
+    @Test fun insertingIntoTrailingNewlineDoesNotAddExtraBlankLine() {
+        val original="Body\n"
+        val updated=NeoDocumentBlocks.insert(original,original.length,
+            NeoDocumentBlocks.PAGE_BREAK)
+        assertEquals("Body\n"+NeoDocumentBlocks.PAGE_BREAK,updated)
+    }
+
 }

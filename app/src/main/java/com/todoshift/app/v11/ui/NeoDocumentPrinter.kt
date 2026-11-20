@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 
 /** Android's native print chooser, backed by the same offline A4 PDF renderer. */
 internal object NeoDocumentPrinter {
-    fun print(context:Context,noteId:String,title:String,source:String) {
+    fun print(context:Context,noteId:String,title:String,source:String,
+        pageBorderStyle:String?=null) {
         val manager=context.getSystemService(Context.PRINT_SERVICE) as PrintManager
         val documentName=title.ifBlank{"ToDo Shift Note"}.take(60)
         manager.print(documentName,object:PrintDocumentAdapter() {
@@ -48,7 +49,7 @@ internal object NeoDocumentPrinter {
                     }
                     try {
                         FileOutputStream(destination.fileDescriptor).use{out ->
-                            NeoDocumentPdf.write(context,noteId,title,source,out)
+                            NeoDocumentPdf.write(context,noteId,title,source,out,pageBorderStyle)
                         }
                         if(cancellationSignal.isCanceled)callback.onWriteCancelled()
                         else callback.onWriteFinished(arrayOf(PageRange.ALL_PAGES))

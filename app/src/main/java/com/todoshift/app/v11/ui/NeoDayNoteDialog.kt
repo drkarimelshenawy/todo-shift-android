@@ -114,7 +114,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
 
     var color by rememberSaveable { mutableStateOf(styleStore.noteColor(id)) }
     var border by rememberSaveable { mutableStateOf(styleStore.snapshot().optJSONObject("noteBorders")?.optBoolean(id,false) ?: false) }
-    var pageBorderStyle by rememberSaveable(id) { mutableStateOf(NeoPageBorders.load(styleStore, id)) }
+    var pageBorderStyle by rememberSaveable(existing?.id) { mutableStateOf(NeoPageBorders.load(styleStore, id)) }
     var title by rememberSaveable { mutableStateOf(existing?.title ?: initialTitle.take(300)) }
     var body by rememberSaveable(stateSaver=TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue(existing?.details ?: initialBody.take(16_000)))
@@ -847,6 +847,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                         }
                     },
                     onError={error=it},
+                    pageBorderStyle=pageBorderStyle,
                     command=documentAction,
                     onCommandHandled={documentAction=null},
                     showToolbar=false

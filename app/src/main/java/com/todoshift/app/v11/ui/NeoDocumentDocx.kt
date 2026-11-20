@@ -141,10 +141,12 @@ internal object NeoDocumentDocx {
     }
 
     fun write(
-        context:Context,noteId:String,title:String,source:String,output:OutputStream
+        context:Context,noteId:String,title:String,source:String,output:OutputStream,
+        requestedPageBorderStyle:String?=null
     ) {
         require(source.length<=300_000)
-        val pageBorderStyle=NeoPageBorders.load(NeoSmartStore(context.applicationContext),noteId)
+        val pageBorderStyle=requestedPageBorderStyle?.let(NeoPageBorders::normalize)
+            ?: NeoPageBorders.load(NeoSmartStore(context.applicationContext),noteId)
         val permitted=NeoAttachmentStore(context.applicationContext).list()
             .filter{it.owner==noteId && it.mime in setOf("image/jpeg","image/png")}
             .associateBy{it.name}

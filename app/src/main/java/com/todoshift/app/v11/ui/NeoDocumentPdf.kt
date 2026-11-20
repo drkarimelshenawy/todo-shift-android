@@ -28,10 +28,12 @@ internal object NeoDocumentPdf {
         noteId:String,
         title:String,
         source:String,
-        output:OutputStream
+        output:OutputStream,
+        requestedPageBorderStyle:String?=null
     ):Int {
         require(source.length<=300_000) {"Document is too long for PDF export"}
-        val pageBorderStyle=NeoPageBorders.load(NeoSmartStore(context.applicationContext),noteId)
+        val pageBorderStyle=requestedPageBorderStyle?.let(NeoPageBorders::normalize)
+            ?: NeoPageBorders.load(NeoSmartStore(context.applicationContext),noteId)
         val pdf=PdfDocument()
         val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color=android.graphics.Color.BLACK;textSize=NeoA4PrintMetrics.BODY_PT

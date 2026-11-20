@@ -35,7 +35,8 @@ internal fun NeoNoteProToolbar(
     onError:(String)->Unit,
     command:String?=null,
     onCommandHandled:()->Unit={},
-    showToolbar:Boolean=true
+    showToolbar:Boolean=true,
+    pageBorderStyle:String?=null
 ) {
     val context=LocalContext.current
     val store=remember(context) {NeoNoteHistoryStore(context.applicationContext)}
@@ -77,7 +78,7 @@ internal fun NeoNoteProToolbar(
             try {
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)?.use {output ->
-                        NeoDocumentPdf.write(context,noteId,title,source,output)
+                        NeoDocumentPdf.write(context,noteId,title,source,output,pageBorderStyle)
                     } ?: error("Cannot open PDF output document")
                 }
             } catch(e:Exception) {onError(e.message ?: "Could not export PDF")}
@@ -92,7 +93,7 @@ internal fun NeoNoteProToolbar(
             try {
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)?.use {output ->
-                        NeoDocumentDocx.write(context,noteId,title,source,output)
+                        NeoDocumentDocx.write(context,noteId,title,source,output,pageBorderStyle)
                     } ?: error("Cannot open DOCX output document")
                 }
             } catch(e:Exception) {onError(e.message ?: "Could not export DOCX")}
@@ -159,7 +160,7 @@ internal fun NeoNoteProToolbar(
                         onClick={
                             exportOpen=false
                             runCatching {
-                                NeoDocumentPrinter.print(context,noteId,title,source)
+                                NeoDocumentPrinter.print(context,noteId,title,source,pageBorderStyle)
                             }.onFailure {onError(it.message ?: "Print unavailable")}
                         }
                     )
@@ -252,7 +253,7 @@ internal fun NeoNoteProToolbar(
                 }
                 NeoNoteExportAction(neoLabel("طباعة","Print")) {
                     exportOpen=false
-                    runCatching {NeoDocumentPrinter.print(context,noteId,title,source)}
+                    runCatching {NeoDocumentPrinter.print(context,noteId,title,source,pageBorderStyle)}
                         .onFailure {onError(it.message ?: "Print unavailable")}
                 }
                 NeoNoteExportAction(neoLabel("HTML منسّق","Styled HTML")) {

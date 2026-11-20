@@ -3,6 +3,7 @@ package com.todoshift.app.v11.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -104,6 +105,9 @@ internal fun NeoA4SharedEditableSlice(
                 value=session.state.value,
                 onValueChange={next->apply(session.state.input(next))},
                 modifier=Modifier.fillMaxWidth()
+                    // The field must be top-aligned when taller than the
+                    // clipped sheet; default requiredHeight centers overflow.
+                    .wrapContentHeight(align=Alignment.Top,unbounded=true)
                     .offset{IntOffset(0,-block.sliceTopPx)}
                     .requiredHeight(fullHeight)
                     .focusRequester(requester)

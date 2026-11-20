@@ -38,8 +38,9 @@ class NeoDocumentPdfDeviceTest {
                                 bitmap.eraseColor(Color.WHITE)
                                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
                                 var inkPixels = 0
-                                for (py in 0 until bitmap.height step 4) {
-                                    for (px in 0 until bitmap.width step 4) {
+                                // Exclude the footer: a page number alone must not count as document content.
+                                for (py in 42 until (bitmap.height - 42) step 4) {
+                                    for (px in 42 until (bitmap.width - 42) step 4) {
                                         val pixel = bitmap.getPixel(px, py)
                                         if (Color.red(pixel) < 220 || Color.green(pixel) < 220 || Color.blue(pixel) < 220) inkPixels++
                                     }
@@ -78,6 +79,26 @@ class NeoDocumentPdfDeviceTest {
             expectedMinimumPages = 1
         )
         assertEquals("Repeated terminal breaks created blank pages", baseline, repeated)
+    }
+
+    @Test fun explicitBreakBetweenRealParagraphsCreatesTwoContentPages() {
+        val source = "صفحة أولى فيها نص عربي واضح\\n" +
+            NeoDocumentBlocks.PAGE_BREAK + "\\nSecond page has English text"
+        assertEquals("Manual page break must separate actual document content",
+            2, verifyPdf(source, expectedMinimumPages = 2))
+    }
+
+    @Test fun mixedHeadingsTableAndParagraphsKeepAllA4PagesNonempty() {
+        val table = NeoDocumentBlocks.serializeTable(listOf(
+            listOf("العنوان", "Description"),
+            listOf("تفاصيل عربية", "English details"),
+            listOf("النتيجة", "Final result")
+        ))
+        val source = "# مقدمة\\n" +
+            (1..900).joinToString(" ") { "عربي English" } +
+            "\\n" + table + "\\n## خلاصة\\n" +
+            (1..700).joinToString(" ") { "Summary ملخص" }
+        verifyPdf(source, expectedMinimumPages = 2)
     }
 
     @Test fun longMultilingualTableCellExportsReadableA4Pages() {

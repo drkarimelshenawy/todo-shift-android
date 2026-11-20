@@ -68,7 +68,7 @@ jobs:
             adb shell ime list -s
             adb shell settings get secure show_ime_with_hard_keyboard
             mkdir -p device-evidence
-            bash -c 'if [[ "$GITHUB_REF_NAME" == "fix/v64-notes-rtl-navigation-20261118" ]]; then gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest --stacktrace; else gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace; fi; status=$?; adb pull /sdcard/Download/notes-toolbar-01-closed.png device-evidence/ || true; adb pull /sdcard/Download/notes-toolbar-02-open.png device-evidence/ || true; adb logcat -d -s NotesViewport:I | tail -n 35 || true; exit "$status"'
+            bash -c 'if [[ "$GITHUB_REF_NAME" == "fix/v64-notes-rtl-navigation-20261118" ]]; then gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest,com.todoshift.app.v11.ui.NeoNotesToolbarVisibilityDeviceTest --stacktrace; else gradle --no-daemon :app:connectedDebugAndroidTest --stacktrace; fi; status=$?; adb pull /sdcard/Download/notes-toolbar-01-closed.png device-evidence/ || true; adb pull /sdcard/Download/notes-toolbar-02-open.png device-evidence/ || true; adb logcat -d -s NotesViewport:I | tail -n 35 || true; exit "$status"'
       - name: Publish screenshot evidence
         uses: actions/upload-artifact@v4
         if: always()

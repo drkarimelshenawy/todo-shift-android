@@ -39,7 +39,11 @@ internal object NeoA4SoftWrap {
         if(length==0 || lineStarts.isEmpty())return listOf(Range(0,length))
         require(lineStarts[0]==0 && lineStarts.all{it in 0..length})
         for(i in 1 until lineStarts.size)require(lineStarts[i]>=lineStarts[i-1])
-        require(lineBottoms.all{it.isFinite()})
+        require(lineBottoms.all{it.isFinite() && it>=0f})
+        // Layout bottoms must be ordered: otherwise pagination may silently
+        // omit or overlap visual lines while source offsets still look valid.
+        for(i in 1 until lineBottoms.size)
+            require(lineBottoms[i]>=lineBottoms[i-1])
         val result=mutableListOf<Range>()
         var start=0
         var firstLine=0

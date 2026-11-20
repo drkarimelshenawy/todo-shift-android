@@ -3,6 +3,7 @@ package com.todoshift.app.v11.ui
 import android.content.Context
 import android.graphics.BitmapFactory
 import com.todoshift.app.v11.NeoAttachmentStore
+import com.todoshift.app.v11.NeoSmartStore
 import java.io.File
 import java.io.OutputStream
 import java.util.zip.ZipEntry
@@ -143,6 +144,7 @@ internal object NeoDocumentDocx {
         context:Context,noteId:String,title:String,source:String,output:OutputStream
     ) {
         require(source.length<=300_000)
+        val pageBorderStyle=NeoPageBorders.load(NeoSmartStore(context.applicationContext),noteId)
         val permitted=NeoAttachmentStore(context.applicationContext).list()
             .filter{it.owner==noteId && it.mime in setOf("image/jpeg","image/png")}
             .associateBy{it.name}
@@ -200,6 +202,7 @@ internal object NeoDocumentDocx {
             }
         }
         document.append("<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/>")
+        document.append(NeoPageBorders.wordBorderXml(pageBorderStyle))
         document.append("<w:pgMar w:top=\"1134\" w:right=\"1134\"")
         document.append(" w:bottom=\"1134\" w:left=\"1134\"/></w:sectPr>")
         document.append("</w:body></w:document>")

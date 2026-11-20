@@ -11,6 +11,7 @@ import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
 import android.text.TextPaint
 import com.todoshift.app.v11.NeoAttachmentStore
+import com.todoshift.app.v11.NeoSmartStore
 import java.io.File
 import java.io.OutputStream
 
@@ -30,6 +31,7 @@ internal object NeoDocumentPdf {
         output:OutputStream
     ):Int {
         require(source.length<=300_000) {"Document is too long for PDF export"}
+        val pageBorderStyle=NeoPageBorders.load(NeoSmartStore(context.applicationContext),noteId)
         val pdf=PdfDocument()
         val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color=android.graphics.Color.BLACK;textSize=NeoA4PrintMetrics.BODY_PT
@@ -49,12 +51,13 @@ internal object NeoDocumentPdf {
                     color=android.graphics.Color.DKGRAY;textSize=9f
                 }
                 existing.canvas.drawText(pages.toString(),PAGE_WIDTH/2f,
-                    PAGE_HEIGHT-MARGIN/2f,footer)
+                    if(pageBorderStyle==NeoPageBorders.NONE) PAGE_HEIGHT-MARGIN/2f else PAGE_HEIGHT-MARGIN+8f,footer)
                 pdf.finishPage(existing)
             }
             pages++
             page=pdf.startPage(
                 PdfDocument.PageInfo.Builder(PAGE_WIDTH,PAGE_HEIGHT,pages).create())
+            NeoPageBorders.draw(page!!.canvas,PAGE_WIDTH.toFloat(),PAGE_HEIGHT.toFloat(),pageBorderStyle)
             y=MARGIN
         }
         fun ensure(height:Float) {
@@ -264,7 +267,7 @@ internal object NeoDocumentPdf {
                     color=android.graphics.Color.DKGRAY;textSize=9f
                 }
                 p.canvas.drawText(pages.toString(),PAGE_WIDTH/2f,
-                    PAGE_HEIGHT-MARGIN/2f,footer)
+                    if(pageBorderStyle==NeoPageBorders.NONE) PAGE_HEIGHT-MARGIN/2f else PAGE_HEIGHT-MARGIN+8f,footer)
                 pdf.finishPage(p)
                 page=null
             }

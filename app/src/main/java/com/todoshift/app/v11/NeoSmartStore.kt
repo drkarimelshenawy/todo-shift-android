@@ -399,6 +399,13 @@ class NeoSmartStore(context: Context) {
                         require(value.getString(key) in NeoNotePresentation.FONT_KEYS)
                 }
             }
+            o.optJSONObject("notePageBorders")?.let { borders ->
+                require(borders.length() <= 5000)
+                borders.keys().forEach { id ->
+                    require(id.isNotBlank() && id.length <= 200)
+                    require(borders.getString(id) in setOf("none", "single", "double", "dashed", "dotted"))
+                }
+            }
             o.optJSONObject("noteFavorites")?.let {favorites ->
                 require(favorites.length()<=5000)
                 favorites.keys().forEach {id ->

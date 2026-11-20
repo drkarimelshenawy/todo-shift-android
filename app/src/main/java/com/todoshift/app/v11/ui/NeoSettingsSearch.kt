@@ -47,7 +47,7 @@ object NeoSettingsSearch {
         hit("اتجاه التقويم", "Calendar grid direction", "GRID_DIRECTION", "LANGUAGE", "rtl ltr"),
         hit("اتجاه أيام الأسبوع", "Weekday direction", "WEEKDAY_DIRECTION", "LANGUAGE", "rtl ltr"),
         hit("أول يوم في الأسبوع", "First weekday", "FIRST_WEEKDAY", "LANGUAGE", "السبت الاحد السبت sunday saturday monday"),
-        hit("الهوية والإضاءة", "Theme and brightness", "APPEARANCE", "APPEARANCE", "theme brightness light dark"),
+        hit("الهوية والإضاءة", "Theme and brightness", "APPEARANCE", "APPEARANCE", "theme brightness light dark Nile Jade يشم النيل ثيم ثيمات"),
         hit("مجموعة الألوان", "Color palette", "APPEARANCE", "APPEARANCE", "الوان الخلفيه theme cash book blue navy palette"),
         hit("اللون المخصص", "Custom accent color", "APPEARANCE", "APPEARANCE", "accent rgb"),
         hit("حجم الخط", "Font size", "APPEARANCE", "APPEARANCE", "text typography readable"),

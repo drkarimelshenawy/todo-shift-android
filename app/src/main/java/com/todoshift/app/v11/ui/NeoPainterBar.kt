@@ -221,12 +221,12 @@ fun NeoPainterBar(
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                         shape = RoundedCornerShape(22.dp),
-                        color = Color(0xFF123B68),
-                        contentColor = Color.White,
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         shadowElevation = 12.dp,
-                        border = BorderStroke(1.dp, Color(0xFFD9B46A)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary),
                     ) {
-                        Column(Modifier.background(Brush.linearGradient(listOf(NeoPremium.NavyLight, NeoPremium.Navy))).padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Spacer(Modifier.weight(1f))
                                 IconButton(onClick={typesOpen=false}) {Icon(androidx.compose.material.icons.Icons.Rounded.Close,neoLabel("إغلاق أنواع الشيفتات","Close shift types"))}
@@ -236,10 +236,13 @@ fun NeoPainterBar(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                     ShiftKind.entries.filter {it.name in (workplaces.firstOrNull {p->p.id==workplace}?.enabledShiftKinds ?: ShiftKind.entries.map {k->k.name}.toSet())}.forEach { type ->
+                        val place = workplaces.firstOrNull { it.id == workplace }
+                        val selectedFill = place?.let { neoHexColor(it.shiftColors[type.name] ?: it.colorHex) }
+                            ?: MaterialTheme.colorScheme.secondaryContainer
                         FilterChip(
                             modifier = Modifier.shadow(3.dp, RoundedCornerShape(14.dp)),
                             shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, if (kind == type && !erase) NeoPremium.Gold else Color.White.copy(alpha = .8f)),
+                            border = BorderStroke(1.dp, if (kind == type && !erase) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline),
                             selected = kind == type && !erase,
                             onClick = {
                                 kind = type
@@ -271,9 +274,9 @@ fun NeoPainterBar(
                             label = { Text(workplaces.firstOrNull {it.id==workplace}?.shiftNames?.get(type.name) ?: premiumShiftLabel(type)) },
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.surface,
-                                labelColor = Color(0xFF143455),
-                                selectedContainerColor = neoHexColor(workplaces.firstOrNull {it.id==workplace}?.let {it.shiftColors[type.name] ?: it.colorHex} ?: "#D9B46A"),
-                                selectedLabelColor = Color(0xFF102D4B),
+                                labelColor = MaterialTheme.colorScheme.onSurface,
+                                selectedContainerColor = selectedFill,
+                                selectedLabelColor = neoInkOn(selectedFill),
                             ),
                         )
                     }
@@ -310,7 +313,6 @@ fun NeoPainterBar(
                         )
                     workplaces.forEach { place ->
                         val color = neoHexColor(place.colorHex)
-                        val ink = if (color.luminance() > .179f) Color.Black else Color.White
                         FilterChip(
                             modifier = Modifier.testTag("painter-workplace-${place.id}"),
                             selected = workplace == place.id && !erase,
@@ -327,9 +329,9 @@ fun NeoPainterBar(
                             colors =
                                 FilterChipDefaults.filterChipColors(
                                     containerColor = color.copy(alpha = .12f),
-                                    selectedContainerColor = NeoPremium.Navy,
-                                    selectedLabelColor = Color.White,
-                                    selectedLeadingIconColor = NeoPremium.Gold,
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
                                 ),
                             label = { Text(place.name, maxLines = 1) },
                         )

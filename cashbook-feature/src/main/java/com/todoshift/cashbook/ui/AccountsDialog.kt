@@ -52,7 +52,7 @@ internal fun AccountsDialog(accounts: List<Ledger.Account>, active: String?, sta
                     }
                     Row(Modifier.fillMaxWidth().height(36.dp).border(1.dp, ReferenceBorder, ReferenceShape).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         RefIcon(R.drawable.cb_search, tr(R.string.cb_231))
-                        BasicTextField(query, { query = it }, singleLine = true, decorationBox = { inner -> Box { if (query.isEmpty()) Text(tr(R.string.cb_231), color = Color.Gray, fontSize = 13.sp); inner() } }, modifier = Modifier.weight(1f).padding(horizontal = 6.dp).testTag("accounts_search"), textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp))
+                        BasicTextField(query, { query = it }, singleLine = true, decorationBox = { inner -> Box { if (query.isEmpty()) Text(tr(R.string.cb_231), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp); inner() } }, modifier = Modifier.weight(1f).padding(horizontal = 6.dp).testTag("accounts_search"), cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary), textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface))
                     }
                     Row {
                         FilterChip(!archived,{archived=false},label={Text(tr(R.string.cb_006))})

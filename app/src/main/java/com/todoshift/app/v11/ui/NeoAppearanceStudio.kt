@@ -151,8 +151,9 @@ fun NeoAppearanceStudio(
                                 NeoStudioSection.THEMES -> {
                                     NeoChoice(
                                         neoLabel("الهوية", "Identity"),
-                                        listOf("NEO", "MINIMAL", "DARK", "AMOLED"),
+                                        listOf("NEO", "NILE_JADE", "MINIMAL", "DARK", "AMOLED"),
                                         when {
+                                            draft.palette == NeoPalette.NILE_JADE -> "NILE_JADE"
                                             draft.brightness == NeoBrightness.AMOLED -> "AMOLED"
                                             draft.brightness == NeoBrightness.DARK -> "DARK"
                                             draft.palette == NeoPalette.ARCTIC_WHITE -> "MINIMAL"
@@ -160,6 +161,7 @@ fun NeoAppearanceStudio(
                                         },
                                         {
                                             when (it) {
+                                                "NILE_JADE" -> neoEnumLabel(NeoPalette.NILE_JADE)
                                                 "NEO" -> "Neo Luxury"
                                                 "MINIMAL" -> "Minimal Light"
                                                 "DARK" -> neoLabel("داكن", "Dark")
@@ -170,17 +172,20 @@ fun NeoAppearanceStudio(
                                         draft =
                                             draft.copy(
                                                 palette =
-                                                    if (identity == "MINIMAL")
-                                                        NeoPalette.ARCTIC_WHITE
-                                                    else NeoPalette.CHAMPAGNE_GOLD,
+                                                    when (identity) {
+                                                        "NILE_JADE" -> NeoPalette.NILE_JADE
+                                                        "MINIMAL" -> NeoPalette.ARCTIC_WHITE
+                                                        else -> NeoPalette.CHAMPAGNE_GOLD
+                                                    },
                                                 brightness =
                                                     when (identity) {
+                                                        "NILE_JADE" -> draft.brightness
                                                         "MINIMAL" -> NeoBrightness.LIGHT
                                                         "DARK" -> NeoBrightness.DARK
                                                         "AMOLED" -> NeoBrightness.AMOLED
                                                         else -> NeoBrightness.SYSTEM
                                                     },
-                                                background = NeoBackground.CLASSIC,
+                                                background = if (identity == "NILE_JADE") NeoBackground.GRADIENT else NeoBackground.CLASSIC,
                                                 glass = false,
                                                 glow = false,
                                                 cardStyle = NeoCardStyle.FLAT,
@@ -367,7 +372,10 @@ fun NeoAppearanceStudio(
                                     NeoMotionPreview(draft)
                                 }
                                 NeoStudioSection.PROFILES ->
-                                    Neo4ProfilesStudio(draft) { draft = it }
+                                    Neo4ProfilesStudio(draft) { profile ->
+                                        draft = profile
+                                        accent = profile.accentHex
+                                    }
                                 else -> Unit
                             }
                         }
@@ -427,13 +435,22 @@ fun <T> NeoChoice(
         )
         Box(Modifier.widthIn(max = 180.dp)) {
             TextButton(onClick = { expanded = true }) {
+                if (selected is NeoPalette) PaletteSwatch(selected)
                 Text(label(selected), maxLines = 2)
                 Icon(Icons.Rounded.KeyboardArrowDown, null)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(label(option)) },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (option is NeoPalette) PaletteSwatch(option)
+                                Text(label(option))
+                            }
+                        },
+                        trailingIcon = if (option == selected) {
+                            { Icon(Icons.Rounded.Check, neoLabel("محدد", "Selected"), Modifier.size(18.dp)) }
+                        } else null,
                         onClick = {
                             onSelected(option)
                             expanded = false
@@ -443,6 +460,12 @@ fun <T> NeoChoice(
             }
         }
     }
+}
+
+@Composable
+private fun PaletteSwatch(palette: NeoPalette) {
+    Box(Modifier.size(16.dp).background(neoAccent(palette), androidx.compose.foundation.shape.CircleShape))
+    Spacer(Modifier.width(8.dp))
 }
 
 @Composable
@@ -530,6 +553,7 @@ fun neoEnumLabel(value: Any): String =
         NeoTimelineFilter.CURRENT -> neoLabel("الجارية", "Current")
         NeoTimelineFilter.UPCOMING -> neoLabel("القادمة", "Upcoming")
         NeoTimelineFilter.PAST -> neoLabel("السابقة", "Past")
+        NeoPalette.NILE_JADE -> neoLabel("يشم النيل", "Nile Jade")
         is NeoPalette ->
             if (value == NeoPalette.CASHBOOK_BLUE) neoLabel("كاش بوك • أزرق هادئ", "Cash Book • Calm Blue")
             else value.name.lowercase().split('_').joinToString(" ") {

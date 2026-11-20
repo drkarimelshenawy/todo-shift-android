@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 69,
-  "versionName": "4.26.0-premium-v64-notes-rtl-navigation",
-  "branch": "fix/v64-notes-rtl-navigation-20261118",
-  "baseline": "ea6c54d0d35e5352327ece6c69ee588566a10e2c",
-  "classification": "v64 NOTES RTL NAVIGATION TEST BUILD — partial fixes; device acceptance pending"
+  "versionCode": 70,
+  "versionName": "4.27.0-premium-v65-nile-jade",
+  "branch": "feat/v65-nile-jade",
+  "baseline": "fe47b4f409ed47749cf50b616f3c4bab77980cfb",
+  "classification": "Nile Jade theme review candidate"
 }

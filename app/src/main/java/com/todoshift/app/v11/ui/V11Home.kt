@@ -1438,7 +1438,7 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                                 Text(
                                     label,
                                     modifier = Modifier.widthIn(max = width),
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     style =
@@ -1453,9 +1453,9 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                             alwaysShowLabel = true,
                             colors =
                                 NavigationBarItemDefaults.colors(
-                                    selectedIconColor = NeoPremium.Navy,
-                                    selectedTextColor = if (MaterialTheme.colorScheme.surface.luminance() < .3f) NeoPremium.Gold else Color(0xFF795518),
-                                    indicatorColor = Color(0xFFF8EDD7),
+                                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    selectedTextColor = MaterialTheme.colorScheme.secondary,
+                                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
                                     unselectedIconColor = MaterialTheme.colorScheme.onSurface,
                                     unselectedTextColor = MaterialTheme.colorScheme.onSurface,
                                 ),

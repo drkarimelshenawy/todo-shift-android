@@ -20,12 +20,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/** The shell's identity is independent of the selected accent palette. */
+/** Default premium brand colors. */
 object NeoPremium {
     val Navy = Color(0xFF10365C)
-    val NavyLight = Color(0xFF2C5D8D)
     val Gold = Color(0xFFD8AD55)
-    val Cream = Color(0xFFF4F6FB)
     val Green = Color(0xFF237344)
 }
 
@@ -35,12 +33,12 @@ fun neoPositiveColor(): Color = if (MaterialTheme.colorScheme.surface.luminance(
 @Composable
 fun NeoPremiumBanner(title: String, subtitle: String = "", modifier: Modifier = Modifier) {
     Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
-        color = NeoPremium.Navy, contentColor = NeoPremium.Cream,
-        border = BorderStroke(1.dp, NeoPremium.Gold), shadowElevation = 3.dp) {
-        Column(Modifier.background(Brush.linearGradient(listOf(NeoPremium.NavyLight, NeoPremium.Navy)))
+        color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary), shadowElevation = 3.dp) {
+        Column(Modifier.background(Brush.linearGradient(listOf(androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, .06f), MaterialTheme.colorScheme.primary)))
             .padding(horizontal = 18.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color(0xFFEAD8B2))
+            if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }
@@ -52,9 +50,9 @@ fun NeoPremiumTabs(labels: List<String>, selected: Int, onSelected: (Int) -> Uni
         labels.forEachIndexed { index, label ->
             FilterChip(selected = selected == index, onClick = { onSelected(index) },
                 shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, if (selected == index) NeoPremium.Gold else MaterialTheme.colorScheme.outlineVariant),
-                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = NeoPremium.Navy,
-                    selectedLabelColor = NeoPremium.Cream, containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, if (selected == index) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant),
+                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary, containerColor = MaterialTheme.colorScheme.surface),
                 label = { Text(label, fontWeight = if (selected == index) FontWeight.Bold else FontWeight.Medium) })
         }
     }
@@ -62,8 +60,8 @@ fun NeoPremiumTabs(labels: List<String>, selected: Int, onSelected: (Int) -> Uni
 
 @Composable
 fun NeoPremiumMonth(title: String, onPrevious: () -> Unit, onNext: () -> Unit) {
-    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = NeoPremium.Navy,
-        contentColor = NeoPremium.Cream, border = BorderStroke(1.dp, NeoPremium.Gold)) {
+    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary, border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary)) {
         Row(Modifier.fillMaxWidth().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onPrevious) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, neoLabel("الشهر السابق", "Previous month")) }
             Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,

@@ -118,7 +118,7 @@ internal fun AccountOrderList(
             val animation = if (moving) Modifier else Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null, placementSpec = tween(130))
             Column(animation.zIndex(if (moving) 1f else 0f).graphicsLayer {
                 translationY = if (moving) dragTop - (list.layoutInfo.visibleItemsInfo.firstOrNull { it.key == account.id }?.offset ?: dragTop.toInt()) else 0f
-            }.then(if (moving) Modifier.shadow(3.dp) else Modifier).background(if (moving) Color(0xFFE3F2FD) else Color.White)) {
+            }.then(if (moving) Modifier.shadow(3.dp) else Modifier).background(if (moving) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)) {
                 Row(Modifier.testTag("account_row_" + account.id).fillMaxWidth().heightIn(min = if (editing) 48.dp else 42.dp)
                     .semantics { stateDescription = tr(R.string.cb_168 ,position + 1,order.size) }
                     .clickable(enabled = !busy) { if (dragged == null) { if (editing) rename(account) else select(account.id) } },
@@ -142,13 +142,13 @@ internal fun AccountOrderList(
                                 onDragEnd = { finish(false) }, onDragCancel = { finish(true) }
                             )
                         }, contentAlignment = Alignment.Center) {
-                            RefIcon(R.drawable.cb_drag, null, tint = if (canDrag) ReferenceBlue else Color.LightGray)
+                            RefIcon(R.drawable.cb_drag, null, tint = if (canDrag) ReferenceBlue else MaterialTheme.colorScheme.outline)
                         }
                     }
                     if(account.id==active)Text("✓",Modifier.padding(horizontal=6.dp).testTag("active_account"),color=ReferenceBlue)
                     AccountName(account,Modifier.weight(1f).padding(horizontal=6.dp,vertical=10.dp))
                 }
-                HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE8E8E8))
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }

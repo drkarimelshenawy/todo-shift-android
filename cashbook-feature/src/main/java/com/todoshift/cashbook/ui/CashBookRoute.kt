@@ -47,8 +47,6 @@ import java.time.*
 import com.todoshift.cashbook.R
 import androidx.compose.ui.unit.sp
 
-private val Incoming = Color(0xFF4CAF50)
-private val Outgoing = Color(0xFFF45151)
 
 /** A module route, with the screenshot's ledger layout; no separate Activity or launcher. */
 @androidx.compose.runtime.NonSkippableComposable
@@ -144,8 +142,8 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (chosen) Color.White else Color.White.copy(alpha = 0.13f),
-                            contentColor = if (chosen) MaterialTheme.colorScheme.primary else Color.White
+                            containerColor = if (chosen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.13f),
+                            contentColor = if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
                         )
                     ) { Text(tr(label), fontSize = 11.sp, maxLines = 1) }
                 }
@@ -181,16 +179,16 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
             } else {
             // Section navigation: account selector, summary, search and management options.
             Row(Modifier.fillMaxWidth().heightIn(min = CashBookCompact.HeaderHeight).background(MaterialTheme.colorScheme.primary), verticalAlignment = Alignment.CenterVertically) {
-                if(page != "movement" || (mainSection == "debts" && debtDetail)) IconButton(onClick={if (mainSection == "debts") debtDetail = false else page="movement"}){RefIcon(R.drawable.cb_back,tr(R.string.cb_003),tint=Color.White)}
+                if(page != "movement" || (mainSection == "debts" && debtDetail)) IconButton(onClick={if (mainSection == "debts") debtDetail = false else page="movement"}){RefIcon(R.drawable.cb_back,tr(R.string.cb_003),tint=MaterialTheme.colorScheme.onPrimary)}
                 Box(Modifier.weight(1f)) {
                     TextButton(onClick = { archivedMenu=false;accountMenu = true }, enabled = accounts.isNotEmpty(), modifier = Modifier.testTag("account_picker_open")) {
-                        if(page=="movement"&&activeAccount!=null){AccountName(activeAccount,color=Color.White);Text(" ▾",color=Color.White)}else Text(if(page=="summary") tr(R.string.cb_004) else if(page=="trash") tr(R.string.cb_005) else tr(R.string.cb_006),color=Color.White)
+                        if(page=="movement"&&activeAccount!=null){AccountName(activeAccount,color=MaterialTheme.colorScheme.onPrimary);Text(" ▾",color=MaterialTheme.colorScheme.onPrimary)}else Text(if(page=="summary") tr(R.string.cb_004) else if(page=="trash") tr(R.string.cb_005) else tr(R.string.cb_006),color=MaterialTheme.colorScheme.onPrimary)
                     }
                 }
-                IconButton(onClick = { page = if(page=="summary") "movement" else "summary" }, modifier = Modifier.testTag("summary_open").semantics { contentDescription = tr(R.string.cb_004) }) { RefIcon(R.drawable.cb_report, tr(R.string.cb_007), tint = Color.White) }
-                IconButton(onClick = { showSearch = !showSearch; if (!showSearch) search = "" }, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_008) }) { RefIcon(R.drawable.cb_search, tr(R.string.cb_008), tint = Color.White) }
+                IconButton(onClick = { page = if(page=="summary") "movement" else "summary" }, modifier = Modifier.testTag("summary_open").semantics { contentDescription = tr(R.string.cb_004) }) { RefIcon(R.drawable.cb_report, tr(R.string.cb_007), tint = MaterialTheme.colorScheme.onPrimary) }
+                IconButton(onClick = { showSearch = !showSearch; if (!showSearch) search = "" }, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_008) }) { RefIcon(R.drawable.cb_search, tr(R.string.cb_008), tint = MaterialTheme.colorScheme.onPrimary) }
                 Box {
-                    IconButton(onClick = { overflow = true }, modifier = Modifier.testTag("section_options").semantics { contentDescription = tr(R.string.cb_009) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = Color.White) }
+                    IconButton(onClick = { overflow = true }, modifier = Modifier.testTag("section_options").semantics { contentDescription = tr(R.string.cb_009) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = MaterialTheme.colorScheme.onPrimary) }
                     DropdownMenu(overflow, { overflow = false }) {
                         DropdownMenuItem(text={Text(tr(R.string.cb_011))},enabled=!state.busy&&accounts.count{a->snapshot?.debts?.none{it.accountId==a.id}!=false}>1,onClick={overflow=false;open("TRANSFER")})
                         DropdownMenuItem(text={Text(tr(R.string.cb_012))},enabled=!state.busy&&snapshot!=null,onClick={overflow=false;sectionSettings=true;vm.clearMessage()},modifier=Modifier.testTag("default_settings_open"))
@@ -213,8 +211,8 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                         ReferencePill(label, period == key, Modifier.weight(1f)) { period = key }
                     }
                 }
-                Box(Modifier.fillMaxWidth().height(30.dp).background(MaterialTheme.colorScheme.primary).border(1.dp, Color.White.copy(alpha = 0.7f)).clickable { custom = true }.testTag("period_caption"), contentAlignment = Alignment.Center) {
-                    Text(if (period == "ALL") tr(R.string.cb_016) else "${filter.from} — ${filter.to}", color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center)
+                Box(Modifier.fillMaxWidth().height(30.dp).background(MaterialTheme.colorScheme.primary).border(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)).clickable { custom = true }.testTag("period_caption"), contentAlignment = Alignment.Center) {
+                    Text(if (period == "ALL") tr(R.string.cb_016) else "${filter.from} — ${filter.to}", color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, textAlign = TextAlign.Center)
                 }
                 if (showSearch) OutlinedTextField(search, { search = it }, label = { Text(tr(R.string.cb_008)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(8.dp))
                 if (page != "summary") Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp)) {
@@ -246,16 +244,16 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                                     }
                                     Spacer(Modifier.height(CashBookCompact.RowMetaGap))
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(referenceTime(e.time), color = Color(0xFF666666), style = MaterialTheme.typography.bodySmall)
-                                        Text(row.runningMinor?.let { tr(R.string.cb_024 ,referenceMoney(it)) } ?: tr(R.string.cb_025), color = Color(0xFF666666), style = MaterialTheme.typography.bodySmall)
+                                        Text(referenceTime(e.time), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                        Text(row.runningMinor?.let { tr(R.string.cb_024 ,referenceMoney(it)) } ?: tr(R.string.cb_025), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                                     }
                                 }
                             }
                         }
                     }
                     if (page == "movement") Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(shape = ReferenceShape, contentPadding = PaddingValues(6.dp), onClick = { open("INCOME") }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Incoming), modifier = Modifier.weight(1f).testTag("quick_income")) { Text(inLabel) }
-                        Button(shape = ReferenceShape, contentPadding = PaddingValues(6.dp), onClick = { open("EXPENSE") }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Outgoing), modifier = Modifier.weight(1f).testTag("quick_expense")) { Text(outLabel) }
+                        Button(shape = ReferenceShape, contentPadding = PaddingValues(6.dp), onClick = { open("INCOME") }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Incoming, contentColor = amountInk(Incoming)), modifier = Modifier.weight(1f).testTag("quick_income")) { Text(inLabel) }
+                        Button(shape = ReferenceShape, contentPadding = PaddingValues(6.dp), onClick = { open("EXPENSE") }, enabled = !state.busy, colors = ButtonDefaults.buttonColors(containerColor = Outgoing, contentColor = amountInk(Outgoing)), modifier = Modifier.weight(1f).testTag("quick_expense")) { Text(outLabel) }
                     }
                 }
                 val views = if (page == "summary") accounts.map { LedgerQuery.account(snapshot, it.id, filter) } else listOfNotNull(view)
@@ -389,9 +387,9 @@ private fun EntryScreen(accounts: List<Ledger.Account>, selected: String?, initi
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceVariant) {
                 Column(Modifier.fillMaxSize().testTag("editor_viewport")) {
                     Row(Modifier.fillMaxWidth().heightIn(min = CashBookCompact.HeaderHeight).background(MaterialTheme.colorScheme.primary), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = close, enabled = !busy, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_003) }) { RefIcon(R.drawable.cb_back, tr(R.string.cb_003), tint = Color.White) }
+                        IconButton(onClick = close, enabled = !busy, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_003) }) { RefIcon(R.drawable.cb_back, tr(R.string.cb_003), tint = MaterialTheme.colorScheme.onPrimary) }
                         Text((if(editing != null) tr(R.string.cb_051) else "") + label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleLarge)
-                        IconButton(onClick = { showAccounts = !showAccounts }, enabled = !busy, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_052) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = Color.White) }
+                        IconButton(onClick = { showAccounts = !showAccounts }, enabled = !busy, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_052) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = MaterialTheme.colorScheme.onPrimary) }
                     }
                     Column(Modifier.weight(1f, fill = imeVisible).verticalScroll(rememberScrollState()).padding(CashBookCompact.ContentPadding)) {
                         Surface(shape = RoundedCornerShape(12.dp), shadowElevation = 2.dp) {
@@ -431,8 +429,8 @@ private fun EntryScreen(accounts: List<Ledger.Account>, selected: String?, initi
                     }
                     Row(Modifier.fillMaxWidth().padding(6.dp).testTag("editor_save_bar"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         val valid = !busy && amount.isNotBlank() && (kind != Ledger.Kind.TRANSFER || target.isNotEmpty())
-                        OutlinedButton(shape = ReferenceShape, colors = ButtonDefaults.outlinedButtonColors(disabledContainerColor = Color(0xFFBBDEFB), disabledContentColor = ReferenceBlue), contentPadding = PaddingValues(6.dp), onClick = { submit(false) }, enabled = valid, modifier = Modifier.weight(1f).testTag("save_exit")) { Text(tr(R.string.cb_059)) }
-                        if (editing == null) Button(shape = ReferenceShape, colors = ButtonDefaults.buttonColors(disabledContainerColor = Color(0xFFBBDEFB), disabledContentColor = ReferenceBlue), contentPadding = PaddingValues(6.dp), onClick = { submit(true) }, enabled = valid, modifier = Modifier.weight(1f)) { Text(tr(R.string.cb_060)) }
+                        OutlinedButton(shape = ReferenceShape, contentPadding = PaddingValues(6.dp), onClick = { submit(false) }, enabled = valid, modifier = Modifier.weight(1f).testTag("save_exit")) { Text(tr(R.string.cb_059)) }
+                        if (editing == null) Button(shape = ReferenceShape, contentPadding = PaddingValues(6.dp), onClick = { submit(true) }, enabled = valid, modifier = Modifier.weight(1f)) { Text(tr(R.string.cb_060)) }
                     }
                 }
             }

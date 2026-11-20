@@ -82,7 +82,7 @@ object NeoFeatureCatalog {
                 "Appearance Studio",
                 "Settings",
                 "APPEARANCE",
-                "theme colors fonts density motion profiles ألوان خط حركة",
+                "theme colors fonts density motion profiles Nile Jade ثيم ثيمات يشم النيل ألوان خط حركة",
             ),
             NeoFeature(
                 "LANGUAGE",

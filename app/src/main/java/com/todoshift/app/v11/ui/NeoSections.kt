@@ -204,7 +204,7 @@ fun NeoShiftTimeline(
                     val active = recorded && now >= item.start && now < item.end
                     val future = item.start > now
                     val status = if(!recorded) neoLabel("بلا وقت","No time") else if(active) neoLabel("جارٍ الآن","In progress") else if(future) neoLabel("قادم","Upcoming") else neoLabel("انتهى","Finished")
-                    val tint = if(active) MaterialTheme.colorScheme.primary else if(future) (if(MaterialTheme.colorScheme.surface.luminance()<.3f) NeoPremium.Gold else Color(0xFF8B641C)) else positive
+                    val tint = if(active) MaterialTheme.colorScheme.primary else if(future) MaterialTheme.colorScheme.secondary else positive
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                         Column(Modifier.widthIn(min=64.dp,max=90.dp).background(tint.copy(alpha=.13f)).padding(horizontal=10.dp,vertical=18.dp),horizontalAlignment=Alignment.CenterHorizontally) {
                             Icon(if(active) Icons.Rounded.Schedule else if(future) Icons.Rounded.Upcoming else Icons.Rounded.CheckCircle,null,tint=tint)

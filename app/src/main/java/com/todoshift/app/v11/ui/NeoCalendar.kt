@@ -262,10 +262,10 @@ fun NeoCalendarArea(
                             onClick = { update(p.copy(calendarView = item)) },
                             modifier = Modifier.weight(1f).shadow(3.dp, RoundedCornerShape(24.dp)),
                             shape = RoundedCornerShape(24.dp),
-                            border = BorderStroke(if (view == item) 1.5.dp else 1.dp, if (view == item) NeoPremium.Gold else MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(if (view == item) 1.5.dp else 1.dp, if (view == item) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF173B65),
-                                selectedLabelColor = Color.White,
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                                 containerColor = MaterialTheme.colorScheme.surface,
                             ),
                             label = {
@@ -688,11 +688,6 @@ internal fun NeoCalendarCell(
     val today = date == LocalDate.now() && p.todayStyle != NeoTodayStyle.NONE
     val segments = remember(entries) { entries.flatMap { it.segments } }
     val names = segments.map { neoShiftLabel(it.kind) }.distinct().joinToString(" / ")
-    val fillColor = segments.firstOrNull()?.let { segment ->
-        val custom = p.shiftPaints[segment.kind]?.takeIf { p.showShiftPaint && it.mode != NeoPaintMode.INHERIT }?.first
-        neoHexColor(workplaces.firstOrNull {it.id==segment.workplaceId}?.shiftColors?.get(segment.kind.name) ?: custom ?: workplaces.firstOrNull { it.id == segment.workplaceId }?.colorHex ?: "#8BBACB")
-    }
-    val dateInk = fillColor?.let { if(it.luminance() > .179f) Color.Black else Color.White } ?: c.onSurface
     val description =
         date.toString() +
             neoLabel(
@@ -713,7 +708,7 @@ internal fun NeoCalendarCell(
             color=c.surface.copy(alpha=p.cardOpacity),
             shape=RoundedCornerShape(9.dp),
             border=BorderStroke(if(chosen||today||painting) 2.dp else .5.dp,
-                if(chosen) c.secondary else if(today) NeoPremium.Gold else c.outlineVariant)
+                if(chosen) c.secondary else if(today) neoHexColor(p.todayColor) else c.outlineVariant)
         ) {
             Column(Modifier.fillMaxSize().padding(if(roomy) 12.dp else 3.dp),
                 verticalArrangement=Arrangement.spacedBy(if(roomy) 10.dp else 3.dp)) {
@@ -726,12 +721,12 @@ internal fun NeoCalendarCell(
                     val place=workplaces.firstOrNull {it.id==segment.workplaceId}
                     val shiftHex=place?.shiftColors?.get(segment.kind.name) ?: place?.colorHex ?: "#8BBACB"
                     val shade=neoHexColor(shiftHex)
-                    Surface(shape=RoundedCornerShape(6.dp),color=shade.copy(alpha=.75f),
+                    Surface(shape=RoundedCornerShape(6.dp),color=shade,
                         modifier=(if(weekRowMode) Modifier.width(when(segment.kind) { ShiftKind.FULL_DAY -> 180.dp; ShiftKind.LONG, ShiftKind.NIGHT -> 145.dp; ShiftKind.MORNING, ShiftKind.EVENING -> 110.dp; else -> 100.dp }) else Modifier.fillMaxWidth()).then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier)) {
                         Text(neoShiftLabel(segment.kind)+(if(roomy && place!=null) " • "+place.name else ""),
                             modifier=Modifier.padding(if(roomy) 12.dp else 4.dp),
                             style=cardText,maxLines=2,overflow=TextOverflow.Ellipsis,
-                            color=if(shade.luminance()>.35f) Color.Black else Color.White)
+                            color=neoInkOn(shade))
                     }
                     }
                 }
@@ -772,11 +767,11 @@ internal fun NeoCalendarCell(
         shape = RoundedCornerShape(9.dp),
         border =
             BorderStroke(
-                if (today || chosen || painting) 2.dp else if (true) 0.5.dp else 0.5.dp,
+                if (today || chosen || painting) 2.dp else 0.5.dp,
                 when {
                     painting -> c.tertiary
                     chosen -> c.secondary
-                    today -> if (true) Color(0xFFD8AD55) else c.primary
+                    today -> neoHexColor(p.todayColor)
                     else -> c.outlineVariant
                 },
             ),
@@ -807,6 +802,10 @@ internal fun NeoCalendarCell(
                     Modifier.align(Alignment.TopStart).clickable(onClick=onClick)
                         .fillMaxWidth()
                         .padding(2.dp)
+                        .wrapContentWidth(Alignment.Start)
+                        .then(if (segments.any { it.kind != ShiftKind.OFF })
+                            Modifier.background(c.surface.copy(alpha = .94f), RoundedCornerShape(3.dp))
+                            else Modifier)
                         .padding(vertical = 1.dp)
                         .semantics { this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight metric=${measured.dateWidth}/${measured.dateHeight} scale=$dateScale" },
                 style = MaterialTheme.typography.labelMedium.copy(
@@ -816,8 +815,7 @@ internal fun NeoCalendarCell(
                 maxLines = 1,
                 softWrap = false,
                 fontWeight = FontWeight.Bold,
-                color =
-                    dateInk,
+                color = c.onSurface,
             )
             val marker =
                 if (p.showNoteIcons)
@@ -914,7 +912,7 @@ internal fun NeoCalendarCell(
 
                 }
             if (compactCell && notes.isNotEmpty() && (p.showNotes || p.showNoteIcons))
-                Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(4.dp).background(NeoPremium.Gold, CircleShape))
+                Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(4.dp).background(c.secondary, CircleShape))
             if (compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
                 Box(Modifier.align(Alignment.BottomStart).padding(3.dp).size(4.dp).background(c.primary, CircleShape))
             if (!compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))

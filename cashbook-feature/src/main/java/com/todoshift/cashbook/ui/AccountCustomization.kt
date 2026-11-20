@@ -62,8 +62,8 @@ internal fun ButtonLabelsEditor(incoming: String, outgoing: String, enabled: Boo
         }
     }
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-        listOf(displayLabels(incoming,outgoing).first to Color(0xFF4CAF50),displayLabels(incoming,outgoing).second to Color(0xFFF45151)).forEachIndexed { index,(text,color) ->
-            Button(onClick={focus.clearFocus();keyboard?.hide();label=text;editing=index},enabled=enabled,colors=ButtonDefaults.buttonColors(containerColor=color),shape=ReferenceShape,modifier=Modifier.weight(1f).testTag(if(index==0) "edit_incoming" else "edit_outgoing")) {Text(text.ifBlank{"…"},maxLines=2)}
+        listOf(displayLabels(incoming,outgoing).first to Incoming,displayLabels(incoming,outgoing).second to Outgoing).forEachIndexed { index,(text,color) ->
+            Button(onClick={focus.clearFocus();keyboard?.hide();label=text;editing=index},enabled=enabled,colors=ButtonDefaults.buttonColors(containerColor=color, contentColor=amountInk(color)),shape=ReferenceShape,modifier=Modifier.weight(1f).testTag(if(index==0) "edit_incoming" else "edit_outgoing")) {Text(text.ifBlank{"…"},maxLines=2)}
         }
     }
     editing?.let { index ->

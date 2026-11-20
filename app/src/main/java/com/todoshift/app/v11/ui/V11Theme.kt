@@ -10,6 +10,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.V11AppTheme
 import com.todoshift.app.v11.V11Experience
@@ -20,22 +21,36 @@ fun V11AppThemeProvider(
     theme: V11AppTheme,
     experience: V11Experience = V11Experience.CLASSIC,
     premiumBrightness: V11PremiumBrightness = V11PremiumBrightness.SYSTEM,
+    applySystemBars: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     if (experience == V11Experience.CLASSIC) {
         MaterialTheme(colorScheme = v11ColorScheme(theme), content = content)
     } else {
         val p = LocalNeoAppearance.current
-        val colors = neoColorScheme(p, isSystemInDarkTheme())
+        val systemDark = isSystemInDarkTheme()
+        val colors = androidx.compose.runtime.remember(p, systemDark) { neoColorScheme(p, systemDark) }
         val activity = LocalActivity.current
-        DisposableEffect(activity, colors.surface) {
-            val controller = activity?.window?.let { androidx.core.view.WindowCompat.getInsetsController(it, it.decorView) }
+        if (applySystemBars) DisposableEffect(activity, colors.primaryContainer, colors.surface) {
+            val window = activity?.window
+            val legacyBars = window != null && android.os.Build.VERSION.SDK_INT < 35
+            val oldStatusColor = window?.statusBarColor
+            val oldNavColor = window?.navigationBarColor
+            if (legacyBars) {
+                window?.statusBarColor = colors.primaryContainer.toArgb()
+                window?.navigationBarColor = colors.surface.toArgb()
+            }
+            val controller = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, it.decorView) }
             val oldStatus = controller?.isAppearanceLightStatusBars
             val oldNavigation = controller?.isAppearanceLightNavigationBars
-            // The Premium header always extends behind the status bar in navy.
-            controller?.isAppearanceLightStatusBars = false
+            // The compact header draws primaryContainer behind the status bar.
+            controller?.isAppearanceLightStatusBars = colors.primaryContainer.luminance() > .17913f
             controller?.isAppearanceLightNavigationBars = colors.surface.luminance() > .5f
             onDispose {
+                if (legacyBars && oldStatusColor != null && oldNavColor != null) {
+                    window?.statusBarColor = oldStatusColor
+                    window?.navigationBarColor = oldNavColor
+                }
                 if (oldStatus != null) controller?.isAppearanceLightStatusBars = oldStatus
                 if (oldNavigation != null) controller?.isAppearanceLightNavigationBars = oldNavigation
             }

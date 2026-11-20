@@ -865,8 +865,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         )
                                     },
                                     colors=FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor=NeoPremium.Navy,
-                                        selectedLabelColor=NeoPremium.Cream,
+                                        selectedContainerColor=MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor=MaterialTheme.colorScheme.onPrimary,
                                         containerColor=MaterialTheme.colorScheme.surface
                                     )
                                 )
@@ -992,7 +992,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                         } else {
                                         val note=(entry as NeoNoteLibraryEntry.Note).value
                             val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteCardBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
-                            val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
+                            val contentColor=customColor?.let {neoInkOn(androidx.compose.ui.graphics.Color(it))} ?: MaterialTheme.colorScheme.onSurface
                             Card(modifier=Modifier
                                 .fillMaxWidth()
                                 .then(if(noteLayout=="grid"||noteLayout=="large")
@@ -1182,7 +1182,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         } else {
                         val note=(entry as NeoNoteLibraryEntry.Note).value
                         val customColor=if(note.notePrivate) null else (note.noteBackground ?: NeoLaunchPreferences(context).defaultNoteCardBackground.takeIf {it.isNotBlank()})?.let {runCatching {android.graphics.Color.parseColor(it)}.getOrNull()}
-                        val contentColor=customColor?.let {if(androidx.core.graphics.ColorUtils.calculateLuminance(it)>0.45) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White} ?: MaterialTheme.colorScheme.onSurface
+                        val contentColor=customColor?.let {neoInkOn(androidx.compose.ui.graphics.Color(it))} ?: MaterialTheme.colorScheme.onSurface
                         Card(modifier=Modifier
                                 .fillMaxWidth()
                                 .then(if(noteLayout=="grid"||noteLayout=="large")
@@ -1341,7 +1341,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         }
         if(!notesTab || !noteSelectionMode) FloatingActionButton(onClick={if(notesTab) {
             newNoteChoice=true
-        } else open()},containerColor=NeoPremium.Navy,contentColor=NeoPremium.Gold,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+        } else open()},containerColor=MaterialTheme.colorScheme.primary,contentColor=MaterialTheme.colorScheme.onPrimary,modifier=Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
             Icon(Icons.Rounded.Add,if(notesTab) neoLabel("إضافة ملاحظة","Add note") else neoLabel("إضافة مهمة","Add task"))
         }
         if(notesTab && noteSelectionMode) Surface(
@@ -1634,9 +1634,6 @@ private fun NeoNoteFolderCard(
     val accent=remember(folder.color) {
         androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(folder.color))
     }
-    val textInk=if(androidx.core.graphics.ColorUtils.calculateLuminance(
-        android.graphics.Color.parseColor(folder.color))<0.42)
-        androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF112B45)
     // Keep the folder tab on the leading edge in both Arabic and English.
     // Avoid a tall, saturated block: a subtle paper-like body lets the title lead.
     val folderSurface=MaterialTheme.colorScheme.surfaceContainerLow

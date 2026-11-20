@@ -44,6 +44,10 @@ fun neoContrastAccent(raw: Color, dark: Boolean): Color {
     return color
 }
 
+/** Chooses the higher contrast of black and white for an opaque user-defined fill. */
+internal fun neoInkOn(fill: Color): Color =
+    if (fill.luminance() > 0.17913f) Color.Black else Color.White
+
 fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
     val dark =
         when (p.brightness) {
@@ -51,15 +55,22 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
             NeoBrightness.LIGHT -> false
             else -> true
         }
-    val raw =
-        runCatching { Color(android.graphics.Color.parseColor(p.accentHex)) }
-            .getOrElse { if (p.palette in listOf(NeoPalette.OCEAN_DEPTH, NeoPalette.CASHBOOK_BLUE)) NeoPremium.Navy else neoAccent(p.palette) }
+    val jade = p.palette == NeoPalette.NILE_JADE
+    val paletteAccent = when {
+        jade && dark -> Color(0xFF87DAB6)
+        p.palette == NeoPalette.OCEAN_DEPTH || p.palette == NeoPalette.CASHBOOK_BLUE -> NeoPremium.Navy
+        else -> neoAccent(p.palette)
+    }
+    val raw = if (p.accentHex.isBlank()) paletteAccent else
+        runCatching { Color(android.graphics.Color.parseColor(p.accentHex)) }.getOrDefault(paletteAccent)
     // Bound custom accent contrast against both backgrounds; on-accent is computed separately.
     val accent = neoContrastAccent(raw, dark)
     val bg =
         when {
+            !dark && jade -> Color(0xFFF0EEE5)
             !dark -> Color(0xFFE4EAF3)
             p.brightness == NeoBrightness.AMOLED -> Color.Black
+            jade -> Color(0xFF0D1D19)
             p.palette == NeoPalette.EMERALD_LUXURY -> Color(0xFF071310)
             p.palette == NeoPalette.SUNSET_COPPER -> Color(0xFF12100F)
             p.palette == NeoPalette.ROYAL_VIOLET -> Color(0xFF0E0A17)
@@ -67,11 +78,17 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
                 Color(0xFF101216)
             else -> Color(0xFF08233D)
         }
-    val surface = if (dark) lerp(bg, Color.White, 0.045f) else Color(0xFFF4F6FB)
+    val surface = if (dark) lerp(bg, Color.White, 0.045f) else if (jade) Color(0xFFFFFCF3) else Color(0xFFF4F6FB)
     val variant = lerp(surface, accent, if (dark) 0.10f else 0.05f)
     val container = lerp(surface, accent, 0.12f + p.intensity * 0.12f)
-    val ink = if (dark) Color(0xFFF2F5FC) else Color(0xFF08233D)
-    val muted = if (dark) Color(0xFFB8C4D6) else Color(0xFF526779)
+    val secondary = when {
+        jade && dark -> Color(0xFFF0BF81)
+        jade -> Color(0xFF855316)
+        dark -> NeoPremium.Gold
+        else -> Color(0xFF755514)
+    }
+    val ink = if (jade && !dark) Color(0xFF152C24) else if (dark) Color(0xFFF2F5FC) else Color(0xFF08233D)
+    val muted = if (jade && !dark) Color(0xFF4D6559) else if (dark) Color(0xFFB8C4D6) else Color(0xFF526779)
     val onAccent = if (accent.luminance() > 0.18f) Color(0xFF07101A) else Color.White
     val base = if (dark) darkColorScheme() else lightColorScheme()
     return base.copy(
@@ -79,9 +96,9 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         onPrimary = onAccent,
         primaryContainer = container,
         onPrimaryContainer = ink,
-        secondary = NeoPremium.Gold,
-        onSecondary = NeoPremium.Navy,
-        secondaryContainer = variant,
+        secondary = secondary,
+        onSecondary = if (dark) Color(0xFF21180A) else Color.White,
+        secondaryContainer = lerp(surface, secondary, 0.15f),
         onSecondaryContainer = ink,
         tertiary = accent,
         onTertiary = onAccent,

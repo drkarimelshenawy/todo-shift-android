@@ -76,6 +76,7 @@ enum class NeoPalette {
     SUNSET_COPPER,
     MONOCHROME,
     CASHBOOK_BLUE,
+    NILE_JADE,
 }
 
 enum class NeoCardStyle {

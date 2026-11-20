@@ -75,11 +75,11 @@ import java.time.*
  if(discard)DiscardDialog({discard=false},dismiss)
 }
 
-private val PaidColor=androidx.compose.ui.graphics.Color(0xFF27865B)
-private val Ink=androidx.compose.ui.graphics.Color(0xFF172A36)
-private val Muted=androidx.compose.ui.graphics.Color(0xFF82929E)
+private val PaidColor @Composable get() = Incoming
+private val Ink @Composable get() = MaterialTheme.colorScheme.onSurface
+private val Muted @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 @androidx.compose.runtime.NonSkippableComposable @Composable private fun StatusMark(status:String){
- val color=when(status){"PAID","CREDIT"->PaidColor;"OVERDUE"->androidx.compose.ui.graphics.Color(0xFFCA5549);"PARTIAL"->androidx.compose.ui.graphics.Color(0xFFB47D23);else->Muted}
+ val color=when(status){"PAID","CREDIT"->PaidColor;"OVERDUE"->MaterialTheme.colorScheme.error;"PARTIAL"->MaterialTheme.colorScheme.secondary;else->Muted}
  androidx.compose.foundation.Canvas(Modifier.size(28.dp)){
   val center=androidx.compose.ui.geometry.Offset(size.width/2,size.height/2);val radius=size.width*0.38f
   drawCircle(color,radius,center,style=androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
@@ -104,7 +104,7 @@ private fun dueStatus(status:String)=when(status){"PAID"->tr(R.string.cb_206);"C
  val payments=snapshot.entries.filter{it.accountId==debt.accountId||it.targetId==debt.accountId}.sortedByDescending{it.date+it.time}
  Column(modifier.fillMaxWidth().padding(horizontal=12.dp)){
   Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Text(if(debt.direction==Debt.Direction.PAYABLE)tr(R.string.cb_175)else tr(R.string.cb_176),style=MaterialTheme.typography.labelLarge,color=Muted);TextButton({settings=true},modifier=Modifier.testTag("debt_settings")){Text(tr(R.string.cb_199))}}
-  Surface(shape=androidx.compose.foundation.shape.RoundedCornerShape(18.dp),color=androidx.compose.ui.graphics.Color.White){Column(Modifier.fillMaxWidth().padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
+  Surface(shape=androidx.compose.foundation.shape.RoundedCornerShape(18.dp),color=MaterialTheme.colorScheme.surface){Column(Modifier.fillMaxWidth().padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
    Text(tr(R.string.cb_200),color=Muted);Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){MoneyLabel(remaining,true,modifier=Modifier.testTag("debt_remaining"));Text("${(paid.toDouble()/debt.principal(snapshot)*100).toInt()}%",color=PaidColor,modifier=Modifier.testTag("debt_percent"))}
    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Column{Text(tr(R.string.cb_256),color=Muted,style=MaterialTheme.typography.labelSmall);MoneyLabel(paid,color=PaidColor)};Column{Text(tr(R.string.cb_257),color=Muted,style=MaterialTheme.typography.labelSmall);MoneyLabel(debt.principal(snapshot))}}
    LinearProgressIndicator(progress={paid.toFloat()/debt.principal(snapshot).toFloat()},modifier=Modifier.fillMaxWidth().padding(vertical=4.dp).testTag("debt_progress"))
@@ -115,7 +115,7 @@ private fun dueStatus(status:String)=when(status){"PAID"->tr(R.string.cb_206);"C
   TabRow(tab,containerColor=androidx.compose.ui.graphics.Color.Transparent){Tab(tab==0,{tab=0},text={Text(tr(R.string.cb_260))},modifier=Modifier.testTag("debt_tab_schedule"));Tab(tab==1,{tab=1},text={Text(tr(R.string.cb_212))},modifier=Modifier.testTag("debt_tab_payments"))}
   if(tab==0)LazyColumn(Modifier.weight(1f).testTag("debt_schedule"),contentPadding=PaddingValues(vertical=8.dp)){
    if(rows.isEmpty())item{Text(tr(R.string.cb_261),Modifier.padding(18.dp),color=Muted)}
-   items(rows,key={it.index}){due->val status=due.status(today);Surface(onClick={selectedDue=due},color=androidx.compose.ui.graphics.Color.White,shape=androidx.compose.foundation.shape.RoundedCornerShape(14.dp),modifier=Modifier.fillMaxWidth().padding(vertical=3.dp).testTag("due_${due.index}")){
+   items(rows,key={it.index}){due->val status=due.status(today);Surface(onClick={selectedDue=due},color=MaterialTheme.colorScheme.surface,shape=androidx.compose.foundation.shape.RoundedCornerShape(14.dp),modifier=Modifier.fillMaxWidth().padding(vertical=3.dp).testTag("due_${due.index}")){
     Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=17.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
      Column(Modifier.widthIn(min=86.dp)){MoneyLabel(due.amountMinor,color=if(status=="PAID"||status=="CREDIT")PaidColor else Ink);if(due.remaining()>0&&due.remaining()!=due.amountMinor)Text(tr(R.string.cb_262 ,referenceMoney(due.remaining())),style=MaterialTheme.typography.labelSmall,color=Muted)}
      Column(Modifier.weight(1f),horizontalAlignment=if(CashBookText.arabic())Alignment.End else Alignment.Start){Text(referenceDayShort(due.date),fontWeight=androidx.compose.ui.text.font.FontWeight.SemiBold,color=Ink,maxLines=2);Text(tr(R.string.cb_263 ,due.index+1,dueStatus(status)),style=MaterialTheme.typography.bodySmall,color=if(status=="PAID")PaidColor else Muted)}
@@ -125,7 +125,7 @@ private fun dueStatus(status:String)=when(status){"PAID"->tr(R.string.cb_206);"C
    if(debt.changes.isNotEmpty())item{Text(tr(R.string.cb_216),Modifier.padding(vertical=10.dp),style=MaterialTheme.typography.titleSmall);debt.changes.takeLast(10).forEach{c->Text(tr(R.string.cb_264 ,c.index+1,referenceDayShort(c.oldDate),referenceDayShort(c.newDate)),style=MaterialTheme.typography.bodySmall,modifier=Modifier.padding(bottom=6.dp))}}
   }else LazyColumn(Modifier.weight(1f).testTag("debt_payments"),contentPadding=PaddingValues(vertical=8.dp)){
    if(payments.isEmpty())item{Text(tr(R.string.cb_265),Modifier.padding(18.dp),color=Muted)}
-   items(payments,key={it.id}){entry->Surface(onClick={selectedPayment=entry},color=androidx.compose.ui.graphics.Color.White,shape=androidx.compose.foundation.shape.RoundedCornerShape(14.dp),modifier=Modifier.fillMaxWidth().padding(vertical=3.dp).testTag("payment_${entry.id}")){
+   items(payments,key={it.id}){entry->Surface(onClick={selectedPayment=entry},color=MaterialTheme.colorScheme.surface,shape=androidx.compose.foundation.shape.RoundedCornerShape(14.dp),modifier=Modifier.fillMaxWidth().padding(vertical=3.dp).testTag("payment_${entry.id}")){
     Row(Modifier.fillMaxWidth().padding(13.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){
      MoneyLabel(entry.minor,color=if(entry.deleted)Muted else PaidColor)
      Column(Modifier.weight(1f),horizontalAlignment=if(CashBookText.arabic())Alignment.End else Alignment.Start){Text(referenceDayShort(entry.date),color=Ink);Text(if(entry.deleted)tr(R.string.cb_266) else if(entry.kind==Ledger.Kind.SETTLEMENT)tr(R.string.cb_267) else tr(R.string.cb_268),style=MaterialTheme.typography.bodySmall,color=Muted)}

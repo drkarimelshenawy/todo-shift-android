@@ -46,7 +46,7 @@ fun Neo4ThemePreview(draft: NeoAppearance, rootFontScale: Float) {
                 density.fontScale / rootFontScale * draft.fontScale,
             ),
     ) {
-        V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
+        V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM, applySystemBars = false) {
             Surface(shape = MaterialTheme.shapes.medium) {
                 Box {
                     Neo4Atmosphere(Modifier.matchParentSize(), draft)

@@ -27,6 +27,8 @@ import kotlinx.coroutines.withContext
 
 fun neo4GradientColors(palette: NeoPalette, dark: Boolean): List<Color> {
     val pair = when (palette) {
+        NeoPalette.NILE_JADE -> if (dark) return listOf(Color(0xFF102C26), Color(0xFF1F241E))
+            else 0xFFEBF3E8 to 0xFFF3E9D7
         NeoPalette.MINT_AURA -> 0xFFE1F4E9 to 0xFFB8D8E7
         NeoPalette.OCEAN_DEPTH -> 0xFFD7ECF6 to 0xFF9DB9DA
         NeoPalette.LAVENDER_GLOW -> 0xFFEDE4F7 to 0xFFC3CDE8
@@ -58,7 +60,7 @@ fun Neo4Atmosphere(modifier: Modifier = Modifier, appearance: NeoAppearance = Lo
     }
     Box(modifier.fillMaxSize().background(c.background)) {
         if (!dark && appearance.background == NeoBackground.CLASSIC) {
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFF2F5FA), Color(0xFFDDE6F1)))))
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(c.surface, c.background))))
         }
         if (appearance.brightness != NeoBrightness.AMOLED && appearance.background != NeoBackground.CLASSIC) {
             Box(Modifier.fillMaxSize().background(Brush.linearGradient(neo4GradientColors(appearance.palette, dark))))

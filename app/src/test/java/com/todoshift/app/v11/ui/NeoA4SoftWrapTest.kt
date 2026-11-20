@@ -78,4 +78,20 @@ class NeoA4SoftWrapTest {
         assertEquals(source,NeoDocumentBlocks.parse(source)
             .filterIsInstance<NeoDocumentBlocks.Block.Paragraph>().single().source)
     }
+    @Test fun invalidLineBottomGeometryIsRejectedBeforePagination() {
+        val descending=floatArrayOf(18f,36f,25f)
+        val negative=floatArrayOf(-2f,18f)
+        val nonFinite=floatArrayOf(18f,Float.NaN)
+        for(bottoms in listOf(descending,negative,nonFinite)) {
+            var rejected=false
+            try {
+                NeoA4SoftWrap.ranges(30,
+                    IntArray(bottoms.size){it*10},bottoms,40f)
+            } catch(_:IllegalArgumentException) {
+                rejected=true
+            }
+            assertTrue("Malformed layout must not generate misleading page slices",rejected)
+        }
+    }
+
 }

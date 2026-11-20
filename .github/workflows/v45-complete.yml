@@ -85,6 +85,7 @@ jobs:
             --tests 'com.todoshift.app.v11.ui.NeoNoteToolVisibilityTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteAppearanceTest' \
             --tests 'com.todoshift.app.v11.ui.NeoDocumentBlocksTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoA4SoftWrapTest' \
             --tests 'com.todoshift.app.v11.ui.NeoDocumentPdfTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteBundledFontsTest' \
             --tests 'com.todoshift.app.v11.ui.NeoDocumentDocxTest' \
@@ -135,7 +136,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v64-notes-rtl-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ToDoShift-v64-Notes-RTL-Navigation.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v64 — Notes RTL Navigation Test" --notes "Signed v64 test build: notes RTL menu icons, Trash/folder back navigation and compact folder styling. Other requested features still pending. merged editor actions, default Notes settings, sticky multi-selection, note card controls, folder presentation, Trash retention and permanent delete, and experimental editable A4 documents. Existing backup and finance data retained. A4 automatic pagination and Word-grade fidelity are not claimed. Physical-device acceptance pending. APK signature and published bytes verified. Source: $GITHUB_SHA."
+          gh release create "$TAG" delivery/ToDoShift-v64-Notes-RTL-Navigation.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ToDo Shift v64 — Notes RTL Navigation Test" --notes "Signed v64 test build: notes RTL menu icons, Trash/folder back navigation and compact folder styling. Other requested features still pending. merged editor actions, default Notes settings, sticky multi-selection, note card controls, folder presentation, Trash retention and permanent delete, and experimental editable A4 documents. Existing backup and finance data retained. Read-only A4 soft-wrap pagination is included; editable A4 multi-page paragraph flow and Word-grade fidelity remain unverified. Physical-device acceptance pending. APK signature and published bytes verified. Source: $GITHUB_SHA."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}

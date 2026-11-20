@@ -41,6 +41,18 @@ class NeoNoteDraftRecoveryTest {
         assertTrue(result.endsWith("[[neo-image:$imported:80:center]]"))
     }
 
+    @Test fun recoveryRequiresEveryOriginalImageReferenceToBeRemapped() {
+        val second="neo-attachment-99999999-1234-1234-1234-123456789abc.png"
+        val source="[[neo-image:$original:80:center]]\\r\\n[[neo-image:$second:60:left]]"
+        val references=NeoNoteDraftRecovery.referencedImageNames(source)
+        val partiallyRecovered=NeoNoteDraftRecovery.replaceImageReference(source,original,imported)
+        assertFalse(NeoNoteDraftRecovery.allReferencesRemapped(references,partiallyRecovered))
+        val finalRecovered=NeoNoteDraftRecovery.replaceImageReference(
+            partiallyRecovered,second,"neo-attachment-aaaaaaaa-1234-1234-1234-123456789abc.png")
+        assertTrue(NeoNoteDraftRecovery.allReferencesRemapped(references,finalRecovered))
+        assertTrue(NeoNoteDraftRecovery.allReferencesRemapped(emptySet(), "No images"))
+    }
+
     @Test fun missingRecoveryAttachmentsAreDetectedBeforeImport() {
         val other="neo-attachment-99999999-1234-1234-1234-123456789abc.png"
         val refs=NeoNoteDraftRecovery.referencedImageNames(

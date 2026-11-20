@@ -68,7 +68,7 @@ internal fun NeoNoteQuickBar(
                         neoLabel("اختيار لون الخط","Text color"),enabled=enabled) {
                         inkOpen=true
                     }
-                    DropdownMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
+                    NeoLocalizedMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
                         Column(Modifier.padding(10.dp),
                             verticalArrangement=Arrangement.spacedBy(10.dp)) {
                             neoInkChoices().chunked(3).forEach {colors ->
@@ -115,7 +115,7 @@ internal fun NeoNoteQuickBar(
                                 modifier=Modifier.size(19.dp))
                         }
                     }
-                    DropdownMenu(expanded=listsOpen,onDismissRequest={listsOpen=false}) {
+                    NeoLocalizedMenu(expanded=listsOpen,onDismissRequest={listsOpen=false}) {
                         kinds.forEach {(kind,icon,label) ->
                             DropdownMenuItem(
                                 text={Text(label)},leadingIcon={Icon(icon,null)},
@@ -253,7 +253,7 @@ internal fun NeoNoteFormatSheet(
                             Spacer(Modifier.width(8.dp))
                             Icon(Icons.Rounded.ArrowDropDown,null)
                         }
-                        DropdownMenu(expanded=fontMenu,onDismissRequest={fontMenu=false}) {
+                        NeoLocalizedMenu(expanded=fontMenu,onDismissRequest={fontMenu=false}) {
                             (listOf(null to neoLabel("الافتراضي","Default"))+
                                 listOf(
                                     "amiri" to "Amiri","tajawal" to "Tajawal",

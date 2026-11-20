@@ -58,14 +58,26 @@ internal fun tr(id:Int,vararg args:Any)=CashBookText.get(id,*args)
 @androidx.compose.runtime.NonSkippableComposable @Composable internal fun LanguageDialog(dismiss:()->Unit){
  val vm=LocalCashBookVM.current
  AlertDialog(onDismissRequest=dismiss,title={Text(tr(R.string.cb_250))},text={Column{
-  listOf("AUTO" to tr(R.string.cb_251),"ar" to tr(R.string.cb_252),"en" to tr(R.string.cb_lang_english)).forEach{(id,label)->TextButton({CashBookText.select(id);vm.reload()},modifier=Modifier.fillMaxWidth().then(Modifier.testTag("language_$id"))){Text((if(CashBookText.language.value==id)"✓ " else "")+label)}}
+  listOf("AUTO" to tr(R.string.cb_251),"ar" to tr(R.string.cb_252),"en" to tr(R.string.cb_lang_english)).forEach{(id,label)->
+   TextButton({CashBookText.select(id);vm.reload()},modifier=Modifier.fillMaxWidth().then(Modifier.testTag("language_$id"))){
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)){
+     Icon(Icons.Rounded.Language,null)
+     Text(label,Modifier.weight(1f))
+     if(CashBookText.language.value==id)Icon(Icons.Rounded.Check,null)
+    }
+   }
+  }
  }},confirmButton={TextButton(dismiss){Text(tr(R.string.cb_067))}})
 }
 @androidx.compose.runtime.NonSkippableComposable @Composable internal fun SectionSettings(dismiss:()->Unit,buttons:()->Unit){
  var language by remember{mutableStateOf(false)}
  AlertDialog(onDismissRequest=dismiss,title={Text(tr(R.string.cb_012))},text={Column{
-  TextButton({language=true},modifier=Modifier.fillMaxWidth()){Text(tr(R.string.cb_250))}
-  TextButton(buttons,modifier=Modifier.fillMaxWidth()){Text(tr(R.string.cb_165))}
+  TextButton({language=true},modifier=Modifier.fillMaxWidth()){
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){ Icon(Icons.Rounded.Language,null); Spacer(Modifier.width(8.dp)); Text(tr(R.string.cb_250)) }
+  }
+  TextButton(buttons,modifier=Modifier.fillMaxWidth()){
+    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){ Icon(Icons.Rounded.Tune,null); Spacer(Modifier.width(8.dp)); Text(tr(R.string.cb_165)) }
+  }
  }},confirmButton={TextButton(dismiss){Text(tr(R.string.cb_029))}})
  if(language)LanguageDialog{language=false}
 }

@@ -738,7 +738,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                     neoLabel("المزيد","More"))
                             }
                             CompositionLocalProvider(LocalLayoutDirection provides if (neoLabel("ar","en")=="ar") LayoutDirection.Rtl else LayoutDirection.Ltr) {
-                            DropdownMenu(
+                            NeoLocalizedMenu(
                                 expanded=noteMoreMenu,
                                 onDismissRequest={noteMoreMenu=false}
                             ) {
@@ -769,6 +769,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 if(existing==null) DropdownMenuItem(
                                     modifier=Modifier.testTag("notes_recover_old_draft_action"),
                                     text={Text(neoLabel("استرجاع مسودة قديمة","Recover an older draft"))},
+                                    leadingIcon={Icon(Icons.Rounded.History,null)},
                                     onClick={
                                         noteMoreMenu=false
                                         scope.launch {

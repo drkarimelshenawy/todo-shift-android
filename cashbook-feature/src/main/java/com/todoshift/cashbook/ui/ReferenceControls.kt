@@ -60,7 +60,7 @@ internal fun ReferenceDateTime(day: String, time: String, enabled: Boolean, date
     val context = CashBookText.dialogContext(LocalContext.current)
     val dateClick = {
         val d = LocalDate.parse(day)
-        DatePickerDialog(context, { _, y, m, n -> dateChanged(LocalDate.of(y, m + 1, n).toString()) }, d.year, d.monthValue - 1, d.dayOfMonth).apply{setOnShowListener{window?.decorView?.layoutDirection=android.view.View.LAYOUT_DIRECTION_LTR};show()}
+        DatePickerDialog(context, { _, y, m, n -> dateChanged(LocalDate.of(y, m + 1, n).toString()) }, d.year, d.monthValue - 1, d.dayOfMonth).apply{setOnShowListener{window?.decorView?.layoutDirection=if(CashBookText.arabic()) android.view.View.LAYOUT_DIRECTION_RTL else android.view.View.LAYOUT_DIRECTION_LTR};show()}
         Unit
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -72,7 +72,7 @@ internal fun ReferenceDateTime(day: String, time: String, enabled: Boolean, date
         }
         Row(Modifier.weight(0.36f).height(42.dp).border(1.dp, ReferenceBorder, ReferenceShape).clickable(enabled, role = Role.Button) {
             val t = time.takeIf { it.isNotEmpty() }?.let(LocalTime::parse) ?: LocalTime.now()
-            TimePickerDialog(context, { _, h, m -> timeChanged(String.format(Locale.ROOT, "%02d:%02d", h, m)) }, t.hour, t.minute, false).apply{setOnShowListener{window?.decorView?.layoutDirection=android.view.View.LAYOUT_DIRECTION_LTR};show()}
+            TimePickerDialog(context, { _, h, m -> timeChanged(String.format(Locale.ROOT, "%02d:%02d", h, m)) }, t.hour, t.minute, false).apply{setOnShowListener{window?.decorView?.layoutDirection=if(CashBookText.arabic()) android.view.View.LAYOUT_DIRECTION_RTL else android.view.View.LAYOUT_DIRECTION_LTR};show()}
         }.padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(time.takeIf { it.isNotEmpty() }?.let { LocalTime.parse(it).format(DateTimeFormatter.ofPattern("hh:mm a", CashBookText.locale())) } ?: tr(R.string.cb_113), Modifier.weight(1f), fontSize = 12.sp, maxLines = 1)
             RefIcon(R.drawable.cb_clock, tr(R.string.cb_114), Modifier.size(19.dp))

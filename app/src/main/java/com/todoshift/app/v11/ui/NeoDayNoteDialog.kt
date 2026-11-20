@@ -570,11 +570,15 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             it is NeoDocumentBlocks.Block.PageBreak
         }
     }
-    val activeText=if(hasDocumentBlocks) focusedParagraph ?: NeoRichEditorState.open("")
+    // A4 and advanced-canvas text is edited in paragraph-owned BasicTextFields.
+    // Toolbar actions must target that exact selected paragraph, even when the
+    // document contains no tables, images or explicit page breaks.
+    val usesParagraphEditor = documentA4 || advancedCanvas || hasDocumentBlocks
+    val activeText=if(usesParagraphEditor) focusedParagraph ?: NeoRichEditorState.open("")
         else rich
     val applyToActiveText:(NeoRichEditorState)->Unit={next ->
         if(!closing) {
-            if(hasDocumentBlocks) commitFocusedParagraph?.invoke(next)
+            if(usesParagraphEditor) commitFocusedParagraph?.invoke(next)
             else editRich(next)
         }
     }
@@ -635,7 +639,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                             Column(Modifier.fillMaxWidth()) {
                                 NeoNoteQuickBar(
                                     state=activeText,
-                                    enabled=!hasDocumentBlocks || focusedParagraph!=null,
+                                    enabled=!usesParagraphEditor || focusedParagraph!=null,
                                     onChange=applyToActiveText,
                                     onFormat={
                                         formatInitialTab=0
@@ -917,7 +921,9 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                         NeoDocumentBlocks.replaceParagraphAt(
                                             noteSource(),startLine,nextParagraph)
                                     }.onSuccess {updated ->
-                                        replaceDocumentSource(updated)
+                                        // Do not reset the active paragraph's selection just
+                                        // because its rich tags have been serialized.
+                                        if(updated!=noteSource()) replaceDocumentSource(updated)
                                     }.onFailure {failure ->
                                         error=failure.message ?: "Could not update paragraph"
                                     }

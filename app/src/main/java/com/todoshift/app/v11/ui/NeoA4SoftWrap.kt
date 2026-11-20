@@ -13,7 +13,12 @@ internal object NeoA4SoftWrap {
         lineBottoms:FloatArray,contentHeightPx:Int,maxHeightPx:Int):List<Slice> {
         require(maxHeightPx>0 && contentHeightPx>=0)
         require(lineStarts.size==lineTops.size && lineTops.size==lineBottoms.size)
-        require(lineTops.all{it>=0})
+        require(lineTops.all{it in 0..contentHeightPx})
+        // A corrupt layout must never generate a negative or clipped page slice.
+        require(lineBottoms.indices.all { i ->
+            lineBottoms[i].isFinite() && lineBottoms[i]>=lineTops[i].toFloat() &&
+                lineBottoms[i]<=contentHeightPx.toFloat()
+        })
         for(i in 1 until lineTops.size)require(lineTops[i]>=lineTops[i-1])
         val split=ranges(length,lineStarts,lineBottoms,maxHeightPx.toFloat())
         return split.mapIndexed { index,range ->

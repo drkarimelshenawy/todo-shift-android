@@ -214,6 +214,8 @@ internal fun NeoNoteFormatSheet(
     onDefaultRuling:()->Unit,
     onNoteAppearance:()->Unit,
     onPageColor:()->Unit,
+    pageBorderStyle:String=NeoPageBorders.NONE,
+    onPageBorderChange:(String)->Unit={},
     onDismiss:()->Unit
 ) {
     var tab by remember(initialTab) {mutableIntStateOf(initialTab)}
@@ -355,6 +357,26 @@ internal fun NeoNoteFormatSheet(
                     }
                     TextButton(onClick=onDefaultRuling) {
                         Text(neoLabel("استخدام إعداد التسطير الافتراضي","Use default ruling"))
+                    }
+                    Text(neoLabel("حدود الصفحة • تخطيط الصفحة", "Page borders • Page Layout"),
+                        style=MaterialTheme.typography.titleSmall)
+                    Text(neoLabel("إطارات خارج هوامش الكتابة والعنوان، وتظهر في A4 وPDF وWord.",
+                        "Borders stay outside the title and text margins, in A4, PDF and Word."),
+                        style=MaterialTheme.typography.bodySmall)
+                    listOf(
+                        listOf(NeoPageBorders.NONE to neoLabel("بدون", "None"),
+                            NeoPageBorders.SINGLE to neoLabel("بسيط", "Simple"),
+                            NeoPageBorders.DOUBLE to neoLabel("مزدوج", "Double")),
+                        listOf(NeoPageBorders.DASHED to neoLabel("متقطع", "Dashed"),
+                            NeoPageBorders.DOTTED to neoLabel("منقّط", "Dotted"))
+                    ).forEach { row ->
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                            row.forEach { (style,label) ->
+                                FilterChip(selected=pageBorderStyle==style,
+                                    onClick={onPageBorderChange(style)},
+                                    label={Text(label,maxLines=1)},modifier=Modifier.weight(1f))
+                            }
+                        }
                     }
                     OutlinedButton(onClick=onPageColor,modifier=Modifier.fillMaxWidth()) {
                         Icon(Icons.Rounded.Palette,null)

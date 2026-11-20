@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +61,7 @@ internal fun NeoDocumentCanvas(
     arabicFont:String="system",
     englishFont:String="system",
     a4:Boolean=false,
+    pageBorderStyle:String=NeoPageBorders.NONE,
     inlineEditing:Boolean=false,
     onParagraphEdited:((Int,String)->Unit)?=null,
     onActiveParagraph:((NeoRichEditorState,(NeoRichEditorState)->Unit)->Unit)?=null
@@ -317,6 +319,11 @@ internal fun NeoDocumentCanvas(
                 // A4 zoom must scale the printed text as well as the paper.
                 // Keep dp-based page geometry unchanged; only scale sp text
                 // inside the sheet to avoid applying zoom twice to margins.
+                Box(Modifier.fillMaxSize().drawBehind {
+                    if(a4 && pageBorderStyle!=NeoPageBorders.NONE)
+                        NeoPageBorders.draw(drawContext.canvas.nativeCanvas,
+                            size.width,size.height,pageBorderStyle)
+                }) {
                 val baseDensity=LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(
                     density=baseDensity.density,
@@ -418,6 +425,7 @@ internal fun NeoDocumentCanvas(
                         }
                     }
                     }
+                }
                 }
                 }
             }

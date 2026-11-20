@@ -114,6 +114,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
 
     var color by rememberSaveable { mutableStateOf(styleStore.noteColor(id)) }
     var border by rememberSaveable { mutableStateOf(styleStore.snapshot().optJSONObject("noteBorders")?.optBoolean(id,false) ?: false) }
+    var pageBorderStyle by rememberSaveable(id) { mutableStateOf(NeoPageBorders.load(styleStore, id)) }
     var title by rememberSaveable { mutableStateOf(existing?.title ?: initialTitle.take(300)) }
     var body by rememberSaveable(stateSaver=TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue(existing?.details ?: initialBody.take(16_000)))
@@ -289,6 +290,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     existingTaskLinks=recovered.optJSONArray("existingTaskLinks")?.let {a->(0 until a.length()).map {a.getString(it)}} ?: emptyList()
                     taskSpecs=recovered.optJSONArray("taskSpecs")?.let { array->(0 until array.length()).map {array.getString(it)} } ?: taskSpecs
                     reminder=recovered.optString("reminder",reminder);background=recovered.optString("background",background);color=recovered.optString("color",color);border=recovered.optBoolean("border",border)
+                    pageBorderStyle=NeoPageBorders.normalize(recovered.optString("pageBorderStyle",pageBorderStyle))
                     ruledOverride=if(recovered.has("ruledOverride")) recovered.optBoolean("ruledOverride") else null
                     arabicFontOverride=recovered.optString("arabicFontOverride").takeIf {it in NeoNotePresentation.FONT_KEYS}
                     englishFontOverride=recovered.optString("englishFontOverride").takeIf {it in NeoNotePresentation.FONT_KEYS}
@@ -307,7 +309,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                 "Could not read encrypted draft; it has not been deleted.")
         }
     }
-    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,documentA4,background,color,border,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride)).toString()
+    fun editVersion():String = org.json.JSONArray(listOf(id,title,noteSource(),tags,pinned,archived,trashed,locked,hidden,previewHidden,documentA4,background,color,border,pageBorderStyle,reminder,calendarLinked,linkedDate,linkedCalendar,taskSpecs,detachedTasks,existingTaskLinks,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride)).toString()
     suspend fun persistNote(close: Boolean): Boolean {
         while(pending) delay(10)
         if(rootWritePending || !draftReady || conflictingDraft!=null) return false
@@ -342,6 +344,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         return try {
             val next=withContext(Dispatchers.IO) {com.todoshift.app.backup.Neo4LocalBackup(context.applicationContext).saveNote(expected,expectedMetadata,note,color,border,
                 presentation=NeoNotePresentation(ruledOverride,arabicFontOverride,englishFontOverride),
+                pageBorderStyle=pageBorderStyle,
                 linkedTasks=(linkedTasks+linkedExisting).distinctBy {it.id}.filterNot {it.id in detachedTasks},detachedTaskIds=detachedTasks.toSet())}
             expected=next;expectedMetadata=withContext(Dispatchers.IO) {styleStore.snapshot().toString()};sourceRevision=note.toString()
             lastSavedEdit=savedEdit
@@ -390,6 +393,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
         val value=JSONObject().put("editVersion",editVersion()).put("id",id).put("source",sourceRevision).put("title",title).put("details",noteSource()).put("tags",tags)
             .put("calendarLinked",calendarLinked).put("linkedDate",linkedDate).put("linkedCalendar",linkedCalendar.orEmpty()).put("pinned",pinned).put("archived",archived).put("trashed",trashed).put("locked",locked).put("hidden",hidden).put("previewHidden",previewHidden).put("documentA4",documentA4)
             .put("taskSpecs",org.json.JSONArray(taskSpecs)).put("detachedTasks",org.json.JSONArray(detachedTasks)).put("existingTaskLinks",org.json.JSONArray(existingTaskLinks)).put("reminder",reminder).put("background",background).put("color",color).put("border",border)
+            .put("pageBorderStyle",pageBorderStyle)
         ruledOverride?.let {value.put("ruledOverride",it)}
         arabicFontOverride?.let {value.put("arabicFontOverride",it)}
         englishFontOverride?.let {value.put("englishFontOverride",it)}
@@ -413,7 +417,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
             if(!saved && draftWritten) exitWithDraft=next
         }
     }
-    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,documentA4,background,color,border,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride,documentA4) {
+    LaunchedEffect(title,body.text,rich.value.text,rich.characters,richDirty,tags,pinned,archived,trashed,locked,hidden,previewHidden,documentA4,background,color,border,pageBorderStyle,reminder,taskSpecs,detachedTasks,existingTaskLinks,calendarLinked,linkedDate,linkedCalendar,draftReady,pending,mediaVersion,ruledOverride,arabicFontOverride,englishFontOverride,documentA4) {
         if(!draftReady || pending || editVersion()==lastSavedEdit) return@LaunchedEffect
         delay(600)
         try { keepDraft();withContext(NonCancellable) {persistNote(false)} }
@@ -941,6 +945,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                 arabicFont=arabicTypeface,
                                 englishFont=englishTypeface,
                                 a4=documentA4,
+                                pageBorderStyle=pageBorderStyle,
                                 onChecklist={line ->
                                     if(!pending) {
                                         val current=noteSource()
@@ -1142,6 +1147,8 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     onDefaultRuling={ruledOverride=null},
                     onNoteAppearance={showFormatSheet=false;appearanceOpen=true},
                     onPageColor={showFormatSheet=false;paperPaletteOpen=true},
+                    pageBorderStyle=pageBorderStyle,
+                    onPageBorderChange={pageBorderStyle=it},
                     onDismiss={showFormatSheet=false}
                 )
                 // A blocked save must never hide the recovery action in settings.
@@ -1190,6 +1197,7 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                                             background=stale.optString("background",background)
                                             color=stale.optString("color",color)
                                             border=stale.optBoolean("border",border)
+                                            pageBorderStyle=NeoPageBorders.normalize(stale.optString("pageBorderStyle",pageBorderStyle))
                                             pinned=stale.optBoolean("pinned",pinned)
                                             archived=stale.optBoolean("archived",archived)
                                             trashed=stale.optBoolean("trashed",trashed)

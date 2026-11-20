@@ -49,6 +49,23 @@ class NeoA4SoftWrapTest {
         assertTrue(slices.all{it.heightPx>0})
     }
 
+    @Test fun slicesWithDifferentLineHeightsRetainEveryPixelAndOffset() {
+        // Mixed Arabic headings and changed font sizes produce uneven lines.
+        val starts=intArrayOf(0,8,14,24,30)
+        val tops=intArrayOf(0,35,61,79,118)
+        val bottoms=floatArrayOf(35f,61f,79f,118f,147f)
+        val fragments=NeoA4SoftWrap.slices(36,starts,tops,bottoms,147,65)
+        assertTrue(fragments.size>=2)
+        assertEquals(0,fragments.first().start)
+        assertEquals(36,fragments.last().end)
+        assertEquals(147,fragments.sumOf { it.heightPx })
+        assertTrue(fragments.all {it.heightPx>0})
+        assertTrue(fragments.zipWithNext().all {
+            it.first.end==it.second.start &&
+                it.first.bottomPx==it.second.topPx
+        })
+    }
+
     @Test fun pageSlicesNeverBecomePersistedParagraphText() {
         val source="<b>مرحبا بالعالم</b> and English without inserted breaks"
         val parsed=NeoDocumentBlocks.parse(source)

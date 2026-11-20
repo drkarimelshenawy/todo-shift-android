@@ -249,7 +249,15 @@ internal fun NeoDocumentCanvas(
                         }
                     }
                 } else {
-                    val height=measuredBlockHeights[blockKey(block)] ?: 0
+                    // A committed keystroke invalidates measured heights. Use
+                    // line-layout slice geometry immediately rather than placing
+                    // all slices on the same sheet for one composition frame;
+                    // this also avoids a caret/focus jump during live reflow.
+                    val plannedHeight=(block as? NeoDocumentBlocks.Block.Paragraph)
+                        ?.takeIf { it.wholeHeightPx>0 }
+                        ?.let { (it.sliceBottomPx-it.sliceTopPx).coerceAtLeast(1) } ?: 0
+                    val height=measuredBlockHeights[blockKey(block)]
+                        ?.takeIf { it>0 } ?: plannedHeight
                     if(a4 && height>0 && used+height>availableHeightPx &&
                         (result.last().isNotEmpty() ||
                             (result.size==1 && used>0))) {

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -57,8 +58,11 @@ class NeoA4LiveEditingUiTest {
         compose.waitForIdle()
         assertNull(failure)
         assertTrue(source.contains("اختبار"))
+        // Recomposition, focus handoff and autosave must not duplicate, drop
+        // or reorder a single character of the original long paragraph.
+        assertEquals(initial.length+" اختبار".length,source.length)
+        assertEquals(initial,source.replaceFirst(" اختبار",""))
         assertTrue("Pagination must not insert serialized page breaks",
             !source.contains(NeoDocumentBlocks.PAGE_BREAK))
-        assertTrue(source.length>initial.length)
     }
 }

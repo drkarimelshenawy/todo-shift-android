@@ -1,5 +1,8 @@
 package com.todoshift.cashbook.ui
 import android.content.Context
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.ui.Alignment
 import android.content.res.Configuration
 import androidx.compose.runtime.*
 import androidx.compose.material3.*
@@ -10,6 +13,30 @@ import androidx.compose.ui.unit.dp
 import com.todoshift.cashbook.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.Locale
+/** Persisted landing section. Switching tabs doesn't overwrite the user's preference. */
+object CashBookSectionPreference {
+    const val ACCOUNTS = "accounts"
+    const val DEBTS = "debts"
+    const val SALARY = "salary"
+    val validSections = listOf(ACCOUNTS, DEBTS, SALARY)
+    private const val FILE = "cashbook_section_preferences"
+    private const val KEY = "default_section"
+    private val revision = mutableIntStateOf(0)
+
+    fun normalize(section: String?): String = section?.takeIf { it in validSections } ?: ACCOUNTS
+    fun load(context: Context): String {
+        revision.intValue // Make settings and the active Cash Book react to changed defaults.
+        return normalize(context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY, ACCOUNTS))
+    }
+    fun save(context: Context, section: String): Boolean {
+        require(section in validSections)
+        val ok = context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putString(KEY, section).commit()
+        if (ok) revision.intValue++
+        return ok
+    }
+}
+
 /** Module language override; AUTO uses the host context locale. Layout follows the selected language. */
 object CashBookText{
  private lateinit var app:Context
@@ -42,6 +69,42 @@ internal fun tr(id:Int,vararg args:Any)=CashBookText.get(id,*args)
  }},confirmButton={TextButton(dismiss){Text(tr(R.string.cb_029))}})
  if(language)LanguageDialog{language=false}
 }
+@Composable
+internal fun CashBookDefaultSectionDialog(dismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var selected by remember { mutableStateOf(CashBookSectionPreference.load(context)) }
+    var failure by remember { mutableStateOf(false) }
+    val options = listOf(
+        Triple(CashBookSectionPreference.ACCOUNTS, tr(R.string.cb_section_accounts), Icons.Rounded.AccountBalanceWallet),
+        Triple(CashBookSectionPreference.DEBTS, tr(R.string.cb_section_debts), Icons.Rounded.ReceiptLong),
+        Triple(CashBookSectionPreference.SALARY, tr(R.string.cb_section_salary), Icons.Rounded.Payments),
+    )
+    AlertDialog(
+        onDismissRequest = dismiss,
+        title = { Text(if (CashBookText.arabic()) "القسم الافتراضي" else "Default section") },
+        text = {
+            Column {
+                options.forEach { (key, label, icon) ->
+                    TextButton(onClick = {
+                        if (CashBookSectionPreference.save(context, key)) { selected = key; dismiss() }
+                        else failure = true
+                    }, modifier = Modifier.fillMaxWidth().testTag("cashbook_default_$key")) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Icon(icon, null)
+                            Text(label, Modifier.weight(1f))
+                            if (selected == key) Icon(Icons.Rounded.Check, null)
+                        }
+                    }
+                }
+                if (failure) Text(if (CashBookText.arabic()) "تعذر حفظ الاختيار" else "Unable to save selection",
+                    color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = { TextButton(onClick = dismiss) { Text(tr(R.string.cb_029)) } },
+    )
+}
+
 internal fun iconGroupName(index:Int)=tr(intArrayOf(R.string.cb_group_0,R.string.cb_group_1,R.string.cb_group_2,R.string.cb_group_3,R.string.cb_group_4,R.string.cb_group_5,R.string.cb_group_6,R.string.cb_group_7)[index])
 private val presetIds=listOf(R.string.cb_001 to R.string.cb_002,R.string.cb_115 to R.string.cb_116,R.string.cb_117 to R.string.cb_118,R.string.cb_119 to R.string.cb_120,R.string.cb_121 to R.string.cb_122,R.string.cb_123 to R.string.cb_124,R.string.cb_125 to R.string.cb_126,R.string.cb_127 to R.string.cb_128,R.string.cb_066 to R.string.cb_129,R.string.cb_130 to R.string.cb_131,R.string.cb_132 to R.string.cb_133,R.string.cb_134 to R.string.cb_135)
 internal fun displayLabels(incoming:String,outgoing:String):Pair<String,String>{

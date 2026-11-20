@@ -2,6 +2,7 @@ package com.todoshift.app.v11.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -136,6 +137,7 @@ fun NeoPainterBar(
         when {
             committing || write.pending || queue.isNotEmpty() -> { finishWhenSaved = true }
             review != null -> review = null
+            toolsOpen -> toolsOpen = false
             typesOpen -> typesOpen = false
             else -> requestExit {}
         }
@@ -283,6 +285,41 @@ fun NeoPainterBar(
                             }
                         }
                     }
+            // Inline anchored action panel: not another Popup nested inside the painter Popup.
+            // Its position is always next to the tools row, regardless of screen width or scrolling.
+            if (toolsOpen) {
+                val undoAction = LocalNeoUndo.current
+                Surface(
+                    modifier = Modifier.align(Alignment.End).widthIn(min = 196.dp, max = 248.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp).testTag("painter_tools_menu"),
+                    shape = RoundedCornerShape(14.dp),
+                    shadowElevation = 6.dp,
+                    tonalElevation = 2.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                ) {
+                    Column {
+                        val undoEnabled = undoAction.enabled && queue.isEmpty() && !write.pending
+                        Row(Modifier.fillMaxWidth().clickable(enabled = undoEnabled) {
+                            toolsOpen = false; undoAction.perform()
+                        }.padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Rounded.Undo, null, Modifier.size(20.dp))
+                            Text(neoLabel("تراجع", "Undo"))
+                        }
+                        HorizontalDivider()
+                        val multipleEnabled = queue.isEmpty() && !write.pending
+                        Row(Modifier.fillMaxWidth().clickable(enabled = multipleEnabled) {
+                            toolsOpen = false; onBulk(!bulk); onClear()
+                        }.padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Rounded.DateRange, null, Modifier.size(20.dp))
+                            Text(neoLabel("أيام متعددة", "Multiple dates"))
+                        }
+                    }
+                }
+            }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Row(
                     Modifier.weight(1f).horizontalScroll(rememberScrollState()),
@@ -319,7 +356,7 @@ fun NeoPainterBar(
                             onClick = {
                                 workplace = place.id
                                 erase = false
-                                typesOpen = false
+                                typesOpen = true // A different workplace must reopen its available shift kinds.
                                 runCatching { store.update { it.put("paintWorkplace", place.id) } }
                                     .onFailure { error = it.message }
                             },
@@ -346,29 +383,11 @@ fun NeoPainterBar(
                     Icon(Icons.AutoMirrored.Rounded.Backspace, neoLabel("ممحاة", "Eraser"))
                 }
                 Box {
-                    IconButton(onClick = { toolsOpen = true }) {
+                    IconButton(onClick = { toolsOpen = !toolsOpen; if (toolsOpen) typesOpen = false },
+                        modifier = Modifier.testTag("painter_tools_anchor")) {
                         Icon(Icons.Rounded.MoreVert, neoLabel("أدوات الرسم", "Painting tools"))
                     }
-                    DropdownMenu(expanded = toolsOpen, onDismissRequest = { toolsOpen = false }) {
-                        val undo = LocalNeoUndo.current
-                        DropdownMenuItem(
-                            text = { Text(neoLabel("تراجع", "Undo")) },
-                            enabled = undo.enabled && queue.isEmpty() && !write.pending,
-                            onClick = {
-                                toolsOpen = false
-                                undo.perform()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(neoLabel("أيام متعددة", "Multiple dates")) },
-                            enabled = queue.isEmpty() && !write.pending,
-                            onClick = {
-                                toolsOpen = false
-                                onBulk(!bulk)
-                                onClear()
-                            },
-                        )
-                    }
+
                 }
                     if (workplaces.isEmpty())
                         TextButton(onClick = { navigator.open("WORKPLACES") }) {

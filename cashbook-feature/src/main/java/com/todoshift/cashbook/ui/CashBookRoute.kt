@@ -19,6 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -74,7 +76,11 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     val accounts = allAccounts.filter { !it.archived && it.id !in debtIds }
     val selectableAccounts = allAccounts.filter { !it.archived }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
-    var mainSection by rememberSaveable { mutableStateOf("accounts") }
+    val context = LocalContext.current
+    val defaultSection = CashBookSectionPreference.load(context)
+    var mainSection by rememberSaveable { mutableStateOf(defaultSection) }
+    // The default applies every time the finance tab is opened, not only on first install.
+    LaunchedEffect(defaultSection) { mainSection = defaultSection }
     val active = selected?.takeIf { id ->
         if (mainSection == "debts") allAccounts.any { it.id == id } && id in debtIds
         else selectableAccounts.any { it.id == id } && id !in debtIds
@@ -111,6 +117,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     var pendingRestore by remember { mutableStateOf<Uri?>(null) }
     var sectionSettings by rememberSaveable{mutableStateOf(false)}
     var defaultSettings by rememberSaveable { mutableStateOf(false) }
+    var startSectionSettings by rememberSaveable { mutableStateOf(false) }
 
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { it?.let(vm::backup) }
     val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { pendingRestore = it }
@@ -126,7 +133,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
         }
         return
     }
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+    CompositionLocalProvider(LocalLayoutDirection provides if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) {
         Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)) {
             // Cash Book partitions. Work entitlements deliberately have no local salary data.
             Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primary).padding(horizontal = 6.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -190,9 +197,13 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                 Box {
                     IconButton(onClick = { overflow = true }, modifier = Modifier.testTag("section_options").semantics { contentDescription = tr(R.string.cb_009) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = MaterialTheme.colorScheme.onPrimary) }
                     DropdownMenu(overflow, { overflow = false }) {
-                        DropdownMenuItem(text={Text(tr(R.string.cb_011))},enabled=!state.busy&&accounts.count{a->snapshot?.debts?.none{it.accountId==a.id}!=false}>1,onClick={overflow=false;open("TRANSFER")})
-                        DropdownMenuItem(text={Text(tr(R.string.cb_012))},enabled=!state.busy&&snapshot!=null,onClick={overflow=false;sectionSettings=true;vm.clearMessage()},modifier=Modifier.testTag("default_settings_open"))
-                        DropdownMenuItem(text={Text(tr(R.string.cb_013))},enabled=snapshot!=null,onClick={overflow=false;dataMenu=true},modifier=Modifier.testTag("data_management_open"))
+                        DropdownMenuItem(text={Text(if (CashBookText.arabic()) "القسم الافتراضي" else "Default section")},
+                            leadingIcon={Icon(Icons.Rounded.Home, null)},
+                            onClick={overflow=false;startSectionSettings=true},
+                            modifier=Modifier.testTag("cashbook_default_section_open"))
+                        DropdownMenuItem(text={Text(tr(R.string.cb_011))},leadingIcon={Icon(Icons.Rounded.SwapHoriz,null)},enabled=!state.busy&&accounts.count{a->snapshot?.debts?.none{it.accountId==a.id}!=false}>1,onClick={overflow=false;open("TRANSFER")})
+                        DropdownMenuItem(text={Text(tr(R.string.cb_012))},leadingIcon={Icon(Icons.Rounded.Tune,null)},enabled=!state.busy&&snapshot!=null,onClick={overflow=false;sectionSettings=true;vm.clearMessage()},modifier=Modifier.testTag("default_settings_open"))
+                        DropdownMenuItem(text={Text(tr(R.string.cb_013))},leadingIcon={Icon(Icons.Rounded.Folder,null)},enabled=snapshot!=null,onClick={overflow=false;dataMenu=true},modifier=Modifier.testTag("data_management_open"))
                     }
                 }
             }
@@ -276,6 +287,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     if (custom) AlertDialog(onDismissRequest = { custom = false }, title = { Text(tr(R.string.cb_030)) }, text = {
         Column { DayPicker(tr(R.string.cb_031), from, !state.busy) { from = it; if (to < it) to = it }; DayPicker(tr(R.string.cb_032), to, !state.busy) { to = it; if (from > it) from = it } }
     }, confirmButton = { TextButton(onClick = { period = "CUSTOM"; custom = false }) { Text(tr(R.string.cb_033)) } }, dismissButton = { TextButton(onClick = { custom = false }) { Text(tr(R.string.cb_034)) } })
+    if(startSectionSettings) CashBookDefaultSectionDialog { startSectionSettings = false }
     if(sectionSettings)SectionSettings({sectionSettings=false}){sectionSettings=false;defaultSettings=true}
     if (defaultSettings) DefaultButtonsDialog(defaults, state.busy, state.error, { defaultSettings = false; vm.clearMessage() }) { plus, minus -> vm.defaultLabels(plus, minus) { defaultSettings = false } }
     if (addAccount && !debtCreate) CompactAccountDialog(null,defaults,state.busy,state.error,{addAccount=false;vm.clearMessage()},{name,opening,day,created,plus,minus,icon->vm.newAccount(name,opening,day,created,plus,minus,icon){addAccount=false}},createDebt={debtCreate=true})
@@ -383,7 +395,7 @@ private fun EntryScreen(accounts: List<Ledger.Account>, selected: String?, initi
     val keyboard = LocalSoftwareKeyboardController.current
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     run {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        CompositionLocalProvider(LocalLayoutDirection provides if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceVariant) {
                 Column(Modifier.fillMaxSize().testTag("editor_viewport")) {
                     Row(Modifier.fillMaxWidth().heightIn(min = CashBookCompact.HeaderHeight).background(MaterialTheme.colorScheme.primary), verticalAlignment = Alignment.CenterVertically) {

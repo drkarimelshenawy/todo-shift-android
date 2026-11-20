@@ -6,6 +6,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.todoshift.cashbook.ui.CashBookSectionPreference
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -315,37 +321,89 @@ fun NeoSettingsRow(title: String, summary: String = "", onClick: () -> Unit) {
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
 }
 
+/** Shared locale-aware dropdown used by settings, notes and contextual actions. */
+@Composable
+fun NeoLocalizedMenu(expanded: Boolean, onDismissRequest: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit) {
+    CompositionLocalProvider(LocalLayoutDirection provides
+        if (LocalNeoEnglish.current) LayoutDirection.Ltr else LayoutDirection.Rtl) {
+        DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest, content = content)
+    }
+}
+
 @Composable
 fun NeoContextActions(destination: String) {
     val nav = LocalNeoFeatures.current
     val undo = LocalNeoUndo.current
     var open by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     Box {
         IconButton(onClick = { open = true }) {
             Icon(Icons.Rounded.MoreVert, neoLabel("خيارات $destination", "$destination actions"))
         }
-        DropdownMenu(open, { open = false }) {
+        NeoLocalizedMenu(open, { open = false }) {
             if (destination == "Calendar") {
                 val appearance = LocalNeoAppearance.current
                 val update = LocalNeoOnChange.current
-                DropdownMenuItem(text = { Text(neoLabel("ملخص العمل", "Work summary")) }, onClick = { open = false; nav.open("WORK_SUMMARY") })
-                DropdownMenuItem(text = { Text(neoLabel("إدارة أماكن العمل", "Manage workplaces")) }, onClick = { open = false; nav.open("WORKPLACES") })
+                DropdownMenuItem(
+                    text = { Text(neoLabel("إدارة أماكن العمل", "Manage workplaces")) },
+                    leadingIcon = { Icon(Icons.Rounded.Business, null) },
+                    onClick = { open = false; nav.open("WORKPLACES") },
+                )
+                HorizontalDivider()
+                Text(neoLabel("العرض الافتراضي", "Default calendar view"),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                listOf(
+                    Triple(com.todoshift.app.v11.NeoCalendarView.MONTH, neoLabel("شهر", "Month"), Icons.Rounded.CalendarMonth),
+                    Triple(com.todoshift.app.v11.NeoCalendarView.WEEK, neoLabel("أسبوع", "Week"), Icons.Rounded.ViewWeek),
+                    Triple(com.todoshift.app.v11.NeoCalendarView.DAY, neoLabel("يوم", "Day"), Icons.Rounded.Today),
+                ).forEach { (view, label, icon) ->
+                    DropdownMenuItem(text = { Text(label) },
+                        leadingIcon = { Icon(icon, null) },
+                        trailingIcon = if (appearance.calendarView == view) {
+                            { Icon(Icons.Rounded.Check, neoLabel("محدد", "Selected")) }
+                        } else null,
+                        onClick = { open = false; update(appearance.copy(calendarView = view)) })
+                }
                 if (appearance.calendarView == com.todoshift.app.v11.NeoCalendarView.WEEK)
-                    DropdownMenuItem(text = { Text(if (appearance.weeklyRows) neoLabel("الأسبوع: ٧ أعمدة", "Week: 7 columns") else neoLabel("الأسبوع: ٧ صفوف", "Week: 7 rows")) },
+                    DropdownMenuItem(
+                        text = { Text(if (appearance.weeklyRows) neoLabel("الأسبوع: ٧ أعمدة", "Week: 7 columns")
+                            else neoLabel("الأسبوع: ٧ صفوف", "Week: 7 rows")) },
+                        leadingIcon = { Icon(Icons.Rounded.ViewModule, null) },
                         onClick = { open = false; update(appearance.copy(weeklyRows = !appearance.weeklyRows)) })
+            } else if (destination == "Cash Book") {
+                val selected = CashBookSectionPreference.load(context)
+                Text(neoLabel("القسم الافتراضي", "Default finance section"),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                listOf(
+                    Triple(CashBookSectionPreference.ACCOUNTS, neoLabel("الحسابات", "Accounts"), Icons.Rounded.AccountBalanceWallet),
+                    Triple(CashBookSectionPreference.DEBTS, neoLabel("المديونيات", "Debts"), Icons.Rounded.ReceiptLong),
+                    Triple(CashBookSectionPreference.SALARY, neoLabel("مستحقات العمل", "Work entitlements"), Icons.Rounded.Payments),
+                ).forEach { (section, label, icon) ->
+                    DropdownMenuItem(text = { Text(label) }, leadingIcon = { Icon(icon, null) },
+                        trailingIcon = if (selected == section) { { Icon(Icons.Rounded.Check, null) } } else null,
+                        onClick = { if (CashBookSectionPreference.save(context, section)) open = false })
+                }
             }
             NeoFeatureCatalog.entries
                 .filter { it.destination == destination && destination != "Calendar" }
                 .forEach { feature ->
-                    DropdownMenuItem(
-                        text = { Text(neoLabel(feature.ar, feature.en)) },
-                        onClick = {
-                            open = false
-                            nav.open(feature.id)
-                        },
-                    )
+                    val icon: ImageVector = when (feature.id) {
+                        "TASK_TEMPLATES", "SHIFT_TEMPLATE" -> Icons.Rounded.ContentCopy
+                        "STATEMENT", "WORK_SUMMARY" -> Icons.Rounded.Description
+                        "PAYMENTS", "RATES" -> Icons.Rounded.Payments
+                        "ATTACHMENTS" -> Icons.Rounded.AttachFile
+                        "COMPARE", "MONTH_REVIEW" -> Icons.Rounded.Assessment
+                        else -> Icons.Rounded.Tune
+                    }
+                    DropdownMenuItem(text = { Text(neoLabel(feature.ar, feature.en)) },
+                        leadingIcon = { Icon(icon, null) },
+                        onClick = { open = false; nav.open(feature.id) })
                 }
         }
+
     }
 }
 

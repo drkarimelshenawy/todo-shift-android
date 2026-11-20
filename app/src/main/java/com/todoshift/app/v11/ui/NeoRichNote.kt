@@ -577,10 +577,12 @@ internal fun NeoNotePreview(
         androidx.compose.ui.text.style.TextDirection.ContentOrRtl,
     ruled: Boolean = false,
     arabicFont:String="system",
-    englishFont:String="system"
+    englishFont:String="system",
+    a4:Boolean=false
 ) {
-    val paraLineHeight=if(ruled) 42.sp else 32.sp
+    val paraLineHeight=if(a4) 18.sp else if(ruled) 42.sp else 32.sp
     val lineStyle=MaterialTheme.typography.bodyLarge.copy(
+        fontSize=if(a4) 12.sp else MaterialTheme.typography.bodyLarge.fontSize,
         lineHeight=paraLineHeight,textDirection=textDirection,
         textAlign=if(textDirection==androidx.compose.ui.text.style.TextDirection.Ltr)
             androidx.compose.ui.text.style.TextAlign.Left
@@ -652,7 +654,8 @@ internal fun NeoNotePreview(
                 }
                 NeoRuledParagraph(
                     if(styled.isEmpty()) AnnotatedString(" ") else styled,
-                    type.copy(lineHeight=paraLineHeight,textDirection=textDirection),ruled=ruled
+                    type.copy(fontSize=if(a4) (if(heading)15.sp else 12.sp) else type.fontSize,
+                        lineHeight=paraLineHeight,textDirection=textDirection),ruled=ruled
                 )
             }
         }

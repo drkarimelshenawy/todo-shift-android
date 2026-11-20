@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
@@ -61,27 +64,11 @@ internal fun NeoDocumentCanvas(
     onActiveParagraph:((NeoRichEditorState,(NeoRichEditorState)->Unit)->Unit)?=null
 ) {
     val blocks=remember(source){NeoDocumentBlocks.parse(source)}
-    // Read-only A4 sheets can paginate individual source lines without
-    // changing stored text or the editable paragraph's source range.
-    // A single soft-wrapped line can still exceed one sheet; do not claim
-    // full WYSIWYG pagination until text-layout splitting is implemented.
-    // Editing keeps original blocks intact to preserve IME composition,
-    // cursor positions and rich-text serialization.
-    val displayBlocks=remember(blocks,a4,inlineEditing,editable) {
-        if(!a4 || (inlineEditing && editable)) blocks
-        else blocks.flatMap { block ->
-            if(block is NeoDocumentBlocks.Block.Paragraph && '\n' in block.source) {
-                block.source.split('\n').mapIndexed { index,line ->
-                    NeoDocumentBlocks.Block.Paragraph(
-                        source=line,
-                        startLine=block.startLine+index,
-                        endLine=block.startLine+index+1,
-                        sourceHash=block.sourceHash
-                    )
-                }
-            } else listOf(block)
-        }
-    }
+    // Keep a single owner for IME composition in edit mode. This read-only
+    // A4 presentation path never inserts artificial breaks into stored text.
+    val textMeasurer=rememberTextMeasurer()
+    fun blockKey(block:NeoDocumentBlocks.Block):String =
+        "${block.startLine}:${block.endLine}:${(block as? NeoDocumentBlocks.Block.Paragraph)?.pageFragment ?: 0}"
     // Heights are measured from the real Compose content, not guessed from
     // character counts. Page breaks are presentation-only; source is unchanged.
     var zoomPercent by remember(noteId,a4) { mutableIntStateOf(100) }
@@ -91,7 +78,7 @@ internal fun NeoDocumentCanvas(
     val measuredBlockHeights=remember(
         noteId,source,a4,zoomPercent,inlineEditing,editable,viewportWidthPx
     ) {
-        mutableStateMapOf<Int,Int>()
+        mutableStateMapOf<String,Int>()
     }
     var titleHeightPx by remember(noteId,documentTitle,a4,zoomPercent,viewportWidthPx) {
         mutableIntStateOf(0)
@@ -121,6 +108,58 @@ internal fun NeoDocumentCanvas(
         val sheetWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
         val availableHeightPx=with(LocalDensity.current) {
             (sheetWidth*(297f/210f-84f/595f)).roundToPx()
+        }
+        val previewStyle=MaterialTheme.typography.bodyLarge
+        val displayBlocks=remember(blocks,a4,inlineEditing,editable,viewportWidthPx,zoomPercent,
+            arabicFont,englishFont,textDirection,availableHeightPx,textMeasurer,previewStyle) {
+            if(!a4 || (inlineEditing && editable) || viewportWidthPx==0) blocks
+            else blocks.flatMap { block ->
+                if(block !is NeoDocumentBlocks.Block.Paragraph) listOf(block)
+                else block.source.split('\n').flatMapIndexed { lineIndex,line ->
+                    val startLine=block.startLine+lineIndex
+                    val eligible=line.isNotBlank() && line.length<30_000 &&
+                        !line.startsWith("# ") && !line.startsWith("## ") &&
+                        !line.startsWith("### ") && !line.startsWith("- [") &&
+                        !line.startsWith("☐ ") && !line.startsWith("☑ ") &&
+                        !line.contains("<!--task:")
+                    val fragments=if(!eligible) listOf(line) else runCatching {
+                        val rich=NeoRichEditorState.open(line)
+                        val widthPx=(viewportWidthPx*zoomPercent/100f*
+                            (1f-84f/595f)).toInt().coerceAtLeast(1)
+                        val layout=textMeasurer.measure(
+                            text=NeoNoteTypefaces.styled(rich.value.annotatedString,
+                                arabicFont,englishFont),
+                            style=previewStyle.copy(fontSize=(12f*zoomPercent/100f).sp,
+                                lineHeight=(18f*zoomPercent/100f).sp,
+                                textDirection=textDirection),
+                            constraints=Constraints(maxWidth=widthPx)
+                        )
+                        val ranges=NeoA4SoftWrap.ranges(rich.value.text.length,
+                            IntArray(layout.lineCount){layout.getLineStart(it)},
+                            FloatArray(layout.lineCount){layout.getLineBottom(it)},
+                            availableHeightPx*0.72f)
+                        ranges.map { range ->
+                            if(ranges.size==1) line else {
+                                val tokens=rich.hidden.filter {
+                                    it.position>=range.start && (it.position<range.end ||
+                                        (range.end==rich.value.text.length &&
+                                            it.position==range.end))
+                                }.map{it.copy(position=it.position-range.start)}
+                                NeoRichEditorState(
+                                    TextFieldValue(rich.value.annotatedString.subSequence(
+                                        range.start,range.end),TextRange(0)),
+                                    rich.characters.subList(range.start,range.end),
+                                    tokens
+                                ).stored()
+                            }
+                        }
+                    }.getOrElse { listOf(line) }
+                    fragments.mapIndexed { fragment,part ->
+                        NeoDocumentBlocks.Block.Paragraph(
+                            part,startLine,startLine+1,block.sourceHash,fragment)
+                    }
+                }
+            }
         }
         val pages=remember(displayBlocks,a4,availableHeightPx,titleHeightPx,documentTitle,measuredBlockHeights.toMap()) {
             val result=mutableListOf<MutableList<NeoDocumentBlocks.Block>>(mutableListOf())
@@ -163,7 +202,7 @@ internal fun NeoDocumentCanvas(
                         }
                     }
                 } else {
-                    val height=measuredBlockHeights[block.startLine] ?: 0
+                    val height=measuredBlockHeights[blockKey(block)] ?: 0
                     if(a4 && height>0 && used+height>availableHeightPx &&
                         (result.last().isNotEmpty() ||
                             (result.size==1 && used>0))) {
@@ -192,7 +231,7 @@ internal fun NeoDocumentCanvas(
             val pageWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
             Column(Modifier.width(pageWidth)) {
             val a4Height=pageWidth*297f/210f
-            var contentHeightPx by remember(noteId,pageIndex,pageBlocks.map { it.startLine },source,zoomPercent,inlineEditing,editable,viewportWidthPx) {
+            var contentHeightPx by remember(noteId,pageIndex,pageBlocks.map { blockKey(it) },source,zoomPercent,inlineEditing,editable,viewportWidthPx) {
                 mutableIntStateOf(0)
             }
             val maxContentHeightPx=with(LocalDensity.current) {
@@ -243,10 +282,10 @@ internal fun NeoDocumentCanvas(
                         // Keep each editor's identity stable as measured blocks
                         // move between sheets; otherwise Compose can reuse a
                         // different paragraph's IME state at the same position.
-                        androidx.compose.runtime.key(block.startLine,block.endLine) {
+                        androidx.compose.runtime.key(blockKey(block)) {
                         Box(Modifier.fillMaxWidth().onSizeChanged { size ->
-                            if(measuredBlockHeights[block.startLine]!=size.height)
-                                measuredBlockHeights[block.startLine]=size.height
+                            if(measuredBlockHeights[blockKey(block)]!=size.height)
+                                measuredBlockHeights[blockKey(block)]=size.height
                         }) {
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {
@@ -263,7 +302,7 @@ internal fun NeoDocumentCanvas(
                                     NeoNotePreview(block.source,
                                         textDirection=textDirection,
                                         ruled=ruled,arabicFont=arabicFont,
-                                        englishFont=englishFont,
+                                        englishFont=englishFont,a4=a4,
                                         onChecklist=onChecklist?.let {callback->
                                             {line:Int ->callback(block.startLine+line)}
                                         }

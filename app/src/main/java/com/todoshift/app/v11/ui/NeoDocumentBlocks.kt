@@ -16,7 +16,9 @@ internal object NeoDocumentBlocks {
         val sourceHash:String
         data class Paragraph(
             val source:String,override val startLine:Int,override val endLine:Int,
-            override val sourceHash:String
+            override val sourceHash:String,
+            // Read-only A4 pagination identifier; not persisted in source.
+            val pageFragment:Int=0
         ):Block
         data class Table(
             val cells:List<List<String>>,

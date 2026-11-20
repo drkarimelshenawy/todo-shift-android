@@ -202,9 +202,10 @@ internal object NeoDocumentDocx {
             }
         }
         document.append("<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/>")
-        document.append(NeoPageBorders.wordBorderXml(pageBorderStyle))
         document.append("<w:pgMar w:top=\"1134\" w:right=\"1134\"")
-        document.append(" w:bottom=\"1134\" w:left=\"1134\"/></w:sectPr>")
+        document.append(" w:bottom=\"1134\" w:left=\"1134\"/>")
+        document.append(NeoPageBorders.wordBorderXml(pageBorderStyle))
+        document.append("</w:sectPr>")
         document.append("</w:body></w:document>")
 
         val ct=StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")

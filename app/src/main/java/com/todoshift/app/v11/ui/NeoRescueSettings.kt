@@ -15,6 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import com.todoshift.app.v11.*
 
 val neoSettingsGroups =
@@ -59,7 +62,7 @@ private fun NeoSettingsCompactTile(title: String, summary: String, icon: ImageVe
                 Text(summary, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
-            Icon(Icons.Rounded.ChevronLeft, null,
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -67,6 +70,30 @@ private fun NeoSettingsCompactTile(title: String, summary: String, icon: ImageVe
 
 @Composable
 fun NeoRescueSettings(
+    db: V11Database,
+    uiSettings: V11UiSettings,
+    securitySettings: V11SecuritySettings,
+    securityStore: V11SecurityStore,
+    financeAuthorized: Boolean,
+    onAccountsUnlocked: () -> Unit,
+    onSecurityChange: (V11SecuritySettings) -> Unit,
+    onUiChange: (V11UiSettings) -> Unit,
+    onNeoRestored: (com.todoshift.app.backup.Neo4RestoredState) -> Unit,
+    initialPage: String = "HOME",
+    onBack: () -> Unit = {},
+) {
+    CompositionLocalProvider(LocalLayoutDirection provides
+        if (LocalNeoEnglish.current) LayoutDirection.Ltr else LayoutDirection.Rtl) {
+        NeoRescueSettingsContent(
+            db, uiSettings, securitySettings, securityStore, financeAuthorized,
+            onAccountsUnlocked, onSecurityChange, onUiChange, onNeoRestored,
+            initialPage, onBack,
+        )
+    }
+}
+
+@Composable
+private fun NeoRescueSettingsContent(
     db: V11Database,
     uiSettings: V11UiSettings,
     securitySettings: V11SecuritySettings,

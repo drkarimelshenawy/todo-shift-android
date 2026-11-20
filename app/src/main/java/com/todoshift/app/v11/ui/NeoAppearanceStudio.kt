@@ -439,14 +439,31 @@ fun <T> NeoChoice(
                 Text(label(selected), maxLines = 2)
                 Icon(Icons.Rounded.KeyboardArrowDown, null)
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            NeoLocalizedMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->
+                    val icon = when (option) {
+                        is NeoCalendarView -> when (option) {
+                            NeoCalendarView.MONTH -> Icons.Rounded.CalendarMonth
+                            NeoCalendarView.WEEK -> Icons.Rounded.ViewWeek
+                            NeoCalendarView.DAY -> Icons.Rounded.Today
+                        }
+                        is NeoLanguage -> Icons.Rounded.Language
+                        is NeoBrightness -> Icons.Rounded.Brightness6
+                        is NeoDirection -> Icons.Rounded.SwapHoriz
+                        is NeoTypeface -> Icons.Rounded.TextFields
+                        is NeoPerformance -> Icons.Rounded.Speed
+                        is NeoDensity -> Icons.Rounded.Tune
+                        else -> Icons.Rounded.Tune
+                    }
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 if (option is NeoPalette) PaletteSwatch(option)
                                 Text(label(option))
                             }
+                        },
+                        leadingIcon = if (option is NeoPalette) null else {
+                            { Icon(icon, null) }
                         },
                         trailingIcon = if (option == selected) {
                             { Icon(Icons.Rounded.Check, neoLabel("محدد", "Selected"), Modifier.size(18.dp)) }

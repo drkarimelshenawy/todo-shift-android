@@ -139,23 +139,23 @@ internal fun NeoNoteProToolbar(
                         neoLabel("تصدير المستند","Export document"),
                         Modifier.size(20.dp))
                 }
-                DropdownMenu(expanded=exportOpen,onDismissRequest={exportOpen=false}) {
+                NeoLocalizedMenu(expanded=exportOpen,onDismissRequest={exportOpen=false}) {
                     DropdownMenuItem(
-                        text={Text(neoLabel("Word DOCX قابل للتحرير","Editable Word DOCX"))},
+                        leadingIcon={Icon(Icons.Rounded.Description,null)},text={Text(neoLabel("Word DOCX قابل للتحرير","Editable Word DOCX"))},
                         onClick={
                             exportOpen=false
                             docxLauncher.launch(exportName+".docx")
                         }
                     )
                     DropdownMenuItem(
-                        text={Text(neoLabel("PDF بحجم A4","PDF (A4)"))},
+                        leadingIcon={Icon(Icons.Rounded.PictureAsPdf,null)},text={Text(neoLabel("PDF بحجم A4","PDF (A4)"))},
                         onClick={
                             exportOpen=false
                             pdfLauncher.launch(exportName+".pdf")
                         }
                     )
                     DropdownMenuItem(
-                        text={Text(neoLabel("طباعة المستند","Print document"))},
+                        leadingIcon={Icon(Icons.Rounded.Print,null)},text={Text(neoLabel("طباعة المستند","Print document"))},
                         onClick={
                             exportOpen=false
                             runCatching {
@@ -164,14 +164,14 @@ internal fun NeoNoteProToolbar(
                         }
                     )
                     DropdownMenuItem(
-                        text={Text(neoLabel("HTML منسّق","Styled HTML"))},
+                        leadingIcon={Icon(Icons.Rounded.Code,null)},text={Text(neoLabel("HTML منسّق","Styled HTML"))},
                         onClick={
                             exportOpen=false
                             htmlLauncher.launch(exportName+".html")
                         }
                     )
                     DropdownMenuItem(
-                        text={Text(neoLabel("نص TXT","Plain text TXT"))},
+                        leadingIcon={Icon(Icons.Rounded.TextSnippet,null)},text={Text(neoLabel("نص TXT","Plain text TXT"))},
                         onClick={
                             exportOpen=false
                             textLauncher.launch(exportName+".txt")

@@ -696,13 +696,13 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     Icon(Icons.Rounded.MoreVert,
                                         neoLabel("إجراءات التحديد","Selection actions"))
                                 }
-                                DropdownMenu(
+                                NeoLocalizedMenu(
                                     expanded=selectionActionsExpanded,
                                     onDismissRequest={selectionActionsExpanded=false}
                                 ) {
                                     DropdownMenuItem(
                                         enabled=selectedNotes.isNotEmpty()&&!write.pending,
-                                        text={Text(neoLabel("تثبيت المحدد","Pin selected"))},
+                                        leadingIcon={Icon(Icons.Rounded.PushPin,null)},text={Text(neoLabel("تثبيت المحدد","Pin selected"))},
                                         onClick={
                                             selectionActionsExpanded=false
                                             changed(db.copy(dayItems=db.dayItems.map {
@@ -715,7 +715,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     )
                                     DropdownMenuItem(
                                         enabled=selectedNotes.isNotEmpty()&&!write.pending,
-                                        text={Text(
+                                        leadingIcon={Icon(Icons.Rounded.Archive,null)},text={Text(
                                             if(noteFolder=="archive"||noteFolder=="trash")
                                                 neoLabel("استعادة المحدد","Restore selected")
                                             else neoLabel("أرشفة المحدد","Archive selected"))},
@@ -733,7 +733,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     )
                                     DropdownMenuItem(
                                         enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
-                                        text={Text(neoLabel("المفضلة","Favorites"))},
+                                        leadingIcon={Icon(Icons.Rounded.Star,null)},text={Text(neoLabel("المفضلة","Favorites"))},
                                         onClick={
                                             selectionActionsExpanded=false
                                             val ids=selectedNotes.toList()
@@ -745,26 +745,26 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     )
                                     DropdownMenuItem(
                                         enabled=selectedNotes.isNotEmpty()&&!folderBusy&&!write.pending,
-                                        text={Text(neoLabel("نقل إلى مجلد","Move to folder"))},
+                                        leadingIcon={Icon(Icons.Rounded.DriveFileMove,null)},text={Text(neoLabel("نقل إلى مجلد","Move to folder"))},
                                         onClick={
                                             selectionActionsExpanded=false;moveNotesDialog=true
                                         }
                                     )
                                     if(noteFolder=="trash") DropdownMenuItem(
                                         enabled=selectedNotes.isNotEmpty()&&!write.pending,
-                                        text={Text(neoLabel("حذف المحدد نهائيًا","Delete selected permanently"))},
+                                        leadingIcon={Icon(Icons.Rounded.DeleteForever,null)},text={Text(neoLabel("حذف المحدد نهائيًا","Delete selected permanently"))},
                                         onClick={selectionActionsExpanded=false;pendingPermanentDelete=selectedNotes}
                                     )
                                     if(noteFolder!="trash") DropdownMenuItem(
                                         enabled=selectedNotes.isNotEmpty()&&!write.pending,
-                                        text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},
+                                        leadingIcon={Icon(Icons.Rounded.DeleteOutline,null)},text={Text(neoLabel("نقل إلى المهملات","Move to Trash"))},
                                         onClick={
                                             selectionActionsExpanded=false;confirmTrash=true
                                         }
                                     )
                                     HorizontalDivider()
                                     DropdownMenuItem(
-                                        text={Text(neoLabel("إلغاء التحديد","Exit selection"))},
+                                        leadingIcon={Icon(Icons.Rounded.Close,null)},text={Text(neoLabel("إلغاء التحديد","Exit selection"))},
                                         onClick={
                                             selectionActionsExpanded=false
                                             selectedNotes=emptySet();noteSelectionMode=false
@@ -782,9 +782,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                             IconButton(onClick={sharedMenu=true}) {
                                 Icon(Icons.Rounded.MoreVert,neoLabel("الخيارات والفرز","Options and sorting"))
                             }
-                            DropdownMenu(expanded=sharedMenu,onDismissRequest={sharedMenu=false}) {
+                            NeoLocalizedMenu(expanded=sharedMenu,onDismissRequest={sharedMenu=false}) {
                                 DropdownMenuItem(
-                                    text={Text(if(notesTab) neoLabel("فرز وعرض الملاحظات","Notes sorting & layout")
+                                    leadingIcon={Icon(Icons.Rounded.Sort,null)},text={Text(if(notesTab) neoLabel("فرز وعرض الملاحظات","Notes sorting & layout")
                                         else neoLabel("فلاتر المهام","Task filters"))},
                                     onClick={
                                         sharedMenu=false
@@ -792,20 +792,20 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     }
                                 )
                                 if(notesTab) DropdownMenuItem(
-                                    text={Text(neoLabel("الأرشيف","Archive"))},
+                                    leadingIcon={Icon(Icons.Rounded.Archive,null)},text={Text(neoLabel("الأرشيف","Archive"))},
                                     onClick={sharedMenu=false;enterFolder(null);noteFolder="archive";noteTag=null})
                                 if(notesTab) DropdownMenuItem(
-                                    text={Text(neoLabel("سلة المهملات","Trash"))},
+                                    leadingIcon={Icon(Icons.Rounded.DeleteOutline,null)},text={Text(neoLabel("سلة المهملات","Trash"))},
                                     onClick={sharedMenu=false;enterFolder(null);noteFolder="trash";noteTag=null})
                                 if(notesTab && noteFolder=="trash") DropdownMenuItem(
-                                    text={Text(neoLabel("إفراغ سلة المهملات","Empty Trash"))},
+                                    leadingIcon={Icon(Icons.Rounded.DeleteForever,null)},text={Text(neoLabel("إفراغ سلة المهملات","Empty Trash"))},
                                     enabled=db.dayItems.any{it.type==DayItemTypeV11.NOTE && it.noteTrashed && !it.noteLocked} && !write.pending,
                                     onClick={
                                         sharedMenu=false
                                         pendingPermanentDelete=db.dayItems.filter{it.type==DayItemTypeV11.NOTE && it.noteTrashed && !it.noteLocked}.map{it.id}.toSet()
                                     })
                                 if(notesTab) DropdownMenuItem(
-                                    text={Text(if(noteSelectionMode) neoLabel("إلغاء تحديد الملاحظات","Exit selection")
+                                    leadingIcon={Icon(Icons.Rounded.Checklist,null)},text={Text(if(noteSelectionMode) neoLabel("إلغاء تحديد الملاحظات","Exit selection")
                                         else neoLabel("تحديد الملاحظات","Select notes"))},
                                     onClick={
                                         sharedMenu=false
@@ -815,26 +815,26 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                 )
                                 if(!notesTab) {
                                     DropdownMenuItem(
-                                        text={Text(if(taskControlsExpanded) neoLabel("إخفاء فلاتر المهام السريعة","Hide quick task filters")
+                                        leadingIcon={Icon(Icons.Rounded.FilterList,null)},text={Text(if(taskControlsExpanded) neoLabel("إخفاء فلاتر المهام السريعة","Hide quick task filters")
                                             else neoLabel("فلاتر المهام السريعة","Quick task filters"))},
                                         onClick={sharedMenu=false;taskControlsExpanded=!taskControlsExpanded}
                                     )
                                     DropdownMenuItem(
-                                        text={Text(neoLabel("قوالب المهام","Task templates"))},
+                                        leadingIcon={Icon(Icons.Rounded.ContentCopy,null)},text={Text(neoLabel("قوالب المهام","Task templates"))},
                                         onClick={sharedMenu=false;nav.open("TASK_TEMPLATES")}
                                     )
                                     DropdownMenuItem(
-                                        text={Text(neoLabel("مكتبة المرفقات","Attachments"))},
+                                        leadingIcon={Icon(Icons.Rounded.AttachFile,null)},text={Text(neoLabel("مكتبة المرفقات","Attachments"))},
                                         onClick={sharedMenu=false;nav.open("ATTACHMENTS")}
                                     )
                                     DropdownMenuItem(
-                                        text={Text(neoLabel("تراجع عن آخر تعديل","Undo last change"))},
+                                        leadingIcon={Icon(Icons.Rounded.Undo,null)},text={Text(neoLabel("تراجع عن آخر تعديل","Undo last change"))},
                                         enabled=undo.enabled&&!write.pending,
                                         onClick={sharedMenu=false;undo.perform()}
                                     )
                                 }
                                 DropdownMenuItem(
-                                    text={Text(neoLabel("إعدادات المهام والملاحظات","Tasks & notes preferences"))},
+                                    leadingIcon={Icon(Icons.Rounded.Settings,null)},text={Text(neoLabel("إعدادات المهام والملاحظات","Tasks & notes preferences"))},
                                     onClick={sharedMenu=false;preferencesOpen=true}
                                 )
                             }
@@ -1546,7 +1546,7 @@ private fun NeoNoteCardMenu(
                 neoLabel("إجراءات الملاحظة","Note actions"),
                 Modifier.size(20.dp))
         }
-        DropdownMenu(expanded=expanded,onDismissRequest={expanded=false}) {
+        NeoLocalizedMenu(expanded=expanded,onDismissRequest={expanded=false}) {
             DropdownMenuItem(
                 text={Text(neoLabel("فتح الملاحظة","Open note"))},
                 leadingIcon={Icon(Icons.Rounded.FolderOpen,contentDescription=null)},
@@ -1662,22 +1662,22 @@ private fun NeoNoteFolderCard(
                             Icon(Icons.Rounded.MoreVert,neoLabel("خيارات المجلد","Folder options"),
                                 tint=MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        DropdownMenu(expanded=menu,onDismissRequest={menu=false}) {
-                            DropdownMenuItem(text={Text(neoLabel("فتح","Open"))},
+                        NeoLocalizedMenu(expanded=menu,onDismissRequest={menu=false}) {
+                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.FolderOpen,null)},text={Text(neoLabel("فتح","Open"))},
                                 leadingIcon={Icon(Icons.Rounded.FolderOpen,contentDescription=null)},
                                 onClick={menu=false;onOpen()})
-                            DropdownMenuItem(text={Text(neoLabel("تعديل الاسم واللون والقفل",
+                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.Edit,null)},text={Text(neoLabel("تعديل الاسم واللون والقفل",
                                 "Edit name, color and lock"))},
                                 leadingIcon={Icon(Icons.Rounded.Edit,contentDescription=null)},
                                 onClick={menu=false;onEdit()})
-                            DropdownMenuItem(text={Text(neoLabel("مجلد فرعي جديد","New subfolder"))},
+                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.CreateNewFolder,null)},text={Text(neoLabel("مجلد فرعي جديد","New subfolder"))},
                                 leadingIcon={Icon(Icons.Rounded.CreateNewFolder,contentDescription=null)},
                                 onClick={menu=false;onChild()})
-                            DropdownMenuItem(text={Text(neoLabel("نقل المجلد","Move folder"))},
+                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.DriveFileMove,null)},text={Text(neoLabel("نقل المجلد","Move folder"))},
                                 leadingIcon={Icon(Icons.Rounded.DriveFileMove,contentDescription=null)},
                                 onClick={menu=false;onMove()})
                             HorizontalDivider()
-                            DropdownMenuItem(text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
+                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.DeleteOutline,null)},text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
                                 "Delete folder (keep contents)"))},
                                 leadingIcon={Icon(Icons.Rounded.DeleteOutline,contentDescription=null)},
                                 onClick={menu=false;onDelete()})

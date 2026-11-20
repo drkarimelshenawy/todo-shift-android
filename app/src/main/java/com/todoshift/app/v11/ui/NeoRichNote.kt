@@ -92,7 +92,7 @@ internal fun NeoNoteFormatting(
                     contentPadding=PaddingValues(0.dp)) {
                     Text("Aa",style=MaterialTheme.typography.titleMedium)
                 }
-                DropdownMenu(expanded=faceMenu,onDismissRequest={faceMenu=false}) {
+                NeoLocalizedMenu(expanded=faceMenu,onDismissRequest={faceMenu=false}) {
                     DropdownMenuItem(
                         text={Text(neoLabel("الخط الأساسي للنص المحدد","Default selected-text font"))},
                         onClick={faceMenu=false;change(state.face(null))}
@@ -129,7 +129,7 @@ internal fun NeoNoteFormatting(
                     neoLabel("قوائم ذكية","Smart lists"),
                     selected=allLists.any {state.listActive(it)},
                     action={lists=true})
-                DropdownMenu(expanded=lists,onDismissRequest={lists=false}) {
+                NeoLocalizedMenu(expanded=lists,onDismissRequest={lists=false}) {
                     listOf(
                         Triple(neoLabel("نقاط","Bullets"),"•","bullet"),
                         Triple(neoLabel("دوائر","Circles"),"◦","circle"),
@@ -154,48 +154,48 @@ internal fun NeoNoteFormatting(
                 NeoFormatAction(Icons.Rounded.MoreHoriz,
                     neoLabel("مزيد من التنسيق","More formatting"),
                     action={morePage="root";more=true})
-                DropdownMenu(expanded=more,onDismissRequest={more=false}) {
+                NeoLocalizedMenu(expanded=more,onDismissRequest={more=false}) {
                     if(morePage=="root") {
                         DropdownMenuItem(
-                            text={Text(neoLabel("تسطير","Underline")+
+                            leadingIcon={Icon(Icons.Rounded.FormatUnderlined,null)},text={Text(neoLabel("تسطير","Underline")+
                                 if(state.active("underline")) " ✓" else "")},
                             onClick={more=false;change(state.toggle("underline"))}
                         )
                         DropdownMenuItem(
-                            text={Text(neoLabel("شطب","Strikethrough")+
+                            leadingIcon={Icon(Icons.Rounded.StrikethroughS,null)},text={Text(neoLabel("شطب","Strikethrough")+
                                 if(state.active("strike")) " ✓" else "")},
                             onClick={more=false;change(state.toggle("strike"))}
                         )
                         if(state.listActive("check")) DropdownMenuItem(
-                            text={Text(neoLabel("تحديد بند Checklist","Toggle checklist"))},
+                            leadingIcon={Icon(Icons.Rounded.CheckBox,null)},text={Text(neoLabel("تحديد بند Checklist","Toggle checklist"))},
                             onClick={more=false;change(state.toggleChecklist())}
                         )
                         DropdownMenuItem(
-                            text={Text(neoLabel("حجم الخط","Font size"))},
+                            leadingIcon={Icon(Icons.Rounded.FormatSize,null)},text={Text(neoLabel("حجم الخط","Font size"))},
                             onClick={morePage="size"}
                         )
                         DropdownMenuItem(
-                            text={Text(neoLabel("لون النص","Text color"))},
+                            leadingIcon={Icon(Icons.Rounded.FormatColorText,null)},text={Text(neoLabel("لون النص","Text color"))},
                             onClick={morePage="color"}
                         )
                         DropdownMenuItem(
-                            text={Text(neoLabel("اتجاه الكتابة","Text direction"))},
+                            leadingIcon={Icon(Icons.Rounded.SwapHoriz,null)},text={Text(neoLabel("اتجاه الكتابة","Text direction"))},
                             onClick={morePage="direction"}
                         )
                         DropdownMenuItem(
-                            text={Text(neoLabel("إعادة التعديل","Redo"))},
+                            leadingIcon={Icon(Icons.Rounded.Redo,null)},text={Text(neoLabel("إعادة التعديل","Redo"))},
                             enabled=canRedo,
                             onClick={more=false;redo()}
                         )
                     } else {
                         DropdownMenuItem(
-                            text={Text(neoLabel("رجوع","Back"))},
+                            leadingIcon={Icon(Icons.Rounded.ArrowBack,null)},text={Text(neoLabel("رجوع","Back"))},
                             onClick={morePage="root"}
                         )
                         when(morePage) {
                             "size" -> listOf(14,16,18,20,24,28).forEach {points ->
                                 DropdownMenuItem(
-                                    text={Text("$points sp")},
+                                    text={Text("$points sp")},leadingIcon={Icon(Icons.Rounded.FormatSize,null)},
                                     onClick={more=false;change(state.fontSize(points))}
                                 )
                             }
@@ -208,7 +208,7 @@ internal fun NeoNoteFormatting(
                                 neoLabel("أسود","Black") to "#222222"
                             ).forEach {(name,hex) ->
                                 DropdownMenuItem(
-                                    text={Text(name)},
+                                    text={Text(name)},leadingIcon={Icon(Icons.Rounded.Palette,null)},
                                     onClick={more=false;change(state.ink(hex))}
                                 )
                             }
@@ -218,7 +218,7 @@ internal fun NeoNoteFormatting(
                                 "ltr" to neoLabel("من اليسار إلى اليمين","Left to right")
                             ).forEach {(value,label) ->
                                 DropdownMenuItem(
-                                    text={Text(label+if(direction==value) " ✓" else "")},
+                                    text={Text(label+if(direction==value) " ✓" else "")},leadingIcon={Icon(Icons.Rounded.SwapHoriz,null)},
                                     onClick={more=false;onDirectionChange(value)}
                                 )
                             }
@@ -246,7 +246,7 @@ internal fun NeoNoteFormatting(
                 Box {
                     NeoFormatAction(Icons.Rounded.FormatSize,neoLabel("حجم الخط","Font size"),
                         action={sizeOpen=true})
-                    DropdownMenu(expanded=sizeOpen,onDismissRequest={sizeOpen=false}) {
+                    NeoLocalizedMenu(expanded=sizeOpen,onDismissRequest={sizeOpen=false}) {
                         listOf(14,16,18,20,24,28).forEach {points ->
                             DropdownMenuItem(text={Text("$points sp")},onClick={
                                 sizeOpen=false
@@ -258,7 +258,7 @@ internal fun NeoNoteFormatting(
                 Box {
                     NeoFormatAction(Icons.Rounded.Palette,neoLabel("لون النص","Text color"),
                         action={inkOpen=true})
-                    DropdownMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
+                    NeoLocalizedMenu(expanded=inkOpen,onDismissRequest={inkOpen=false}) {
                         listOf(
                             neoLabel("أحمر","Red") to "#C62828",
                             neoLabel("أزرق","Blue") to "#1565C0",
@@ -277,7 +277,7 @@ internal fun NeoNoteFormatting(
                 Box {
                     NeoFormatAction(Icons.Rounded.SwapHoriz,neoLabel("اتجاه الكتابة","Text direction"),
                         selected=direction!="auto",action={directionOpen=true})
-                    DropdownMenu(expanded=directionOpen,onDismissRequest={directionOpen=false}) {
+                    NeoLocalizedMenu(expanded=directionOpen,onDismissRequest={directionOpen=false}) {
                         listOf(
                             "auto" to neoLabel("تلقائي","Automatic"),
                             "rtl" to neoLabel("من اليمين إلى اليسار","Right to left"),

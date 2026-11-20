@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.MaterialTheme
 
 /**
@@ -105,6 +106,7 @@ internal fun NeoA4SharedEditableSlice(
                 value=session.state.value,
                 onValueChange={next->apply(session.state.input(next))},
                 modifier=Modifier.fillMaxWidth()
+                    .testTag("a4_note_slice_${block.startLine}_${block.pageFragment}")
                     // The field must be top-aligned when taller than the
                     // clipped sheet; default requiredHeight centers overflow.
                     .wrapContentHeight(align=Alignment.Top,unbounded=true)

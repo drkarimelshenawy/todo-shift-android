@@ -148,7 +148,12 @@ internal fun NeoDocumentCanvas(
                         IntArray(layout.lineCount){layout.getLineTop(it).toInt()},
                         FloatArray(layout.lineCount){layout.getLineBottom(it)},
                         layout.size.height,(availableHeightPx*0.82f).toInt().coerceAtLeast(1))
-                    slices.mapIndexed { index,slice ->
+                    // Multiple full-buffer textfields are expensive on very
+                    // large paragraphs. Fall back safely rather than allocating
+                    // unbounded O(pages x characters) editing layouts.
+                    if(slices.size>24 || slices.size.toLong()*
+                        rich.value.text.length>180_000L) listOf(block)
+                    else slices.mapIndexed { index,slice ->
                         block.copy(pageFragment=index,sliceTopPx=slice.topPx,
                             sliceBottomPx=slice.bottomPx,wholeHeightPx=layout.size.height,
                             sliceStartOffset=slice.start,sliceEndOffset=slice.end)

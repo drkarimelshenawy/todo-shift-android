@@ -56,6 +56,7 @@ class NeoSettingsHierarchyTest {
             "ملخص المهام" to "TASK_OVERVIEW",
             "Finance summary in tasks" to "TASK_OVERVIEW",
             "سلامة البيانات" to "HEALTH",
+            "Shift notes in schedules" to "CALENDAR_DISPLAY",
             "Backup and restore" to "BACKUP",
             "شاشة بداية التطبيق" to "LAUNCH",
             "Nile Jade" to "APPEARANCE",

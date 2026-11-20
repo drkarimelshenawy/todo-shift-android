@@ -67,7 +67,7 @@ object NeoSettingsSearch {
         hit("ملخص المهام", "Task summary", "TASK_OVERVIEW", "TASKS", "tasks dashboard"),
         hit("ملخص الحسابات", "Finance summary in tasks", "TASK_OVERVIEW", "TASKS", "money overview"),
         hit("البطاقات الثانوية", "Secondary cards", "TASK_OVERVIEW", "TASKS", "dashboard"),
-        hit("ملاحظات الورديات بالجداول", "Shift notes in schedules", "TASK_OVERVIEW", "TASKS", "notes"),
+        hit("ملاحظات الورديات بالجداول", "Shift notes in schedules", "CALENDAR_DISPLAY", "CALENDAR", "notes"),
         hit("الثيم المستقل للويدجت", "Independent widget theme", "WIDGETS", "WIDGETS", "widget ويدجت"),
         hit("شفافية الويدجت", "Widget background opacity", "WIDGETS", "WIDGETS", "widget background transparent شفافية ودجت"),
         hit("تفاصيل الويدجت", "Widget extra details", "WIDGETS", "WIDGETS", "show details"),

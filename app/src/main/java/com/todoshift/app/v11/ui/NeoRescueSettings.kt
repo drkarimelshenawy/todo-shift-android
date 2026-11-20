@@ -11,6 +11,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.v11.*
 
@@ -35,6 +38,31 @@ private fun neoSettingsGroupNames(group: String): Pair<String, String> = when (g
     else -> neoSettingsGroups.firstOrNull { it.first == group }
         ?.let { it.second to it.third }
         ?: ("الإعدادات" to "Settings")
+}
+
+@Composable
+private fun NeoSettingsCompactTile(title: String, summary: String, icon: ImageVector, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .48f),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onClick)
+                .heightIn(min = 58.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.bodyMedium)
+                Text(summary, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            }
+            Icon(Icons.Rounded.ChevronLeft, null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 @Composable
@@ -116,7 +144,6 @@ fun NeoRescueSettings(
         verticalArrangement = Arrangement.spacedBy(NeoSpace.gap),
     ) {
         if (page == "HOME") {
-            NeoPremiumBanner(neoLabel("الإعدادات والتخصيص", "Settings & customization"))
             OutlinedTextField(
                 query,
                 { query = it },
@@ -142,7 +169,21 @@ fun NeoRescueSettings(
                     neoLabel("الإصدار والسياسات والأداء والتشخيص والتفضيلات القديمة", "Version, policies, performance, diagnostics and legacy settings"),
                 )
                 neoSettingsGroups.forEachIndexed { index, (id, ar, en) ->
-                    NeoPremiumSettingTile(neoLabel(ar, en), summaries[index], icons[index]) {
+                    when (index) {
+                        0 -> Text(neoLabel("التخصيص العام", "General customization"),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        2 -> Text(neoLabel("الأقسام والوظائف", "Sections and features"),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        5 -> Text(neoLabel("الأمان والبيانات", "Security and data"),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        7 -> Text(neoLabel("معلومات التطبيق", "App information"),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    NeoSettingsCompactTile(neoLabel(ar, en), summaries[index], icons[index]) {
                         when (id) {
                             "NOTIFICATIONS", "WIDGETS", "SECURITY" -> nav.open(id)
                             else -> page = "${id}_GROUP"
@@ -195,6 +236,12 @@ fun NeoRescueSettings(
                     NeoSettingsRow(neoLabel(names.first, names.second)) { page = "${id}_GROUP" }
                 }
             } else if (page.endsWith("_GROUP")) {
+                if (groupId == "CASHBOOK") Text(
+                    neoLabel("رسم الحسابات يُضبط هنا. تفضيلات أزرار الإدخال والقوالب تظل داخل خيارات Cash Book نفسها، دون إنشاء نسخة ثانية من الإعدادات.",
+                        "Configure the finance chart here. Entry-button defaults and presets remain in Cash Book options, without duplicating stored settings."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (groupId == "SALARY") Text(
                     neoLabel("إدارة أسعار الورديات وكشوف المستحقات تتم داخل قسم مستحقات العمل. الروابط التالية تفتح الأدوات الأصلية دون تكرار البيانات أو الإعدادات.",
                         "Rates and statements are managed in Work Entitlements. These shortcuts open the original tools without duplicating data or preferences."),
@@ -224,12 +271,17 @@ fun NeoRescueSettings(
                             { update(p.copy(calendarView = it)) },
                         )
                         NeoCalendarPreferences(p, update)
-                        NeoTodayPreferences(p, update)
                         NeoSwitch(
                             neoLabel("دليل الألوان", "Calendar legend"),
                             p.showCalendarLegend,
                         ) {
                             update(p.copy(showCalendarLegend = it))
+                        }
+                        NeoSwitch(
+                            neoLabel("ملاحظات الورديات في الجداول", "Shift notes in schedules"),
+                            p.showShiftNotes,
+                        ) {
+                            update(p.copy(showShiftNotes = it))
                         }
                     }
                     "FIRST_WEEKDAY" -> NeoChoice(
@@ -309,12 +361,6 @@ fun NeoRescueSettings(
                                 )
                             }
                         }
-                        NeoSwitch(
-                            neoLabel("ملاحظات الورديات في الجداول", "Shift notes in schedules"),
-                            p.showShiftNotes,
-                        ) {
-                            update(p.copy(showShiftNotes = it))
-                        }
                     }
                     "LEGACY" -> {
                         Text(
@@ -339,9 +385,6 @@ fun NeoRescueSettings(
                         Text(
                             "${com.todoshift.app.BuildConfig.APPLICATION_ID} • Schema ${db.schemaVersion}"
                         )
-                        NeoSettingsRow(neoLabel("سلامة البيانات", "Data health")) {
-                            nav.open("HEALTH")
-                        }
                     }
                 }
         }

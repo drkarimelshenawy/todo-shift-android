@@ -41,7 +41,7 @@ internal fun AccountsDialog(accounts: List<Ledger.Account>, active: String?, sta
     var name by rememberSaveable { mutableStateOf("") }
     val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.88f).dp
     Dialog(dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        CompositionLocalProvider(LocalLayoutDirection provides if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) {
             val focus = LocalFocusManager.current
             val keyboard = LocalSoftwareKeyboardController.current
             Surface(Modifier.fillMaxWidth(0.86f).widthIn(max = 420.dp).imePadding().heightIn(max = maxHeight).testTag("accounts_dialog"), shape = ReferenceShape) {

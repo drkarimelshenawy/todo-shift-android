@@ -196,7 +196,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                 IconButton(onClick = { showSearch = !showSearch; if (!showSearch) search = "" }, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_008) }) { RefIcon(R.drawable.cb_search, tr(R.string.cb_008), tint = MaterialTheme.colorScheme.onPrimary) }
                 Box {
                     IconButton(onClick = { overflow = true }, modifier = Modifier.testTag("section_options").semantics { contentDescription = tr(R.string.cb_009) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = MaterialTheme.colorScheme.onPrimary) }
-                    DropdownMenu(overflow, { overflow = false }) {
+                    CashBookMenu(overflow, { overflow = false }) {
                         DropdownMenuItem(text={Text(if (CashBookText.arabic()) "القسم الافتراضي" else "Default section")},
                             leadingIcon={Icon(Icons.Rounded.Home, null)},
                             onClick={overflow=false;startSectionSettings=true},
@@ -339,7 +339,9 @@ internal fun DayPicker(label: String, value: String, enabled: Boolean = true, ch
 private fun AccountSelect(accounts: List<Ledger.Account>, selected: String, enabled: Boolean, choose: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box { OutlinedButton(onClick = { expanded = true }, enabled = enabled) { accounts.find { it.id == selected }?.let{AccountName(it)} ?: Text(tr(R.string.cb_044)) }
-        DropdownMenu(expanded, { expanded = false }) { accounts.forEach { a -> DropdownMenuItem(text = { AccountName(a) }, onClick = { choose(a.id); expanded = false }) } }
+        CashBookMenu(expanded, { expanded = false }) { accounts.forEach { a -> DropdownMenuItem(text = { AccountName(a) },
+                leadingIcon = { Icon(Icons.Rounded.AccountBalanceWallet, null) },
+                onClick = { choose(a.id); expanded = false }) } }
     }
 }
 

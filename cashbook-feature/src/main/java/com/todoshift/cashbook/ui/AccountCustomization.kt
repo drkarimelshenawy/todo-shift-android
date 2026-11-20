@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -45,20 +47,20 @@ internal fun ButtonLabelsEditor(incoming: String, outgoing: String, enabled: Boo
     val focus=LocalFocusManager.current;val keyboard=LocalSoftwareKeyboardController.current
     Box {
         OutlinedButton(onClick={focus.clearFocus();keyboard?.hide();menu=true}, enabled=enabled, shape=ReferenceShape, modifier=Modifier.fillMaxWidth().testTag("button_presets")) { Text(tr(R.string.cb_136)) }
-        DropdownMenu(menu,{menu=false},modifier=Modifier.heightIn(max=310.dp)) {
-            DropdownMenuItem(text={Text(tr(R.string.cb_137))},onClick={defaults?.let {change(it.incoming,it.outgoing)};menu=false})
-            DropdownMenuItem(text={Text(tr(R.string.cb_138))},enabled=validLabels(incoming,outgoing)&&!state.busy,onClick={vm.savePreset(incoming,outgoing);menu=false},modifier=Modifier.testTag("save_personal_preset"))
+        CashBookMenu(menu,{menu=false},modifier=Modifier.heightIn(max=310.dp)) {
+            DropdownMenuItem(text={Text(tr(R.string.cb_137))},leadingIcon={Icon(Icons.Rounded.Restore,null)},onClick={defaults?.let {change(it.incoming,it.outgoing)};menu=false})
+            DropdownMenuItem(text={Text(tr(R.string.cb_138))},leadingIcon={Icon(Icons.Rounded.Save,null)},enabled=validLabels(incoming,outgoing)&&!state.busy,onClick={vm.savePreset(incoming,outgoing);menu=false},modifier=Modifier.testTag("save_personal_preset"))
             if(!prefs?.presets.isNullOrEmpty()) {
                 HorizontalDivider();Text(tr(R.string.cb_139),Modifier.padding(horizontal=12.dp),style=MaterialTheme.typography.labelMedium)
                 prefs?.presets?.forEachIndexed { index,pair ->
                     Row(verticalAlignment=Alignment.CenterVertically) {
                         TextButton(onClick={change(pair.incoming,pair.outgoing);menu=false},modifier=Modifier.weight(1f).testTag("personal_preset_$index")){Text("${pair.incoming} / ${pair.outgoing}")}
-                        TextButton(onClick={vm.removePreset(index)},enabled=!state.busy){Text(tr(R.string.cb_140))}
+                        TextButton(onClick={vm.removePreset(index)},enabled=!state.busy){Icon(Icons.Rounded.DeleteOutline,null);Text(tr(R.string.cb_140))}
                     }
                 }
             }
             HorizontalDivider()
-            ButtonPresets.forEachIndexed { index,(plus,minus) -> DropdownMenuItem(text={Text("$plus / $minus")},modifier=Modifier.testTag("button_preset_$index"),onClick={change(plus,minus);menu=false}) }
+            ButtonPresets.forEachIndexed { index,(plus,minus) -> DropdownMenuItem(text={Text("$plus / $minus")},leadingIcon={Icon(Icons.Rounded.Bookmark,null)},modifier=Modifier.testTag("button_preset_$index"),onClick={change(plus,minus);menu=false}) }
         }
     }
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {

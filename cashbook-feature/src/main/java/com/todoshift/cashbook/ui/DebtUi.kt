@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -54,7 +56,7 @@ import java.time.*
     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){FilterChip(direction=="PAYABLE",{direction="PAYABLE"},enabled=existing==null,label={Text(tr(R.string.cb_175))},modifier=Modifier.testTag("debt_payable"));FilterChip(direction=="RECEIVABLE",{direction="RECEIVABLE"},enabled=existing==null,label={Text(tr(R.string.cb_176))},modifier=Modifier.testTag("debt_receivable"))}
     MoneyField(total,{total=it},singleLine=true,label={Text(tr(R.string.cb_177))},modifier=Modifier.fillMaxWidth().testTag("debt_total"))
     DayPicker(tr(R.string.cb_178),start,!state.busy){start=it}
-    Box{OutlinedButton({menu=true},enabled=!locked,modifier=Modifier.fillMaxWidth().testTag("debt_frequency")){Text(when(frequency){"OPEN"->tr(R.string.cb_179);"MONTHLY"->tr(R.string.cb_180);"WEEKLY"->tr(R.string.cb_181);else->tr(R.string.cb_182)})};DropdownMenu(menu,{menu=false}){listOf("OPEN" to tr(R.string.cb_179),"MONTHLY" to tr(R.string.cb_019),"WEEKLY" to tr(R.string.cb_018),"CUSTOM" to tr(R.string.cb_183)).forEach{(key,label)->DropdownMenuItem(text={Text(label)},onClick={frequency=key;menu=false},modifier=Modifier.testTag("frequency_$key"))}}}
+    Box{OutlinedButton({menu=true},enabled=!locked,modifier=Modifier.fillMaxWidth().testTag("debt_frequency")){Text(when(frequency){"OPEN"->tr(R.string.cb_179);"MONTHLY"->tr(R.string.cb_180);"WEEKLY"->tr(R.string.cb_181);else->tr(R.string.cb_182)})};CashBookMenu(menu,{menu=false}){listOf("OPEN" to tr(R.string.cb_179),"MONTHLY" to tr(R.string.cb_019),"WEEKLY" to tr(R.string.cb_018),"CUSTOM" to tr(R.string.cb_183)).forEach{(key,label)->DropdownMenuItem(text={Text(label)},leadingIcon={Icon(when(key){"OPEN"->Icons.Rounded.AllInclusive;"MONTHLY"->Icons.Rounded.CalendarMonth;"WEEKLY"->Icons.Rounded.DateRange;else->Icons.Rounded.EditCalendar},null)},onClick={frequency=key;menu=false},modifier=Modifier.testTag("frequency_$key"))}}}
     if(schedule){MoneyField(amount,{amount=it},singleLine=true,enabled=!locked,label={Text(tr(R.string.cb_184))},modifier=Modifier.fillMaxWidth().testTag("debt_installment"))}
     else Row(verticalAlignment=Alignment.CenterVertically){Checkbox(target,{target=it;if(!it)remind=false});Text(tr(R.string.cb_185))}
     if(schedule||target)DayPicker(if(schedule)tr(R.string.cb_186) else tr(R.string.cb_187),first,!state.busy&&!locked){first=it}
@@ -168,7 +170,7 @@ private fun dueStatus(status:String)=when(status){"PAID"->tr(R.string.cb_206);"C
     if(entry==null&&debt.remaining(snapshot)%100L!=0L)TextButton({amount=com.todoshift.cashbook.core.WholeMoney.edit(due?.remaining()?:debt.remaining(snapshot));legacyFull=true},modifier=Modifier.testTag("legacy_full")){Text(tr(R.string.cb_277))}
     DayPicker(tr(R.string.cb_226),day,!state.busy){day=it}
     Row(verticalAlignment=Alignment.CenterVertically){Checkbox(linked,{linked=it},modifier=Modifier.testTag("payment_link"));Text(tr(R.string.cb_278),style=MaterialTheme.typography.bodySmall)}
-    if(linked)Box{OutlinedButton({menu=true},modifier=Modifier.fillMaxWidth().testTag("payment_account")){Text(wallets.find{it.id==source}?.name?:tr(R.string.cb_044))};DropdownMenu(menu,{menu=false}){wallets.forEach{a->DropdownMenuItem(text={AccountName(a)},onClick={source=a.id;menu=false})}}}
+    if(linked)Box{OutlinedButton({menu=true},modifier=Modifier.fillMaxWidth().testTag("payment_account")){Text(wallets.find{it.id==source}?.name?:tr(R.string.cb_044))};CashBookMenu(menu,{menu=false}){wallets.forEach{a->DropdownMenuItem(text={AccountName(a)},leadingIcon={Icon(Icons.Rounded.AccountBalanceWallet,null)},onClick={source=a.id;menu=false})}}}
     if(surplus){Text(tr(R.string.cb_279),style=MaterialTheme.typography.labelMedium);Row(verticalAlignment=Alignment.CenterVertically){RadioButton(!early,{early=false});Text(tr(R.string.cb_280),style=MaterialTheme.typography.bodySmall)};Row(verticalAlignment=Alignment.CenterVertically){RadioButton(early,{early=true},modifier=Modifier.testTag("early_credit"));Text(tr(R.string.cb_281),style=MaterialTheme.typography.bodySmall)}}
     OutlinedTextField(note,{note=it.take(2000)},label={Text(tr(R.string.cb_227))},modifier=Modifier.fillMaxWidth())
     validation?.let{Text(it,color=MaterialTheme.colorScheme.error)};state.error?.let{Text(it,color=MaterialTheme.colorScheme.error)}

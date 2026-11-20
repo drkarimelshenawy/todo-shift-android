@@ -3,6 +3,8 @@ import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import android.content.res.Configuration
 import androidx.compose.runtime.*
 import androidx.compose.material3.*
@@ -115,6 +117,21 @@ internal fun CashBookDefaultSectionDialog(dismiss: () -> Unit) {
         },
         confirmButton = { TextButton(onClick = dismiss) { Text(tr(R.string.cb_029)) } },
     )
+}
+
+/** Keep all financial dropdowns aligned to the Cash Book language, even inside dialogs. */
+@Composable
+internal fun CashBookMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    CompositionLocalProvider(LocalLayoutDirection provides
+        if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+        DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest,
+            modifier = modifier, content = content)
+    }
 }
 
 internal fun iconGroupName(index:Int)=tr(intArrayOf(R.string.cb_group_0,R.string.cb_group_1,R.string.cb_group_2,R.string.cb_group_3,R.string.cb_group_4,R.string.cb_group_5,R.string.cb_group_6,R.string.cb_group_7)[index])

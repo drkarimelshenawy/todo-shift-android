@@ -94,4 +94,24 @@ class NeoA4SoftWrapTest {
         }
     }
 
+    @Test fun impossiblePhysicalPageBoundsAreRejected() {
+        val starts=intArrayOf(0,10)
+        val tops=intArrayOf(0,20)
+        val badLayouts=listOf(
+            Pair(intArrayOf(0,40),floatArrayOf(20f,50f)),
+            Pair(intArrayOf(0,20),floatArrayOf(20f,45f)),
+            Pair(intArrayOf(0,20),floatArrayOf(20f,Float.NaN)),
+            Pair(intArrayOf(0,20),floatArrayOf(20f,19f))
+        )
+        badLayouts.forEach { (lineTops,lineBottoms) ->
+            var rejected=false
+            try {
+                NeoA4SoftWrap.slices(20,starts,lineTops,lineBottoms,40,30)
+            } catch (_:IllegalArgumentException) {
+                rejected=true
+            }
+            assertTrue("Impossible physical page bounds must fail closed",rejected)
+        }
+    }
+
 }

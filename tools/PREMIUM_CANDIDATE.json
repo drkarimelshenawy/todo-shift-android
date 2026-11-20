@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 73,
-  "versionName": "4.29.0-premium-v67-navigation-menus",
-  "branch": "fix/v67-cashbook-calendar-rtl-menus-20261121",
-  "baseline": "f3e69b9538136f22a917de39968355171d37bed0",
-  "classification": "Cash Book landing choice, calendar view, painter and Arabic/English menu behavior"
+  "versionCode": 74,
+  "versionName": "4.30.0-premium-v68-a4-rich-borders",
+  "branch": "fix/v68-a4-format-pagination-borders-20261121",
+  "baseline": "38f8e7142082dec19449463a6f9f1239b92f8b0b",
+  "classification": "A4 active paragraph styling, natural page continuation and printable page borders"
 }

@@ -1663,21 +1663,21 @@ private fun NeoNoteFolderCard(
                                 tint=MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         NeoLocalizedMenu(expanded=menu,onDismissRequest={menu=false}) {
-                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.FolderOpen,null)},text={Text(neoLabel("فتح","Open"))},
+                            DropdownMenuItem(text={Text(neoLabel("فتح","Open"))},
                                 leadingIcon={Icon(Icons.Rounded.FolderOpen,contentDescription=null)},
                                 onClick={menu=false;onOpen()})
-                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.Edit,null)},text={Text(neoLabel("تعديل الاسم واللون والقفل",
+                            DropdownMenuItem(text={Text(neoLabel("تعديل الاسم واللون والقفل",
                                 "Edit name, color and lock"))},
                                 leadingIcon={Icon(Icons.Rounded.Edit,contentDescription=null)},
                                 onClick={menu=false;onEdit()})
-                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.CreateNewFolder,null)},text={Text(neoLabel("مجلد فرعي جديد","New subfolder"))},
+                            DropdownMenuItem(text={Text(neoLabel("مجلد فرعي جديد","New subfolder"))},
                                 leadingIcon={Icon(Icons.Rounded.CreateNewFolder,contentDescription=null)},
                                 onClick={menu=false;onChild()})
-                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.DriveFileMove,null)},text={Text(neoLabel("نقل المجلد","Move folder"))},
+                            DropdownMenuItem(text={Text(neoLabel("نقل المجلد","Move folder"))},
                                 leadingIcon={Icon(Icons.Rounded.DriveFileMove,contentDescription=null)},
                                 onClick={menu=false;onMove()})
                             HorizontalDivider()
-                            DropdownMenuItem(leadingIcon={Icon(Icons.Rounded.DeleteOutline,null)},text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
+                            DropdownMenuItem(text={Text(neoLabel("حذف المجلد (مع حفظ المحتوى)",
                                 "Delete folder (keep contents)"))},
                                 leadingIcon={Icon(Icons.Rounded.DeleteOutline,contentDescription=null)},
                                 onClick={menu=false;onDelete()})

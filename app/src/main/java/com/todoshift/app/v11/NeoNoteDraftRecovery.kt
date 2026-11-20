@@ -25,6 +25,11 @@ internal object NeoNoteDraftRecovery {
     internal fun missingImageNames(referenced:Set<String>,available:Set<String>):Set<String> =
         referenced - available
 
+    // Validate the final document before exposing a recovered copy. A partial
+    // rewrite would otherwise leave references to attachments owned by another note.
+    internal fun allReferencesRemapped(original:Set<String>, recovered:String):Boolean =
+        referencedImageNames(recovered).intersect(original).isEmpty()
+
     fun copyMedia(context:Context,oldId:String,newId:String,source:String):String {
         require(oldId.isNotBlank() && newId.isNotBlank() && oldId!=newId)
         val store=NeoAttachmentStore(context.applicationContext)
@@ -46,8 +51,14 @@ internal object NeoNoteDraftRecovery {
                 // still point at the original owner or at missing files.
                 check(missing.isEmpty()) { "Recovery source attachments are missing" }
                 mediaToCopy.forEach { media ->
-                val imported=store.import(newId,store.uri(media.name))
-                text=replaceImageReference(text,media.name,imported.name)
+                    val imported=store.import(newId,store.uri(media.name))
+                    check(imported.name != media.name && NeoAttachmentStore.safeName(imported.name)) {
+                        "Recovery attachment was not assigned a new safe name"
+                    }
+                    text=replaceImageReference(text,media.name,imported.name)
+                }
+                check(allReferencesRemapped(referencedNames,text)) {
+                    "Recovery left references to original attachments"
                 }
             }
         } catch (failure:Exception) {

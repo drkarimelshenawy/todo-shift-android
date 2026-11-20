@@ -553,12 +553,30 @@ fun neoEnumLabel(value: Any): String =
         NeoTimelineFilter.CURRENT -> neoLabel("الجارية", "Current")
         NeoTimelineFilter.UPCOMING -> neoLabel("القادمة", "Upcoming")
         NeoTimelineFilter.PAST -> neoLabel("السابقة", "Past")
+        NeoPalette.MINT_AURA -> neoLabel("نسيم النعناع", "Mint Aura")
+        NeoPalette.OCEAN_DEPTH -> neoLabel("أعماق المحيط", "Ocean Depth")
+        NeoPalette.LAVENDER_GLOW -> neoLabel("وهج اللافندر", "Lavender Glow")
+        NeoPalette.PEACH_BLOOM -> neoLabel("زهر الخوخ", "Peach Bloom")
+        NeoPalette.EMERALD_NIGHT -> neoLabel("ليل الزمرد", "Emerald Night")
+        NeoPalette.ARCTIC_BLUE -> neoLabel("أزرق قطبي", "Arctic Blue")
+        NeoPalette.GOLDEN_HOUR -> neoLabel("الساعة الذهبية", "Golden Hour")
+        NeoPalette.ROSE_MIST -> neoLabel("ضباب وردي", "Rose Mist")
+        NeoPalette.MIDNIGHT_TEAL -> neoLabel("فيروز منتصف الليل", "Midnight Teal")
+        NeoPalette.SUNSET_CORAL -> neoLabel("مرجان الغروب", "Sunset Coral")
+        NeoPalette.FOREST_SAGE -> neoLabel("مريمية الغابة", "Forest Sage")
+        NeoPalette.GRAPHITE_BLUE -> neoLabel("أزرق غرافيتي", "Graphite Blue")
+        NeoPalette.NEO_CYAN -> neoLabel("سماوي نيو", "Neo Cyan")
+        NeoPalette.ROYAL_VIOLET -> neoLabel("بنفسجي ملكي", "Royal Violet")
+        NeoPalette.MIDNIGHT_BLUE -> neoLabel("أزرق منتصف الليل", "Midnight Blue")
+        NeoPalette.EMERALD_LUXURY -> neoLabel("زمرد فاخر", "Emerald Luxury")
+        NeoPalette.CHAMPAGNE_GOLD -> neoLabel("ذهبي شمبانيا", "Champagne Gold")
+        NeoPalette.TITANIUM_SILVER -> neoLabel("فضي تيتانيوم", "Titanium Silver")
+        NeoPalette.ROSE_QUARTZ -> neoLabel("كوارتز وردي", "Rose Quartz")
+        NeoPalette.ARCTIC_WHITE -> neoLabel("أبيض قطبي", "Arctic White")
+        NeoPalette.SUNSET_COPPER -> neoLabel("نحاس الغروب", "Sunset Copper")
+        NeoPalette.MONOCHROME -> neoLabel("أحادي اللون", "Monochrome")
+        NeoPalette.CASHBOOK_BLUE -> neoLabel("كاش بوك • أزرق هادئ", "Cash Book • Calm Blue")
         NeoPalette.NILE_JADE -> neoLabel("يشم النيل", "Nile Jade")
-        is NeoPalette ->
-            if (value == NeoPalette.CASHBOOK_BLUE) neoLabel("كاش بوك • أزرق هادئ", "Cash Book • Calm Blue")
-            else value.name.lowercase().split('_').joinToString(" ") {
-                it.replaceFirstChar { c -> c.uppercase() }
-            }
         else -> value.toString()
     }
 

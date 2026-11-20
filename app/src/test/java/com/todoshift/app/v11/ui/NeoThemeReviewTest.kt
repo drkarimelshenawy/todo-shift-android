@@ -1,6 +1,9 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.todoshift.app.widget.Neo4WidgetKind
+import com.todoshift.app.widget.Neo4WidgetSettings
 import androidx.compose.ui.graphics.luminance
 import com.todoshift.app.v11.*
 import org.junit.Assert.*
@@ -43,6 +46,10 @@ class NeoThemeReviewTest {
         store.save(selected)
         assertEquals(selected, store.load())
         assertEquals(selected, Neo4AppearanceCodec.decode(Neo4AppearanceCodec.encode(selected)))
+        val skin = Neo4WidgetSettings(RuntimeEnvironment.getApplication()).skin(Neo4WidgetKind.CALENDAR)
+        val scheme = neoColorScheme(selected, false)
+        assertEquals(scheme.surface.toArgb(), skin.panelColor)
+        assertEquals(scheme.primary.toArgb(), skin.accent)
         for (term in listOf("يشم النيل", "Nile Jade")) {
             assertTrue(NeoSettingsSearch.search(term).any { it.destination == "APPEARANCE" })
         }

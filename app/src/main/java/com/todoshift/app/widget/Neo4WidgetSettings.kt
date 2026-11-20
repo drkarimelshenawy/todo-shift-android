@@ -3,6 +3,8 @@ package com.todoshift.app.widget
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.todoshift.app.v11.ui.neoColorScheme
 import android.widget.RemoteViews
 import com.todoshift.app.v11.*
 import org.json.JSONObject
@@ -139,6 +141,15 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
                                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                     }
             }
+        val appColors = if (p.theme == Neo4WidgetTheme.FOLLOW_APP) neoColorScheme(appearance, dark) else null
+        val panel = appColors?.surface?.toArgb() ?: Color.parseColor(if (dark) "#111D29" else "#EDF5F2")
+        val text = appColors?.onSurface?.toArgb() ?: Color.parseColor(if (dark) "#EFF6FC" else "#17303C")
+        val muted = appColors?.onSurfaceVariant?.toArgb() ?: Color.parseColor(if (dark) "#B8C9D7" else "#4B6570")
+        val background = if (p.theme == Neo4WidgetTheme.TRANSPARENT && p.backgroundOpacity == 0f) Color.TRANSPARENT
+            else androidx.core.graphics.ColorUtils.setAlphaComponent(panel, (p.backgroundOpacity * 255).toInt())
+        if (appColors != null && p.accent.isEmpty()) {
+            return Neo4WidgetSkin(background, text, muted, appColors.primary.toArgb())
+        }
         val inherited = appearance.accentHex.takeIf { it.matches(Regex("#[0-9a-fA-F]{6}")) }
         val rawAccent =
             if (p.accent.isNotEmpty()) Color.parseColor(p.accent)
@@ -155,11 +166,10 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
                 (Color.green(rawAccent) * (1 - fraction) + target * fraction).toInt(),
                 (Color.blue(rawAccent) * (1 - fraction) + target * fraction).toInt(),
             )
-        val reference = Color.parseColor(if (dark) "#111D29" else "#EDF5F2")
         var step = 0
         val initialAccent = accent
         while (
-            androidx.core.graphics.ColorUtils.calculateContrast(accent, reference) < 4.5 &&
+            androidx.core.graphics.ColorUtils.calculateContrast(accent, panel) < 4.5 &&
                 step < 10
         ) {
             step++
@@ -170,13 +180,7 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
                     step / 10f,
                 )
         }
-        return Neo4WidgetSkin(
-            if (p.theme == Neo4WidgetTheme.TRANSPARENT && p.backgroundOpacity == 0f) Color.TRANSPARENT
-            else androidx.core.graphics.ColorUtils.setAlphaComponent(Color.parseColor(if (dark) "#111D29" else "#EDF5F2"),(p.backgroundOpacity*255).toInt()),
-            Color.parseColor(if (dark) "#EFF6FC" else "#17303C"),
-            Color.parseColor(if (dark) "#B8C9D7" else "#4B6570"),
-            accent,
-        )
+        return Neo4WidgetSkin(background, text, muted, accent)
     }
 
     fun modern(kind: Neo4WidgetKind) =
@@ -202,7 +206,7 @@ class Neo4WidgetSettings(private val context: Context, private val widgetId: Int
 
 data class Neo4WidgetSkin(val background: Int, val text: Int, val secondary: Int, val accent: Int) {
     // Calendar opacity belongs to the panel, independently of text and transparent theme.
-    val panelColor: Int get() = if(Color.alpha(background) == 0)
+    val panelColor: Int get() = if(background == Color.TRANSPARENT)
         Color.parseColor(if(Color.luminance(text) > .5f) "#111D29" else "#EDF5F2") else androidx.core.graphics.ColorUtils.setAlphaComponent(background,255)
     fun apply(views: RemoteViews, root: Int, vararg textIds: Int) {
         views.setInt(root, "setBackgroundColor", background)

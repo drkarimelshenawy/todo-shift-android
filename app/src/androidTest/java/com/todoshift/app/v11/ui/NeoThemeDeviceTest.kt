@@ -1,7 +1,9 @@
 package com.todoshift.app.v11.ui
 
 import android.os.ParcelFileDescriptor
+import androidx.core.view.WindowCompat
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
@@ -20,6 +22,32 @@ class NeoThemeDeviceTest {
 
     @Test fun applyLightThemeAndVisitEnglishTabs() = review(false, NeoBrightness.LIGHT)
     @Test fun applyDarkThemeAndVisitArabicTabs() = review(true, NeoBrightness.DARK)
+
+    @Test fun previewKeepsSystemBarsOnTheAppliedTheme() {
+        val light = NeoAppearance(palette = NeoPalette.NILE_JADE, brightness = NeoBrightness.LIGHT)
+        val dark = light.copy(brightness = NeoBrightness.DARK)
+        val applied = mutableStateOf(light)
+        rule.setContent {
+            NeoEnvironment(applied.value, true, {}) {
+                V11AppThemeProvider(V11AppTheme.TODO_SHIFT, V11Experience.PREMIUM) {
+                    Neo4ThemePreview(if (applied.value == light) dark else light, 1f)
+                }
+            }
+        }
+        rule.runOnIdle {
+            val window = rule.activity.window
+            val bars = WindowCompat.getInsetsController(window, window.decorView)
+            assertTrue(bars.isAppearanceLightStatusBars)
+            assertTrue(bars.isAppearanceLightNavigationBars)
+            applied.value = dark
+        }
+        rule.runOnIdle {
+            val window = rule.activity.window
+            val bars = WindowCompat.getInsetsController(window, window.decorView)
+            assertFalse(bars.isAppearanceLightStatusBars)
+            assertFalse(bars.isAppearanceLightNavigationBars)
+        }
+    }
 
     private fun review(arabic: Boolean, brightness: NeoBrightness) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -64,6 +92,10 @@ class NeoThemeDeviceTest {
                 rule.waitForIdle()
                 capture("$language-$index")
             }
+        } catch (failure: Throwable) {
+            android.util.Log.e("NileJadeReview", rule.onRoot().printToString(), failure)
+            capture("$language-failure")
+            throw failure
         } finally {
             store.save(previous)
         }

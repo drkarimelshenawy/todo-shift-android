@@ -1377,56 +1377,18 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
             shadowElevation = 4.dp,
         ) {
             NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
-                val outlined = true
                 listOf(
-                        Triple(
-                            1,
-                            neoLabel("الإدارة المالية", "Cash Book"),
-                            if (outlined) Icons.Outlined.DateRange else Icons.Rounded.DateRange,
-                        ),
-                        Triple(
-                            4,
-                            neoLabel("المهام والملاحظات", "Tasks & Notes"),
-                            Icons.Outlined.CheckBox,
-                        ),
-                        Triple(
-                            0,
-                            neoLabel(neoLiteral("التقويم", "Calendar"), "Calendar"),
-                            if (outlined) Icons.Outlined.CalendarMonth
-                            else Icons.Rounded.CalendarMonth,
-                        ),
-                        Triple(
-                            2,
-                            neoLabel("المستحقات", "Salary"),
-                            Icons.Outlined.Storage,
-                        ),
-                        Triple(
-                            3,
-                            neoLabel(neoLiteral("الإعدادات", "Settings"), "Settings"),
-                            if (outlined) Icons.Outlined.Settings else Icons.Rounded.Settings,
-                        ),
-                    )
-                    .sortedBy { listOf(0, 4, 2, 1, 3).indexOf(it.first) }
+                    Triple(0, neoLabel(neoLiteral("التقويم", "Calendar"), "Calendar"), Icons.Rounded.CalendarMonth),
+                    Triple(4, neoLabel("المهام والملاحظات", "Tasks & Notes"), Icons.Rounded.CheckCircle),
+                    Triple(2, neoLabel("المستحقات", "Salary"), Icons.Rounded.Payments),
+                    Triple(1, neoLabel("الإدارة المالية", "Cash Book"), Icons.Rounded.AccountBalanceWallet),
+                    Triple(3, neoLabel(neoLiteral("الإعدادات", "Settings"), "Settings"), Icons.Rounded.Settings),
+                )
                     .forEach { (index, label, icon) ->
                         NavigationBarItem(
                             selected = selectedTab == index,
                             onClick = { onSelectTab(index) },
-                            icon = {
-                                if (outlined) Icon(icon, contentDescription = null)
-                                else
-                                    Icon(
-                                        painterResource(
-                                            when (index) {
-                                                0 -> R.drawable.neo41_nav_calendar
-                                                1 -> R.drawable.neo41_nav_shifts
-                                                2 -> R.drawable.neo41_nav_finance
-                                                3 -> R.drawable.neo41_nav_settings
-                                                else -> R.drawable.neo41_nav_tasks
-                                            }
-                                        ),
-                                        contentDescription = null,
-                                    )
-                            },
+                            icon = { Icon(icon, contentDescription = null) },
                             label = {
                                 val width =
                                     androidx.compose.ui.platform.LocalConfiguration.current

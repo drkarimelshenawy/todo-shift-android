@@ -6,6 +6,8 @@ on:
     paths:
       - 'app/**'
       - 'cashbook-feature/**'
+      - 'tools/verify_v65_update.py'
+      - 'tools/check_v65_apk_update.sh'
       - '.github/workflows/notes-toolbar-device-test.yml'
   workflow_dispatch:
 
@@ -44,7 +46,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Test real note editor and A4 PDF on emulator
+      - name: Test theme, navigation, A4 and APK upgrade on emulator
         uses: reactivecircus/android-emulator-runner@v2
         env:
           TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
@@ -63,12 +65,14 @@ jobs:
             adb shell ime list -s
             adb shell settings get secure show_ime_with_hard_keyboard
             mkdir -p device-evidence
-            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest,com.todoshift.app.v11.ui.NeoThemeDeviceTest --stacktrace
-            adb pull /sdcard/Download/nile-jade/. device-evidence/
+            bash -c 'gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest,com.todoshift.app.v11.ui.NeoThemeDeviceTest --stacktrace; result=$?; adb pull /sdcard/Download/nile-jade/. device-evidence/; exit $result'
+            if [ "${{ matrix.api-level }}" = "35" ]; then bash tools/check_v65_apk_update.sh; fi
       - name: Publish screenshot evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nile-jade-screens-api-${{ matrix.api-level }}
-          path: device-evidence/
+          path: |
+            device-evidence/
+            app/build/outputs/androidTest-results/connected/
           if-no-files-found: warn

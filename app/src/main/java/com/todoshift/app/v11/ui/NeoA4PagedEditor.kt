@@ -140,7 +140,8 @@ internal fun NeoA4SharedEditableSlice(
                     if(measuredLines!=next)measuredLines=next
                 },
                 textStyle=MaterialTheme.typography.bodyLarge.copy(
-                    color=Color(0xFF202126),fontSize=12.sp,lineHeight=18.sp,
+                    color=Color(0xFF202126),fontSize=NeoA4PrintMetrics.BODY_PT.sp,
+                    lineHeight=NeoA4PrintMetrics.BODY_LINE_PT.sp,
                     textDirection=direction,
                     textAlign=if(rtl)TextAlign.Right else TextAlign.Left),
                 visualTransformation=NeoNoteTypefaces.richVisual(

@@ -18,6 +18,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import java.io.ByteArrayOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -62,5 +64,39 @@ class NeoA4EditingDeviceTest {
             original,source.replaceFirst(" اختبار",""))
         assertEquals(original.length+" اختبار".length,source.length)
         assertTrue(!source.contains(NeoDocumentBlocks.PAGE_BREAK))
+    }
+
+    @Test fun onscreenA4PageCountMatchesNativePdfForBilingualText() {
+        val title="مستند A4"
+        val original=("أنا مش عارف والله English مرحبا بك. ").repeat(96) +
+            "\n" + ("Another paragraph عربي English. ").repeat(25)
+        val context=InstrumentationRegistry.getInstrumentation().targetContext
+        val expectedPdfPages=ByteArrayOutputStream().use {
+            NeoDocumentPdf.write(context,"a4-render-page-parity",title,original,it)
+        }
+        assertTrue(expectedPdfPages>=1)
+        rule.setContent {
+            MaterialTheme {
+                Column(Modifier.width(320.dp).height(620.dp)
+                    .verticalScroll(rememberScrollState())) {
+                    NeoDocumentCanvas(
+                        noteId="a4-render-page-parity",
+                        source=original,editable=false,
+                        documentTitle=title,a4=true,
+                        onSourceChange={},onError={error(it)}
+                    )
+                }
+            }
+        }
+        rule.waitUntil(20_000) {
+            rule.onAllNodesWithTag("a4_document_sheet",useUnmergedTree=true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        rule.waitForIdle()
+        val visualPages=rule.onAllNodesWithTag(
+            "a4_document_sheet",useUnmergedTree=true
+        ).fetchSemanticsNodes().size
+        assertEquals("On-screen A4 sheets disagree with the printed PDF page count",
+            expectedPdfPages,visualPages)
     }
 }

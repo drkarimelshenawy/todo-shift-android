@@ -86,6 +86,7 @@ jobs:
             --tests 'com.todoshift.app.v11.ui.NeoNoteAppearanceTest' \
             --tests 'com.todoshift.app.v11.ui.NeoDocumentBlocksTest' \
             --tests 'com.todoshift.app.v11.ui.NeoA4SoftWrapTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoA4PrintMetricsTest' \
             --tests 'com.todoshift.app.v11.ui.NeoA4LiveEditingUiTest' \
             --tests 'com.todoshift.app.v11.ui.NeoDocumentPdfTest' \
             --tests 'com.todoshift.app.v11.ui.NeoNoteBundledFontsTest' \

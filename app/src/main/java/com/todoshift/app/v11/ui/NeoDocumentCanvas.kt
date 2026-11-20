@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.style.TextAlign
@@ -107,6 +108,16 @@ internal fun NeoDocumentCanvas(
         }) {
         val viewportWidth=maxWidth
         val sheetWidth=if(a4) viewportWidth*zoomPercent/100f else viewportWidth
+        // A4 is a miniature of the 595-point PDF sheet. A 320dp screen
+        // must not show a 12dp font on a 320dp page: that would be almost
+        // twice the print-relative type size and create extra fake pages.
+        val hostFontScale=LocalDensity.current.fontScale
+        val printSheetScale=if(a4) NeoA4PrintMetrics.sheetScale(sheetWidth.value)
+            else 1f
+        val printBodySp=if(a4) NeoA4PrintMetrics.measuredSizeSp(
+            NeoA4PrintMetrics.BODY_PT,sheetWidth.value,hostFontScale) else 12f
+        val printLineSp=if(a4) NeoA4PrintMetrics.measuredSizeSp(
+            NeoA4PrintMetrics.BODY_LINE_PT,sheetWidth.value,hostFontScale) else 18f
         val availableHeightPx=with(LocalDensity.current) {
             (sheetWidth*(297f/210f-84f/595f)).roundToPx()
         }
@@ -136,8 +147,8 @@ internal fun NeoDocumentCanvas(
                     val layout=textMeasurer.measure(
                         text=NeoNoteTypefaces.styled(rich.value.annotatedString,
                             arabicFont,englishFont),
-                        style=previewStyle.copy(fontSize=(12f*zoomPercent/100f).sp,
-                            lineHeight=(18f*zoomPercent/100f).sp,
+                        style=previewStyle.copy(fontSize=printBodySp.sp,
+                            lineHeight=printLineSp.sp,
                             textDirection=textDirection,
                             textAlign=if(textDirection==TextDirection.Ltr)
                                 TextAlign.Left else TextAlign.Right),
@@ -147,7 +158,7 @@ internal fun NeoDocumentCanvas(
                         IntArray(layout.lineCount){layout.getLineStart(it)},
                         IntArray(layout.lineCount){layout.getLineTop(it).toInt()},
                         FloatArray(layout.lineCount){layout.getLineBottom(it)},
-                        layout.size.height,(availableHeightPx*0.82f).toInt().coerceAtLeast(1))
+                        layout.size.height,(availableHeightPx*0.95f).toInt().coerceAtLeast(1))
                     // Multiple full-buffer textfields are expensive on very
                     // large paragraphs. Fall back safely rather than allocating
                     // unbounded O(pages x characters) editing layouts.
@@ -176,15 +187,15 @@ internal fun NeoDocumentCanvas(
                         val layout=textMeasurer.measure(
                             text=NeoNoteTypefaces.styled(rich.value.annotatedString,
                                 arabicFont,englishFont),
-                            style=previewStyle.copy(fontSize=(12f*zoomPercent/100f).sp,
-                                lineHeight=(18f*zoomPercent/100f).sp,
+                            style=previewStyle.copy(fontSize=printBodySp.sp,
+                                lineHeight=printLineSp.sp,
                                 textDirection=textDirection),
                             constraints=Constraints(maxWidth=widthPx)
                         )
                         val ranges=NeoA4SoftWrap.ranges(rich.value.text.length,
                             IntArray(layout.lineCount){layout.getLineStart(it)},
                             FloatArray(layout.lineCount){layout.getLineBottom(it)},
-                            availableHeightPx*0.72f)
+                            availableHeightPx*0.95f)
                         ranges.map { range ->
                             if(ranges.size==1) line else {
                                 val tokens=rich.hidden.filter {
@@ -295,6 +306,7 @@ internal fun NeoDocumentCanvas(
             val overflowsA4=a4 && contentHeightPx>maxContentHeightPx+2
             Surface(
                 modifier=if(a4) Modifier.fillMaxWidth()
+                    .testTag("a4_document_sheet")
                     .heightIn(min=a4Height)
                     else Modifier.fillMaxWidth(),
                 color=background,contentColor=contentColor,
@@ -308,7 +320,7 @@ internal fun NeoDocumentCanvas(
                 val baseDensity=LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(
                     density=baseDensity.density,
-                    fontScale=baseDensity.fontScale*(if(a4) zoomPercent/100f else 1f)
+                    fontScale=if(a4) printSheetScale else baseDensity.fontScale
                 )) {
                 Column(Modifier.fillMaxWidth().padding(
                     horizontal=if(a4) pageWidth*42f/595f else 16.dp,

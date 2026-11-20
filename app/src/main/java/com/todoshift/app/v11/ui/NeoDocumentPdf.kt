@@ -16,9 +16,9 @@ import java.io.OutputStream
 
 /** Native Android PDF/A4 renderer. Never uploads note contents or media. */
 internal object NeoDocumentPdf {
-    private const val PAGE_WIDTH=595
-    private const val PAGE_HEIGHT=842
-    private const val MARGIN=42f
+    private const val PAGE_WIDTH=NeoA4PrintMetrics.PAGE_WIDTH_PT
+    private const val PAGE_HEIGHT=NeoA4PrintMetrics.PAGE_HEIGHT_PT
+    private const val MARGIN=NeoA4PrintMetrics.MARGIN_PT
     private const val CONTENT_WIDTH=PAGE_WIDTH-2*MARGIN
 
     /** Returns actual PDF page count after a fully written export. */
@@ -32,7 +32,7 @@ internal object NeoDocumentPdf {
         require(source.length<=300_000) {"Document is too long for PDF export"}
         val pdf=PdfDocument()
         val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color=android.graphics.Color.BLACK;textSize=12f
+            color=android.graphics.Color.BLACK;textSize=NeoA4PrintMetrics.BODY_PT
             typeface=android.graphics.Typeface.create("sans-serif",0)
         }
         val borderPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -68,7 +68,7 @@ internal object NeoDocumentPdf {
                 .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
                 .setIncludePad(false).build()
         }
-        fun printText(sourceText:String,size:Float=12f,space:Float=4f,center:Boolean=false) {
+        fun printText(sourceText:String,size:Float=NeoA4PrintMetrics.BODY_PT,space:Float=4f,center:Boolean=false) {
             paint.textSize=size
             // Split at actual shaped layout line boundaries, so long text
             // can paginate without clipping a whole multi-line paragraph.
@@ -100,7 +100,7 @@ internal object NeoDocumentPdf {
             newPage()
             if(title.isNotBlank()) {
                 // Keep the printed title aligned with the centered A4 canvas title.
-                printText(title,18f,3f,center=true)
+                printText(title,NeoA4PrintMetrics.TITLE_PT,3f,center=true)
             }
             val attachments=NeoAttachmentStore(context).list()
                 .filter{it.owner==noteId && it.mime.startsWith("image/")}
@@ -114,7 +114,7 @@ internal object NeoDocumentPdf {
                                 line.startsWith("# ")->19f
                                 line.startsWith("## ")->16f
                                 line.startsWith("### ")->14f
-                                else ->12f
+                                else ->NeoA4PrintMetrics.BODY_PT
                             }
                             printText(NeoNoteDocumentTools.visible(line),size,
                                 if(line.isBlank()) 5f else 3f)

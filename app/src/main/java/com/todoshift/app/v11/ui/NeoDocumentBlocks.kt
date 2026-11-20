@@ -18,7 +18,13 @@ internal object NeoDocumentBlocks {
             val source:String,override val startLine:Int,override val endLine:Int,
             override val sourceHash:String,
             // Read-only A4 pagination identifier; not persisted in source.
-            val pageFragment:Int=0
+            val pageFragment:Int=0,
+            // Viewport-only slice metadata, never serialized into note text.
+            val sliceTopPx:Int=0,
+            val sliceBottomPx:Int=0,
+            val wholeHeightPx:Int=0,
+            val sliceStartOffset:Int=0,
+            val sliceEndOffset:Int=0
         ):Block
         data class Table(
             val cells:List<List<String>>,

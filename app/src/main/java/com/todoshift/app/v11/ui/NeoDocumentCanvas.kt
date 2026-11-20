@@ -67,6 +67,7 @@ internal fun NeoDocumentCanvas(
     // Keep a single owner for IME composition in edit mode. This read-only
     // A4 presentation path never inserts artificial breaks into stored text.
     val textMeasurer=rememberTextMeasurer()
+    val editingSessions=remember(noteId){mutableMapOf<Int,NeoA4EditingSession>()}
     fun blockKey(block:NeoDocumentBlocks.Block):String =
         "${block.startLine}:${block.endLine}:${(block as? NeoDocumentBlocks.Block.Paragraph)?.pageFragment ?: 0}"
     // Heights are measured from the real Compose content, not guessed from
@@ -110,9 +111,50 @@ internal fun NeoDocumentCanvas(
             (sheetWidth*(297f/210f-84f/595f)).roundToPx()
         }
         val previewStyle=MaterialTheme.typography.bodyLarge
+        // A single rich-text/IME state owns the original source paragraph.
+        // Only completed compositions are used for live page measurements.
+        val editingSnapshots=if(a4 && editable && inlineEditing) {
+            blocks.filterIsInstance<NeoDocumentBlocks.Block.Paragraph>().map { block ->
+                editingSessions.getOrPut(block.startLine) {
+                    NeoA4EditingSession(block.source)
+                }.committed
+            }
+        } else emptyList()
         val displayBlocks=remember(blocks,a4,inlineEditing,editable,viewportWidthPx,zoomPercent,
-            arabicFont,englishFont,textDirection,availableHeightPx,textMeasurer,previewStyle) {
-            if(!a4 || (inlineEditing && editable) || viewportWidthPx==0) blocks
+            arabicFont,englishFont,textDirection,availableHeightPx,textMeasurer,previewStyle,
+            editingSnapshots) {
+            if(!a4 || viewportWidthPx==0) blocks
+            else if(inlineEditing && editable) blocks.flatMap { block ->
+                if(block !is NeoDocumentBlocks.Block.Paragraph || block.source.length>40_000)
+                    listOf(block)
+                else runCatching {
+                    val rich=editingSessions.getOrPut(block.startLine) {
+                        NeoA4EditingSession(block.source)
+                    }.committed
+                    val widthPx=(viewportWidthPx*zoomPercent/100f*
+                        (1f-84f/595f)).toInt().coerceAtLeast(1)
+                    val layout=textMeasurer.measure(
+                        text=NeoNoteTypefaces.styled(rich.value.annotatedString,
+                            arabicFont,englishFont),
+                        style=previewStyle.copy(fontSize=(12f*zoomPercent/100f).sp,
+                            lineHeight=(18f*zoomPercent/100f).sp,
+                            textDirection=textDirection,
+                            textAlign=if(textDirection==TextDirection.Ltr)
+                                TextAlign.Left else TextAlign.Right),
+                        constraints=Constraints(maxWidth=widthPx)
+                    )
+                    val slices=NeoA4SoftWrap.slices(rich.value.text.length,
+                        IntArray(layout.lineCount){layout.getLineStart(it)},
+                        IntArray(layout.lineCount){layout.getLineTop(it).toInt()},
+                        FloatArray(layout.lineCount){layout.getLineBottom(it)},
+                        layout.size.height,(availableHeightPx*0.82f).toInt().coerceAtLeast(1))
+                    slices.mapIndexed { index,slice ->
+                        block.copy(pageFragment=index,sliceTopPx=slice.topPx,
+                            sliceBottomPx=slice.bottomPx,wholeHeightPx=layout.size.height,
+                            sliceStartOffset=slice.start,sliceEndOffset=slice.end)
+                    }
+                }.getOrElse { listOf(block) }
+            }
             else blocks.flatMap { block ->
                 if(block !is NeoDocumentBlocks.Block.Paragraph) listOf(block)
                 else block.source.split('\n').flatMapIndexed { lineIndex,line ->
@@ -289,7 +331,19 @@ internal fun NeoDocumentCanvas(
                         }) {
                         when(block) {
                             is NeoDocumentBlocks.Block.Paragraph -> {
-                                if(inlineEditing && editable && onParagraphEdited!=null) {
+                                if(inlineEditing && editable && onParagraphEdited!=null &&
+                                     a4 && block.wholeHeightPx>0) {
+                                     NeoA4SharedEditableSlice(
+                                         block=block,
+                                         session=editingSessions.getOrPut(block.startLine) {
+                                             NeoA4EditingSession(block.source)
+                                         },
+                                         direction=textDirection,ruled=ruled,
+                                         arabicFont=arabicFont,englishFont=englishFont,
+                                         onEdited=onParagraphEdited,
+                                         onActivated=onActiveParagraph,onError=onError
+                                     )
+                                 } else if(inlineEditing && editable && onParagraphEdited!=null) {
                                     NeoEditableDocumentParagraph(
                                         noteId=noteId,block=block,
                                         direction=textDirection,ruled=ruled,a4=a4,

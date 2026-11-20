@@ -3,6 +3,29 @@ package com.todoshift.app.v11.ui
 /** Read-only pagination boundaries. Never writes page breaks into note source. */
 internal object NeoA4SoftWrap {
     data class Range(val start:Int,val end:Int)
+    data class Slice(val start:Int,val end:Int,val topPx:Int,val bottomPx:Int) {
+        init {require(start<=end && topPx<=bottomPx)}
+        val heightPx:Int get()=bottomPx-topPx
+    }
+
+    /** Slice locations in the ONE shaped editor layout, retaining source offsets. */
+    fun slices(length:Int,lineStarts:IntArray,lineTops:IntArray,
+        lineBottoms:FloatArray,contentHeightPx:Int,maxHeightPx:Int):List<Slice> {
+        require(maxHeightPx>0 && contentHeightPx>=0)
+        require(lineStarts.size==lineTops.size && lineTops.size==lineBottoms.size)
+        require(lineTops.all{it>=0} && lineTops.zipWithNext().all{it.first<=it.second})
+        val split=ranges(length,lineStarts,lineBottoms,maxHeightPx.toFloat())
+        return split.mapIndexed { index,range ->
+            val first=if(index==0)0 else
+                lineStarts.indexOf(range.start).also{require(it>=0)}
+            val next=if(index==split.lastIndex)contentHeightPx else {
+                val nextLine=lineStarts.indexOf(split[index+1].start)
+                require(nextLine>=0)
+                lineTops[nextLine]
+            }
+            Slice(range.start,range.end,lineTops.getOrElse(first){0},next)
+        }
+    }
 
     /**
      * Splits at real text-layout line starts (UTF-16 offsets), not guessed

@@ -149,8 +149,14 @@ internal fun NeoDocumentCanvas(
                         // after an automatic page transition) must not create
                         // an empty A4 sheet. The document title on page one
                         // counts as visible content, even without body blocks.
-                        val hasVisiblePageContent=result.last().isNotEmpty() ||
-                            (result.size==1 && a4 && documentTitle.isNotBlank())
+                        val hasVisiblePageContent=result.last().any { previous ->
+                            when(previous) {
+                                is NeoDocumentBlocks.Block.Paragraph ->
+                                    previous.source.isNotBlank()
+                                is NeoDocumentBlocks.Block.PageBreak -> false
+                                else -> true
+                            }
+                        } || (result.size==1 && a4 && documentTitle.isNotBlank())
                         if(!a4 || hasVisiblePageContent) {
                             result.add(mutableListOf())
                             used=0

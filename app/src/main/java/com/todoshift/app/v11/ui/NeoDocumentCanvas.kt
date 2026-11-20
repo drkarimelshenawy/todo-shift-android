@@ -135,88 +135,133 @@ internal fun NeoDocumentCanvas(
         } else emptyList()
         val displayBlocks=remember(blocks,a4,inlineEditing,editable,viewportWidthPx,zoomPercent,
             arabicFont,englishFont,textDirection,availableHeightPx,textMeasurer,previewStyle,
-            editingSnapshots) {
+            editingSnapshots,titleHeightPx) {
             if(!a4 || viewportWidthPx==0) blocks
-            else if(inlineEditing && editable) blocks.flatMap { block ->
-                if(block !is NeoDocumentBlocks.Block.Paragraph || block.source.length>40_000)
-                    listOf(block)
-                else runCatching {
-                    val rich=editingSessions.getOrPut(block.startLine) {
-                        NeoA4EditingSession(block.source)
-                    }.committed
-                    val widthPx=(viewportWidthPx*zoomPercent/100f*
-                        (1f-84f/595f)).toInt().coerceAtLeast(1)
-                    val layout=textMeasurer.measure(
-                        text=NeoNoteTypefaces.styled(rich.value.annotatedString,
-                            arabicFont,englishFont),
-                        style=previewStyle.copy(fontSize=printBodySp.sp,
-                            lineHeight=printLineSp.sp,
-                            textDirection=textDirection,
-                            textAlign=if(textDirection==TextDirection.Ltr)
-                                TextAlign.Left else TextAlign.Right),
-                        constraints=Constraints(maxWidth=widthPx)
-                    )
-                    val slices=NeoA4SoftWrap.slices(rich.value.text.length,
-                        IntArray(layout.lineCount){layout.getLineStart(it)},
-                        IntArray(layout.lineCount){layout.getLineTop(it).toInt()},
-                        FloatArray(layout.lineCount){layout.getLineBottom(it)},
-                        layout.size.height,(availableHeightPx*0.95f).toInt().coerceAtLeast(1))
-                    // Multiple full-buffer textfields are expensive on very
-                    // large paragraphs. Fall back safely rather than allocating
-                    // unbounded O(pages x characters) editing layouts.
-                    if(slices.size>24 || slices.size.toLong()*
-                        rich.value.text.length>180_000L) listOf(block)
-                    else slices.mapIndexed { index,slice ->
-                        block.copy(pageFragment=index,sliceTopPx=slice.topPx,
-                            sliceBottomPx=slice.bottomPx,wholeHeightPx=layout.size.height,
-                            sliceStartOffset=slice.start,sliceEndOffset=slice.end)
+            else if(inlineEditing && editable) buildList {
+                // Carry unused sheet space into the NEXT paragraph. A paragraph
+                // can begin at the bottom of one page and continue on the next;
+                // no synthetic page breaks or source mutations are required.
+                val capacity=(availableHeightPx-3).coerceAtLeast(1)
+                var used=if(documentTitle.isNotBlank()) titleHeightPx else 0
+                fun accept(height:Int) {
+                    if(height>0 && used>0 && used+height>capacity) used=0
+                    used+=height.coerceAtLeast(0)
+                }
+                blocks.forEach { block ->
+                    if(block is NeoDocumentBlocks.Block.PageBreak) {
+                        add(block)
+                        used=0
+                    } else if(block !is NeoDocumentBlocks.Block.Paragraph ||
+                        block.source.length>40_000) {
+                        add(block)
+                        accept(measuredBlockHeights[blockKey(block)] ?: 0)
+                    } else {
+                        val parts=runCatching {
+                            val rich=editingSessions.getOrPut(block.startLine) {
+                                NeoA4EditingSession(block.source)
+                            }.committed
+                            val widthPx=(viewportWidthPx*zoomPercent/100f*
+                                (1f-84f/595f)).toInt().coerceAtLeast(1)
+                            val layout=textMeasurer.measure(
+                                text=NeoNoteTypefaces.styled(rich.value.annotatedString,
+                                    arabicFont,englishFont),
+                                style=previewStyle.copy(fontSize=printBodySp.sp,
+                                    lineHeight=printLineSp.sp,textDirection=textDirection,
+                                    textAlign=if(textDirection==TextDirection.Ltr)
+                                        TextAlign.Left else TextAlign.Right),
+                                constraints=Constraints(maxWidth=widthPx)
+                            )
+                            val remaining=(capacity-used).coerceAtLeast(1)
+                            val slices=NeoA4SoftWrap.slices(rich.value.text.length,
+                                IntArray(layout.lineCount){layout.getLineStart(it)},
+                                IntArray(layout.lineCount){layout.getLineTop(it).toInt()},
+                                FloatArray(layout.lineCount){layout.getLineBottom(it)},
+                                layout.size.height,capacity,remaining)
+                            // Protect memory when a document has giant paragraphs.
+                            if(slices.size>24 || slices.size.toLong()*
+                                rich.value.text.length>180_000L) listOf(block)
+                            else slices.mapIndexed { index,slice ->
+                                block.copy(pageFragment=index,sliceTopPx=slice.topPx,
+                                    sliceBottomPx=slice.bottomPx,wholeHeightPx=layout.size.height,
+                                    sliceStartOffset=slice.start,sliceEndOffset=slice.end)
+                            }
+                        }.getOrElse { listOf(block) }
+                        parts.forEach { part ->
+                            add(part)
+                            val height=(part as? NeoDocumentBlocks.Block.Paragraph)
+                                ?.takeIf{it.wholeHeightPx>0}
+                                ?.let{it.sliceBottomPx-it.sliceTopPx}
+                                ?: measuredBlockHeights[blockKey(part)] ?: 0
+                            accept(height)
+                        }
                     }
-                }.getOrElse { listOf(block) }
+                }
             }
-            else blocks.flatMap { block ->
-                if(block !is NeoDocumentBlocks.Block.Paragraph) listOf(block)
-                else block.source.split('\n').flatMapIndexed { lineIndex,line ->
-                    val startLine=block.startLine+lineIndex
-                    val eligible=line.isNotBlank() && line.length<30_000 &&
-                        !line.startsWith("# ") && !line.startsWith("## ") &&
-                        !line.startsWith("### ") && !line.startsWith("- [") &&
-                        !line.startsWith("☐ ") && !line.startsWith("☑ ") &&
-                        !line.contains("<!--task:")
-                    val fragments=if(!eligible) listOf(line) else runCatching {
-                        val rich=NeoRichEditorState.open(line)
-                        val widthPx=(viewportWidthPx*zoomPercent/100f*
-                            (1f-84f/595f)).toInt().coerceAtLeast(1)
-                        val layout=textMeasurer.measure(
-                            text=NeoNoteTypefaces.styled(rich.value.annotatedString,
-                                arabicFont,englishFont),
-                            style=previewStyle.copy(fontSize=printBodySp.sp,
-                                lineHeight=printLineSp.sp,
-                                textDirection=textDirection),
-                            constraints=Constraints(maxWidth=widthPx)
-                        )
-                        val ranges=NeoA4SoftWrap.ranges(rich.value.text.length,
-                            IntArray(layout.lineCount){layout.getLineStart(it)},
-                            FloatArray(layout.lineCount){layout.getLineBottom(it)},
-                            availableHeightPx*0.95f)
-                        ranges.map { range ->
-                            if(ranges.size==1) line else {
-                                val tokens=rich.hidden.filter {
-                                    it.position>=range.start && (it.position<range.end ||
-                                        (range.end==rich.value.text.length &&
-                                            it.position==range.end))
-                                }.map{it.copy(position=it.position-range.start)}
-                                NeoRichEditorState(
-                                    TextFieldValue(rich.value.annotatedString.subSequence(
-                                        range.start,range.end),TextRange(0)),
-                                    rich.characters.subList(range.start,range.end),
-                                    tokens
-                                ).stored()
+            else buildList {
+                val capacity=(availableHeightPx-3).coerceAtLeast(1)
+                var used=if(documentTitle.isNotBlank()) titleHeightPx else 0
+                fun accept(height:Int) {
+                    if(height>0 && used>0 && used+height>capacity) used=0
+                    used+=height.coerceAtLeast(0)
+                }
+                blocks.forEach { block ->
+                    if(block is NeoDocumentBlocks.Block.PageBreak) {
+                        add(block)
+                        used=0
+                    } else if(block !is NeoDocumentBlocks.Block.Paragraph) {
+                        add(block)
+                        accept(measuredBlockHeights[blockKey(block)] ?: 0)
+                    } else {
+                        block.source.split('\n').forEachIndexed { lineIndex,line ->
+                            val startLine=block.startLine+lineIndex
+                            val eligible=line.isNotBlank() && line.length<30_000 &&
+                                !line.startsWith("# ") && !line.startsWith("## ") &&
+                                !line.startsWith("### ") && !line.startsWith("- [") &&
+                                !line.startsWith("☐ ") && !line.startsWith("☑ ") &&
+                                !line.contains("<!--task:")
+                            val fragments=if(!eligible) listOf(line to 0) else runCatching {
+                                val rich=NeoRichEditorState.open(line)
+                                val widthPx=(viewportWidthPx*zoomPercent/100f*
+                                    (1f-84f/595f)).toInt().coerceAtLeast(1)
+                                val layout=textMeasurer.measure(
+                                    text=NeoNoteTypefaces.styled(rich.value.annotatedString,
+                                        arabicFont,englishFont),
+                                    style=previewStyle.copy(fontSize=printBodySp.sp,
+                                        lineHeight=printLineSp.sp,textDirection=textDirection),
+                                    constraints=Constraints(maxWidth=widthPx)
+                                )
+                                val tops=IntArray(layout.lineCount){layout.getLineTop(it).toInt()}
+                                val bottoms=FloatArray(layout.lineCount){layout.getLineBottom(it)}
+                                val starts=IntArray(layout.lineCount){layout.getLineStart(it)}
+                                val ranges=NeoA4SoftWrap.ranges(rich.value.text.length,
+                                    starts,bottoms,capacity.toFloat(),
+                                    (capacity-used).coerceAtLeast(1).toFloat())
+                                ranges.mapIndexed { index,range ->
+                                    val startAt=starts.indexOf(range.start).coerceAtLeast(0)
+                                    val endAt=if(index==ranges.lastIndex) layout.size.height
+                                        else tops[starts.indexOf(ranges[index+1].start)]
+                                    val part=if(ranges.size==1) line else {
+                                        val tokens=rich.hidden.filter {
+                                            it.position>=range.start &&
+                                                (it.position<range.end ||
+                                                    (range.end==rich.value.text.length &&
+                                                        it.position==range.end))
+                                        }.map{it.copy(position=it.position-range.start)}
+                                        NeoRichEditorState(
+                                            TextFieldValue(rich.value.annotatedString.subSequence(
+                                                range.start,range.end),TextRange(0)),
+                                            rich.characters.subList(range.start,range.end),tokens
+                                        ).stored()
+                                    }
+                                    part to (endAt-tops[startAt]).coerceAtLeast(1)
+                                }
+                            }.getOrElse { listOf(line to 0) }
+                            fragments.forEachIndexed { fragment,(part,height) ->
+                                add(NeoDocumentBlocks.Block.Paragraph(
+                                    part,startLine,startLine+1,block.sourceHash,fragment))
+                                accept(height)
                             }
                         }
-                    }.getOrElse { listOf(line) }
-                    fragments.mapIndexed { fragment,part ->
-                        NeoDocumentBlocks.Block.Paragraph(
-                            part,startLine,startLine+1,block.sourceHash,fragment)
                     }
                 }
             }

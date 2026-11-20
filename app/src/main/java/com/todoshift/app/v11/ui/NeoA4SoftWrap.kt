@@ -10,7 +10,8 @@ internal object NeoA4SoftWrap {
 
     /** Slice locations in the ONE shaped editor layout, retaining source offsets. */
     fun slices(length:Int,lineStarts:IntArray,lineTops:IntArray,
-        lineBottoms:FloatArray,contentHeightPx:Int,maxHeightPx:Int):List<Slice> {
+        lineBottoms:FloatArray,contentHeightPx:Int,maxHeightPx:Int,
+        firstHeightPx:Int=maxHeightPx):List<Slice> {
         require(maxHeightPx>0 && contentHeightPx>=0)
         require(lineStarts.size==lineTops.size && lineTops.size==lineBottoms.size)
         require(lineTops.all{it in 0..contentHeightPx})
@@ -20,7 +21,8 @@ internal object NeoA4SoftWrap {
                 lineBottoms[i]<=contentHeightPx.toFloat()
         })
         for(i in 1 until lineTops.size)require(lineTops[i]>=lineTops[i-1])
-        val split=ranges(length,lineStarts,lineBottoms,maxHeightPx.toFloat())
+        require(firstHeightPx>0)
+        val split=ranges(length,lineStarts,lineBottoms,maxHeightPx.toFloat(),firstHeightPx.toFloat())
         return split.mapIndexed { index,range ->
             val first=if(index==0)0 else
                 lineStarts.indexOf(range.start).also{require(it>=0)}
@@ -38,9 +40,10 @@ internal object NeoA4SoftWrap {
      * character counts, preserving shaped Arabic and combining sequences.
      */
     fun ranges(length:Int,lineStarts:IntArray,lineBottoms:FloatArray,
-        maxHeightPx:Float):List<Range> {
+        maxHeightPx:Float,firstHeightPx:Float=maxHeightPx):List<Range> {
         require(length>=0 && lineStarts.size==lineBottoms.size)
         require(maxHeightPx>0f && maxHeightPx.isFinite())
+        require(firstHeightPx>0f && firstHeightPx.isFinite())
         if(length==0 || lineStarts.isEmpty())return listOf(Range(0,length))
         require(lineStarts[0]==0 && lineStarts.all{it in 0..length})
         for(i in 1 until lineStarts.size)require(lineStarts[i]>=lineStarts[i-1])
@@ -52,14 +55,16 @@ internal object NeoA4SoftWrap {
         val result=mutableListOf<Range>()
         var start=0
         var firstLine=0
+        var capacity=firstHeightPx
         for(i in 1 until lineStarts.size) {
             val preceding=if(firstLine==0)0f else lineBottoms[firstLine-1]
-            if(lineBottoms[i]-preceding>maxHeightPx) {
+            if(lineBottoms[i]-preceding>capacity) {
                 val cut=lineStarts[i]
                 if(cut>start) {
                     result+=Range(start,cut)
                     start=cut
                     firstLine=i
+                    capacity=maxHeightPx
                 }
             }
         }

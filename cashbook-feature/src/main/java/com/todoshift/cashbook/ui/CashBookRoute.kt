@@ -79,8 +79,6 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     val context = LocalContext.current
     val defaultSection = CashBookSectionPreference.load(context)
     var mainSection by rememberSaveable { mutableStateOf(defaultSection) }
-    // The default applies every time the finance tab is opened, not only on first install.
-    LaunchedEffect(defaultSection) { mainSection = defaultSection }
     val active = selected?.takeIf { id ->
         if (mainSection == "debts") allAccounts.any { it.id == id } && id in debtIds
         else selectableAccounts.any { it.id == id } && id !in debtIds
@@ -93,6 +91,13 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     val defaults = snapshot?.defaults ?: Ledger.ButtonLabels(tr(R.string.cb_001), tr(R.string.cb_002))
     var page by rememberSaveable { mutableStateOf("movement") }
     var debtDetail by rememberSaveable { mutableStateOf(false) }
+    // Reset child/detail navigation when re-entering the finance destination.
+    // Changing the active section manually never overwrites the saved default.
+    LaunchedEffect(defaultSection) {
+        mainSection = defaultSection
+        page = "movement"
+        debtDetail = false
+    }
     LaunchedEffect(navigation){navigation?.let{selected=it;page="movement";mainSection="debts";debtDetail=true;vm.navigationHandled()}}
     var dataMenu by remember { mutableStateOf(false) }
     var archivedMenu by remember { mutableStateOf(false) }

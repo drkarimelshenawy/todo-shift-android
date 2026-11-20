@@ -82,8 +82,8 @@ class NeoDocumentPdfDeviceTest {
     }
 
     @Test fun explicitBreakBetweenRealParagraphsCreatesTwoContentPages() {
-        val source = "صفحة أولى فيها نص عربي واضح\\n" +
-            NeoDocumentBlocks.PAGE_BREAK + "\\nSecond page has English text"
+        val source = "صفحة أولى فيها نص عربي واضح\n" +
+            NeoDocumentBlocks.PAGE_BREAK + "\nSecond page has English text"
         assertEquals("Manual page break must separate actual document content",
             2, verifyPdf(source, expectedMinimumPages = 2))
     }
@@ -94,18 +94,21 @@ class NeoDocumentPdfDeviceTest {
             listOf("تفاصيل عربية", "English details"),
             listOf("النتيجة", "Final result")
         ))
-        val source = "# مقدمة\\n" +
+        val source = "# مقدمة\n" +
             (1..900).joinToString(" ") { "عربي English" } +
-            "\\n" + table + "\\n## خلاصة\\n" +
+            "\n" + table + "\n## خلاصة\n" +
             (1..700).joinToString(" ") { "Summary ملخص" }
         verifyPdf(source, expectedMinimumPages = 2)
     }
 
     @Test fun longMultilingualTableCellExportsReadableA4Pages() {
-        val longCell = (1..1100).joinToString(" ") { "عربي English" }
-        val source = NeoDocumentBlocks.serializeTable(
-            listOf(listOf("الوصف", "Description"), listOf(longCell, "Value"))
-        )
+        // A document can contain large tables, but each portable cell is
+        // intentionally bounded to 250 characters. Exercise realistic,
+        // valid multi-page data instead of failing the serializer up front.
+        val longCell = ("عربي English ").repeat(14).trim()
+        val rows = listOf(listOf("الوصف", "Description")) +
+            (1..70).map { listOf(longCell, "Value $it") }
+        val source = NeoDocumentBlocks.serializeTable(rows)
         verifyPdf(source, expectedMinimumPages = 2)
     }
 }

@@ -14,8 +14,8 @@ android {
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 72
-        versionName = "4.28.0-premium-v66-settings-ia"
+        versionCode = 73
+        versionName = "4.29.0-premium-v67-navigation-menus"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

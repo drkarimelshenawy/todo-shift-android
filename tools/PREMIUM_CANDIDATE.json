@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 72,
-  "versionName": "4.28.0-premium-v66-settings-ia",
-  "branch": "feat/v66-settings-ia-20261120",
-  "baseline": "0f15229c45a740b17db2beb1d2226915b47b4894",
-  "classification": "Settings information architecture and navigation redesign"
+  "versionCode": 73,
+  "versionName": "4.29.0-premium-v67-navigation-menus",
+  "branch": "fix/v67-cashbook-calendar-rtl-menus-20261121",
+  "baseline": "f3e69b9538136f22a917de39968355171d37bed0",
+  "classification": "Cash Book landing choice, calendar view, painter and Arabic/English menu behavior"
 }

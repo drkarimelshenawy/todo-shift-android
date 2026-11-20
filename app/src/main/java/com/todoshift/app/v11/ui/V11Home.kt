@@ -742,9 +742,7 @@ fun V11Home(
                     V11AccountsUnlockScreen(settings = securitySettings, securityStore = securityStore,
                         onUnlocked = { accountsUnlocked = true })
                 } else Scaffold(
-                    containerColor =
-                        if (uiSettings.experience == V11Experience.PREMIUM) Color.Transparent
-                        else MaterialTheme.colorScheme.background,
+                    containerColor = MaterialTheme.colorScheme.background,
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     topBar = {
                         Column {

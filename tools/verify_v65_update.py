@@ -1,4 +1,5 @@
 """Check the signed v64 to v65 upgrade on an isolated, rootable Android emulator."""
+from pathlib import Path
 import json
 import subprocess
 import sys
@@ -58,12 +59,13 @@ def main(baseline, candidate):
     _, _, before = read_db()
     assert any(task.get("id") == task_id for task in before["tasks"])
     assert "Success" in adb("install", "-r", candidate)
-    assert "versionCode=70 " in adb("shell", "dumpsys", "package", APP)
+    version = json.loads(Path(__file__).with_name("PREMIUM_CANDIDATE.json").read_text())["versionCode"]
+    assert f"versionCode={version} " in adb("shell", "dumpsys", "package", APP)
     start()
     _, _, after = read_db()
     for key in ("calendars", "days", "tasks", "dayItems", "payments", "settlements"):
         assert before[key] == after[key], f"Update changed {key}"
-    print("PASS: signed v64 in-place update to versionCode 70 retained the task and record collections")
+    print(f"PASS: signed v64 in-place update to versionCode {version} retained the task and record collections")
 
 
 if __name__ == "__main__":

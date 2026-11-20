@@ -1,7 +1,7 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 70,
-  "versionName": "4.27.0-premium-v65-nile-jade",
+  "versionCode": 71,
+  "versionName": "4.27.1-premium-v65-nile-jade",
   "branch": "feat/v65-nile-jade",
   "baseline": "fe47b4f409ed47749cf50b616f3c4bab77980cfb",
   "classification": "Nile Jade theme review candidate"

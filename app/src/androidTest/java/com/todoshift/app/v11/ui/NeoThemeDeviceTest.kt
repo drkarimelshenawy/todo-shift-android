@@ -91,6 +91,16 @@ class NeoThemeDeviceTest {
                 }
                 rule.waitForIdle()
                 capture("$language-$index")
+                if (arabic && index == 0) {
+                    val bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+                    try {
+                        // The 8dp gutter beside the floating bar must follow the dark window.
+                        val gutter = bitmap.getPixel(1, (bitmap.height * .94f).toInt())
+                        assertTrue("Light gutter around dark navigation", android.graphics.Color.luminance(gutter) < .1f)
+                    } finally {
+                        bitmap.recycle()
+                    }
+                }
             }
         } catch (failure: Throwable) {
             android.util.Log.e("NileJadeReview", rule.onRoot().printToString(), failure)

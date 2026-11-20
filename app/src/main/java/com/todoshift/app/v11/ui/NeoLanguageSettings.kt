@@ -18,7 +18,6 @@ internal val neoLanguageRoutes =
         "NAV_DIRECTION",
         "GRID_DIRECTION",
         "WEEKDAY_DIRECTION",
-        "FIRST_WEEKDAY",
     )
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -39,7 +38,6 @@ internal fun NeoLanguageSettings(focus: String, onBack: () -> Unit) {
                 "NAV_DIRECTION",
                 "GRID_DIRECTION",
                 "WEEKDAY_DIRECTION",
-                "FIRST_WEEKDAY",
             )
             .forEach { id ->
                 val requester = remember { BringIntoViewRequester() }
@@ -58,20 +56,6 @@ internal fun NeoLanguageSettings(focus: String, onBack: () -> Unit) {
                                 p.language,
                                 { neoEnumLabel(it) },
                                 { update(p.copy(language = it)) },
-                            )
-                        "FIRST_WEEKDAY" ->
-                            NeoChoice(
-                                neoLabel("أول يوم", "First weekday"),
-                                listOf(6, 7, 1),
-                                p.firstWeekday,
-                                {
-                                    when (it) {
-                                        6 -> neoLabel("السبت", "Saturday")
-                                        7 -> neoLabel("الأحد", "Sunday")
-                                        else -> neoLabel("الاثنين", "Monday")
-                                    }
-                                },
-                                { update(p.copy(firstWeekday = it)) },
                             )
                         else -> {
                             val title = NeoFeatureCatalog.get(id)!!

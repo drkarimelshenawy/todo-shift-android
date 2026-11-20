@@ -18,11 +18,24 @@ val neoSettingsGroups =
     listOf(
         Triple("APPEARANCE", "المظهر والتصميم", "Appearance & Design"),
         Triple("LANGUAGE", "اللغة والاتجاه", "Language & Direction"),
-        Triple("CALENDAR", "التقويم وإدارة العمل", "Calendar & Work"),
-        Triple("NOTIFICATIONS", "التنبيهات والويدجت", "Notifications & Widgets"),
-        Triple("PRIVACY", "الخصوصية والبيانات", "Privacy & Data"),
-        Triple("ADVANCED", "الخيارات المتقدمة", "Advanced"),
+        Triple("SECTIONS", "إعدادات الأقسام", "Section Settings"),
+        Triple("NOTIFICATIONS", "التنبيهات والتذكيرات", "Notifications & Reminders"),
+        Triple("WIDGETS", "الويدجت والاختصارات", "Widgets & Shortcuts"),
+        Triple("SECURITY", "الأمان والخصوصية", "Security & Privacy"),
+        Triple("DATA", "البيانات والنسخ الاحتياطي", "Data & Backup"),
+        Triple("ADVANCED", "حول التطبيق والمتقدم", "About & Advanced"),
     )
+
+private fun neoSettingsGroupNames(group: String): Pair<String, String> = when (group) {
+    "CALENDAR" -> "التقويم وإدارة العمل" to "Calendar & Work"
+    "TASKS" -> "المهام" to "Tasks"
+    "NOTES" -> "الملاحظات" to "Notes"
+    "SALARY" -> "مستحقات العمل" to "Work Entitlements"
+    "CASHBOOK" -> "الإدارة المالية" to "Cash Book"
+    else -> neoSettingsGroups.firstOrNull { it.first == group }
+        ?.let { it.second to it.third }
+        ?: ("الإعدادات" to "Settings")
+}
 
 @Composable
 fun NeoRescueSettings(
@@ -44,15 +57,21 @@ fun NeoRescueSettings(
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
     fun back() {
-        if (initialPage == "HOME" && page != "HOME") page = "HOME" else onBack()
+        if (initialPage == "HOME" && page != "HOME") {
+            page = NeoSettingsHierarchy.parent(page)
+        } else onBack()
     }
     BackHandler(page != "HOME") { back() }
     if (page in neoLanguageRoutes) {
         NeoLanguageSettings(page) { back() }
         return
     }
-    if(page=="TASK_NOTES") {
-        Column(Modifier.fillMaxSize().padding(12.dp)) {NeoPageHeader(neoLabel("المهام والملاحظات","Tasks & Notes"),{back()});NeoLaunchPreferencesUi()}
+    if (page == "TASK_NOTES" || page == "NOTES_PREFERENCES") {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()),
+            verticalArrangement = Arrangement.spacedBy(NeoSpace.gap)) {
+            NeoPageHeader(neoLabel("تفضيلات الملاحظات", "Notes preferences"), { back() })
+            NeoLaunchPreferencesUi()
+        }
         return
     }
     when (page) {
@@ -107,21 +126,27 @@ fun NeoRescueSettings(
                 modifier = Modifier.fillMaxWidth(),
             )
             if (query.isBlank()) {
-                val icons = listOf(Icons.Rounded.Palette, Icons.Rounded.Language, Icons.Rounded.CalendarMonth,
-                    Icons.Rounded.Notifications, Icons.Rounded.Shield, Icons.Rounded.Tune)
+                val icons = listOf(
+                    Icons.Rounded.Palette, Icons.Rounded.Language, Icons.Rounded.CalendarMonth,
+                    Icons.Rounded.Notifications, Icons.Rounded.Widgets, Icons.Rounded.Shield,
+                    Icons.Rounded.CloudUpload, Icons.Rounded.Tune,
+                )
                 val summaries = listOf(
-                    neoLabel("الألوان، الخطوط، كثافة العرض والحركة", "Colors, typography, density and motion"),
-                    neoLabel("لغة التطبيق واتجاه الواجهة والتقويم", "Language, layout and calendar direction"),
-                    neoLabel("أماكن العمل، الورديات وخلايا التقويم", "Workplaces, shifts and calendar cells"),
-                    neoLabel("التذكيرات والاختصارات والويدجت", "Reminders, shortcuts and widgets"),
-                    neoLabel("النسخ الاحتياطي، الاستعادة وقفل الحسابات", "Backup, restore and finance lock"),
-                    neoLabel("الأداء والتشخيص والخيارات المحفوظة", "Performance, diagnostics and saved preferences"))
-                NeoPremiumSettingTile(neoLabel("النسخ الاحتياطي والاستعادة", "Backup & restore"),
-                    neoLabel("حفظ بياناتك واستعادتها", "Save and restore your data"), Icons.Rounded.CloudUpload) { nav.open("BACKUP") }
-                NeoPremiumSettingTile(neoLabel("المهام والملاحظات","Tasks & Notes"),neoLabel("القسم الافتراضي وخلفيات الملاحظات","Default section and note backgrounds"),Icons.Rounded.Notes) {page="TASK_NOTES"}
+                    neoLabel("الثيمات والخطوط والخلفيات والحركة وشاشة البداية", "Themes, fonts, backgrounds, motion and start screen"),
+                    neoLabel("لغة التطبيق واتجاه الواجهة والتنقل", "Application language, layout and navigation direction"),
+                    neoLabel("التقويم والمهام والملاحظات والمستحقات والمالية", "Calendar, tasks, notes, salary and finances"),
+                    neoLabel("التذكيرات وإشعارات التطبيق", "Reminders and app notifications"),
+                    neoLabel("مظهر الويدجت والاختصارات", "Widget appearance and shortcuts"),
+                    neoLabel("PIN والبصمة وحماية الأقسام وإخفاء المبالغ", "PIN, biometrics, section locks and hidden amounts"),
+                    neoLabel("النسخ والاستعادة وسلامة البيانات والتخزين", "Backup, restore, data health and storage"),
+                    neoLabel("الإصدار والسياسات والأداء والتشخيص والتفضيلات القديمة", "Version, policies, performance, diagnostics and legacy settings"),
+                )
                 neoSettingsGroups.forEachIndexed { index, (id, ar, en) ->
                     NeoPremiumSettingTile(neoLabel(ar, en), summaries[index], icons[index]) {
-                        if (id == "APPEARANCE") nav.open("APPEARANCE") else page = id + "_GROUP"
+                        when (id) {
+                            "NOTIFICATIONS", "WIDGETS", "SECURITY" -> nav.open(id)
+                            else -> page = "${id}_GROUP"
+                        }
                     }
                 }
             }
@@ -135,7 +160,7 @@ fun NeoRescueSettings(
                     )
                 }
                 results.forEach { result ->
-                    val group = neoSettingsGroups.firstOrNull { it.first == result.group }
+                    val groupNames = neoSettingsGroupNames(result.group)
                     Column(
                         Modifier.fillMaxWidth()
                             .clickable { nav.open(result.destination) }
@@ -147,7 +172,7 @@ fun NeoRescueSettings(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            group?.let { neoLabel(it.second, it.third) }.orEmpty(),
+                            neoLabel(groupNames.first, groupNames.second),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -157,19 +182,36 @@ fun NeoRescueSettings(
             }
         } else {
             val groupId = page.removeSuffix("_GROUP")
-            val group = neoSettingsGroups.firstOrNull { it.first == groupId }
+            val groupNames = neoSettingsGroupNames(groupId)
             val feature = NeoFeatureCatalog.get(page)
             NeoPageHeader(
-                if (page.endsWith("_GROUP")) group?.let { neoLabel(it.second, it.third) }.orEmpty()
+                if (page.endsWith("_GROUP")) neoLabel(groupNames.first, groupNames.second)
                 else feature?.let { neoLabel(it.ar, it.en) }.orEmpty(),
                 { back() },
             )
-            if (page.endsWith("_GROUP")) {
-                NeoFeatureCatalog.entries
-                    .filter { it.group == groupId && it.id !in setOf("TODAY_STYLE", "PAINT_STYLE") }
-                    .forEach { row ->
-                        NeoSettingsRow(neoLabel(row.ar, row.en)) { nav.open(row.id) }
+            if (page == "SECTIONS_GROUP") {
+                NeoSettingsHierarchy.sectionGroups.forEach { id ->
+                    val names = neoSettingsGroupNames(id)
+                    NeoSettingsRow(neoLabel(names.first, names.second)) { page = "${id}_GROUP" }
+                }
+            } else if (page.endsWith("_GROUP")) {
+                if (groupId == "SALARY") Text(
+                    neoLabel("إدارة أسعار الورديات وكشوف المستحقات تتم داخل قسم مستحقات العمل. الروابط التالية تفتح الأدوات الأصلية دون تكرار البيانات أو الإعدادات.",
+                        "Rates and statements are managed in Work Entitlements. These shortcuts open the original tools without duplicating data or preferences."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                NeoSettingsHierarchy.children(groupId).forEachIndexed { index, id ->
+                    if (groupId == "ADVANCED" && index == 0) Text(
+                        neoLabel("حول التطبيق", "About the app"), style = MaterialTheme.typography.titleSmall)
+                    if (groupId == "ADVANCED" && index == 2) Text(
+                        neoLabel("الخيارات المتقدمة", "Advanced options"), style = MaterialTheme.typography.titleSmall)
+                    val row = NeoFeatureCatalog.get(id)
+                    if (row != null) NeoSettingsRow(neoLabel(row.ar, row.en)) {
+                        if (id in NeoSettingsHierarchy.inlinePages) page = id
+                        else nav.open(id)
                     }
+                }
             } else
                 when (page) {
                     "CALENDAR_DISPLAY" -> {
@@ -190,6 +232,12 @@ fun NeoRescueSettings(
                             update(p.copy(showCalendarLegend = it))
                         }
                     }
+                    "FIRST_WEEKDAY" -> NeoChoice(
+                        neoLabel("أول يوم في الأسبوع", "First day of the week"),
+                        listOf(6, 7, 1), p.firstWeekday,
+                        { when (it) { 6 -> neoLabel("السبت", "Saturday"); 7 -> neoLabel("الأحد", "Sunday"); else -> neoLabel("الاثنين", "Monday") } },
+                        { update(p.copy(firstWeekday = it)) },
+                    )
                     "TODAY_STYLE" -> NeoTodayPreferences(p, update)
                     "PAINT_STYLE" -> Neo4PaintStudio(p, update)
                     "LAUNCH" -> NeoLandingPreferencesUi()

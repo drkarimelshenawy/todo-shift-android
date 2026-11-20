@@ -34,7 +34,7 @@ data class NeoFeature(
 object NeoFeatureCatalog {
     val entries =
         listOf(
-            NeoFeature("FINANCE_DISPLAY", "عرض الحسابات", "Finance display", "Salary", "PRIVACY"),
+            NeoFeature("FINANCE_DISPLAY", "عرض الحسابات", "Finance display", "Settings", "CASHBOOK"),
             NeoFeature("WORK_SUMMARY", "ملخص العمل التشغيلي", "Operational work summary", "Calendar"),
             NeoFeature("COPY", "نسخ الورديات", "Copy shifts", "Calendar"),
             NeoFeature(
@@ -129,7 +129,7 @@ object NeoFeatureCatalog {
                 "أول يوم في الأسبوع",
                 "First weekday",
                 "Settings",
-                "LANGUAGE",
+                "CALENDAR",
                 "السبت الأحد الاثنين Saturday Sunday Monday",
             ),
             NeoFeature(
@@ -145,34 +145,34 @@ object NeoFeatureCatalog {
                 "الويدجت والاختصارات",
                 "Widgets and shortcuts",
                 "Settings",
-                "NOTIFICATIONS",
+                "WIDGETS",
             ),
             NeoFeature(
                 "SECURITY",
                 "قفل الحسابات والخصوصية",
                 "Finance lock and privacy",
                 "Settings",
-                "PRIVACY",
+                "SECURITY",
             ),
             NeoFeature(
                 "BACKUP",
                 "النسخ والاستعادة والحساب",
                 "Backup, restore and account",
                 "Settings",
-                "PRIVACY",
+                "DATA",
             ),
-            NeoFeature("HEALTH", "سلامة البيانات", "Data health", "Settings", "PRIVACY"),
-            NeoFeature("STORAGE", "مساحة المرفقات", "Attachment storage", "Settings", "PRIVACY"),
+            NeoFeature("HEALTH", "سلامة البيانات", "Data health", "Settings", "DATA"),
+            NeoFeature("STORAGE", "مساحة المرفقات", "Attachment storage", "Settings", "DATA"),
             NeoFeature(
                 "LEGAL",
                 "الخصوصية والسياسات",
                 "Privacy and policies",
                 "Settings",
-                "PRIVACY",
+                "ADVANCED",
             ),
-            NeoFeature("LAUNCH", "البداية والاختصارات", "Landing and shortcuts", "Settings", "ADVANCED"),
+            NeoFeature("LAUNCH", "شاشة البداية الافتراضية", "Default start screen", "Settings", "APPEARANCE"),
             NeoFeature("PERFORMANCE", "وضع الأداء", "Performance mode", "Settings", "ADVANCED"),
-            NeoFeature("FOCUS", "التركيز المؤقت", "Temporary focus", "Settings", "ADVANCED"),
+            NeoFeature("FOCUS", "التركيز المؤقت", "Temporary focus", "Tasks"),
             NeoFeature(
                 "USAGE",
                 "إحصاءات استخدام محلية",
@@ -192,7 +192,15 @@ object NeoFeatureCatalog {
                 "ملخص المهام وترتيبه",
                 "Task overview and ordering",
                 "Settings",
-                "ADVANCED",
+                "TASKS",
+            ),
+            NeoFeature(
+                "NOTES_PREFERENCES",
+                "تفضيلات الملاحظات",
+                "Notes preferences",
+                "Settings",
+                "NOTES",
+                "الخطوط الخلفيات الورق المسطر حذف سلة المهملات notes fonts background trash",
             ),
             NeoFeature(
                 "LEGACY",
@@ -209,6 +217,47 @@ object NeoFeatureCatalog {
         }
 
     fun get(id: String) = entries.firstOrNull { it.id == id }
+}
+
+
+/**
+ * Single information architecture for Premium settings. A setting has one canonical owner;
+ * shortcuts use the same destination instead of duplicating preferences or storage.
+ */
+object NeoSettingsHierarchy {
+    val rootGroups = listOf(
+        "APPEARANCE", "LANGUAGE", "SECTIONS", "NOTIFICATIONS", "WIDGETS",
+        "SECURITY", "DATA", "ADVANCED",
+    )
+    val sectionGroups = listOf("CALENDAR", "TASKS", "NOTES", "SALARY", "CASHBOOK")
+    val inlinePages = setOf(
+        "CALENDAR_DISPLAY", "FIRST_WEEKDAY", "TODAY_STYLE", "PAINT_STYLE",
+        "TASK_OVERVIEW", "NOTES_PREFERENCES", "FINANCE_DISPLAY",
+        "LAUNCH", "PERFORMANCE", "LEGACY", "ABOUT",
+    )
+
+    fun children(group: String): List<String> = when (group) {
+        "APPEARANCE" -> listOf("APPEARANCE", "LAUNCH")
+        "CALENDAR" -> listOf("CALENDAR_DISPLAY", "FIRST_WEEKDAY", "TODAY_STYLE", "PAINT_STYLE")
+        "TASKS" -> listOf("TASK_OVERVIEW")
+        "NOTES" -> listOf("NOTES_PREFERENCES")
+        "SALARY" -> listOf("RATES", "STATEMENT")
+        "CASHBOOK" -> listOf("FINANCE_DISPLAY")
+        "DATA" -> listOf("BACKUP", "HEALTH", "STORAGE")
+        "ADVANCED" -> listOf("ABOUT", "LEGAL", "PERFORMANCE", "USAGE", "LEGACY")
+        else -> emptyList()
+    }
+
+    fun parent(page: String): String = when (page) {
+        "CALENDAR_GROUP", "TASKS_GROUP", "NOTES_GROUP", "SALARY_GROUP", "CASHBOOK_GROUP" -> "SECTIONS_GROUP"
+        "CALENDAR_DISPLAY", "FIRST_WEEKDAY", "TODAY_STYLE", "PAINT_STYLE" -> "CALENDAR_GROUP"
+        "TASK_OVERVIEW" -> "TASKS_GROUP"
+        "TASK_NOTES", "NOTES_PREFERENCES" -> "NOTES_GROUP"
+        "FINANCE_DISPLAY" -> "CASHBOOK_GROUP"
+        "LAUNCH" -> "APPEARANCE_GROUP"
+        "PERFORMANCE", "LEGACY", "ABOUT" -> "ADVANCED_GROUP"
+        else -> "HOME"
+    }
 }
 
 data class NeoUndoAction(val enabled: Boolean = false, val perform: () -> Unit = {})

@@ -103,7 +103,12 @@ class NeoThemeDeviceTest {
 
     private fun capture(name: String) {
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val command = "sh -c 'mkdir -p /sdcard/Download/nile-jade && screencap -p /sdcard/Download/nile-jade/$name.png'"
-        ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).use { it.readBytes() }
+        fun shell(command: String): String =
+            ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).bufferedReader().use { it.readText() }
+        val directory = "/sdcard/Download/nile-jade"
+        val path = "$directory/$name.png"
+        shell("mkdir -p $directory")
+        shell("screencap -p $path")
+        assertTrue("Missing screenshot $path", (shell("stat -c %s $path").trim().toLongOrNull() ?: 0L) > 0L)
     }
 }

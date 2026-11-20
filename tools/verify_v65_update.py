@@ -16,11 +16,14 @@ def adb(*args):
 def start():
     adb("shell", "am", "start", "-W", "-n", APP + "/.MainActivity")
     for _ in range(45):
-        result = adb("shell", "uiautomator", "dump", "/sdcard/update-screen.xml")
-        if "dumped" in result.lower():
-            tree = ET.fromstring(adb("exec-out", "cat", "/sdcard/update-screen.xml"))
-            if any(node.get("text") in ("Settings", "الإعدادات") for node in tree.iter("node")):
-                return
+        try:
+            result = adb("shell", "uiautomator", "dump", "/sdcard/update-screen.xml")
+            if "dumped" in result.lower():
+                tree = ET.fromstring(adb("exec-out", "cat", "/sdcard/update-screen.xml"))
+                if any(node.get("text") in ("Settings", "الإعدادات") for node in tree.iter("node")):
+                    return
+        except (subprocess.CalledProcessError, ET.ParseError):
+            pass  # Accessibility can have no active root during launch.
         time.sleep(1)
     raise AssertionError("Calendar navigation did not appear")
 
@@ -35,7 +38,7 @@ def main(baseline, candidate):
     adb("root")
     adb("wait-for-device")
     # The emulator is disposable. Begin with a clean v64 install.
-    if adb("shell", "pm", "path", APP).strip():
+    if f"package:{APP}" in adb("shell", "pm", "list", "packages", APP).splitlines():
         adb("uninstall", APP)
     adb("install", baseline)
     start()

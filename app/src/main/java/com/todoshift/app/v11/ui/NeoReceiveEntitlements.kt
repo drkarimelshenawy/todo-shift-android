@@ -33,10 +33,31 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
     val context=LocalContext.current
     val requestId=rememberSaveable {UUID.randomUUID().toString()}
     var workplace by rememberSaveable {mutableStateOf(initialWorkplace ?: workplaces.firstOrNull()?.id)}
-    var periods by rememberSaveable {mutableStateOf(initialMonths.joinToString(","))}
-    val months=runCatching {periods.split(',').map {YearMonth.parse(it.trim())}.distinct()}.getOrNull()
+    // Resolve outstanding periods from real earnings rather than parsing month text.
+    // The initial statement months are preserved even when outside the lookback.
+    val availableMonths=remember(db, workplace, initialMonths) {
+        (initialMonths + (0..35).map {YearMonth.now().minusMonths(it.toLong())})
+            .distinct().sortedDescending()
+            .filter {month -> workplace?.let {remainingWorkEntitlement(db,it,month)>0L} == true}
+            .take(36)
+    }
+    var selectedMonthKeys by rememberSaveable {
+        mutableStateOf(initialMonths.map {it.toString()}.toSet())
+    }
+    LaunchedEffect(workplace,availableMonths) {
+        if(selectedMonthKeys.none {key -> availableMonths.any {it.toString()==key}}) {
+            selectedMonthKeys=availableMonths.take(3).map {it.toString()}.toSet()
+        }
+    }
+    val months=availableMonths.filter {it.toString() in selectedMonthKeys}.sorted()
     var amounts by remember {mutableStateOf<Map<String,String>>(emptyMap())}
-    LaunchedEffect(workplace,periods) {amounts=months.orEmpty().associate {it.toString() to LocalizedNumbers.amount(workplace?.let {place->remainingWorkEntitlement(db,place,it)} ?: 0L).toString()}}
+    LaunchedEffect(workplace,months) {
+        amounts=months.associate {month ->
+            month.toString() to LocalizedNumbers.amount(
+                workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
+            ).toString()
+        }
+    }
     var receivedDate by rememberSaveable {mutableStateOf(LocalDate.now().toString())}
     var account by rememberSaveable {mutableStateOf<String?>(null)}
     var method by rememberSaveable {mutableStateOf<String?>(null)}
@@ -60,17 +81,34 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
     }
     AlertDialog(onDismissRequest=onDismiss,title={Text(neoLabel("استلام المستحقات","Receive entitlements"))},text={Column(Modifier.heightIn(max=460.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         NeoChoice(neoLabel("مكان العمل","Workplace"),workplaces.map {it.id},workplace,{id->workplaces.firstOrNull {it.id==id}?.name.orEmpty()},{workplace=it})
-        OutlinedTextField(periods,{periods=it},label={Text(neoLabel("أشهر الاستحقاق مفصولة بفاصلة","Earning months, comma separated"))},supportingText={Text("YYYY-MM, YYYY-MM")})
-        months.orEmpty().forEach {month -> OutlinedTextField(amounts[month.toString()].orEmpty(),{amounts=amounts+(month.toString() to it)},label={Text(month.toString())},supportingText={Text(neoLabel("المتبقي: ","Remaining: ")+LocalizedNumbers.amount(workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L))})}
+        Text(neoLabel("اختر أشهر المستحقات غير المستلمة", "Select unpaid earning months"))
+        if(availableMonths.isEmpty()) Text(neoLabel("لا توجد مستحقات متبقية لمكان العمل هذا", "No outstanding entitlements for this workplace"))
+        availableMonths.forEach {month ->
+            val key=month.toString()
+            Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                Checkbox(checked=key in selectedMonthKeys,onCheckedChange={checked ->
+                    selectedMonthKeys=if(checked) selectedMonthKeys+key else selectedMonthKeys-key
+                })
+                Text(key+" • "+LocalizedNumbers.amount(workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L))
+            }
+        }
+        months.forEach {month ->
+            OutlinedTextField(
+                amounts[month.toString()].orEmpty(),
+                {amounts=amounts+(month.toString() to it)},
+                label={Text(neoLabel("مبلغ الاستلام: ","Received amount: ")+month)},
+                supportingText={Text(neoLabel("المتبقي: ","Remaining: ")+LocalizedNumbers.amount(workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L))}
+            )
+        }
         NeoDateInput(neoLabel("تاريخ الاستلام الفعلي","Actual receipt date"),receivedDate){receivedDate=it}
         NeoChoice(neoLabel("الحساب المستلم","Receiving account"),listOf<String?>(null)+accounts.map {it.id},account,{id->accounts.firstOrNull {it.id==id}?.name ?: neoLabel("اختر حسابًا","Select account")},{account=it})
         NeoChoice(neoLabel("طريقة الدفع","Payment method"),listOf<String?>(null)+db.paymentMethods.filter {it.active}.map {it.id},method,{id->db.paymentMethods.firstOrNull {it.id==id}?.name ?: neoLabel("بدون","None")},{method=it})
         error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
-    }},confirmButton={TextButton(enabled=account!=null&&workplace!=null&&months!=null&&!write.pending,onClick={
+    }},confirmButton={TextButton(enabled=account!=null&&workplace!=null&&months.isNotEmpty()&&!write.pending,onClick={
         try {
             check(db.payments.none {it.id==requestId})
             LocalDate.parse(receivedDate)
-            val place=requireNotNull(workplace);val selected=requireNotNull(months)
+            val place=requireNotNull(workplace);val selected=months
             val existingSource=db.incomeSources.firstOrNull {it.workplaceId==place}
             val source=existingSource ?: IncomeSourceV11(UUID.nameUUIDFromBytes(("receipt-source:"+place).toByteArray()).toString(),workplaces.first {it.id==place}.name,IncomeSourceTypeV11.SHIFT_BASED,workplaceId=place)
             val allocations=selected.mapNotNull {month ->

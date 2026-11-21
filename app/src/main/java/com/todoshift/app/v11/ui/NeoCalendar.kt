@@ -213,6 +213,14 @@ fun NeoCalendarArea(
             .padding(if (premiumCashBook) 5.dp else 0.dp)
     ) {
         Column(Modifier.fillMaxWidth()) {
+            // Month controls keep the previous month at the visual right in Arabic,
+            // and at the visual left in English, regardless of the calendar grid.
+            val monthBarDirection = if (LocalNeoEnglish.current)
+                androidx.compose.ui.unit.LayoutDirection.Ltr
+            else androidx.compose.ui.unit.LayoutDirection.Rtl
+            CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalLayoutDirection provides monthBarDirection
+            ) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 52.dp)
                     .background(if (premiumCashBook) MaterialTheme.colorScheme.surface else Color.Transparent, RoundedCornerShape(24.dp))
@@ -236,6 +244,7 @@ fun NeoCalendarArea(
                 FilledTonalIconButton(onClick = { move(1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next"))
                 }
+            }
             }
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp),

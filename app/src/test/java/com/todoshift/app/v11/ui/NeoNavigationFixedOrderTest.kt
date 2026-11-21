@@ -18,7 +18,7 @@ import org.robolectric.annotation.LooperMode
 class NeoNavigationFixedOrderTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun languageDoesNotMirrorNavigationOrderUnlessManuallyOverridden() {
+    @Test fun fiveDestinationsKeepApprovedPhysicalPositionsInBothLanguages() {
         var appearance by mutableStateOf(NeoAppearance(
             language = NeoLanguage.ARABIC, reduceMotion = true,
             navigationDirection = NeoDirection.AUTO
@@ -30,18 +30,26 @@ class NeoNavigationFixedOrderTest {
                 }
             }
         }
-        fun left(label: String) = compose.onNodeWithText(label)
+        fun x(label: String) = compose.onNodeWithText(label)
             .fetchSemanticsNode().boundsInRoot.left
-        assertTrue("Arabic must retain Calendar on the left",
-            left("التقويم") < left("الإعدادات"))
+        assertTrue(x("الإدارة المالية") < x("المهام"))
+        assertTrue(x("المهام") < x("التقويم"))
+        assertTrue(x("التقويم") < x("الملاحظات"))
+        assertTrue(x("الملاحظات") < x("الإعدادات"))
         compose.runOnIdle { appearance = appearance.copy(language=NeoLanguage.ENGLISH) }
-        assertTrue("English must retain the same positions",
-            left("Calendar") < left("Settings"))
+        assertTrue(x("Finance") < x("Tasks"))
+        assertTrue(x("Tasks") < x("Calendar"))
+        assertTrue(x("Calendar") < x("Notes"))
+        assertTrue(x("Notes") < x("Settings"))
+        // A previously saved navigation-direction override must not move Settings
+        // away from the absolute right edge after upgrading to v70.
         compose.runOnIdle {
             appearance = appearance.copy(language=NeoLanguage.ARABIC,
                 navigationDirection=NeoDirection.RTL)
         }
-        assertTrue("Only an explicit RTL navigation preference may reverse them",
-            left("التقويم") > left("الإعدادات"))
+        assertTrue(x("الإدارة المالية") < x("المهام"))
+        assertTrue(x("المهام") < x("التقويم"))
+        assertTrue(x("التقويم") < x("الملاحظات"))
+        assertTrue(x("الملاحظات") < x("الإعدادات"))
     }
 }

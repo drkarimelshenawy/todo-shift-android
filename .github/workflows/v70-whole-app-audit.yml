@@ -7,7 +7,6 @@ on:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
       - 'app/**'
-      - 'cashbook-core/**'
       - '.github/workflows/v70-whole-app-audit.yml'
       - 'tools/PREMIUM_CANDIDATE.json'
       - 'scripts/check_v44_cashbook_integration.py'
@@ -132,9 +131,9 @@ jobs:
         run: |
           TAG="v70-implementation-candidate-${GITHUB_SHA:0:12}"
           mkdir -p "$RUNNER_TEMP/published"
-          gh release download "$TAG" --pattern ExMore-v70-Audited.apk --dir "$RUNNER_TEMP/published"
-          cmp delivery/ExMore-v70-Audited.apk "$RUNNER_TEMP/published/ExMore-v70-Audited.apk"
-          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ExMore-v70-Audited.apk'); assert z.testzip() is None"
+          gh release download "$TAG" --pattern ExMore-v70-Implementation.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ExMore-v70-Implementation.apk "$RUNNER_TEMP/published/ExMore-v70-Implementation.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ExMore-v70-Implementation.apk'); assert z.testzip() is None"
       - name: Mark unresolved unit failures explicitly
         if: steps.full_qa.outcome == 'failure'
         run: |

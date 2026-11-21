@@ -2,7 +2,7 @@ name: v70 Comprehensive App QA & Signed APK
 
 on:
   push:
-    branches: [fix/v70-whole-app-audit-20261121]
+    branches: [fix/v70-whole-app-audit-20261121, feat/v70-calendar-navigation-salary-20261121]
     paths:
       - 'cashbook-core/**'
       - 'cashbook-feature/**'
@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   signed-apk:
-    if: github.ref == 'refs/heads/fix/v70-whole-app-audit-20261121'
+    if: github.ref == 'refs/heads/fix/v70-whole-app-audit-20261121' || github.ref == 'refs/heads/feat/v70-calendar-navigation-salary-20261121'
     runs-on: ubuntu-latest
     timeout-minutes: 65
     steps:
@@ -102,11 +102,11 @@ jobs:
             --expected-sha "$GITHUB_SHA" \
             --expected-branch "$GITHUB_REF_NAME" --require-release \
             --output delivery/identity
-          cp app/build/outputs/apk/release/app-release.apk delivery/ExMore-v70-Audited.apk
+          cp app/build/outputs/apk/release/app-release.apk delivery/ExMore-v70-Implementation.apk
           (cd delivery && sha256sum *.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: ExMore-v70-Audited-signed-APK
+          name: ExMore-v70-signed-APK
           path: delivery/
           if-no-files-found: error
           retention-days: 30
@@ -115,7 +115,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v70-app-audit-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ExMore-v70-Audited.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ExMore v70 — Whole App Audit" --notes "Cross-module QA, corrected settings-versus-tool navigation, salary statement earning-month reconciliation and interface refinements; existing financial records preserved. Source: $GITHUB_SHA."
+          gh release create "$TAG" delivery/ExMore-v70-Implementation.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ExMore v70 — Implementation Candidate" --notes "Cross-module QA, corrected settings-versus-tool navigation, salary statement earning-month reconciliation and interface refinements; existing financial records preserved. Source: $GITHUB_SHA."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}

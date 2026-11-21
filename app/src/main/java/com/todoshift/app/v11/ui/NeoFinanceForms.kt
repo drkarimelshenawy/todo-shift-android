@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -60,7 +62,7 @@ fun NeoPaymentForm(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 NeoMoneyInput(amount, { amount = it })
-                NeoDateInput(neoLabel("تاريخ الاستلام", "Received date"), date) { date = it }
+                NeoEditableReceiptDate(date) { date = it }
                 NeoChoice(
                     neoLabel("حساب كاش بوك المستلم", "Receiving Cash Book account"),
                     listOf<String?>(null) + cashAccounts.map { it.id } + listOfNotNull(existing?.cashBookAccountId).filter { id -> cashAccounts.none { it.id == id } },
@@ -373,3 +375,37 @@ fun neoObligationType(s: String): String =
 @Composable
 private fun neoDiscardGuard(values: List<Any?>, onDismiss: () -> Unit): NeoEditorExit =
     rememberNeoEditorExit(values, onDismiss)
+
+/**
+ * Payment date accepts an explicitly typed ISO date as well as a calendar
+ * selection. Keep incomplete/invalid edits in the form; the save action
+ * validates them instead of silently replacing a user's draft.
+ */
+@Composable
+private fun NeoEditableReceiptDate(value: String, onChange: (String) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val valid = runCatching { LocalDate.parse(value) }.isSuccess
+    OutlinedTextField(
+        value = value,
+        onValueChange = { onChange(it.take(10)) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text(neoLabel("تاريخ الاستلام", "Received date")) },
+        isError = !valid,
+        supportingText = {
+            if (!valid) Text(neoLabel("أدخل تاريخًا صحيحًا YYYY-MM-DD", "Enter a valid date YYYY-MM-DD"))
+        },
+        trailingIcon = {
+            IconButton(onClick = {
+                val selected = runCatching { LocalDate.parse(value) }.getOrDefault(LocalDate.now())
+                android.app.DatePickerDialog(
+                    context,
+                    { _, year, month, day -> onChange(LocalDate.of(year, month + 1, day).toString()) },
+                    selected.year, selected.monthValue - 1, selected.dayOfMonth,
+                ).show()
+            }) {
+                Icon(Icons.Rounded.DateRange, neoLabel("اختيار التاريخ", "Choose date"))
+            }
+        },
+    )
+}

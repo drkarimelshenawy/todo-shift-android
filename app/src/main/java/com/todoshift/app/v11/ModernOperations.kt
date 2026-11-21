@@ -250,6 +250,26 @@ object ModernOperations {
 
     fun statementCsv(db: V11Database, workplace: String, from: LocalDate, to: LocalDate): String {
         require(to >= from)
+        val months = generateSequence(YearMonth.from(from)) { it.plusMonths(1) }
+            .takeWhile { !it.isAfter(YearMonth.from(to)) }.take(121).toList()
+        require(months.size <= 120) { "Statement period is too long" }
+        fun monthlySources(month: YearMonth) = db.incomeSources.filter { source ->
+            source.workplaceId == workplace &&
+                (source.fixedMonthlyAmount != null || source.compensationHistory.isNotEmpty()) &&
+                if (source.compensationHistory.isEmpty()) source.active
+                else source.compensationHistory.filter { period ->
+                    !YearMonth.parse(period.effectiveMonth).isAfter(month)
+                }.maxByOrNull { it.effectiveMonth }?.shiftBased == false
+        }
+        val salariedByMonth = months.associateWith { monthlySources(it) }
+        val fixedRows = months.flatMap { month ->
+            salariedByMonth.getValue(month).map { source ->
+                listOf("SALARY", month.atDay(1).toString(), source.id,
+                    "FIXED_MONTHLY", "", "",
+                    V11FinanceEngine.monthlyAmount(source, month).toBigDecimal()
+                        .setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(), "")
+            }
+        }
         val rows =
             db.days
                 .filter { LocalDate.parse(it.date) in from..to }
@@ -263,7 +283,10 @@ object ModernOperations {
                                 s.kind.name,
                                 s.timeRange()?.startMinute?.toString().orEmpty(),
                                 s.timeRange()?.endMinute?.toString().orEmpty(),
-                                V11RateEngine.segmentAmount(s, day.date, db.rates)
+                                (if (s.workplaceId == workplace &&
+                                    salariedByMonth[YearMonth.from(LocalDate.parse(day.date))]
+                                        .orEmpty().isNotEmpty() && s.exceptionalAmount == null)
+                                    0.0 else V11RateEngine.segmentAmount(s, day.date, db.rates))
                                     .toBigDecimal()
                                     .setScale(2, java.math.RoundingMode.HALF_UP)
                                     .toPlainString(),
@@ -304,7 +327,10 @@ object ModernOperations {
                             LocalizedNumbers.amount(cents).toString(),
                         )
                 }
-        val csvRows = rows.map { listOf("SHIFT") + it + listOf("") } + paymentRows
+        // Fixed monthly compensation is earned once per source/month even with
+        // zero or many shifts. Shift rows stay for the audit trail, but carry
+        // zero earnings unless they are exceptional paid shifts.
+        val csvRows = rows.map { listOf("SHIFT") + it + listOf("") } + fixedRows + paymentRows
         return "record,date,id,type,start_minute,end_minute,earned,received\r\n" +
             csvRows.joinToString("\r\n") { row ->
                 row.joinToString(",") { value ->

@@ -43,13 +43,10 @@ class ClassicReceiptSafetyTest {
                                 current.value,
                                 {},
                             ) { payment ->
-                                val next =
-                                    current.value.copy(
-                                        payments =
-                                            current.value.payments.map {
-                                                if (it.id == payment.id) payment else it
-                                            }
-                                    )
+                                // A Cash Book-linked receipt must go through the
+                                // auditable correction operation. Writing a direct
+                                // copy would rightly fail revision validation.
+                                val next = SalaryReceiptOperations.update(current.value, payment)
                                 runtime.saveIfCurrent(current.value, next)
                                 current.value = next
                             }
@@ -73,6 +70,9 @@ class ClassicReceiptSafetyTest {
         compose.onNodeWithText("Received date").performTextReplacement("2026-11-10")
         compose.waitUntilReceiptAccountLoaded()
         compose.onNodeWithText("Save").assertIsEnabled().performClick()
-        assertEquals(900050L, LocalizedNumbers.cents(runtime.start().payments.last().amount))
+        val saved = runtime.start()
+        assertEquals(900050L, LocalizedNumbers.cents(saved.payments.last().amount))
+        assertEquals(1, saved.payments.last().cashBookRevision)
+        assertEquals("PAYMENT_CORRECT", saved.auditLog.last().action)
     }
 }

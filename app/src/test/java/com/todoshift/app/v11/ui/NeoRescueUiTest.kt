@@ -107,6 +107,8 @@ class NeoRescueUiTest {
                 it.date == "2026-11-10" && it.segments.isNotEmpty()
             }
         }
+        // Finish the painter before opening the calendar's global undo command.
+        compose.onNodeWithContentDescription("Done").performClick()
         compose.onNodeWithContentDescription("Calendar actions").performClick()
         compose.waitUntil(10000) {
             compose
@@ -116,7 +118,6 @@ class NeoRescueUiTest {
         }
         compose.onNodeWithText("Undo last change").performClick()
         compose.waitUntil(10000) {
-            compose.onAllNodesWithContentDescription("Eraser").fetchSemanticsNodes()
             V11Storage(context).load().days.none { it.segments.isNotEmpty() }
         }
         compose.runOnIdle {

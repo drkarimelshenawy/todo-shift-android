@@ -1,4 +1,5 @@
 name: v70 static Android Lint and release compilation evidence
+# Includes complete Arabic/English XML resource coverage and Typeface constants.
 on:
   push:
     branches: [audit/v70-static-lint-20261121]

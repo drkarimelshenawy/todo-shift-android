@@ -37,7 +37,7 @@ internal object NeoDocumentPdf {
         val pdf=PdfDocument()
         val paint=TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color=android.graphics.Color.BLACK;textSize=NeoA4PrintMetrics.BODY_PT
-            typeface=android.graphics.Typeface.create("sans-serif",0)
+            typeface=android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.NORMAL)
         }
         val borderPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color=android.graphics.Color.LTGRAY

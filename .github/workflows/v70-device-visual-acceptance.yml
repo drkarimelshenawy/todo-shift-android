@@ -1,0 +1,79 @@
+name: v70 Android 35 device visual and interaction audit
+
+on:
+  push:
+    branches: [audit/v70-visual-device-20261121]
+    paths:
+      - '.github/workflows/v70-device-visual-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  device-qa:
+    if: github.ref == 'refs/heads/audit/v70-visual-device-20261121'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore persistent key for test APKs
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise actual Android notes, A4, theme and app navigation
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            mkdir -p device-evidence
+            adb shell wm size 1080x2400
+            adb shell wm density 440
+            adb shell settings put secure show_ime_with_hard_keyboard 1
+            gradle --no-daemon --max-workers=2 -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoThemeDeviceTest,com.todoshift.app.v11.ui.NeoNotesToolbarVisibilityDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest,com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest --stacktrace
+      - name: Collect device screenshots and test results
+        if: always()
+        run: |
+          mkdir -p device-evidence
+          adb pull /sdcard/Download/nile-jade/. device-evidence/nile-jade/ || true
+          adb shell ls /sdcard/Download/ | grep -E '^notes-toolbar-' | while read item; do adb pull "/sdcard/Download/$item" device-evidence/ || true; done
+          cp -R app/build/outputs/androidTest-results/connected device-evidence/results 2>/dev/null || true
+          printf '%s\n' "$GITHUB_SHA" > device-evidence/DEVICE-QA-SOURCE.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v70-Android35-visual-evidence
+          path: device-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

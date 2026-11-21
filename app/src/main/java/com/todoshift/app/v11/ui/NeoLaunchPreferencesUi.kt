@@ -93,8 +93,8 @@ fun NeoLandingPreferencesUi() {
     var landing by remember {mutableIntStateOf(store.landingTab)}
     var failure by remember {mutableStateOf(false)}
     NeoChoice(neoLabel("قسم بداية التطبيق","Default app start section"),listOf(0,4,2,1,3),landing,
-        {when(it){0->neoLabel("التقويم","Calendar");4->neoLabel("المهام والملاحظات","Tasks & Notes");
-            2->neoLabel("مستحقات العمل","Salary");1->neoLabel("الإدارة المالية","Cash Book");
+        {when(it){0->neoLabel("التقويم","Calendar");4->neoLabel("المهام","Tasks");
+            2->neoLabel("الملاحظات","Notes");1->neoLabel("الإدارة المالية","Cash Book");
             else->neoLabel("الإعدادات","Settings")}},
         {value->runCatching{store.landingTab=value}.onSuccess{landing=value;failure=false}.onFailure{failure=true}})
     if(failure) Text(neoLabel("تعذر حفظ التفضيل؛ أعد المحاولة","Preference could not be saved; retry"))

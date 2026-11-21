@@ -22,6 +22,8 @@ class ClassicReceiptSafetyTest {
 
     @Test
     fun classicCreateAndEditRejectZeroAndInvalidDatesWithoutDiscardingLocalizedAmounts() {
+        val accountName = "Classic receipt account fixture"
+        seedReceiptAccount(accountName)
         val runtime = V11Runtime(RuntimeEnvironment.getApplication())
         val current = mutableStateOf(runtime.start())
         val edit = mutableStateOf(false)
@@ -58,6 +60,7 @@ class ClassicReceiptSafetyTest {
         compose.onNodeWithText("Amount").performTextReplacement("0")
         compose.onNodeWithText("Save").assertIsNotEnabled()
         compose.onNodeWithText("0").assertExists()
+        compose.selectReceiptAccount(accountName)
         compose.onNodeWithText("Amount").performTextReplacement("9,000")
         compose.onNodeWithText("Save").assertIsEnabled().performClick()
         assertEquals(900000L, LocalizedNumbers.cents(runtime.start().payments.last().amount))
@@ -68,6 +71,7 @@ class ClassicReceiptSafetyTest {
         compose.onNodeWithText("Save change").assertIsNotEnabled()
         assertEquals(900000L, LocalizedNumbers.cents(runtime.start().payments.last().amount))
         compose.onNodeWithText("Received date").performTextReplacement("2026-11-10")
+        compose.waitUntilReceiptAccountLoaded()
         compose.onNodeWithText("Save change").assertIsEnabled().performClick()
         assertEquals(900050L, LocalizedNumbers.cents(runtime.start().payments.last().amount))
     }

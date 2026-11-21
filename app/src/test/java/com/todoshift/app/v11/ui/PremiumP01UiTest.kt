@@ -120,6 +120,8 @@ class PremiumP01UiTest {
 
     @Test
     fun paymentRequestAndAllocationIdsSurviveUnknownAcknowledgementAndRecreation() {
+        val accountName = "Persistent payment account fixture"
+        seedReceiptAccount(accountName)
         val restoration = androidx.compose.ui.test.junit4.StateRestorationTester(compose)
         val requests = mutableListOf<PaymentV11>()
         restoration.setContent {
@@ -132,9 +134,13 @@ class PremiumP01UiTest {
             }
         }
         compose.onNodeWithText("Amount").performTextInput("9,000")
-        compose.onNodeWithText("Save").performClick()
+        compose.selectReceiptAccount(accountName)
+        compose.onNodeWithText("Save").assertIsEnabled().performClick()
         restoration.emulateSavedInstanceStateRestore()
-        compose.onNodeWithText("Save").performClick()
+        compose.waitUntilReceiptAccountLoaded()
+        // The selected real ledger account must survive recreation unchanged.
+        compose.onNodeWithText(accountName).assertExists()
+        compose.onNodeWithText("Save").assertIsEnabled().performClick()
         assertEquals(2, requests.size)
         assertEquals(requests[0].id, requests[1].id)
         assertEquals(requests[0].allocations.single().id, requests[1].allocations.single().id)

@@ -202,8 +202,9 @@ data class NeoEntry(
                     runCatching { LocalDate.parse(it) }.getOrNull()
                 }
             val tab =
-                if (action != null) 4
-                else if (intent.action == "com.todoshift.app.OPEN_FINANCE") 2
+                if (action == "notes" || action == "new_note") 2
+                else if (action != null) 4
+                else if (intent.action == "com.todoshift.app.OPEN_FINANCE") 1
                 else intent.getIntExtra("neo4_open_tab", 0).takeIf { it in 0..4 } ?: 0
             return NeoEntry(
                 token,

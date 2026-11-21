@@ -58,6 +58,7 @@ jobs:
             adb shell wm size 1080x2400
             adb shell wm density 440
             adb shell settings put secure show_ime_with_hard_keyboard 1
+            set +e
             gradle --no-daemon --max-workers=2 -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoThemeDeviceTest,com.todoshift.app.v11.ui.NeoNotesToolbarVisibilityDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest,com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest --stacktrace
             result=$?
             adb pull /sdcard/Download/nile-jade/. device-evidence/nile-jade/ || true
@@ -69,8 +70,7 @@ jobs:
         if: always()
         run: |
           mkdir -p device-evidence
-          adb pull /sdcard/Download/nile-jade/. device-evidence/nile-jade/ || true
-          adb shell ls /sdcard/Download/ | grep -E '^notes-toolbar-' | while read item; do adb pull "/sdcard/Download/$item" device-evidence/ || true; done
+          # Screenshots are pulled inside the emulator step, before it shuts down.
           cp -R app/build/outputs/androidTest-results/connected device-evidence/results 2>/dev/null || true
           printf '%s\n' "$GITHUB_SHA" > device-evidence/DEVICE-QA-SOURCE.txt
       - uses: actions/upload-artifact@v4

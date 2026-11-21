@@ -1010,7 +1010,7 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
                                 buildString {
                                     append(
                                         when (segment.kind) {
-                                            ShiftKind.FULL_DAY -> neoLiteral("يوم كامل", "Full day")
+                                            ShiftKind.FULL_DAY -> neoLiteral("24h", "24h")
                                             ShiftKind.LONG -> neoLiteral("لونج", "Long")
                                             ShiftKind.NIGHT -> neoLiteral("نايت", "Night")
                                             ShiftKind.MORNING -> neoLiteral("مورننج", "Morning")
@@ -1047,7 +1047,7 @@ private fun FullTaskEditorContentV11(existing:TaskV11?,db:V11Database,workplaces
                                             append(
                                                 when (segment.kind) {
                                                     ShiftKind.FULL_DAY ->
-                                                        neoLiteral("يوم كامل", "Full day")
+                                                        neoLiteral("24h", "24h")
                                                     ShiftKind.LONG -> neoLiteral("لونج", "Long")
                                                     ShiftKind.NIGHT -> neoLiteral("نايت", "Night")
                                                     ShiftKind.MORNING ->

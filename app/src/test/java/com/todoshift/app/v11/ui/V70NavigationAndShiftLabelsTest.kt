@@ -4,7 +4,12 @@ import android.content.Intent
 import com.todoshift.app.v11.ShiftKind
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
 class V70NavigationAndShiftLabelsTest {
     @Test fun legacyShiftNamesMatchApprovedArabicAndEnglishSpellings() {
         val kinds = listOf(ShiftKind.FULL_DAY, ShiftKind.LONG, ShiftKind.NIGHT,

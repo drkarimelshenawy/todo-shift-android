@@ -978,7 +978,9 @@ fun V11Home(
                                             com.todoshift.app.integration.EmbeddedCashBookScreen(
                                                 weekStart = java.time.DayOfWeek.of(neoAppearance.firstWeekday),
                                                 legacyObligationsContent = {
-                                                    if(securitySettings.protectAccounts && !accountsUnlocked)
+                                                    if ((securitySettings.protectAccounts || securitySettings.protectCashBook ||
+                                                        securitySettings.protectSalary || securitySettings.protectApplication) &&
+                                                        !accountsUnlocked)
                                                         V11AccountsUnlockScreen(securitySettings,securityStore) { accountsUnlocked = true }
                                                     else V11ObligationsPanel(
                                                         month = month, db = db,

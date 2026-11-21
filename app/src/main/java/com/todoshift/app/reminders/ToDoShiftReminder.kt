@@ -44,7 +44,7 @@ object ToDoShiftReminder {
         val channel =
             NotificationChannel(
                     CHANNEL_ID,
-                    "تذكيرات ToDo Shift",
+                    "تذكيرات ExMore",
                     NotificationManager.IMPORTANCE_HIGH,
                 )
                 .apply {
@@ -95,7 +95,7 @@ object ToDoShiftReminder {
 
                 putExtra(EXTRA_SCHEDULED_AT, whenMs)
                 putExtra(EXTRA_SOURCE_AT,item.reminderAt)
-                putExtra(EXTRA_TITLE, if(item.notePrivate || protected(context)) "ToDo Shift" else item.title)
+                putExtra(EXTRA_TITLE, if(item.notePrivate || protected(context)) "ExMore" else item.title)
 
                 putExtra(EXTRA_DETAILS, if(item.notePrivate || protected(context)) "" else item.details)
 
@@ -146,7 +146,7 @@ object ToDoShiftReminder {
 
                 putExtra(EXTRA_SCHEDULED_AT, whenMs)
                 putExtra(EXTRA_SOURCE_AT,task.reminderAt)
-                putExtra(EXTRA_TITLE, if(privateSource || protected(context)) "ToDo Shift" else task.title)
+                putExtra(EXTRA_TITLE, if(privateSource || protected(context)) "ExMore" else task.title)
 
                 putExtra(EXTRA_DETAILS, if(privateSource || protected(context)) "" else task.details)
 
@@ -219,7 +219,7 @@ object ToDoShiftReminder {
                             "shift-${shift.segment.id}",
                             shift.entry.date,
                             type = com.todoshift.app.v11.DayItemTypeV11.REMINDER,
-                            title = "ToDo Shift • ${shift.segment.kind}",
+                            title = "ExMore • ${shift.segment.kind}",
                             reminderAt = whenMs,
                         ),
                         nowMillis,
@@ -249,7 +249,7 @@ object ToDoShiftReminder {
             return
         }
 
-        val safeTitle = if(protected(context)) "ToDo Shift" else title
+        val safeTitle = if(protected(context)) "ExMore" else title
         val safeDetails = if(protected(context)) "افتح التطبيق للتفاصيل / Open app for details" else details
         val channelId = if(com.todoshift.app.v11.NeoNotificationPolicy.quiet(context)) QUIET_CHANNEL_ID else CHANNEL_ID
         val openIntent =
@@ -276,7 +276,7 @@ object ToDoShiftReminder {
         val publicNotification =
             NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("ToDo Shift")
+                .setContentTitle("ExMore")
                 .setContentText("افتح التطبيق للتفاصيل / Open the app for details")
                 .setContentIntent(contentIntent)
                 .setAutoCancel(true)
@@ -287,7 +287,7 @@ object ToDoShiftReminder {
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setPublicVersion(publicNotification)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(safeTitle.ifBlank { "تذكير ToDo Shift" })
+                .setContentTitle(safeTitle.ifBlank { "تذكير ExMore" })
                 .setContentText(safeDetails.ifBlank { date })
                 .setStyle(
                     NotificationCompat.BigTextStyle()
@@ -340,7 +340,7 @@ class ToDoShiftReminderReceiver : BroadcastReceiver() {
                     if(scheduled<=0 || now<scheduled-60_000L || now-scheduled>15*60_000L) return@runCatching
                     val private=item?.notePrivate==true || task?.linkedNotePrivateV11(db)==true
                     ToDoShiftReminder.show(app,id,
-                        if(private) "ToDo Shift" else task?.title ?: item?.title ?: "ToDo Shift",
+                        if(private) "ExMore" else task?.title ?: item?.title ?: "ExMore",
                         if(private) "افتح التطبيق للتفاصيل / Open app for details" else task?.details ?: item?.details ?: "",
                         task?.date ?: item?.date ?: shift!!.entry.date)
                 }

@@ -852,18 +852,7 @@ fun V11Home(
                                     if (navigation.feature == "WORK_SUMMARY") {
                                         NeoOperationalWorkSummary(db, oldData.workplaces, month, {month=it})
                                     } else if (
-                                        navigation.feature in
-                                            NeoFeatureCatalog.entries
-                                                .filter { it.group.isNotEmpty() }
-                                                .map { it.id } &&
-                                            navigation.feature !in
-                                                listOf(
-                                                    "NOTIFICATIONS",
-                                                    "HEALTH",
-                                                    "FOCUS",
-                                                    "USAGE",
-                                                    "STORAGE",
-                                                )
+                                        NeoFeatureRoutePolicy.isSettingsPage(navigation.feature)
                                     ) {
                                         NeoRescueSettings(
                                             db,

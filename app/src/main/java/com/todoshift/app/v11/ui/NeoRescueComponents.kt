@@ -230,6 +230,22 @@ object NeoFeatureCatalog {
  * Single information architecture for Premium settings. A setting has one canonical owner;
  * shortcuts use the same destination instead of duplicating preferences or storage.
  */
+/**
+ * Feature catalog groups are navigation taxonomy, NOT screen types.
+ * Salary, Tasks and Schedules entries are functional tools, while
+ * Settings pages have dedicated owners. Never send a tool to the
+ * settings-only route just because it has a non-empty group.
+ */
+object NeoFeatureRoutePolicy {
+    private val dedicatedSettings = setOf(
+        "APPEARANCE", "LANGUAGE", "UI_DIRECTION", "NAV_DIRECTION",
+        "GRID_DIRECTION", "WEEKDAY_DIRECTION", "WIDGETS",
+        "SECURITY", "BACKUP", "LEGAL",
+    )
+    fun isSettingsPage(id: String): Boolean =
+        id in dedicatedSettings || id in NeoSettingsHierarchy.inlinePages
+}
+
 object NeoSettingsHierarchy {
     val rootGroups = listOf(
         "APPEARANCE", "LANGUAGE", "SECTIONS", "NOTIFICATIONS", "WIDGETS",

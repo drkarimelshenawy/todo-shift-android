@@ -120,7 +120,7 @@ class PremiumActivitySaveTest {
     fun noteDraftAndGuardSurviveActualActivityRecreation() {
         ui.longClickDay(java.time.LocalDate.now().toString())
         ui.click("New note")
-        ui.input("Calendar note text", "Retained calendar draft")
+        ui.input("Note title", "Retained calendar draft")
         compose.activityRule.scenario.recreate()
         ui.await("Retained calendar draft")
         ui.click("Cancel")
@@ -134,7 +134,7 @@ class PremiumActivitySaveTest {
         ui.until { runtime.start().dayItems.any { it.title == "Retained calendar draft" } }
         val savedId = runtime.start().dayItems.single().id
         ui.click("Retained calendar draft")
-        ui.input("Calendar note text", "Edited restored note")
+        ui.input("Note title", "Edited restored note")
         compose.activityRule.scenario.recreate()
         ui.await("Edited restored note")
         ui.click("Save")

@@ -110,6 +110,7 @@ class PremiumNavigationActivityTest {
     fun invalidRawAccentIsGuardedOnTabSwitchAndDiscardActuallyLeavesStudio() {
         ui.click("Settings")
         ui.click("Appearance & Design")
+        ui.click("Appearance Studio")
         compose.onAllNodesWithText("Appearance Studio").assertCountEquals(1)
         compose.onAllNodesWithContentDescription("Back").assertCountEquals(1)
         ui.click("Colors")
@@ -201,10 +202,13 @@ class PremiumNavigationActivityTest {
         assertScreenCaptureAllowed()
         assertFalse(ui.has("Private fixture secret"))
         warm(Intent("com.todoshift.app.OPEN_FINANCE"))
-        ui.until { ui.selected("Finance") }
+        ui.await("Finances are protected")
         ui.await("PIN")
         assertScreenCaptureAllowed()
         assertFalse(ui.has("Private fixture secret"))
+        ui.input("PIN", "482601")
+        ui.click("Open")
+        ui.until { ui.selected("Finance") }
         ui.click("Settings")
         ui.await("Appearance & Design")
         assertScreenCaptureAllowed()

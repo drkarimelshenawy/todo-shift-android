@@ -72,11 +72,11 @@ class PremiumCompleteLayoutTest {
         NeoAppearanceStore(context).save(NeoAppearance(language=NeoLanguage.ENGLISH,fontScale=1.3f,reduceMotion=true))
         compose.setContent {Box(Modifier.width(320.dp).height(600.dp)) {V11Home()}}
         compose.waitUntil(10_000) {compose.onAllNodesWithContentDescription("Paint shifts").fetchSemanticsNodes().isNotEmpty()}
-        val action=compose.onNodeWithContentDescription("Paint shifts").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithContentDescription("Paint shifts").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Eraser").assertExists()
+        val action=compose.onNodeWithTag("calendar-paint-fab").fetchSemanticsNode().boundsInRoot
         val chip=compose.onNodeWithText("Clinic long workplace name").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
         assertFalse("Paint control must not obscure the scrollable workplace selector",action.overlaps(chip))
-        compose.onNodeWithContentDescription("Paint shifts").performClick()
-        compose.onNodeWithContentDescription("Eraser").assertExists()
     }
 
 }

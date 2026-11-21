@@ -53,11 +53,12 @@ import androidx.compose.ui.unit.sp
 /** A module route, with the screenshot's ledger layout; no separate Activity or launcher. */
 @androidx.compose.runtime.NonSkippableComposable
 @Composable
-fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStart: DayOfWeek = DayOfWeek.SATURDAY, hostLocale: java.util.Locale? = null, salaryContent: (@Composable () -> Unit)? = null) {
+fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStart: DayOfWeek = DayOfWeek.SATURDAY, hostLocale: java.util.Locale? = null, salaryContent: (@Composable () -> Unit)? = null,
+    legacyObligationsContent: (@Composable () -> Unit)? = null) {
     val language by CashBookText.language.collectAsStateWithLifecycle()
     CashBookText.hostLocale(hostLocale ?: LocalContext.current.resources.configuration.locales[0])
     CashBookCompactTheme { CompositionLocalProvider(LocalCashBookVM provides vm, LocalLayoutDirection provides if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) { Box(modifier.fillMaxSize()){
-        CashBookContent(vm,Modifier.fillMaxSize(),weekStart,language,salaryContent)
+        CashBookContent(vm,Modifier.fillMaxSize(),weekStart,language,salaryContent,legacyObligationsContent)
         val undo by vm.undo.collectAsStateWithLifecycle()
         val operation by vm.state.collectAsStateWithLifecycle()
         LaunchedEffect(undo){if(undo!=null){kotlinx.coroutines.delay(8000);vm.clearUndo()}}
@@ -67,7 +68,8 @@ fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStar
 
 @androidx.compose.runtime.NonSkippableComposable
 @Composable
-private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart: DayOfWeek,language:String,salaryContent: (@Composable () -> Unit)?) {
+private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart: DayOfWeek,language:String,salaryContent: (@Composable () -> Unit)?,
+    legacyObligationsContent: (@Composable () -> Unit)?) {
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.message) { if (state.message != null) { kotlinx.coroutines.delay(2800); vm.clearMessage() } }
     val snapshot = state.snapshot
@@ -91,6 +93,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     val defaults = snapshot?.defaults ?: Ledger.ButtonLabels(tr(R.string.cb_001), tr(R.string.cb_002))
     var page by rememberSaveable { mutableStateOf("movement") }
     var debtDetail by rememberSaveable { mutableStateOf(false) }
+    var debtMode by rememberSaveable { mutableIntStateOf(0) }
     // Reset child/detail navigation when re-entering the finance destination.
     // Changing the active section manually never overwrites the saved default.
     LaunchedEffect(defaultSection) {
@@ -166,7 +169,19 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
             } else if (mainSection == "debts" && !debtDetail) {
                 Column(Modifier.weight(1f).fillMaxWidth().padding(12.dp)) {
                     Text(tr(R.string.cb_section_debts), style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()) {
+                        FilterChip(selected = debtMode == 0, onClick = { debtMode = 0 },
+                            label = { Text(if (CashBookText.arabic()) "ديون Cash Book" else "Cash Book debts") })
+                        if (legacyObligationsContent != null) FilterChip(
+                            selected = debtMode == 1, onClick = { debtMode = 1 },
+                            label = { Text(if (CashBookText.arabic()) "التزامات محفوظة" else "Saved obligations") })
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    if (debtMode == 1 && legacyObligationsContent != null) {
+                        Box(Modifier.fillMaxWidth().weight(1f)) { legacyObligationsContent() }
+                    } else {
                     val debtAccounts = allAccounts.filter { account -> snapshot?.debts?.any { it.accountId == account.id } == true }
                     if (debtAccounts.isEmpty()) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -186,6 +201,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                                 }
                             }
                         }
+                    }
                     }
                 }
             } else {

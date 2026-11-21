@@ -1785,3 +1785,145 @@ private fun V11ObligationPaymentDialog(
         dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
     )
 }
+
+/**
+ * Compatibility surface for obligation records created before Cash Book Debts.
+ * They remain in the existing V11 database and are never silently migrated,
+ * duplicated in the ledger or deleted. The owner now lives under Debts, not Salary.
+ */
+@Composable
+internal fun V11ObligationsPanel(
+    month: YearMonth,
+    db: V11Database,
+    moneyVisible: Boolean,
+    securitySettings: V11SecuritySettings,
+    securityStore: V11SecurityStore,
+    onDatabaseChange: (V11Database) -> Unit,
+) {
+    val commit = rememberNeoCommit(onDatabaseChange)
+    var adding by rememberSaveable { mutableStateOf(false) }
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var payingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingProtected by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val securityEnabled = securitySettings.mode != V11LockMode.NONE ||
+        securitySettings.biometricEnabled
+    fun saveSafely(action: () -> Unit) {
+        if (securityEnabled) pendingProtected = action else action()
+    }
+
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(neoLabel("التزامات محفوظة", "Saved obligations"),
+            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(neoLabel("أقساط وديون ومدفوعات دورية من سجلات التطبيق الحالية. لا تُنسخ إلى Cash Book تلقائيًا.",
+            "Installments, debts and recurring bills in the existing app ledger; never duplicated into Cash Book."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Button(onClick = neoWriteAction { adding = true },
+            modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.Add, null)
+            Spacer(Modifier.width(6.dp))
+            Text(neoLabel("إضافة التزام", "Add obligation"))
+        }
+        if (db.obligations.isEmpty()) {
+            Card(Modifier.fillMaxWidth()) {
+                Text(neoLabel("لا توجد التزامات مسجلة", "No saved obligations"),
+                    modifier = Modifier.padding(16.dp))
+            }
+        } else {
+            db.obligations.forEach { obligation ->
+                val info = remember(db, month, obligation.id) {
+                    V11ObligationEngine.monthInfo(db, obligation, month)
+                }
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(obligation.name, fontWeight = FontWeight.SemiBold)
+                                Text(obligationLabel(obligation.type),
+                                    style = MaterialTheme.typography.labelSmall)
+                            }
+                            IconButton(onClick = neoWriteAction { editingId = obligation.id }) {
+                                Icon(Icons.Default.Edit,
+                                    neoLabel("تعديل الالتزام", "Edit obligation"))
+                            }
+                        }
+                        AccountLine(neoLabel("حالة الشهر", "Month status"),
+                            neoObligationState(info.state))
+                        if (info.expected > 0.0) {
+                            AccountLine(neoLabel("المستحق", "Due"),
+                                money(info.expected, moneyVisible))
+                            AccountLine(neoLabel("المسدد", "Paid"),
+                                money(info.paid, moneyVisible))
+                            AccountLine(neoLabel("المتبقي", "Remaining"),
+                                money(info.remaining, moneyVisible))
+                        }
+                        Button(onClick = neoWriteAction { payingId = obligation.id },
+                            enabled = obligation.status == ObligationStatusV11.ACTIVE &&
+                                info.remaining > 0.0,
+                            modifier = Modifier.fillMaxWidth()) {
+                            Text(neoLabel("تسجيل سداد", "Record payment"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (adding) V11ObligationDialog(
+        db = db,
+        onDismiss = { adding = false },
+        onSave = { updated ->
+            saveSafely { commit(updated) { adding = false } }
+        }
+    )
+    editingId?.let { id ->
+        db.obligations.firstOrNull { it.id == id }?.let { obligation ->
+            val unchanged = rememberNeoDraftUnchanged(obligation.id, obligation)
+            val reject = LocalNeoRejectWrite.current
+            V11EditObligationDialog(
+                db = db, obligation = obligation,
+                onDismiss = { editingId = null },
+                onSave = { updated ->
+                    if (!unchanged) {
+                        reject("Obligation changed; reopen before saving")
+                    } else {
+                        saveSafely {
+                            commit(db.copy(obligations = db.obligations.map {
+                                if (it.id == updated.id) updated else it
+                            })) { editingId = null }
+                        }
+                    }
+                }
+            )
+        }
+    }
+    payingId?.let { id ->
+        db.obligations.firstOrNull { it.id == id }?.let { obligation ->
+            val info = V11ObligationEngine.monthInfo(db, obligation, month)
+            V11ObligationPaymentDialog(
+                obligation = obligation, month = month, remaining = info.remaining,
+                db = db, onDismiss = { payingId = null },
+                onSave = { amount, methodId, recordId ->
+                    saveSafely {
+                        commit(V11AccountsController.payObligation(
+                            db = db, obligationId = obligation.id,
+                            month = month.toString(), amount = amount,
+                            methodId = methodId, recordId = recordId
+                        )) { payingId = null }
+                    }
+                }
+            )
+        }
+    }
+    pendingProtected?.let { action ->
+        V11FinancialVerificationDialog(
+            settings = securitySettings, store = securityStore,
+            onDismiss = { pendingProtected = null },
+            onVerified = { pendingProtected = null; action() }
+        )
+    }
+}

@@ -21,6 +21,7 @@ import java.time.DayOfWeek
 fun EmbeddedCashBookScreen(
     weekStart: DayOfWeek = DayOfWeek.SATURDAY,
     salaryContent: (@Composable () -> Unit)? = null,
+    legacyObligationsContent: (@Composable () -> Unit)? = null,
 ) {
     val app = LocalContext.current.applicationContext as Application
     val vm: CashBookViewModel = viewModel(
@@ -37,5 +38,6 @@ fun EmbeddedCashBookScreen(
         com.todoshift.app.v11.NeoLanguage.ENGLISH -> java.util.Locale.ENGLISH
         else -> LocalContext.current.resources.configuration.locales[0]
     }
-    CashBookRoute(vm = vm, weekStart = weekStart, hostLocale = hostLocale, salaryContent = salaryContent)
+    CashBookRoute(vm = vm, weekStart = weekStart, hostLocale = hostLocale, salaryContent = salaryContent,
+        legacyObligationsContent = legacyObligationsContent)
 }

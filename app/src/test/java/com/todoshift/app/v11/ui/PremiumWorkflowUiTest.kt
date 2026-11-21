@@ -33,9 +33,10 @@ class PremiumWorkflowUiTest {
 
     @Test
     fun genuineEmptyTodayIsDifferentFromZeroSearchResults() {
-        content { V11TasksScreen(V11Database(), emptyList(), {}) }
+        content { V11TasksScreen(V11Database(), emptyList(), {}, fixedNotesTab = false) }
         compose.onNodeWithText("No tasks for today").assertExists()
-        compose.onNodeWithText("Search tasks").performTextInput("absent")
+        compose.onNodeWithContentDescription("Search").performClick()
+        compose.onNodeWithText("Search").performTextInput("absent")
         compose.onNodeWithText("No matching tasks").assertExists()
         compose.onNodeWithText("No tasks for today").assertDoesNotExist()
     }

@@ -56,7 +56,6 @@ jobs:
           chmod 600 "$RUNNER_TEMP/todoshift.jks"
       - name: Run full unit tests (retain failure evidence)
         id: full_qa
-        continue-on-error: true
         env:
           TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
           TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
@@ -73,7 +72,7 @@ jobs:
           gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
             :app:lintDebug :app:assembleRelease --stacktrace
       - name: Diagnose Android test failures
-        if: steps.full_qa.outcome == 'failure'
+        if: failure() && steps.full_qa.outcome == 'failure'
         run: |
           python3 - <<'PY'
           import glob
@@ -124,7 +123,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v70-implementation-candidate-${GITHUB_SHA:0:12}"
-          gh release create "$TAG" delivery/ExMore-v70-Implementation.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ExMore v70 — Implementation Candidate" --notes "Cross-module QA, corrected settings-versus-tool navigation, salary statement earning-month reconciliation and interface refinements; existing financial records preserved. Source: $GITHUB_SHA."
+          gh release create "$TAG" delivery/ExMore-v70-Implementation.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ExMore v70 — QA-passed signed APK" --notes "Published only after full unit-suite, lint, release compilation, signature verification, and source identity checks succeed. Automated device testing is not implied. Source: $GITHUB_SHA."
       - name: Verify published APK bytes and archive
         env:
           GH_TOKEN: ${{ github.token }}
@@ -134,11 +133,6 @@ jobs:
           gh release download "$TAG" --pattern ExMore-v70-Implementation.apk --dir "$RUNNER_TEMP/published"
           cmp delivery/ExMore-v70-Implementation.apk "$RUNNER_TEMP/published/ExMore-v70-Implementation.apk"
           python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ExMore-v70-Implementation.apk'); assert z.testzip() is None"
-      - name: Mark unresolved unit failures explicitly
-        if: steps.full_qa.outcome == 'failure'
-        run: |
-          echo "::error::Full unit test suite failed. Candidate APK is available for controlled testing only."
-          exit 1
       - name: Remove private signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/todoshift.jks"

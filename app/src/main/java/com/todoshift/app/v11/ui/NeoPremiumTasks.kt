@@ -676,7 +676,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                 neoLabel("محدد: ","Selected: ")+selectedNotes.size
                             else if(notesTab && noteFolder=="trash") neoLabel("🗑 سلة المهملات · استعادة أو حذف نهائي","🗑 Trash · Restore or permanently delete")
                             else if(notesTab && noteFolder=="archive") neoLabel("الأرشيف","Archive")
-                            else neoLabel("المهام والملاحظات","Tasks & notes"),
+                            else if(fixedNotesTab!=null) {
+                                if(notesTab) neoLabel("الملاحظات","Notes") else neoLabel("المهام","Tasks")
+                            } else neoLabel("المهام والملاحظات","Tasks & notes"),
                             Modifier.weight(1f),style=MaterialTheme.typography.titleMedium
                         )
                         if(notesTab && noteSelectionMode) {

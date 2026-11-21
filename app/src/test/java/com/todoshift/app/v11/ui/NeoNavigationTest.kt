@@ -74,7 +74,7 @@ class NeoNavigationTest {
         assertNull(e.date)
         assertNull(e.taskAction)
         assertEquals(4, NeoEntry.parse(Intent().putExtra("todo_shift_task_action", "open"), 2).tab)
-        assertEquals(2, NeoEntry.parse(Intent("com.todoshift.app.OPEN_FINANCE"), 3).tab)
+        assertEquals(1, NeoEntry.parse(Intent("com.todoshift.app.OPEN_FINANCE"), 3).tab)
     }
 
     @Test
@@ -100,7 +100,7 @@ class NeoNavigationTest {
             .putExtra(Intent.EXTRA_TEXT,"https://example.org/test")
         val entry=NeoEntry.routed(share,123L)
         assertNotNull(entry)
-        assertEquals(4,entry!!.tab)
+        assertEquals(2,entry!!.tab)
         assertEquals("new_note",entry.taskAction)
         assertEquals("https://example.org/test",entry.sharedNoteText)
         assertNull(entry.taskId)

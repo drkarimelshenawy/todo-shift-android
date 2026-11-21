@@ -88,7 +88,7 @@ class PremiumNavigationActivityTest {
 
     @Test
     fun everyMainDestinationPairKeepsActualBodyAndSelectionAndBackReturnsHome() {
-        val tabs = listOf("Calendar", "Schedules", "Tasks", "Finance", "Settings")
+        val tabs = listOf("Calendar", "Finance", "Notes", "Tasks", "Settings")
         for (from in tabs) for (to in tabs) {
             ui.click(from)
             ui.click(to)
@@ -97,7 +97,7 @@ class PremiumNavigationActivityTest {
                 "Tasks" -> ui.await("Add task")
                 "Settings" -> ui.await("Appearance & Design")
                 "Calendar" -> ui.await("Manage calendars")
-                "Schedules" -> ui.await("Summary")
+                "Notes" -> ui.await("Notes")
             }
         }
         ui.click("Tasks")

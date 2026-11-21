@@ -253,12 +253,15 @@ fun V11Home(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    DisposableEffect(context, securitySettings) {
+    // PIN protection hides locked records in the UI; it must not force
+    // FLAG_SECURE onto unrelated tabs in a shared Activity.
+    DisposableEffect(context, securitySettings.protectApplication) {
         val window = (context as? android.app.Activity)?.window
-        val secured = securitySettings.anyProtection
-        if (secured) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        onDispose { }
+        if (securitySettings.protectApplication)
+            window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        else
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
     }
     var db by remember { mutableStateOf(loaded.database) }
     var cashSyncError by remember { mutableStateOf<String?>(null) }

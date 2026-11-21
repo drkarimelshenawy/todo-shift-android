@@ -798,12 +798,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     }
                 }
                 if(editing) {
+                    val stableNoteTitleLabel = neoLabel("عنوان الملاحظة", "Note title")
                     TextField(
                         title,{if(!closing)title=it},singleLine=true,
                         textStyle=MaterialTheme.typography.titleLarge.copy(fontWeight=androidx.compose.ui.text.font.FontWeight.Bold,textAlign=androidx.compose.ui.text.style.TextAlign.Center),
                         placeholder={Text(neoLabel("عنوان الملاحظة","Note title"),modifier=Modifier.fillMaxWidth(),textAlign=androidx.compose.ui.text.style.TextAlign.Center)},
                         modifier=Modifier.fillMaxWidth().padding(horizontal=14.dp)
-                            .semantics { contentDescription = neoLabel("عنوان الملاحظة", "Note title") },
+                            .semantics { contentDescription = stableNoteTitleLabel },
                         colors=TextFieldDefaults.colors(
                             focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,
                             unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,

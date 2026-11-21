@@ -20,8 +20,8 @@ fun NeoShortcutControls() {
     val destinations=listOf(
         Triple("calendar",neoLabel("ToDo Shift","ToDo Shift"),0),
         Triple("tasks",neoLabel("المهام","Tasks"),4),
-        Triple("notes",neoLabel("الملاحظات","Notes"),4),
-        Triple("new_note",neoLabel("ملاحظة جديدة","New note"),4),
+        Triple("notes",neoLabel("الملاحظات","Notes"),2),
+        Triple("new_note",neoLabel("ملاحظة جديدة","New note"),2),
         Triple("cashbook",neoLabel("الإدارة المالية","Cash Book"),1),
     )
     if(manager?.isRequestPinShortcutSupported!=true)

@@ -42,11 +42,11 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
             .take(36)
     }
     var selectedMonthKeys by rememberSaveable {
-        mutableStateOf(initialMonths.map {it.toString()}.toSet())
+        mutableStateOf(initialMonths.map {it.toString()})
     }
     LaunchedEffect(workplace,availableMonths) {
         if(selectedMonthKeys.none {key -> availableMonths.any {it.toString()==key}}) {
-            selectedMonthKeys=availableMonths.take(3).map {it.toString()}.toSet()
+            selectedMonthKeys=availableMonths.take(3).map {it.toString()}
         }
     }
     val months=availableMonths.filter {it.toString() in selectedMonthKeys}.sorted()
@@ -87,7 +87,7 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
             val key=month.toString()
             Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                 Checkbox(checked=key in selectedMonthKeys,onCheckedChange={checked ->
-                    selectedMonthKeys=if(checked) selectedMonthKeys+key else selectedMonthKeys-key
+                    selectedMonthKeys=if(checked) (selectedMonthKeys+key).distinct() else selectedMonthKeys-key
                 })
                 Text(key+" • "+LocalizedNumbers.amount(workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L))
             }

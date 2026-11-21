@@ -65,14 +65,14 @@ class ClassicReceiptSafetyTest {
         compose.onNodeWithText("Save").assertIsEnabled().performClick()
         assertEquals(900000L, LocalizedNumbers.cents(runtime.start().payments.last().amount))
         compose.onNodeWithText("Amount").performTextReplacement("0")
-        compose.onNodeWithText("Save change").assertIsNotEnabled()
+        compose.onNodeWithText("Save").assertIsNotEnabled()
         compose.onNodeWithText("Amount").performTextReplacement("٩٠٠٠٫٥٠")
         compose.onNodeWithText("Received date").performTextReplacement("invalid")
-        compose.onNodeWithText("Save change").assertIsNotEnabled()
+        compose.onNodeWithText("Save").assertIsNotEnabled()
         assertEquals(900000L, LocalizedNumbers.cents(runtime.start().payments.last().amount))
         compose.onNodeWithText("Received date").performTextReplacement("2026-11-10")
         compose.waitUntilReceiptAccountLoaded()
-        compose.onNodeWithText("Save change").assertIsEnabled().performClick()
+        compose.onNodeWithText("Save").assertIsEnabled().performClick()
         assertEquals(900050L, LocalizedNumbers.cents(runtime.start().payments.last().amount))
     }
 }

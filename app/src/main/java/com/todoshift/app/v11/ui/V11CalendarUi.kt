@@ -418,7 +418,7 @@ fun V11CalendarScreen(
                     },modifier=Modifier.align(Alignment.CenterEnd).size(48.dp).testTag("calendar-paint-fab")) {
                         Icon(
                             if(paintMode) Icons.Default.Check else Icons.Default.Add,
-                            if(paintMode) neoLabel("تم", "Done") else neoLabel("رسم الشيفتات", "Paint shifts")
+                            if(paintMode) neoLabel("إنهاء الرسم", "Finish painting") else neoLabel("رسم الشيفتات", "Paint shifts")
                         )
                     }
                     if(paintMode) androidx.compose.ui.window.Popup(

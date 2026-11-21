@@ -61,7 +61,7 @@ class NeoA4FormattingAndBordersTest {
             val xml=NeoPageBorders.wordBorderXml(style)
             assertTrue(xml.contains("<w:pgBorders"))
             assertTrue(xml.contains("w:offsetFrom=\"page\""))
-            assertEquals(4,"<w:val=".toRegex().findAll(xml).count())
+            assertEquals(4,"w:val=\\\"".toRegex().findAll(xml).count())
             assertTrue(xml.contains("w:space=\"20\""))
         }
     }

@@ -315,6 +315,7 @@ fun V11Home(
     var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction) }
     var pendingTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
     var pendingSharedNoteText by rememberSaveable { mutableStateOf<String?>(null) }
+    var requestedFinanceSection by rememberSaveable { mutableStateOf<String?>(null) }
     var temporaryFocus by remember { mutableStateOf(false) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
     var calendarActionId by remember { mutableIntStateOf(0) }
@@ -390,6 +391,7 @@ fun V11Home(
             pendingTaskAction = request.taskAction
             pendingTaskId = request.taskId
             pendingSharedNoteText = request.sharedNoteText
+            requestedFinanceSection = request.financeSection
             calendarAction = null
         }
     }
@@ -805,6 +807,7 @@ fun V11Home(
                                         pendingTaskAction = null
                                         pendingTaskId = null
                                         calendarAction = null
+                                        requestedFinanceSection = null
                                         navigation.selectTab(destination)
                                     }
                                 },
@@ -817,6 +820,7 @@ fun V11Home(
                                         pendingTaskAction = null
                                         pendingTaskId = null
                                         calendarAction = null
+                                        requestedFinanceSection = null
                                         navigation.selectTab(destination)
                                     }
                                 },
@@ -966,6 +970,7 @@ fun V11Home(
                                         } else {
                                             com.todoshift.app.integration.EmbeddedCashBookScreen(
                                                 weekStart = java.time.DayOfWeek.of(neoAppearance.firstWeekday),
+                                                entrySection = requestedFinanceSection,
                                                 legacyObligationsContent = {
                                                     if ((securitySettings.protectAccounts || securitySettings.protectCashBook ||
                                                         securitySettings.protectSalary || securitySettings.protectApplication) &&

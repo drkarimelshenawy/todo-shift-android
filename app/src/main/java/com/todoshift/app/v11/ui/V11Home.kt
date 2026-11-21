@@ -1141,7 +1141,7 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("المهام والملاحظات", "Tasks & Notes"),
+                label = neoLiteral("المهام", "Tasks"),
                 selected = selectedTab == 4,
                 onClick = { onSelectTab(4) },
                 icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
@@ -1155,20 +1155,10 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("مستحقات العمل", "Salary"),
+                label = neoLiteral("الملاحظات", "Notes"),
                 selected = selectedTab == 2,
                 onClick = { onSelectTab(2) },
-                icon = {
-                    Box {
-                        Icon(Icons.Default.Payments, contentDescription = null)
-
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.align(Alignment.TopEnd).size(10.dp),
-                        )
-                    }
-                },
+                icon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
             )
 
             V11BottomDestination(
@@ -1359,15 +1349,10 @@ private fun V11GlobalHeader(
 
 @Composable
 internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
-    val p = LocalNeoAppearance.current
+    // The five navigation destinations have fixed physical positions across locales.
     CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides
-            neoDirection(
-                p.navigationDirection,
-                // AUTO defaults to fixed LTR button positions; explicitly
-                // selecting RTL navigation still works as a user preference.
-                androidx.compose.ui.unit.LayoutDirection.Ltr,
-            )
+            androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
         Surface(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1379,11 +1364,11 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         ) {
             NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
                 listOf(
-                    Triple(0, neoLabel(neoLiteral("التقويم", "Calendar"), "Calendar"), Icons.Rounded.CalendarMonth),
-                    Triple(4, neoLabel("المهام والملاحظات", "Tasks & Notes"), Icons.Rounded.CheckCircle),
-                    Triple(2, neoLabel("المستحقات", "Salary"), Icons.Rounded.Payments),
-                    Triple(1, neoLabel("الإدارة المالية", "Cash Book"), Icons.Rounded.AccountBalanceWallet),
-                    Triple(3, neoLabel(neoLiteral("الإعدادات", "Settings"), "Settings"), Icons.Rounded.Settings),
+                    Triple(1, neoLabel("الإدارة المالية", "Finance"), Icons.Rounded.AccountBalanceWallet),
+                    Triple(4, neoLabel("المهام", "Tasks"), Icons.Rounded.CheckCircle),
+                    Triple(0, neoLabel("التقويم", "Calendar"), Icons.Rounded.CalendarMonth),
+                    Triple(2, neoLabel("الملاحظات", "Notes"), Icons.Rounded.Edit),
+                    Triple(3, neoLabel("الإعدادات", "Settings"), Icons.Rounded.Settings),
                 )
                     .forEach { (index, label, icon) ->
                         NavigationBarItem(

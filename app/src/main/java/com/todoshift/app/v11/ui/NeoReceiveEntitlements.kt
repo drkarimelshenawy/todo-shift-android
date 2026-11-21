@@ -51,12 +51,19 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
     }
     val months=availableMonths.filter {it.toString() in selectedMonthKeys}.sorted()
     var amounts by remember {mutableStateOf<Map<String,String>>(emptyMap())}
+    var amountWorkplace by remember { mutableStateOf(workplace) }
     LaunchedEffect(workplace,months) {
+        // Toggling another month must not overwrite an already-entered partial
+        // receipt. Switching workplaces, however, resets incompatible amounts.
+        val keepAmounts = workplace == amountWorkplace
         amounts=months.associate {month ->
-            month.toString() to LocalizedNumbers.amount(
-                workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
-            ).toString()
+            val key = month.toString()
+            key to (if (keepAmounts) amounts[key] else null
+                ?: LocalizedNumbers.amount(
+                    workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
+                ).toString())
         }
+        amountWorkplace = workplace
     }
     var receivedDate by rememberSaveable {mutableStateOf(LocalDate.now().toString())}
     var account by rememberSaveable {mutableStateOf<String?>(null)}

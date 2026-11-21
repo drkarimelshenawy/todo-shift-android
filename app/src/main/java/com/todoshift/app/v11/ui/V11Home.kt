@@ -1316,8 +1316,8 @@ private fun V11GlobalHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             androidx.compose.foundation.Image(
-                painter = painterResource(R.drawable.neo41_brand_emblem),
-                contentDescription = "ToDo Shift",
+                painter = painterResource(R.drawable.exmore_splash_center),
+                contentDescription = "ExMore",
                 modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.medium),
             )
 
@@ -1325,7 +1325,7 @@ private fun V11GlobalHeader(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "ToDo Shift",
+                    "ExMore",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black,
                     maxLines = 1,

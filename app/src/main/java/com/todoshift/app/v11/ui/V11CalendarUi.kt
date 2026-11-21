@@ -712,8 +712,8 @@ private fun V11CompactHeader(activeCalendarName: String, onManageCalendars: () -
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.neo41_brand_emblem),
-            contentDescription = "ToDo Shift",
+            painter = painterResource(R.drawable.exmore_splash_center),
+            contentDescription = "ExMore",
             modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
         )
 
@@ -721,7 +721,7 @@ private fun V11CompactHeader(activeCalendarName: String, onManageCalendars: () -
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "ToDo Shift",
+                "ExMore",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Black,
                 color = if (neo) colors.onSurface else Color(0xFF162A46),

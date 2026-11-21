@@ -328,7 +328,7 @@ private fun CalendarScreen(
             .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 24.dp)
     ) {
         AppHeader(
-            title = "ToDo Shift",
+            title = "ExMore",
             subtitle = "جدول الشيفتات"
         )
 
@@ -2369,7 +2369,7 @@ private fun V10ReleaseStatusPanel(
         ) {
 
             Text(
-                "ToDo Shift V1.0 RC",
+                "ExMore",
                 modifier =
                     Modifier.fillMaxWidth(),
                 textAlign =
@@ -2564,7 +2564,7 @@ private fun MoreScreen(
 
         AppHeader(
             "المزيد",
-            "إعدادات ToDo Shift"
+            "إعدادات ExMore"
         )
 
         Spacer(Modifier.height(18.dp))
@@ -2720,7 +2720,7 @@ private fun MoreScreen(
         Spacer(Modifier.height(10.dp))
 
         Text(
-            "ToDo Shift • V1.0 RC1",
+            "ExMore",
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = Color.Gray,
@@ -4288,7 +4288,7 @@ private fun V09CalendarScreen(
         ) {
 
             AppHeader(
-                title = "ToDo Shift",
+                title = "ExMore",
                 subtitle =
                     if (painterState == null)
                         "اضغط على + لإضافة الشيفتات"

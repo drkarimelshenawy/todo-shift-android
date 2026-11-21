@@ -19,6 +19,34 @@ data class MonthFinanceV11(
 )
 
 object V11FinanceEngine {
+    /**
+     * A zero caused by a missing effective-dated rate is not an actual zero
+     * salary. Do not back-fill guessed prices into historical earnings.
+     */
+    fun missingRateCount(db: V11Database, month: YearMonth): Int {
+        val salariedWorkplaces = db.incomeSources.filter { source ->
+            (source.fixedMonthlyAmount != null || source.compensationHistory.isNotEmpty()) &&
+                (if (source.compensationHistory.isEmpty()) source.active else
+                    source.compensationHistory
+                        .filter { !YearMonth.parse(it.effectiveMonth).isAfter(month) }
+                        .maxByOrNull { it.effectiveMonth }?.shiftBased == false)
+        }.mapNotNull { it.workplaceId }.toSet()
+        return db.days.filter { it.date.startsWith(month.toString()) }
+            .sumOf { day ->
+                day.segments.count { shift ->
+                    shift.kind != ShiftKind.OFF &&
+                        shift.exceptionalAmount == null &&
+                        shift.workplaceId !in salariedWorkplaces &&
+                        db.rates.none { rate ->
+                            rate.workplaceId == shift.workplaceId &&
+                                rate.shiftKind == shift.kind &&
+                                rate.effectiveFrom <= day.date &&
+                                runCatching { java.time.LocalDate.parse(rate.effectiveFrom) }.isSuccess
+                        }
+                }
+            }
+    }
+
     fun monthlyAmount(source: IncomeSourceV11, month: YearMonth): Double =
         if (source.compensationHistory.isEmpty()) {
             if (source.active) source.fixedMonthlyAmount ?: 0.0 else 0.0

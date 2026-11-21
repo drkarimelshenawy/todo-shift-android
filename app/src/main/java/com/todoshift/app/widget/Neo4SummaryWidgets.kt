@@ -155,7 +155,16 @@ internal fun summaryWidgetEntry(
     date: String,
 ): Intent =
     Intent(context, MainActivity::class.java)
-        .putExtra("neo4_open_tab", if (kind == Neo4WidgetKind.FINANCE) Neo4WidgetSettings(context,id).load(kind).financeDestination else 0)
+        .putExtra("neo4_open_tab", if (kind == Neo4WidgetKind.FINANCE) 1 else 0)
+        .apply {
+            if (kind == Neo4WidgetKind.FINANCE) {
+                // The widget's stored 2 still means Salary, but Salary is now
+                // nested within Finance rather than a top-level destination.
+                putExtra("todo_shift_finance_section",
+                    if (Neo4WidgetSettings(context, id).load(kind).financeDestination == 2)
+                        "salary" else "accounts")
+            }
+        }
         .apply { if (kind == Neo4WidgetKind.TODAY) putExtra("todo_shift_open_date", date) }
         .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         .setData(android.net.Uri.parse("todoshift://neo4/${kind.name}/$id"))

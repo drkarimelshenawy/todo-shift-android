@@ -58,7 +58,7 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
         val keepAmounts = workplace == amountWorkplace
         amounts=months.associate {month ->
             val key = month.toString()
-            key to (if (keepAmounts) amounts[key] else null
+            key to ((if (keepAmounts) amounts[key] else null)
                 ?: LocalizedNumbers.amount(
                     workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
                 ).toString())

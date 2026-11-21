@@ -11,6 +11,9 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -62,11 +65,14 @@ fun NeoPremiumTabs(labels: List<String>, selected: Int, onSelected: (Int) -> Uni
 fun NeoPremiumMonth(title: String, onPrevious: () -> Unit, onNext: () -> Unit) {
     Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary, border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary)) {
+        CompositionLocalProvider(LocalLayoutDirection provides
+            if (LocalNeoEnglish.current) LayoutDirection.Ltr else LayoutDirection.Rtl) {
         Row(Modifier.fillMaxWidth().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onPrevious) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, neoLabel("الشهر السابق", "Previous month")) }
             Text(title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontWeight = FontWeight.Bold)
             IconButton(onClick = onNext) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("الشهر التالي", "Next month")) }
+        }
         }
     }
 }

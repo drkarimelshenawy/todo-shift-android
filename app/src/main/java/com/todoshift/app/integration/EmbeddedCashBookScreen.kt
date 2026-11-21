@@ -20,6 +20,7 @@ import java.time.DayOfWeek
 @Composable
 fun EmbeddedCashBookScreen(
     weekStart: DayOfWeek = DayOfWeek.SATURDAY,
+    entrySection: String? = null,
     salaryContent: (@Composable () -> Unit)? = null,
     legacyObligationsContent: (@Composable () -> Unit)? = null,
 ) {
@@ -38,6 +39,6 @@ fun EmbeddedCashBookScreen(
         com.todoshift.app.v11.NeoLanguage.ENGLISH -> java.util.Locale.ENGLISH
         else -> LocalContext.current.resources.configuration.locales[0]
     }
-    CashBookRoute(vm = vm, weekStart = weekStart, hostLocale = hostLocale, salaryContent = salaryContent,
+    CashBookRoute(vm = vm, weekStart = weekStart, hostLocale = hostLocale, entrySection = entrySection, salaryContent = salaryContent,
         legacyObligationsContent = legacyObligationsContent)
 }

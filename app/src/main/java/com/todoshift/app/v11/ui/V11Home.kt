@@ -253,12 +253,15 @@ fun V11Home(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    DisposableEffect(context, securitySettings) {
+    // PIN protection hides locked records in the UI; it must not force
+    // FLAG_SECURE onto unrelated tabs in a shared Activity.
+    DisposableEffect(context, securitySettings.protectApplication) {
         val window = (context as? android.app.Activity)?.window
-        val secured = securitySettings.anyProtection
-        if (secured) window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        else window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-        onDispose { }
+        if (securitySettings.protectApplication)
+            window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        else
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE) }
     }
     var db by remember { mutableStateOf(loaded.database) }
     var cashSyncError by remember { mutableStateOf<String?>(null) }
@@ -307,14 +310,15 @@ fun V11Home(
     var neoAppearance by remember { mutableStateOf(loaded.appearance) }
     val navigation = rememberSaveable(saver = NeoNavigator.saver) { NeoNavigator(if (entry != null || initialTab != 0) initialTab else NeoLaunchPreferences(context).landingTab) }
     val leaveGate = remember { NeoLeaveGate() }
-    val financialAccess = accountsUnlocked || !(securitySettings.protectApplication || securitySettings.protectAccounts || if(navigation.tab==1) securitySettings.protectCashBook else securitySettings.protectSalary)
+    val financialAccess = accountsUnlocked || !(securitySettings.protectApplication || securitySettings.protectAccounts || securitySettings.protectCashBook || securitySettings.protectSalary)
     val routeState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     fun go(action: () -> Unit) {
         if (!writeBusy && writeFailure == null) leaveGate.request(action)
     }
-    var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction ?: if (NeoLaunchPreferences(context).openNotes) "notes" else null) }
+    var pendingTaskAction by rememberSaveable { mutableStateOf(initialTaskAction) }
     var pendingTaskId by rememberSaveable { mutableStateOf(initialTaskId) }
     var pendingSharedNoteText by rememberSaveable { mutableStateOf<String?>(null) }
+    var requestedFinanceSection by rememberSaveable { mutableStateOf<String?>(null) }
     var temporaryFocus by remember { mutableStateOf(false) }
     var calendarAction by remember { mutableStateOf<NeoQuickAction?>(null) }
     var calendarActionId by remember { mutableIntStateOf(0) }
@@ -390,6 +394,7 @@ fun V11Home(
             pendingTaskAction = request.taskAction
             pendingTaskId = request.taskId
             pendingSharedNoteText = request.sharedNoteText
+            requestedFinanceSection = request.financeSection
             calendarAction = null
         }
     }
@@ -618,7 +623,7 @@ fun V11Home(
                 navigation.workplacesOpen -> stringResource(R.string.premium_title_workplaces)
                 navigation.tab == 0 -> stringResource(R.string.premium_nav_calendar)
                 navigation.tab == 1 -> stringResource(R.string.premium_nav_schedules)
-                navigation.tab == 2 -> stringResource(R.string.premium_nav_finance)
+                navigation.tab == 2 -> neoLabel("الملاحظات", "Notes")
                 navigation.tab == 3 -> stringResource(R.string.premium_nav_settings)
                 navigation.tab == 4 -> stringResource(R.string.premium_nav_tasks)
                 else -> stringResource(R.string.premium_nav_calendar)
@@ -628,7 +633,7 @@ fun V11Home(
                 navigation.workplacesOpen -> "أماكن العمل"
                 navigation.tab == 0 -> "التقويم"
                 navigation.tab == 1 -> neoLabel("الإدارة المالية", "Cash Book")
-                navigation.tab == 2 -> neoLabel("مستحقات العمل", "Salary")
+                navigation.tab == 2 -> neoLabel("الملاحظات", "Notes")
                 navigation.tab == 3 -> "الإعدادات"
                 navigation.tab == 4 -> neoLabel("المهام والملاحظات", "Tasks & Notes")
                 else -> "التقويم"
@@ -734,7 +739,7 @@ fun V11Home(
                     )
                 if ((securitySettings.protectApplication ||
                     (navigation.tab==0 && securitySettings.protectCalendar) ||
-                    (navigation.tab==2 && (securitySettings.protectSalary||securitySettings.protectAccounts)) ||
+                    (navigation.tab==2 && securitySettings.protectNotes) ||
                     (navigation.tab==1 && (securitySettings.protectCashBook||securitySettings.protectAccounts)) ||
                     (navigation.tab==4 && securitySettings.protectTasks)) &&
                     (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled) &&
@@ -768,7 +773,7 @@ fun V11Home(
                                             0 -> "Calendar"
                                             1 -> "Cash Book"
                                             4 -> "Tasks"
-                                            2 -> "Salary"
+                                            2 -> "Notes"
                                             else -> "Settings"
                                         },
                                 title =
@@ -782,13 +787,13 @@ fun V11Home(
                                                 neoLabel("أماكن العمل", "Workplaces")
                                             navigation.tab == 0 -> neoLabel("التقويم", "Calendar")
                                             navigation.tab == 1 -> neoLabel("الإدارة المالية", "Cash Book")
-                                            navigation.tab == 2 -> neoLabel("مستحقات العمل", "Salary")
+                                            navigation.tab == 2 -> neoLabel("الملاحظات", "Notes")
                                             navigation.tab == 3 -> neoLabel("الإعدادات", "Settings")
                                             else -> neoLabel("المهام", "Tasks")
                                         }
                                     else sectionTitle,
                                 showMoneyAction =
-                                    navigation.tab == 2 && navigation.isRoot && accountsUnlocked,
+                                    navigation.tab == 1 && navigation.isRoot && accountsUnlocked,
                                 moneyVisible = moneyVisible,
                                 onToggleMoney = { moneyVisible = !moneyVisible },
                             )
@@ -805,6 +810,7 @@ fun V11Home(
                                         pendingTaskAction = null
                                         pendingTaskId = null
                                         calendarAction = null
+                                        requestedFinanceSection = null
                                         navigation.selectTab(destination)
                                     }
                                 },
@@ -817,6 +823,7 @@ fun V11Home(
                                         pendingTaskAction = null
                                         pendingTaskId = null
                                         calendarAction = null
+                                        requestedFinanceSection = null
                                         navigation.selectTab(destination)
                                     }
                                 },
@@ -966,6 +973,7 @@ fun V11Home(
                                         } else {
                                             com.todoshift.app.integration.EmbeddedCashBookScreen(
                                                 weekStart = java.time.DayOfWeek.of(neoAppearance.firstWeekday),
+                                                entrySection = requestedFinanceSection,
                                                 legacyObligationsContent = {
                                                     if ((securitySettings.protectAccounts || securitySettings.protectCashBook ||
                                                         securitySettings.protectSalary || securitySettings.protectApplication) &&
@@ -998,31 +1006,20 @@ fun V11Home(
                                         }
 
                                     2 ->
-                                        if (
-                                            securitySettings.protectAccounts &&
-                                                (securitySettings.mode != V11LockMode.NONE ||
-                                                    securitySettings.biometricEnabled) &&
-                                                !accountsUnlocked
-                                        ) {
-                                            V11AccountsUnlockScreen(
-                                                settings = securitySettings,
-                                                securityStore = securityStore,
-                                                onUnlocked = { accountsUnlocked = true },
-                                            )
-                                        } else {
-                                            V11FinanceScreen(
-                                                month = month,
-                                                db = db,
-                                                workplaces = oldData.workplaces,
-                                                moneyVisible = moneyVisible,
-                                                onPrevious = { month = month.minusMonths(1) },
-                                                onNext = { month = month.plusMonths(1) },
-                                                onToggleMoney = { moneyVisible = !moneyVisible },
-                                                securitySettings = securitySettings,
-                                                securityStore = securityStore,
-                                                onDatabaseChange = { saveDb(it) },
-                                            )
-                                        }
+                                        V11TasksScreen(
+                                            db = db,
+                                            workplaces = oldData.workplaces,
+                                            initialAction = pendingTaskAction ?: "notes",
+                                            initialTaskId = pendingTaskId,
+                                            initialSharedNoteText = pendingSharedNoteText,
+                                            fixedNotesTab = true,
+                                            onInitialActionHandled = {
+                                                pendingTaskAction = null
+                                                pendingTaskId = null
+                                                pendingSharedNoteText = null
+                                            },
+                                            onDatabaseChange = { saveDb(it) },
+                                        )
 
                                     3 ->
                                         V11MoreScreen(
@@ -1067,7 +1064,8 @@ fun V11Home(
                                             },
                                             db = db,
                                             workplaces = oldData.workplaces,
-                                            initialAction = pendingTaskAction,
+                                            initialAction = pendingTaskAction ?: "tasks",
+                                            fixedNotesTab = false,
                                             initialTaskId = pendingTaskId,
                                             initialSharedNoteText = pendingSharedNoteText,
                                             onInitialActionHandled = {
@@ -1151,7 +1149,7 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("المهام والملاحظات", "Tasks & Notes"),
+                label = neoLiteral("المهام", "Tasks"),
                 selected = selectedTab == 4,
                 onClick = { onSelectTab(4) },
                 icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
@@ -1165,20 +1163,10 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
 
             V11BottomDestination(
                 modifier = Modifier.weight(1f),
-                label = neoLiteral("مستحقات العمل", "Salary"),
+                label = neoLiteral("الملاحظات", "Notes"),
                 selected = selectedTab == 2,
                 onClick = { onSelectTab(2) },
-                icon = {
-                    Box {
-                        Icon(Icons.Default.Payments, contentDescription = null)
-
-                        Icon(
-                            Icons.Default.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.align(Alignment.TopEnd).size(10.dp),
-                        )
-                    }
-                },
+                icon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
             )
 
             V11BottomDestination(
@@ -1369,15 +1357,10 @@ private fun V11GlobalHeader(
 
 @Composable
 internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
-    val p = LocalNeoAppearance.current
+    // The five navigation destinations have fixed physical positions across locales.
     CompositionLocalProvider(
         androidx.compose.ui.platform.LocalLayoutDirection provides
-            neoDirection(
-                p.navigationDirection,
-                // AUTO defaults to fixed LTR button positions; explicitly
-                // selecting RTL navigation still works as a user preference.
-                androidx.compose.ui.unit.LayoutDirection.Ltr,
-            )
+            androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
         Surface(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1389,11 +1372,11 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         ) {
             NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp) {
                 listOf(
-                    Triple(0, neoLabel(neoLiteral("التقويم", "Calendar"), "Calendar"), Icons.Rounded.CalendarMonth),
-                    Triple(4, neoLabel("المهام والملاحظات", "Tasks & Notes"), Icons.Rounded.CheckCircle),
-                    Triple(2, neoLabel("المستحقات", "Salary"), Icons.Rounded.Payments),
-                    Triple(1, neoLabel("الإدارة المالية", "Cash Book"), Icons.Rounded.AccountBalanceWallet),
-                    Triple(3, neoLabel(neoLiteral("الإعدادات", "Settings"), "Settings"), Icons.Rounded.Settings),
+                    Triple(1, neoLabel("الإدارة المالية", "Finance"), Icons.Rounded.AccountBalanceWallet),
+                    Triple(4, neoLabel("المهام", "Tasks"), Icons.Rounded.CheckCircle),
+                    Triple(0, neoLabel("التقويم", "Calendar"), Icons.Rounded.CalendarMonth),
+                    Triple(2, neoLabel("الملاحظات", "Notes"), Icons.Rounded.Edit),
+                    Triple(3, neoLabel("الإعدادات", "Settings"), Icons.Rounded.Settings),
                 )
                     .forEach { (index, label, icon) ->
                         NavigationBarItem(

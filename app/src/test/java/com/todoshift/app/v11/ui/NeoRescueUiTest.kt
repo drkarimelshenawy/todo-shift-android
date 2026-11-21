@@ -65,7 +65,7 @@ class NeoRescueUiTest {
                 }
             }
         }
-        compose.onNodeWithText("Theme and identity").performClick()
+        compose.onAllNodesWithText("Identity")[0].performClick()
         compose.onNodeWithText("Follow system").performScrollTo().performClick()
         compose.onNodeWithText("Dark").performClick()
         restoration.emulateSavedInstanceStateRestore()
@@ -107,16 +107,13 @@ class NeoRescueUiTest {
                 it.date == "2026-11-10" && it.segments.isNotEmpty()
             }
         }
-        compose.onNodeWithContentDescription("Calendar actions").performClick()
+        // The painter's own tools menu owns the undo action on this layout.
+        compose.onNodeWithContentDescription("Painting tools").performClick()
         compose.waitUntil(10000) {
-            compose
-                .onAllNodes(hasText("Undo last change") and isEnabled())
-                .fetchSemanticsNodes()
-                .isNotEmpty()
+            compose.onAllNodes(hasText("Undo") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithText("Undo last change").performClick()
+        compose.onNodeWithText("Undo").performClick()
         compose.waitUntil(10000) {
-            compose.onAllNodesWithContentDescription("Eraser").fetchSemanticsNodes()
             V11Storage(context).load().days.none { it.segments.isNotEmpty() }
         }
         compose.runOnIdle {
@@ -155,7 +152,7 @@ class NeoRescueUiTest {
     }
 
     @Test
-    fun settingsHomeHasExactlySixGroupsAndNoToolsDump() {
+    fun settingsHomeHasEightOrganizedGroupsAndNoToolsDump() {
         val context = RuntimeEnvironment.getApplication()
         render {
             NeoRescueSettings(
@@ -174,10 +171,12 @@ class NeoRescueUiTest {
             listOf(
                 "Appearance & Design",
                 "Language & Direction",
-                "Calendar & Shifts",
-                "Notifications & Widgets",
-                "Privacy & Data",
-                "Advanced",
+                "Section Settings",
+                "Notifications & Reminders",
+                "Widgets & Shortcuts",
+                "Security & Privacy",
+                "Data & Backup",
+                "About & Advanced",
             )) compose.onNodeWithText(title).assertExists()
         compose.onNodeWithText("Smart tools and search").assertDoesNotExist()
     }
@@ -271,10 +270,10 @@ class NeoRescueUiTest {
     fun appearanceHasVerticalSectionsAndCompactRealPreview() {
         render { NeoAppearanceStudio({}, {}) }
         compose.onNodeWithText("Live preview").assertExists()
-        compose.onNodeWithText("Fonts and density").assertExists()
+        compose.onNodeWithText("Type").assertExists()
         compose.onNodeWithText("Only what you need").assertDoesNotExist()
-        compose.onNodeWithText("Theme and identity").performClick()
-        compose.onNodeWithText("Identity").assertExists()
+        compose.onAllNodesWithText("Identity")[0].performClick()
+        compose.onNodeWithText("Brightness").assertExists()
     }
 
     @Test

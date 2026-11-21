@@ -124,7 +124,11 @@ class PremiumPaintingActivityTest {
         ui.click("Delete")
         ui.await("Delete note?")
         ui.click("Delete")
-        ui.until { runtime.start().dayItems.none { it.id == note.id } }
+        // Delete sends notes to Trash; it must not irreversibly erase stored content.
+        ui.until {
+            runtime.start().dayItems.any { it.id == note.id && it.noteTrashed }
+        }
+        assertTrue(runtime.start().dayItems.any { it.id == note.id && it.noteTrashed })
         assertEquals(old.days, runtime.start().days)
     }
 }

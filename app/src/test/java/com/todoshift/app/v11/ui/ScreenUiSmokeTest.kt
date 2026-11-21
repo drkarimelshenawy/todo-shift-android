@@ -34,9 +34,10 @@ class ScreenUiSmokeTest {
         }
     }
     @Test fun tasksAndTodayAreIntegratedAndScrollable() {
-        render { V11TasksScreen(V11Database(), emptyList(), {}) }
+        render { V11TasksScreen(V11Database(), emptyList(), {}, fixedNotesTab = false) }
         compose.onNodeWithContentDescription("Expand or collapse today's dashboard").assertDoesNotExist()
-        compose.onNodeWithText("Search tasks").assertExists()
+        compose.onNodeWithContentDescription("Search").performClick()
+        compose.onNodeWithText("Search").assertExists()
         compose.onNodeWithContentDescription("Add task").assertExists()
         assertTrue(compose.onAllNodes(hasScrollAction()).fetchSemanticsNodes().isNotEmpty())
     }

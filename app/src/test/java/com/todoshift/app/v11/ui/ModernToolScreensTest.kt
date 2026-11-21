@@ -88,7 +88,7 @@ class ModernToolScreensTest {
 
     @Test
     fun workplaceStatementScreen() {
-        open("Workplace statement", "Unassigned general receipts")
+        open("Workplace statement", "unattributed receipts are not allocated automatically")
     }
 
     @Test

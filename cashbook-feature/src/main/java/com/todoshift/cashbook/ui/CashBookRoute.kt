@@ -53,12 +53,12 @@ import androidx.compose.ui.unit.sp
 /** A module route, with the screenshot's ledger layout; no separate Activity or launcher. */
 @androidx.compose.runtime.NonSkippableComposable
 @Composable
-fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStart: DayOfWeek = DayOfWeek.SATURDAY, hostLocale: java.util.Locale? = null, salaryContent: (@Composable () -> Unit)? = null,
+fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStart: DayOfWeek = DayOfWeek.SATURDAY, hostLocale: java.util.Locale? = null, entrySection: String? = null, salaryContent: (@Composable () -> Unit)? = null,
     legacyObligationsContent: (@Composable () -> Unit)? = null) {
     val language by CashBookText.language.collectAsStateWithLifecycle()
     CashBookText.hostLocale(hostLocale ?: LocalContext.current.resources.configuration.locales[0])
     CashBookCompactTheme { CompositionLocalProvider(LocalCashBookVM provides vm, LocalLayoutDirection provides if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) { Box(modifier.fillMaxSize()){
-        CashBookContent(vm,Modifier.fillMaxSize(),weekStart,language,salaryContent,legacyObligationsContent)
+        CashBookContent(vm,Modifier.fillMaxSize(),weekStart,language,entrySection,salaryContent,legacyObligationsContent)
         val undo by vm.undo.collectAsStateWithLifecycle()
         val operation by vm.state.collectAsStateWithLifecycle()
         LaunchedEffect(undo){if(undo!=null){kotlinx.coroutines.delay(8000);vm.clearUndo()}}
@@ -68,7 +68,7 @@ fun CashBookRoute(vm: CashBookViewModel, modifier: Modifier = Modifier, weekStar
 
 @androidx.compose.runtime.NonSkippableComposable
 @Composable
-private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart: DayOfWeek,language:String,salaryContent: (@Composable () -> Unit)?,
+private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart: DayOfWeek,language:String,entrySection:String?,salaryContent: (@Composable () -> Unit)?,
     legacyObligationsContent: (@Composable () -> Unit)?) {
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.message) { if (state.message != null) { kotlinx.coroutines.delay(2800); vm.clearMessage() } }
@@ -80,7 +80,7 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val defaultSection = CashBookSectionPreference.load(context)
-    var mainSection by rememberSaveable { mutableStateOf(defaultSection) }
+    var mainSection by rememberSaveable { mutableStateOf(entrySection ?: defaultSection) }
     val active = selected?.takeIf { id ->
         if (mainSection == "debts") allAccounts.any { it.id == id } && id in debtIds
         else selectableAccounts.any { it.id == id } && id !in debtIds
@@ -96,8 +96,8 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     var debtMode by rememberSaveable { mutableIntStateOf(0) }
     // Reset child/detail navigation when re-entering the finance destination.
     // Changing the active section manually never overwrites the saved default.
-    LaunchedEffect(defaultSection) {
-        mainSection = defaultSection
+    LaunchedEffect(defaultSection, entrySection) {
+        mainSection = entrySection?.takeIf { it == "salary" || it == "accounts" } ?: defaultSection
         page = "movement"
         debtDetail = false
     }

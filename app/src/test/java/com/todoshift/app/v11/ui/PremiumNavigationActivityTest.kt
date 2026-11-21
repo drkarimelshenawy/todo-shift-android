@@ -88,7 +88,7 @@ class PremiumNavigationActivityTest {
 
     @Test
     fun everyMainDestinationPairKeepsActualBodyAndSelectionAndBackReturnsHome() {
-        val tabs = listOf("Calendar", "Schedules", "Tasks", "Finance", "Settings")
+        val tabs = listOf("Calendar", "Finance", "Notes", "Tasks", "Settings")
         for (from in tabs) for (to in tabs) {
             ui.click(from)
             ui.click(to)
@@ -97,7 +97,7 @@ class PremiumNavigationActivityTest {
                 "Tasks" -> ui.await("Add task")
                 "Settings" -> ui.await("Appearance & Design")
                 "Calendar" -> ui.await("Manage calendars")
-                "Schedules" -> ui.await("Summary")
+                "Notes" -> ui.await("Notes")
             }
         }
         ui.click("Tasks")
@@ -110,9 +110,10 @@ class PremiumNavigationActivityTest {
     fun invalidRawAccentIsGuardedOnTabSwitchAndDiscardActuallyLeavesStudio() {
         ui.click("Settings")
         ui.click("Appearance & Design")
+        ui.click("Appearance Studio")
         compose.onAllNodesWithText("Appearance Studio").assertCountEquals(1)
         compose.onAllNodesWithContentDescription("Back").assertCountEquals(1)
-        ui.click("Colors and background")
+        ui.click("Colors")
         ui.input("Custom accent #RRGGBB", "#12")
         compose.activityRule.scenario.recreate()
         ui.await("#12")
@@ -201,10 +202,13 @@ class PremiumNavigationActivityTest {
         assertScreenCaptureAllowed()
         assertFalse(ui.has("Private fixture secret"))
         warm(Intent("com.todoshift.app.OPEN_FINANCE"))
-        ui.until { ui.selected("Finance") }
+        ui.await("Finances are protected")
         ui.await("PIN")
         assertScreenCaptureAllowed()
         assertFalse(ui.has("Private fixture secret"))
+        ui.input("PIN", "482601")
+        ui.click("Open")
+        ui.until { ui.selected("Finance") }
         ui.click("Settings")
         ui.await("Appearance & Design")
         assertScreenCaptureAllowed()

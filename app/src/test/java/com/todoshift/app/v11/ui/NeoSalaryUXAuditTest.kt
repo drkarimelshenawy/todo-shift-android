@@ -22,7 +22,7 @@ class NeoSalaryUXAuditTest {
     }
 
     @Test fun routingPolicyDoesNotConfuseFunctionGroupWithSettingsScreen() {
-        assertTrue(NeoFeatureCatalog.get("STATEMENT")?.destination == "Salary")
+        assertTrue(NeoFeatureCatalog.get("STATEMENT")?.destination == "Finances")
         assertFalse(NeoFeatureRoutePolicy.isSettingsPage("STATEMENT"))
         assertFalse(NeoFeatureRoutePolicy.isSettingsPage("MONTH_REVIEW"))
         assertFalse(NeoFeatureRoutePolicy.isSettingsPage("TASK_TEMPLATES"))

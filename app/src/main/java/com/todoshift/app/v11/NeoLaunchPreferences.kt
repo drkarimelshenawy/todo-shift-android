@@ -5,9 +5,22 @@ import android.content.Context
 /** Destination preferences never change record IDs or shortcut requests. */
 class NeoLaunchPreferences(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("todo_shift_launch_v44", Context.MODE_PRIVATE)
+    // The old tab 2 was Salary; it becomes Notes in v70.
+    // Preserve an existing Salary start preference by migrating it once to Finance.
     var landingTab: Int
-        get() = prefs.getInt("landing", 0).takeIf { it in 0..4 } ?: 0
-        set(value) { require(value in 0..4); check(prefs.edit().putInt("landing", value).commit()) }
+        get() {
+            val stored = prefs.getInt("landing", 0).takeIf { it in 0..4 } ?: 0
+            if (prefs.getBoolean("v70_landing_migrated", false)) return stored
+            val migrated = if (stored == 2) 1 else stored
+            check(prefs.edit().putInt("landing", migrated)
+                .putBoolean("v70_landing_migrated", true).commit())
+            return migrated
+        }
+        set(value) {
+            require(value in 0..4)
+            check(prefs.edit().putInt("landing", value)
+                .putBoolean("v70_landing_migrated", true).commit())
+        }
     var defaultNoteBackground:String
         get()=prefs.getString("note_background","").orEmpty()
         set(value) {

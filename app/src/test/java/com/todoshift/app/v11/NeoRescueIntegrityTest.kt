@@ -185,11 +185,13 @@ class NeoRescueIntegrityTest {
                 it.ar.isNotBlank() &&
                     it.en.isNotBlank() &&
                     it.destination in
-                        listOf("Calendar", "Schedules", "Tasks", "Finances", "Settings")
+                        listOf("Calendar", "Notes", "Tasks", "Finances", "Settings")
             }
         )
         assertEquals("Finances", NeoFeatureCatalog.get("RATES")!!.destination)
-        assertEquals("Schedules", NeoFeatureCatalog.get("SHIFT_TEMPLATE")!!.destination)
+        assertEquals("Finances", NeoFeatureCatalog.get("PAYMENTS")!!.destination)
+        assertEquals("Finances", NeoFeatureCatalog.get("STATEMENT")!!.destination)
+        assertEquals("Calendar", NeoFeatureCatalog.get("SHIFT_TEMPLATE")!!.destination)
         assertEquals("Tasks", NeoFeatureCatalog.get("TASK_TEMPLATES")!!.destination)
     }
 }

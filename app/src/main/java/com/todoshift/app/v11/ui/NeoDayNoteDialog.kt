@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.platform.LocalDensity
@@ -796,11 +798,13 @@ private fun NeoRichNoteDialog(date: LocalDate, existing: DayItemV11?, expectedDa
                     }
                 }
                 if(editing) {
+                    val stableNoteTitleLabel = neoLabel("عنوان الملاحظة", "Note title")
                     TextField(
                         title,{if(!closing)title=it},singleLine=true,
                         textStyle=MaterialTheme.typography.titleLarge.copy(fontWeight=androidx.compose.ui.text.font.FontWeight.Bold,textAlign=androidx.compose.ui.text.style.TextAlign.Center),
                         placeholder={Text(neoLabel("عنوان الملاحظة","Note title"),modifier=Modifier.fillMaxWidth(),textAlign=androidx.compose.ui.text.style.TextAlign.Center)},
-                        modifier=Modifier.fillMaxWidth().padding(horizontal=14.dp),
+                        modifier=Modifier.fillMaxWidth().padding(horizontal=14.dp)
+                            .semantics { contentDescription = stableNoteTitleLabel },
                         colors=TextFieldDefaults.colors(
                             focusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,
                             unfocusedContainerColor=androidx.compose.ui.graphics.Color.Transparent,

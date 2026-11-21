@@ -117,28 +117,32 @@ class PremiumActivitySaveTest {
     }
 
     @Test
-    fun noteDraftAndGuardSurviveActualActivityRecreation() {
+    fun noteAutosaveAndRecordIdSurviveActualActivityRecreation() {
         ui.longClickDay(java.time.LocalDate.now().toString())
         ui.click("New note")
-        ui.input("Calendar note text", "Retained calendar draft")
+        ui.input("Note title", "Retained calendar draft")
         compose.activityRule.scenario.recreate()
         ui.await("Retained calendar draft")
-        ui.click("Cancel")
-        ui.await("Discard changes?")
-        ui.click("Keep editing")
-        ui.await("Retained calendar draft")
-        ui.click("Cancel")
-        ui.await("Discard changes?")
-        ui.click("Save and leave")
+
         val runtime = V11Runtime(RuntimeEnvironment.getApplication())
-        ui.until { runtime.start().dayItems.any { it.title == "Retained calendar draft" } }
-        val savedId = runtime.start().dayItems.single().id
-        ui.click("Retained calendar draft")
-        ui.input("Calendar note text", "Edited restored note")
+        ui.until {
+            runtime.start().dayItems.any { it.title == "Retained calendar draft" }
+        }
+        val savedId = runtime.start().dayItems.single { it.title == "Retained calendar draft" }.id
+
+        // The editor now persists edits and retains a recoverable draft automatically;
+        // its visible action switches into reading mode instead of an obsolete
+        // Cancel / Discard / Save-and-leave dialog.
+        ui.click("Done — save and view")
+        ui.click("Edit")
+        ui.input("Note title", "Edited restored note")
         compose.activityRule.scenario.recreate()
         ui.await("Edited restored note")
-        ui.click("Save")
-        ui.until { runtime.start().dayItems.singleOrNull()?.title == "Edited restored note" }
-        assertEquals(savedId, runtime.start().dayItems.single().id)
+        ui.until {
+            runtime.start().dayItems.any {
+                it.id == savedId && it.title == "Edited restored note"
+            }
+        }
+        assertEquals(1, runtime.start().dayItems.count { it.id == savedId })
     }
 }

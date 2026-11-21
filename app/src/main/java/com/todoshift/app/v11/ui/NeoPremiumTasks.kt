@@ -45,7 +45,7 @@ val LocalNeoTaskMove = staticCompositionLocalOf<((String,Int)->Unit)?> { null }
 @Composable
 fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange: (V11Database)->Unit,
     initialAction: String?, initialTaskId: String?, onHandled: ()->Unit,
-    initialSharedNoteText:String?=null) {
+    initialSharedNoteText:String?=null, fixedNotesTab:Boolean?=null) {
     val context=LocalContext.current;val scope=rememberCoroutineScope()
     val permission=androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {}
     val store=remember { NeoSmartStore(context.applicationContext) }
@@ -68,10 +68,10 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
         }
     }
     var notesTab by rememberSaveable {
-        mutableStateOf(NeoLaunchPreferences(context).openNotes ||
-            initialAction=="new_note" || initialAction=="notes")
+        mutableStateOf(fixedNotesTab ?: (NeoLaunchPreferences(context).openNotes ||
+            initialAction=="new_note" || initialAction=="notes"))
     }
-    LaunchedEffect(Unit) {if(initialAction==null) notesTab=NeoLaunchPreferences(context).openNotes}
+    LaunchedEffect(fixedNotesTab) {if(fixedNotesTab!=null) notesTab=fixedNotesTab else if(initialAction==null) notesTab=NeoLaunchPreferences(context).openNotes}
     LaunchedEffect(initialAction,initialTaskId) {
         if(initialAction=="tasks" || (initialAction=="open" && db.tasks.any {it.id==initialTaskId})) notesTab=false
         if(initialAction=="notes" || initialAction=="new_note" ||
@@ -676,7 +676,9 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                 neoLabel("محدد: ","Selected: ")+selectedNotes.size
                             else if(notesTab && noteFolder=="trash") neoLabel("🗑 سلة المهملات · استعادة أو حذف نهائي","🗑 Trash · Restore or permanently delete")
                             else if(notesTab && noteFolder=="archive") neoLabel("الأرشيف","Archive")
-                            else neoLabel("المهام والملاحظات","Tasks & notes"),
+                            else if(fixedNotesTab!=null) {
+                                if(notesTab) neoLabel("الملاحظات","Notes") else neoLabel("المهام","Tasks")
+                            } else neoLabel("المهام والملاحظات","Tasks & notes"),
                             Modifier.weight(1f),style=MaterialTheme.typography.titleMedium
                         )
                         if(notesTab && noteSelectionMode) {
@@ -841,7 +843,7 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                         }
                         }
                     }
-                    Row(
+                    if(fixedNotesTab==null) Row(
                         Modifier.fillMaxWidth().padding(vertical=5.dp),
                         horizontalArrangement=Arrangement.spacedBy(8.dp)
                     ) {

@@ -70,7 +70,7 @@ internal fun neoCellMetrics(): NeoCellMetrics {
         val dateHeight = dateLayouts.maxOf { it.size.height }
         val dateWidth = dateLayouts.maxOf { maxOf(it.size.width.toFloat(), it.multiParagraph.maxIntrinsicWidth) }
         val caption =
-            listOf("Morning", "صباحية", "×99", "☑99", "◷99", "📌").maxOf {
+            listOf("Morning", "مورننج", "×99", "☑99", "◷99", "📌").maxOf {
                 measure.measure(it, captionStyle, maxLines = 1).size.height
             }
         with(density) { NeoCellMetrics(dateHeight.toDp() + 4.dp, caption.toDp(), dateWidth.toDp()) }
@@ -213,6 +213,14 @@ fun NeoCalendarArea(
             .padding(if (premiumCashBook) 5.dp else 0.dp)
     ) {
         Column(Modifier.fillMaxWidth()) {
+            // Month controls keep the previous month at the visual right in Arabic,
+            // and at the visual left in English, regardless of the calendar grid.
+            val monthBarDirection = if (LocalNeoEnglish.current)
+                androidx.compose.ui.unit.LayoutDirection.Ltr
+            else androidx.compose.ui.unit.LayoutDirection.Rtl
+            CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalLayoutDirection provides monthBarDirection
+            ) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 52.dp)
                     .background(if (premiumCashBook) MaterialTheme.colorScheme.surface else Color.Transparent, RoundedCornerShape(24.dp))
@@ -236,6 +244,7 @@ fun NeoCalendarArea(
                 FilledTonalIconButton(onClick = { move(1) }, modifier = Modifier.shadow(3.dp, CircleShape), colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface)) {
                     Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, neoLabel("التالي", "Next"))
                 }
+            }
             }
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp),
@@ -457,15 +466,15 @@ fun NeoCalendarArea(
                                                 weekdayLabel = if (weeklyRows) cellDate.format(DateTimeFormatter.ofPattern("EEEE", locale)) else null,
                                                 detailMode = if(shownView==NeoCalendarView.DAY) 2 else if(shownView==NeoCalendarView.WEEK) 1 else 0,
                                                 weekRowMode = weeklyRows,
-                                                onOpenNote = if (paintMode) null else { note ->
-                                                    onSelectedDate(cellDate)
-                                                    editingNoteId = note.id
-                                                    noteDate = cellDate.toString()
-                                                },
-                                                onOpenShift = if(paintMode) null else {segment->selectedShiftId=segment.id},
-                                                onOpenTasks = if(paintMode) null else { {val items=tasks[key].orEmpty();if(items.size==1) noteNavigator.open("TASK_DETAIL",items.first().id) else {onSelectedDate(cellDate);sheetDate=key}} },
-                                                onOpenEvents = if(paintMode) null else { {val items=events[key].orEmpty();if(items.size==1) selectedEventId=items.first().id else {onSelectedDate(cellDate);sheetDate=key}} },
+                                                // Only the cell handles taps. A first tap selects; the
+                                                // next tap opens details. Child badges must not intercept
+                                                // that shared contract across month/week/day modes.
+                                                onOpenNote = null,
+                                                onOpenShift = null,
+                                                onOpenTasks = null,
+                                                onOpenEvents = null,
                                                 onLongClick = {
+                                                    tappedDate = null
                                                     if (!paintMode) {
                                                         onSelectedDate(cellDate)
                                                         sheetDate = key
@@ -480,7 +489,10 @@ fun NeoCalendarArea(
                                                         tappedDate = null
                                                         onMonthChange(YearMonth.from(cellDate))
                                                     }
-                                                    if (secondTap) onOpenDay(cellDate)
+                                                    if (secondTap) {
+                                                        tappedDate = null
+                                                        onOpenDay(cellDate)
+                                                    }
                                                 }
                                             }
                                     }
@@ -567,7 +579,8 @@ fun NeoCalendarArea(
                     if (
                         dayEntries.all { it.segments.isEmpty() } &&
                             dayTasks.isEmpty() &&
-                            dayEvents.isEmpty()
+                            dayEvents.isEmpty() &&
+                            presentation[key]?.notes.orEmpty().isEmpty()
                     )
                         Text(
                             neoLabel("لا توجد عناصر في هذا اليوم", "Nothing scheduled for this day")
@@ -710,8 +723,12 @@ internal fun NeoCalendarCell(
             border=BorderStroke(if(chosen||today||painting) 2.dp else .5.dp,
                 if(chosen) c.secondary else if(today) neoHexColor(p.todayColor) else c.outlineVariant)
         ) {
-            Column(Modifier.fillMaxSize().padding(if(roomy) 12.dp else 3.dp),
-                verticalArrangement=Arrangement.spacedBy(if(roomy) 10.dp else 3.dp)) {
+            Column(
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(if(roomy) 12.dp else 3.dp),
+                verticalArrangement=Arrangement.spacedBy(if(roomy) 10.dp else 3.dp)
+            ) {
                 Text(listOfNotNull(weekdayLabel,date.dayOfMonth.toString()).joinToString(" • "),
                     style=if(roomy) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelMedium,
                     fontWeight=FontWeight.Bold,maxLines=1)
@@ -725,7 +742,7 @@ internal fun NeoCalendarCell(
                         modifier=(if(weekRowMode) Modifier.width(when(segment.kind) { ShiftKind.FULL_DAY -> 180.dp; ShiftKind.LONG, ShiftKind.NIGHT -> 145.dp; ShiftKind.MORNING, ShiftKind.EVENING -> 110.dp; else -> 100.dp }) else Modifier.fillMaxWidth()).then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier)) {
                         Text(neoShiftLabel(segment.kind)+(if(roomy && place!=null) " • "+place.name else ""),
                             modifier=Modifier.padding(if(roomy) 12.dp else 4.dp),
-                            style=cardText,maxLines=2,overflow=TextOverflow.Ellipsis,
+                            style=cardText,maxLines=if(weekRowMode||roomy) 2 else 1,overflow=TextOverflow.Ellipsis,
                             color=neoInkOn(shade))
                     }
                     }
@@ -736,7 +753,7 @@ internal fun NeoCalendarCell(
                     Surface(shape=RoundedCornerShape(6.dp),color=c.secondaryContainer,
                         modifier=(if(weekRowMode) Modifier.widthIn(min=110.dp,max=220.dp) else Modifier.fillMaxWidth()).then(if(onOpenNote!=null) Modifier.clickable {onOpenNote(note)} else Modifier)) {
                         Text(note.title.ifBlank {neoLabel("ملاحظة","Note")},Modifier.padding(if(roomy) 12.dp else 4.dp),
-                            style=cardText,maxLines=if(roomy) 3 else 2,overflow=TextOverflow.Ellipsis)
+                            style=cardText,maxLines=if(roomy) 3 else if(weekRowMode) 2 else 1,overflow=TextOverflow.Ellipsis)
                     }
                     }
                 }

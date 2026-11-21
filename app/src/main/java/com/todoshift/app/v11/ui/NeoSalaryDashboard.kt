@@ -138,6 +138,7 @@ internal fun NeoSalaryDashboard(
     onReview: () -> Unit,
 ) {
     val summary = remember(db, month) { V11FinanceEngine.month(db, month) }
+    val missingRateCount = remember(db, month) { V11FinanceEngine.missingRateCount(db, month) }
     val payments = remember(db, month) { NeoSalaryDashboardLogic.relevantPayments(db, month) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     // Independent searches: filtering one tab must not hide records in another.
@@ -223,6 +224,24 @@ internal fun NeoSalaryDashboard(
 
         when (tab) {
             0 -> {
+                if (missingRateCount > 0) {
+                    Surface(color = MaterialTheme.colorScheme.errorContainer,
+                        shape = MaterialTheme.shapes.medium) {
+                        Column(Modifier.fillMaxWidth().padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                neoLabel(
+                                    "هناك $missingRateCount وردية بلا سعر سارٍ بتاريخها؛ إجمالياتها قد تظهر صفرًا. راجع تاريخ بدء السعر.",
+                                    "$missingRateCount shifts have no rate effective on their dates; their amounts may show zero. Review rate start dates."
+                                ),
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            TextButton(onClick = onRates) {
+                                Text(neoLabel("مراجعة أسعار الورديات", "Review shift rates"))
+                            }
+                        }
+                    }
+                }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     Box(Modifier.weight(1f)) {
                         SalaryMetric(neoLabel("المستحق", "Expected"), expected, moneyVisible)

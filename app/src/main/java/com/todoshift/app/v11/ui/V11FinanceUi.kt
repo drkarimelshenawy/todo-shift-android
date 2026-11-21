@@ -115,11 +115,11 @@ fun V11FinanceScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            FilledTonalButton(onClick = onPrevious) { Text("‹", fontSize = 25.sp) }
+            FilledTonalButton(onClick = onPrevious) { Text(if(LocalNeoEnglish.current) "‹" else "›", fontSize = 25.sp) }
 
             Text(neoMonthTitle(month, LocalNeoEnglish.current), fontWeight = FontWeight.Bold)
 
-            FilledTonalButton(onClick = onNext) { Text("›", fontSize = 25.sp) }
+            FilledTonalButton(onClick = onNext) { Text(if(LocalNeoEnglish.current) "›" else "‹", fontSize = 25.sp) }
         }
 
         }

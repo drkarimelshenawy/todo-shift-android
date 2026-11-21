@@ -58,10 +58,13 @@ class ModernUiIntegrationTest {
 
     @Test
     fun localizedPaymentInputPersistsTheExactNormalizedAmount() {
+        val accountName = "Localized payment account fixture"
+        seedReceiptAccount(accountName)
         var saved: PaymentV11? = null
         content { NeoPaymentForm(V11Database(), YearMonth.of(2026, 11), null, {}, { saved = it }) }
         compose.onAllNodes(hasSetTextAction())[0].performTextInput("٩٬٠٠٠٫٥٠")
-        compose.onNodeWithText("Save").performClick()
+        compose.selectReceiptAccount(accountName)
+        compose.onNodeWithText("Save").assertIsEnabled().performClick()
         compose.runOnIdle {
             assertEquals(9000.5, saved!!.amount, 0.0)
             assertEquals(900050L, saved!!.allocations.sumOf { LocalizedNumbers.cents(it.amount) })

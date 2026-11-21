@@ -38,7 +38,11 @@ class PremiumUxUiTest {
         val day=compose.onNodeWithContentDescription(date.toString(),substring=true)
         day.performClick();compose.runOnIdle {assertEquals(0,opens);assertEquals(date,selected)}
         day.performClick();compose.runOnIdle {assertEquals(1,opens)}
-        day.performTouchInput {longClick()};compose.onNodeWithText("New note").assertExists()
+        day.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnLongClick)
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithText("New note").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("New note").assertExists()
     }
     @Test fun completedTitleHasStrikeThroughAndTitleClickDoesNotToggle() {
         var toggles=0;var edits=0

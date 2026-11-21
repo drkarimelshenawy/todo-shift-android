@@ -68,16 +68,19 @@ fun Neo4CompactHeader(
                 configuration.screenWidthDp < 340 &&
                     androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
             if (p.showBrand) {
-                Icon(Icons.Rounded.CalendarMonth, null,
-                    Modifier.size(if (constrained) 24.dp else 30.dp), tint = MaterialTheme.colorScheme.primary)
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(com.todoshift.app.R.drawable.exmore_splash_center),
+                    contentDescription = null,
+                    modifier = Modifier.size(if (constrained) 26.dp else 32.dp),
+                )
                 Spacer(Modifier.width(8.dp))
             }
             Column(Modifier.weight(1f)) {
                 Text(
                     buildAnnotatedString {
                         if (p.showBrand && onBack == null) {
-                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.onPrimaryContainer)) { append("ToDo ") }
-                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) { append("Shift") }
+                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.onPrimaryContainer)) { append("Ex") }
+                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) { append("More") }
                         } else append(title)
                     },
                     style = MaterialTheme.typography.titleMedium,

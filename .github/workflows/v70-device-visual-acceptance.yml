@@ -59,14 +59,8 @@ jobs:
             adb shell wm size 1080x2400
             adb shell wm density 440
             adb shell settings put secure show_ime_with_hard_keyboard 1
-            set +e
             gradle --no-daemon --max-workers=2 -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoThemeDeviceTest,com.todoshift.app.v11.ui.NeoNotesToolbarVisibilityDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest,com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest --stacktrace
-            result=$?
-            adb pull /sdcard/Download/nile-jade/. device-evidence/nile-jade/ || true
-            for item in $(adb shell ls /sdcard/Download/ 2>/dev/null | grep '^notes-toolbar-' || true); do
-              adb pull "/sdcard/Download/$item" device-evidence/ || true
-            done
-            exit "$result"
+            adb pull /sdcard/Download/. device-evidence/downloads/ || true
       - name: Collect device screenshots and test results
         if: always()
         run: |

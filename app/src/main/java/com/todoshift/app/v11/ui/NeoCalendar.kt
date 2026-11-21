@@ -805,9 +805,12 @@ internal fun NeoCalendarCell(
                 listOfNotNull(weekdayLabel, date.dayOfMonth.toString()).joinToString(" • "),
                 modifier =
                     Modifier.align(Alignment.TopStart).clickable(onClick=onClick)
+                        // Give the Arabic and fallback font the full measured
+                        // cell width. wrapContentWidth previously compressed
+                        // the layout to 20px while intrinsic glyph width was
+                        // 37px, even after scaling, clipping two-digit dates.
                         .fillMaxWidth()
-                        .padding(2.dp)
-                        .wrapContentWidth(Alignment.Start)
+                        .padding(horizontal = 1.dp, vertical = 2.dp)
                         .then(if (segments.any { it.kind != ShiftKind.OFF })
                             Modifier.background(c.surface.copy(alpha = .94f), RoundedCornerShape(3.dp))
                             else Modifier)

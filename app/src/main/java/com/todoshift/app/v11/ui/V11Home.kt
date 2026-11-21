@@ -1120,6 +1120,13 @@ fun V11Home(
 
 @Composable
 private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
+    // Keep the approved five destinations at stable physical positions.
+    // Arabic text remains shaped by its own content; language alone never
+    // reverses where Calendar, Tasks, Salary, Cash Book and Settings sit.
+    CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides
+            androidx.compose.ui.unit.LayoutDirection.Ltr
+    ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
@@ -1182,6 +1189,7 @@ private fun V11HeroBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
                 icon = { Icon(Icons.Default.Settings, contentDescription = null) },
             )
         }
+    }
     }
 }
 
@@ -1366,7 +1374,9 @@ internal fun V11PremiumBottomBar(selectedTab: Int, onSelectTab: (Int) -> Unit) {
         androidx.compose.ui.platform.LocalLayoutDirection provides
             neoDirection(
                 p.navigationDirection,
-                androidx.compose.ui.platform.LocalLayoutDirection.current,
+                // AUTO defaults to fixed LTR button positions; explicitly
+                // selecting RTL navigation still works as a user preference.
+                androidx.compose.ui.unit.LayoutDirection.Ltr,
             )
     ) {
         Surface(

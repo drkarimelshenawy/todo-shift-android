@@ -633,7 +633,10 @@ fun NeoModernHub(
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     val placeKey = workplace
-                    val canReceive = placeKey != null && validPeriod &&
+                    // The quick receipt flow allocates complete earning months.
+                    // Partial date statements may export exact dates but must not
+                    // silently request whole-month receipts.
+                    val canReceive = placeKey != null && fullMonths &&
                         months.any { remainingWorkEntitlement(db, placeKey, it) > 0L }
                     if (canReceive) {
                         Button(modifier = Modifier.fillMaxWidth(), onClick = {

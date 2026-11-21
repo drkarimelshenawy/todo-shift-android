@@ -37,6 +37,11 @@ internal object NeoSalaryDashboardLogic {
 
     fun portionCents(payment: PaymentV11, month: YearMonth): Long {
         if (payment.reversedAt != null) return 0L
+        return historicalPortionCents(payment, month)
+    }
+
+    /** Original allocation for audit cards, even after a reversible receipt reversal. */
+    fun historicalPortionCents(payment: PaymentV11, month: YearMonth): Long {
         val key = month.toString()
         return if (payment.allocations.isEmpty()) {
             if (payment.accrualMonth == key) LocalizedNumbers.cents(payment.amount) else 0L
@@ -135,16 +140,18 @@ internal fun NeoSalaryDashboard(
     val summary = remember(db, month) { V11FinanceEngine.month(db, month) }
     val payments = remember(db, month) { NeoSalaryDashboardLogic.relevantPayments(db, month) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    var search by rememberSaveable { mutableStateOf("") }
+    // Independent searches: filtering one tab must not hide records in another.
+    var workplaceSearch by rememberSaveable { mutableStateOf("") }
+    var receiptSearch by rememberSaveable { mutableStateOf("") }
     var selectedWorkplace by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(workplaces) {
         if (selectedWorkplace == null || workplaces.none { it.id == selectedWorkplace })
             selectedWorkplace = workplaces.firstOrNull()?.id
     }
     val filteredPlaces = summary.byWorkplace.filter { row ->
-        search.isBlank() ||
+        workplaceSearch.isBlank() ||
             (workplaces.firstOrNull { it.id == row.workplaceId }?.name
-                ?.contains(search, ignoreCase = true) == true)
+                ?.contains(workplaceSearch, ignoreCase = true) == true)
     }
     val expected = summary.expected
     val pending = summary.difference
@@ -257,12 +264,12 @@ internal fun NeoSalaryDashboard(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                OutlinedTextField(search, { search = it },
+                OutlinedTextField(workplaceSearch, { workplaceSearch = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(neoLabel("ابحث عن مكان عمل", "Search workplaces")) },
                     leadingIcon = { Icon(Icons.Rounded.Search, null) },
-                    trailingIcon = if (search.isBlank()) null else {
-                        { IconButton(onClick = { search = "" }) {
+                    trailingIcon = if (workplaceSearch.isBlank()) null else {
+                        { IconButton(onClick = { workplaceSearch = "" }) {
                             Icon(Icons.Rounded.Close, neoLabel("مسح البحث", "Clear search"))
                         } }
                     }, singleLine = true)
@@ -279,7 +286,7 @@ internal fun NeoSalaryDashboard(
                         LocalizedNumbers.amount(remainingWorkEntitlement(db, it, month))
                     } ?: 0.0
                     Surface(
-                        onClick = { onOpenWorkplace(row.workplaceId) },
+                        onClick = { if (row.workplaceId != null) onOpenWorkplace(row.workplaceId) },
                         color = MaterialTheme.colorScheme.surface,
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth()
@@ -331,20 +338,20 @@ internal fun NeoSalaryDashboard(
                         Text(neoLabel("مصادر الدخل", "Sources"), maxLines = 1)
                     }
                 }
-                OutlinedTextField(search, { search = it },
+                OutlinedTextField(receiptSearch, { receiptSearch = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(neoLabel("بحث في سجل الدفعات", "Find receipt")) },
                     leadingIcon = { Icon(Icons.Rounded.Search, null) },
                     singleLine = true)
                 val visiblePayments = payments.filter { payment ->
-                    if (search.isBlank()) true
+                    if (receiptSearch.isBlank()) true
                     else {
                         val source = db.incomeSources.firstOrNull { it.id == payment.sourceId }
                         val allNames = payment.allocations.mapNotNull { allocation ->
                             db.incomeSources.firstOrNull { it.id == allocation.sourceId }?.name
                         }
                         (listOf(payment.receivedDate, payment.note, source?.name.orEmpty()) +
-                            allNames).any { it.contains(search, ignoreCase = true) }
+                            allNames).any { it.contains(receiptSearch, ignoreCase = true) }
                     }
                 }
                 if (visiblePayments.isEmpty())
@@ -353,7 +360,7 @@ internal fun NeoSalaryDashboard(
                 visiblePayments.forEach { payment ->
                     val source = db.incomeSources.firstOrNull { it.id == payment.sourceId }
                     val method = db.paymentMethods.firstOrNull { it.id == payment.paymentMethodId }
-                    val portions = NeoSalaryDashboardLogic.portionCents(payment, month)
+                    val portions = NeoSalaryDashboardLogic.historicalPortionCents(payment, month)
                     val monthAmount = LocalizedNumbers.amount(portions)
                     val placeNames = (
                         listOfNotNull(source?.workplaceId) +
@@ -372,7 +379,7 @@ internal fun NeoSalaryDashboard(
                                 Text(neoSalaryMoney(monthAmount, moneyVisible),
                                     modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                                 if (payment.reversedAt != null) Text(
-                                    neoLabel("معكوسة", "Reversed"),
+                                    neoLabel("معكوسة • مبلغ أصلي", "Reversed • original"),
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.labelSmall)
                             }

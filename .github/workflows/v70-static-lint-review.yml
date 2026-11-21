@@ -1,0 +1,54 @@
+name: v70 static Android Lint and release compilation evidence
+on:
+  push:
+    branches: [audit/v70-static-lint-20261121]
+    paths:
+      - '.github/workflows/v70-static-lint-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lint-and-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore persistent signing material
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Android Lint, Debug and Release compilation
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          gradle --no-daemon --max-workers=2 -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' :app:lintDebug :app:assembleRelease --stacktrace
+      - name: Collect Lint evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v70-static-lint-report
+          path: |
+            app/build/reports/lint-results-debug.*
+            app/build/reports/lint-results-release.*
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

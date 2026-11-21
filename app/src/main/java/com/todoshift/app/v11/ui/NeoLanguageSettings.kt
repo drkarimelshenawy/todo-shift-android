@@ -18,6 +18,7 @@ internal val neoLanguageRoutes =
         "NAV_DIRECTION",
         "GRID_DIRECTION",
         "WEEKDAY_DIRECTION",
+        "FIRST_WEEKDAY",
     )
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -25,6 +26,8 @@ internal val neoLanguageRoutes =
 internal fun NeoLanguageSettings(focus: String, onBack: () -> Unit) {
     val p = LocalNeoAppearance.current
     val update = LocalNeoOnChange.current
+    val weekdayLocale = if (LocalNeoEnglish.current) java.util.Locale.ENGLISH
+        else java.util.Locale.forLanguageTag("ar")
     Column(
         Modifier.fillMaxSize()
             .verticalScroll(rememberScrollState())
@@ -38,6 +41,7 @@ internal fun NeoLanguageSettings(focus: String, onBack: () -> Unit) {
                 "NAV_DIRECTION",
                 "GRID_DIRECTION",
                 "WEEKDAY_DIRECTION",
+                "FIRST_WEEKDAY",
             )
             .forEach { id ->
                 val requester = remember { BringIntoViewRequester() }
@@ -56,6 +60,18 @@ internal fun NeoLanguageSettings(focus: String, onBack: () -> Unit) {
                                 p.language,
                                 { neoEnumLabel(it) },
                                 { update(p.copy(language = it)) },
+                            )
+                        "FIRST_WEEKDAY" ->
+                            NeoChoice(
+                                neoLabel("أول يوم في الأسبوع", "First weekday"),
+                                (1..7).toList(),
+                                p.firstWeekday,
+                                { weekday ->
+                                    java.time.DayOfWeek.of(weekday).getDisplayName(
+                                        java.time.format.TextStyle.FULL, weekdayLocale
+                                    )
+                                },
+                                { update(p.copy(firstWeekday = it)) },
                             )
                         else -> {
                             val title = NeoFeatureCatalog.get(id)!!

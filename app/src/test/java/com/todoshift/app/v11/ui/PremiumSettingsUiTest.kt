@@ -149,7 +149,7 @@ class PremiumSettingsUiTest {
                 }
             }
         }
-        compose.onNodeWithText("Colors and background").performClick()
+        compose.onNodeWithText("Colors").performClick()
         compose
             .onNodeWithText("Custom accent #RRGGBB")
             .performScrollTo()

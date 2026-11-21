@@ -112,7 +112,7 @@ class PremiumNavigationActivityTest {
         ui.click("Appearance & Design")
         compose.onAllNodesWithText("Appearance Studio").assertCountEquals(1)
         compose.onAllNodesWithContentDescription("Back").assertCountEquals(1)
-        ui.click("Colors and background")
+        ui.click("Colors")
         ui.input("Custom accent #RRGGBB", "#12")
         compose.activityRule.scenario.recreate()
         ui.await("#12")

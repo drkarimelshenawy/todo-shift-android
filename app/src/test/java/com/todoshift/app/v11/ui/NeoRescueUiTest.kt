@@ -65,7 +65,7 @@ class NeoRescueUiTest {
                 }
             }
         }
-        compose.onNodeWithText("Theme and identity").performClick()
+        compose.onAllNodesWithText("Identity")[0].performClick()
         compose.onNodeWithText("Follow system").performScrollTo().performClick()
         compose.onNodeWithText("Dark").performClick()
         restoration.emulateSavedInstanceStateRestore()
@@ -155,7 +155,7 @@ class NeoRescueUiTest {
     }
 
     @Test
-    fun settingsHomeHasExactlySixGroupsAndNoToolsDump() {
+    fun settingsHomeHasEightOrganizedGroupsAndNoToolsDump() {
         val context = RuntimeEnvironment.getApplication()
         render {
             NeoRescueSettings(
@@ -174,10 +174,12 @@ class NeoRescueUiTest {
             listOf(
                 "Appearance & Design",
                 "Language & Direction",
-                "Calendar & Shifts",
-                "Notifications & Widgets",
-                "Privacy & Data",
-                "Advanced",
+                "Section Settings",
+                "Notifications & Reminders",
+                "Widgets & Shortcuts",
+                "Security & Privacy",
+                "Data & Backup",
+                "About & Advanced",
             )) compose.onNodeWithText(title).assertExists()
         compose.onNodeWithText("Smart tools and search").assertDoesNotExist()
     }
@@ -271,10 +273,10 @@ class NeoRescueUiTest {
     fun appearanceHasVerticalSectionsAndCompactRealPreview() {
         render { NeoAppearanceStudio({}, {}) }
         compose.onNodeWithText("Live preview").assertExists()
-        compose.onNodeWithText("Fonts and density").assertExists()
+        compose.onNodeWithText("Type").assertExists()
         compose.onNodeWithText("Only what you need").assertDoesNotExist()
-        compose.onNodeWithText("Theme and identity").performClick()
-        compose.onNodeWithText("Identity").assertExists()
+        compose.onAllNodesWithText("Identity")[0].performClick()
+        compose.onNodeWithText("Brightness").assertExists()
     }
 
     @Test

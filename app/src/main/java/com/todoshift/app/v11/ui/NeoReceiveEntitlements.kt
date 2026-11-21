@@ -36,10 +36,12 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
     // Resolve outstanding periods from real earnings rather than parsing month text.
     // The initial statement months are preserved even when outside the lookback.
     val availableMonths=remember(db, workplace, initialMonths) {
-        (initialMonths + (0..35).map {YearMonth.now().minusMonths(it.toLong())})
+        val recordedMonths = db.days.mapNotNull { day ->
+            runCatching { YearMonth.from(LocalDate.parse(day.date)) }.getOrNull()
+        }
+        (initialMonths + recordedMonths + (0..35).map {YearMonth.now().minusMonths(it.toLong())})
             .distinct().sortedDescending()
             .filter {month -> workplace?.let {remainingWorkEntitlement(db,it,month)>0L} == true}
-            .take(36)
     }
     var selectedMonthKeys by rememberSaveable {
         mutableStateOf(initialMonths.map {it.toString()})

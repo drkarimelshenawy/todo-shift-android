@@ -552,13 +552,12 @@ fun NeoModernHub(
                 }
             "STATEMENT" ->
                 if (financial) {
-                    Text(
-                        neoLabel(
-                            "الدفعات العامة غير المنسوبة لمكان عمل لا تُوزّع تلقائيًا",
-                            "Unassigned general receipts are not automatically attributed",
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    Text(neoLabel("كشف حساب مكان العمل", "Workplace statement"),
+                        style = MaterialTheme.typography.titleMedium)
+                    Text(neoLabel("اختر مكان العمل والفترة؛ الدفعات العامة غير المنسوبة لا تُوزع تلقائيًا.",
+                        "Choose workplace and dates; unattributed receipts are not allocated automatically."),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall)
                     NeoChoice(
                         neoLabel("مكان العمل", "Workplace"),
                         workplaces.map { it.id },
@@ -566,33 +565,98 @@ fun NeoModernHub(
                         { id -> workplaces.firstOrNull { it.id == id }?.name.orEmpty() },
                         { workplace = it },
                     )
-                    NeoDateInput(neoLabel("من", "From"), from) { from = it }
-                    NeoDateInput(neoLabel("إلى", "Through"), to) { to = it }
-                    Button(enabled=workplace!=null,onClick={attempt {
-                        val first=YearMonth.from(LocalDate.parse(from));val last=YearMonth.from(LocalDate.parse(to));require(!last.isBefore(first))
-                        receiveMonths=generateSequence(first) {it.plusMonths(1)}.takeWhile {!it.isAfter(last)}.toList()
-                    }}) {Text(neoLabel("استلام مستحقات الكشف","Receive statement entitlements"))}
-                    Button(
-                        enabled = workplace != null,
+                    Surface(color = MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium) {
+                        Column(Modifier.fillMaxWidth().padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                            NeoDateInput(neoLabel("من", "From"), from) { from = it }
+                            NeoDateInput(neoLabel("إلى", "Through"), to) { to = it }
+                        }
+                    }
+                    val period = remember(from, to) {
+                        runCatching {
+                            val first = LocalDate.parse(from)
+                            val last = LocalDate.parse(to)
+                            require(!last.isBefore(first))
+                            first to last
+                        }.getOrNull()
+                    }
+                    val months = remember(period) {
+                        period?.let { (first, last) ->
+                            generateSequence(YearMonth.from(first)) { it.plusMonths(1) }
+                                .takeWhile { !it.isAfter(YearMonth.from(last)) }
+                                .take(25).toList()
+                        }.orEmpty()
+                    }
+                    val validPeriod = period != null && months.isNotEmpty() &&
+                        months.size <= 24 &&
+                        !YearMonth.from(period.second).isAfter(months.last())
+                    val fullMonths = validPeriod && period != null &&
+                        period.first.dayOfMonth == 1 &&
+                        period.second.dayOfMonth == period.second.lengthOfMonth()
+                    if (!validPeriod) Text(
+                        neoLabel("اختر نطاقًا صحيحًا لا يتجاوز 24 شهرًا.",
+                            "Choose a valid range of at most 24 months."),
+                        color = MaterialTheme.colorScheme.error)
+                    if (workplace != null && fullMonths) {
+                        val placeId = requireNotNull(workplace)
+                        val earned = months.sumOf { activeMonth ->
+                            V11FinanceEngine.month(db, activeMonth).byWorkplace
+                                .firstOrNull { it.workplaceId == placeId }?.amount ?: 0.0
+                        }
+                        val paidCents = months.sumOf { activeMonth ->
+                            NeoSalaryDashboardLogic.workplaceReceivedCents(db, placeId, activeMonth)
+                        }
+                        val outstandingCents = months.sumOf { activeMonth ->
+                            remainingWorkEntitlement(db, placeId, activeMonth)
+                        }
+                        val formatter = java.text.NumberFormat.getNumberInstance(java.util.Locale.US)
+                            .apply { maximumFractionDigits = 2; minimumFractionDigits = 0 }
+                        Surface(color = MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.medium) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                                ListItem(headlineContent = { Text(neoLabel("المستحق", "Earned")) },
+                                    trailingContent = { Text(formatter.format(earned) + " " + neoLabel("ج.م", "EGP")) })
+                                ListItem(headlineContent = { Text(neoLabel("المستلم", "Received")) },
+                                    trailingContent = { Text(formatter.format(LocalizedNumbers.amount(paidCents)) + " " + neoLabel("ج.م", "EGP")) })
+                                ListItem(headlineContent = { Text(neoLabel("المتبقي", "Remaining")) },
+                                    trailingContent = { Text(formatter.format(LocalizedNumbers.amount(outstandingCents)) + " " + neoLabel("ج.م", "EGP")) })
+                            }
+                        }
+                        if (outstandingCents <= 0L) Text(
+                            neoLabel("تم استلام المستحقات بالكامل", "All entitlements received"),
+                            color = MaterialTheme.colorScheme.primary)
+                    } else if (workplace != null && validPeriod) {
+                        Text(neoLabel("النطاق جزئي؛ سيُصدَّر الكشف بالتواريخ الفعلية. ملخص المستحقات الشهري يظهر عند اختيار أشهر كاملة.",
+                            "Partial date range: export uses actual dates. Monthly totals appear for complete months."),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    val placeKey = workplace
+                    val canReceive = placeKey != null && validPeriod &&
+                        months.any { remainingWorkEntitlement(db, placeKey, it) > 0L }
+                    if (canReceive) {
+                        Button(modifier = Modifier.fillMaxWidth(), onClick = {
+                            receiveMonths = months
+                        }) {
+                            Text(neoLabel("استلام مستحقات الكشف", "Receive statement entitlements"))
+                        }
+                    }
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = placeKey != null && validPeriod,
                         onClick = {
                             attempt {
-                                csv =
-                                    ModernOperations.statementCsv(
-                                        db,
-                                        workplace!!,
-                                        LocalDate.parse(from),
-                                        LocalDate.parse(to),
-                                    )
-                                exporter.launch("ToDoShift-statement-$from-$to.csv")
+                                csv = ModernOperations.statementCsv(
+                                    db, requireNotNull(placeKey),
+                                    LocalDate.parse(from), LocalDate.parse(to)
+                                )
+                                exporter.launch("ExMore-statement-$from-$to.csv")
                             }
                         },
                     ) {
-                        Text(
-                            neoLabel(
-                                "تصدير كشف الاستحقاقات والمستلم CSV",
-                                "Export earned and received statement CSV",
-                            )
-                        )
+                        Text(neoLabel("تصدير كشف الاستحقاقات والمستلم CSV",
+                            "Export earned and received CSV"))
                     }
                 }
             "PAYMENTS" ->
@@ -635,75 +699,103 @@ fun NeoModernHub(
                 }
             "MONTH_REVIEW" ->
                 if (financial) {
-                    OutlinedTextField(monthA, { monthA = it }, label = { Text("YYYY-MM") })
-                    runCatching { V11FinanceEngine.month(db, YearMonth.parse(monthA)) }
-                        .getOrNull()
-                        ?.let { summary ->
-                            Text(
-                                "${summary.shiftCount} • ${summary.expected} / ${summary.received} / ${summary.difference}"
-                            )
+                    Text(neoLabel("مراجعة وإقفال الشهر", "Monthly review & closing"),
+                        style = MaterialTheme.typography.titleMedium)
+                    OutlinedTextField(monthA, { monthA = it },
+                        label = { Text(neoLabel("شهر الاستحقاق YYYY-MM", "Accrual month YYYY-MM")) },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    val selectedMonth = runCatching { YearMonth.parse(monthA) }.getOrNull()
+                    if (selectedMonth == null) {
+                        Text(neoLabel("صيغة الشهر غير صحيحة", "Invalid month"),
+                            color = MaterialTheme.colorScheme.error)
+                    } else {
+                        val summary = remember(db, selectedMonth) {
+                            V11FinanceEngine.month(db, selectedMonth)
+                        }
+                        val formatter = java.text.NumberFormat.getNumberInstance(java.util.Locale.US)
+                            .apply { minimumFractionDigits = 0; maximumFractionDigits = 2 }
+                        val activeSnapshot = db.monthSnapshots.firstOrNull {
+                            it.month == monthA && it.reopenedAt == null
+                        }
+                        if (activeSnapshot != null) {
+                            Surface(color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = MaterialTheme.shapes.medium) {
+                                Text(neoLabel("هذا الشهر مُقفل رسميًا", "This month is closed"),
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp))
+                            }
+                        }
+                        Surface(color = MaterialTheme.colorScheme.surface,
+                            shape = MaterialTheme.shapes.medium) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                                listOf(
+                                    neoLabel("عدد الورديات", "Shift count") to summary.shiftCount.toString(),
+                                    neoLabel("المستحق", "Earned") to formatter.format(summary.expected),
+                                    neoLabel("المستلم", "Received") to formatter.format(summary.received),
+                                    neoLabel("التسويات", "Adjustments") to formatter.format(summary.settlements),
+                                    neoLabel("المتبقي", "Remaining") to formatter.format(summary.difference),
+                                ).forEach { (label, value) ->
+                                    ListItem(headlineContent = { Text(label) },
+                                        trailingContent = { Text(value) })
+                                }
+                            }
+                        }
+                        val findings = remember(db) { ModernOperations.health(db) }
+                        if (findings.isNotEmpty()) Text(
+                            neoLabel("توجد مشكلات سلامة بيانات يجب علاجها قبل الإغلاق.",
+                                "Data-health findings must be resolved before closing."),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall)
+                        if (activeSnapshot == null) {
                             Button(
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = findings.isEmpty(),
                                 onClick = {
                                     attempt {
                                         require(ModernOperations.health(db).isEmpty()) {
                                             "Resolve data-health findings before closing"
                                         }
                                         confirmationBase = db
-                                        confirmation =
-                                            neoLiteral(
-                                                "إغلاق الشهر مع لقطة وتدقيق؟",
-                                                "Close month with an auditable snapshot?",
-                                            ) to
-                                                V11SettlementEngine.closeMonth(
-                                                    db,
-                                                    monthA,
-                                                    summary.expected,
-                                                    summary.received,
-                                                    summary.settlements,
-                                                    summary.difference,
-                                                )
+                                        confirmation = neoLiteral(
+                                            "إغلاق الشهر مع لقطة مالية وسجل تدقيق؟",
+                                            "Close month with an auditable snapshot?",
+                                        ) to V11SettlementEngine.closeMonth(
+                                            db, monthA, summary.expected,
+                                            summary.received, summary.settlements, summary.difference,
+                                        )
                                     }
-                                }
+                                },
                             ) {
                                 Text(neoLabel("مراجعة الإغلاق", "Review month closing"))
                             }
-                        }
-                    db.monthSnapshots
-                        .filter { it.reopenedAt == null }
-                        .forEach { snapshot ->
-                            TextButton(
+                        } else {
+                            OutlinedButton(modifier = Modifier.fillMaxWidth(),
                                 onClick = {
                                     confirmationBase = db
-                                    confirmation =
-                                        neoLiteral(
-                                            "إعادة فتح رسمية للتصحيح؟",
-                                            "Reopen explicitly for corrections?",
-                                        ) to
-                                            db.copy(
-                                                monthSnapshots =
-                                                    db.monthSnapshots.map {
-                                                        if (it.id == snapshot.id)
-                                                            it.copy(
-                                                                reopenedAt =
-                                                                    System.currentTimeMillis()
-                                                            )
-                                                        else it
-                                                    },
-                                                auditLog =
-                                                    db.auditLog +
-                                                        AuditEntryV11(
-                                                            UUID.randomUUID().toString(),
-                                                            "MONTH_REOPEN",
-                                                            "MONTH",
-                                                            snapshot.month,
-                                                            "User requested audited correction",
-                                                        ),
-                                            )
-                                }
+                                    confirmation = neoLiteral(
+                                        "إعادة فتح الشهر رسميًا لتصحيح السجلات؟",
+                                        "Explicitly reopen this month for corrections?",
+                                    ) to db.copy(
+                                        monthSnapshots = db.monthSnapshots.map {
+                                            if (it.id == activeSnapshot.id)
+                                                it.copy(reopenedAt = System.currentTimeMillis())
+                                            else it
+                                        },
+                                        auditLog = db.auditLog + AuditEntryV11(
+                                            UUID.randomUUID().toString(),
+                                            "MONTH_REOPEN", "MONTH", activeSnapshot.month,
+                                            "User requested audited correction",
+                                        ),
+                                    )
+                                },
                             ) {
-                                Text(neoLabel("إعادة فتح ", "Reopen ") + snapshot.month)
+                                Text(neoLabel("إعادة فتح الشهر للتصحيح", "Reopen for correction"))
                             }
                         }
+                        Text(neoLabel("إقفال الشهر لا ينشئ دفعات، ولا يمس حسابات Cash Book، والتصحيح يتطلب إعادة فتح موثّقة.",
+                            "Closing creates no receipts and does not change Cash Book balances. Reopening is audited."),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             "HEALTH" -> {
                 val withSources = NeoWorkplaceSources.ensure(db, workplaces)

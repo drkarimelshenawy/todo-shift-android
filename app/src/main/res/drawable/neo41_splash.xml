@@ -1,1 +1,6 @@
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item><shape><solid android:color="#071F45"/></shape></item><item android:drawable="@drawable/neo41_brand_emblem" android:width="144dp" android:height="144dp" android:gravity="center"/></layer-list>
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape android:shape="rectangle"><solid android:color="#071F45" /></shape></item>
+    <item android:drawable="@drawable/exmore_splash_center"
+        android:gravity="center" android:width="176dp" android:height="176dp" />
+</layer-list>

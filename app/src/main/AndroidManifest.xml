@@ -8,7 +8,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.ToDoShift"
-        android:label="ToDo Shift"
+        android:label="ExMore"
         android:supportsRtl="true"
         android:roundIcon="@mipmap/ic_launcher_round">
 

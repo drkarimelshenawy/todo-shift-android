@@ -5,8 +5,8 @@
         name="Theme.ToDoShift.Splash"
         parent="Theme.ToDoShift">
         <item name="android:windowBackground">@drawable/neo41_splash</item>
-        <item name="android:statusBarColor">#0D2344</item>
-        <item name="android:navigationBarColor">#0D2344</item>
+        <item name="android:statusBarColor">#071F45</item>
+        <item name="android:navigationBarColor">#071F45</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 

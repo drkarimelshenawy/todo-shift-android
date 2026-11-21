@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 75,
-  "versionName": "4.31.0-premium-v69-salary-ux",
-  "branch": "feat/v69-salary-ux-20261121",
-  "baseline": "12c60e46d11d5fdcd1da5b7a58f2c16fed61eee1",
-  "classification": "Unified salary summary, payments, statements, review, debt placement and fixed-salary CSV reconciliation"
+  "versionCode": 76,
+  "versionName": "4.32.0-premium-v70-whole-app-audit",
+  "branch": "fix/v70-whole-app-audit-20261121",
+  "baseline": "eabbbb4461999ced4da0058ae7a04f5ba14cef95",
+  "classification": "Cross-module regression audit, corrected tool routing, salary statement reconciliation, visual navigation and accessibility polish"
 }

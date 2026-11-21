@@ -248,11 +248,17 @@ object ModernOperations {
         )
     }
 
+    /**
+     * Export a workplace's *earning period*, not the transaction-date cash book.
+     * An allocation belongs to exactly one earning month even when received later.
+     * Preserve the actual receipt date in a separate column for reconciliation.
+     */
     fun statementCsv(db: V11Database, workplace: String, from: LocalDate, to: LocalDate): String {
-        require(to >= from)
+        require(!to.isBefore(from)) { "Invalid statement period" }
         val months = generateSequence(YearMonth.from(from)) { it.plusMonths(1) }
             .takeWhile { !it.isAfter(YearMonth.from(to)) }.take(121).toList()
         require(months.size <= 120) { "Statement period is too long" }
+        val sourceIds = db.incomeSources.filter { it.workplaceId == workplace }.map { it.id }.toSet()
         fun monthlySources(month: YearMonth) = db.incomeSources.filter { source ->
             source.workplaceId == workplace &&
                 (source.fixedMonthlyAmount != null || source.compensationHistory.isNotEmpty()) &&
@@ -262,83 +268,84 @@ object ModernOperations {
                 }.maxByOrNull { it.effectiveMonth }?.shiftBased == false
         }
         val salariedByMonth = months.associateWith { monthlySources(it) }
-        val fixedRows = months.flatMap { month ->
+        fun row(
+            kind: String, date: String, id: String, type: String,
+            start: String = "", end: String = "", earned: String = "",
+            received: String = "", adjusted: String = "",
+            accrualMonth: String = "", receiptDate: String = "",
+        ) = listOf(kind, date, id, type, start, end, earned, received,
+            adjusted, accrualMonth, receiptDate)
+        fun plainMoney(value: Double) =
+            value.toBigDecimal().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString()
+
+        val shiftRows = db.days.filter { LocalDate.parse(it.date) in from..to }
+            .flatMap { day ->
+                day.segments.filter { it.workplaceId == workplace && it.kind != ShiftKind.OFF }
+                    .map { segment ->
+                        val fixedSalary = salariedByMonth[YearMonth.from(LocalDate.parse(day.date))]
+                            .orEmpty().isNotEmpty()
+                        val amount = if (fixedSalary && segment.exceptionalAmount == null) 0.0
+                            else V11RateEngine.segmentAmount(segment, day.date, db.rates)
+                        row("SHIFT", day.date, segment.id, segment.kind.name,
+                            segment.timeRange()?.startMinute?.toString().orEmpty(),
+                            segment.timeRange()?.endMinute?.toString().orEmpty(),
+                            earned = plainMoney(amount), accrualMonth = day.date.take(7))
+                    }
+            }
+
+        // Fixed monthly pay is an accrual on the first day of the earning month.
+        // A partial period starting later cannot silently include that accrual.
+        val fixedRows = months.filter { it.atDay(1) in from..to }.flatMap { month ->
             salariedByMonth.getValue(month).map { source ->
-                listOf("SALARY", month.atDay(1).toString(), source.id,
-                    "FIXED_MONTHLY", "", "",
-                    V11FinanceEngine.monthlyAmount(source, month).toBigDecimal()
-                        .setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(), "")
+                row("SALARY", month.atDay(1).toString(), source.id, "FIXED_MONTHLY",
+                    earned = plainMoney(V11FinanceEngine.monthlyAmount(source, month)),
+                    accrualMonth = month.toString())
             }
         }
-        val rows =
-            db.days
-                .filter { LocalDate.parse(it.date) in from..to }
-                .flatMap { day ->
-                    day.segments
-                        .filter { it.workplaceId == workplace }
-                        .map { s ->
-                            listOf(
-                                day.date,
-                                s.id,
-                                s.kind.name,
-                                s.timeRange()?.startMinute?.toString().orEmpty(),
-                                s.timeRange()?.endMinute?.toString().orEmpty(),
-                                (if (s.workplaceId == workplace &&
-                                    salariedByMonth[YearMonth.from(LocalDate.parse(day.date))]
-                                        .orEmpty().isNotEmpty() && s.exceptionalAmount == null)
-                                    0.0 else V11RateEngine.segmentAmount(s, day.date, db.rates))
-                                    .toBigDecimal()
-                                    .setScale(2, java.math.RoundingMode.HALF_UP)
-                                    .toPlainString(),
-                            )
-                        }
-                }
-        val paymentRows =
-            db.payments
-                .filter { it.reversedAt == null && LocalDate.parse(it.receivedDate) in from..to }
-                .mapNotNull { payment ->
-                    val cents =
-                        if (payment.allocations.isEmpty()) {
-                            if (
-                                db.incomeSources
-                                    .firstOrNull { it.id == payment.sourceId }
-                                    ?.workplaceId == workplace
-                            )
-                                LocalizedNumbers.cents(payment.amount)
-                            else 0L
-                        } else
-                            payment.allocations
-                                .filter { a ->
-                                    db.incomeSources
-                                        .firstOrNull { it.id == a.sourceId }
-                                        ?.workplaceId == workplace
-                                }
-                                .sumOf { LocalizedNumbers.cents(it.amount) }
-                    if (cents == 0L) null
-                    else
-                        listOf(
-                            "RECEIPT",
-                            payment.receivedDate,
-                            payment.id,
-                            "",
-                            "",
-                            "",
-                            "",
-                            LocalizedNumbers.amount(cents).toString(),
-                        )
-                }
-        // Fixed monthly compensation is earned once per source/month even with
-        // zero or many shifts. Shift rows stay for the audit trail, but carry
-        // zero earnings unless they are exceptional paid shifts.
-        val csvRows = rows.map { listOf("SHIFT") + it + listOf("") } + fixedRows + paymentRows
-        return "record,date,id,type,start_minute,end_minute,earned,received\r\n" +
+        val paymentRows = db.payments.filter { it.reversedAt == null }.flatMap { payment ->
+            val amounts = if (payment.allocations.isEmpty()) {
+                if (payment.sourceId in sourceIds) listOf(payment.accrualMonth to LocalizedNumbers.cents(payment.amount))
+                else emptyList()
+            } else payment.allocations.filter { it.sourceId in sourceIds }
+                .groupBy { it.accrualMonth }
+                .map { (month, allocations) -> month to allocations.sumOf { LocalizedNumbers.cents(it.amount) } }
+            amounts.mapNotNull { (monthText, cents) ->
+                val month = runCatching { YearMonth.parse(monthText) }.getOrNull()
+                if (month == null || month.atDay(1) !in from..to || cents == 0L) null
+                else row("RECEIPT", payment.receivedDate, payment.id, "RECEIVED",
+                    received = plainMoney(LocalizedNumbers.amount(cents)),
+                    accrualMonth = monthText, receiptDate = payment.receivedDate)
+            }
+        }
+        val adjustmentRows = db.settlements
+            .filter { settlement ->
+                settlement.action in setOf(
+                    SettlementActionV11.WRITE_OFF,
+                    SettlementActionV11.CANCEL_ENTITLEMENT,
+                    SettlementActionV11.ADJUSTMENT,
+                ) &&
+                    (settlement.workplaceId == workplace || settlement.sourceId in sourceIds) &&
+                    runCatching { YearMonth.parse(settlement.accrualMonth).atDay(1) in from..to }
+                        .getOrDefault(false)
+            }.map { settlement ->
+                row("SETTLEMENT", YearMonth.parse(settlement.accrualMonth).atDay(1).toString(),
+                    settlement.id, settlement.action.name,
+                    adjusted = plainMoney(settlement.amount),
+                    accrualMonth = settlement.accrualMonth)
+            }
+
+        val header = listOf("record", "date", "id", "type", "start_minute",
+            "end_minute", "earned", "received", "adjusted", "accrual_month", "received_date")
+        val csvRows = shiftRows + fixedRows + paymentRows + adjustmentRows
+        return header.joinToString(",") + "\r\n" +
             csvRows.joinToString("\r\n") { row ->
                 row.joinToString(",") { value ->
-                    val safe =
-                        if (value.firstOrNull() in listOf('=', '+', '-', '@')) "'" + value
+                    // Guard spreadsheet readers against user-defined formula injection.
+                    val safe = if (value.firstOrNull() in listOf('=', '+', '-', '@')) "'" + value
                         else value
                     "\"" + safe.replace("\"", "\"\"") + "\""
                 }
             }
     }
+
 }

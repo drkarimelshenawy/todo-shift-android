@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 74,
-  "versionName": "4.30.0-premium-v68-a4-rich-borders",
-  "branch": "fix/v68-a4-format-pagination-borders-20261121",
-  "baseline": "38f8e7142082dec19449463a6f9f1239b92f8b0b",
-  "classification": "A4 active paragraph styling, natural page continuation and printable page borders"
+  "versionCode": 75,
+  "versionName": "4.31.0-premium-v69-salary-ux",
+  "branch": "feat/v69-salary-ux-20261121",
+  "baseline": "12c60e46d11d5fdcd1da5b7a58f2c16fed61eee1",
+  "classification": "Unified salary summary, payments, statements, review, debt placement and fixed-salary CSV reconciliation"
 }

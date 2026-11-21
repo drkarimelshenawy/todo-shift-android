@@ -14,8 +14,8 @@ android {
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 74
-        versionName = "4.30.0-premium-v68-a4-rich-borders"
+        versionCode = 75
+        versionName = "4.31.0-premium-v69-salary-ux"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

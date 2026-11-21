@@ -1,0 +1,160 @@
+name: v69 Salary UX & Financial Integrity signed APK
+
+on:
+  push:
+    branches: [feat/v69-salary-ux-20261121]
+    paths:
+      - 'cashbook-core/**'
+      - 'cashbook-feature/**'
+      - 'app/**'
+      - '.github/workflows/v69-salary-dashboard.yml'
+      - 'tools/PREMIUM_CANDIDATE.json'
+      - 'scripts/check_v44_cashbook_integration.py'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v45-cashbook-signed-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  signed-apk:
+    if: github.ref == 'refs/heads/feat/v69-salary-ux-20261121'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Pin source branch
+        run: git checkout -B "$GITHUB_REF_NAME" "$GITHUB_SHA"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify integration structure
+        run: python3 scripts/check_v44_cashbook_integration.py
+      - name: Restore persistent signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Verify financial idempotency and build signed APK
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle :cashbook-core:check :app:testDebugUnitTest \
+            --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest' \
+            --tests 'com.todoshift.app.v11.SalaryReceiptOperationsTest' \
+            --tests 'com.todoshift.app.v11.FixedSalaryIntegrityTest' \
+            --tests 'com.todoshift.app.v11.NeoRatePolicyTest' \
+            --tests 'com.todoshift.app.v11.FinanceCalendarFilterTest' \
+            --tests 'com.todoshift.app.v11.NeoCalendarPresentationTest' \
+            --tests 'com.todoshift.app.v11.ReminderDeliveryPolicyTest' \
+            --tests 'com.todoshift.app.v11.ModernSafetyTest' \
+            --tests 'com.todoshift.app.v11.ReminderPublicVersionTest' \
+            --tests 'com.todoshift.app.v11.CompletedTaskWidgetTest' \
+            --tests 'com.todoshift.app.v11.WidgetPresentationSafetyTest' \
+            --tests 'com.todoshift.app.v11.SecurityAttemptLimitTest' \
+            --tests 'com.todoshift.app.v11.NoteTransactionTest' \
+            --tests 'com.todoshift.app.v11.NeoNoteTrashPolicyTest' \
+            --tests 'com.todoshift.app.v11.NeoRichNoteEditingTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoThemeReviewTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNavigationTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoSettingsHierarchyTest' \
+            --tests 'com.todoshift.app.v11.ui.V67BehaviorTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoA4FormattingAndBordersTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoSalaryDashboardLogicTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoSalaryDashboardUiTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoA4SoftWrapTest' \
+            --tests 'com.todoshift.app.v11.NeoSmartListsTest' \
+            --tests 'com.todoshift.app.v11.NeoNoteFolderStoreTest' \
+            --tests 'com.todoshift.app.v11.AttachmentBackupTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNoteProToolsTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNoteHeadingTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNoteToolVisibilityTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNoteAppearanceTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoDocumentBlocksTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoA4SoftWrapTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoA4PrintMetricsTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoA4LiveEditingUiTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoDocumentPdfTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoNoteBundledFontsTest' \
+            --tests 'com.todoshift.app.v11.ui.NeoDocumentDocxTest' \
+            --tests 'com.todoshift.app.v11.NeoNoteHistoryPortableTest' \
+            --tests 'com.todoshift.app.backup.EncryptedBackupTest' \
+            --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
+            --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \
+            --tests 'com.todoshift.app.backup.MigrationTransactionTest' \
+            --tests 'com.todoshift.app.backup.BackupRecoveryTest' \
+            --tests 'com.todoshift.app.storage.SafePersistenceTest' \
+            :app:assembleRelease --stacktrace
+      - name: Diagnose Android test failures
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+          for file in glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml"):
+              try:
+                  root=ET.parse(file).getroot()
+                  for case in root.iter("testcase"):
+                      fail=case.find("failure")
+                      if fail is not None:
+                          print("FAILED TEST:",case.get("classname"),case.get("name"))
+                          print("MESSAGE:",fail.get("message",""))
+                          print((fail.text or "")[:6000])
+              except Exception as error:
+                  print("Failed to read XML:",file,error)
+          PY
+      - name: Verify APK signature and identity
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/release/app-release.apk \
+            --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
+            --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
+            --expected-sha "$GITHUB_SHA" \
+            --expected-branch "$GITHUB_REF_NAME" --require-release \
+            --output delivery/identity
+          cp app/build/outputs/apk/release/app-release.apk delivery/ExMore-v69-Salary-UX.apk
+          (cd delivery && sha256sum *.apk > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ExMore-v69-Salary-UX-signed-APK
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v69-salary-ux-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ExMore-v69-Salary-UX.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ExMore v69 — Salary Experience" --notes "Redesigned salary four-tab UI, integrated legacy obligations under debts, improved statement/review and fixed salary exports; financial records preserved. Source: $GITHUB_SHA."
+      - name: Verify published APK bytes and archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v69-salary-ux-${GITHUB_SHA:0:12}"
+          mkdir -p "$RUNNER_TEMP/published"
+          gh release download "$TAG" --pattern ExMore-v69-Salary-UX.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ExMore-v69-Salary-UX.apk "$RUNNER_TEMP/published/ExMore-v69-Salary-UX.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ExMore-v69-Salary-UX.apk'); assert z.testzip() is None"
+      - name: Remove private signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

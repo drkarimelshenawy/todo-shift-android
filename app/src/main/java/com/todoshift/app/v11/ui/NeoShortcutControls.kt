@@ -18,7 +18,7 @@ fun NeoShortcutControls() {
     var result by remember {mutableStateOf<String?>(null)}
     Text(neoLabel("اختصارات المشغّل","Launcher shortcuts"),style=MaterialTheme.typography.titleSmall)
     val destinations=listOf(
-        Triple("calendar",neoLabel("ToDo Shift","ToDo Shift"),0),
+        Triple("calendar",neoLabel("التقويم والعمل","Calendar & Work"),0),
         Triple("tasks",neoLabel("المهام","Tasks"),4),
         Triple("notes",neoLabel("الملاحظات","Notes"),2),
         Triple("new_note",neoLabel("ملاحظة جديدة","New note"),2),
@@ -35,7 +35,12 @@ fun NeoShortcutControls() {
                 if(id=="tasks") intent.putExtra("todo_shift_task_action","tasks")
                 if(id=="notes") intent.putExtra("todo_shift_task_action","notes")
                 if(id=="new_note") intent.putExtra("todo_shift_task_action","new_note")
-                val icon=when(id){"calendar"->R.drawable.neo41_nav_calendar;"cashbook"->R.drawable.neo41_nav_finance;else->R.drawable.neo41_nav_tasks}
+                val icon=when(id){
+                    "calendar"->R.drawable.exmore_shortcut_calendar_work
+                    "cashbook"->R.drawable.exmore_shortcut_cash_book
+                    "notes", "new_note"->R.drawable.exmore_shortcut_notes
+                    else->R.drawable.exmore_shortcut_tasks
+                }
                 val shortcut=ShortcutInfo.Builder(context,id).setShortLabel(label).setLongLabel(label)
                     .setIcon(Icon.createWithResource(context,icon)).setIntent(intent).build()
                 if(manager!!.requestPinShortcut(shortcut,null)) neoLiteral("أُرسل الطلب للمشغّل؛ أكمل التأكيد فيه. لم يتم التحقق من إنشاء الاختصار.","Request sent to the launcher; confirm there. Shortcut creation has not been verified.")

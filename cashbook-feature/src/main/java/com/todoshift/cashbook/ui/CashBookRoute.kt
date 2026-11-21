@@ -153,14 +153,14 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                     val chosen = mainSection == key
                     Button(
                         onClick = { mainSection = key; debtDetail = false; page = "movement" },
-                        modifier = Modifier.weight(1f).height(42.dp).testTag(tag),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag(tag),
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (chosen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.13f),
                             contentColor = if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
                         )
-                    ) { Text(tr(label), fontSize = 11.sp, maxLines = 1) }
+                    ) { Text(tr(label), fontSize = 12.sp, maxLines = 2) }
                 }
             }
             if (mainSection == "salary") {

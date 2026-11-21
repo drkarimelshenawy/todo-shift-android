@@ -781,10 +781,15 @@ internal fun NeoCalendarCell(
         )) {
             // Keep two-digit dates legible in a fixed seven-column month even at 200% text.
             // Full-size text remains available in day details; cells never grow the grid.
+            val calendarFontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+            // Fallback fonts can lay out two-digit dates wider than the metrics
+            // returned by TextMeasurer under large accessibility font scaling.
+            // Reserve a safety factor in 320dp / 7-column calendars, without
+            // changing the fixed cell or grid height.
             val dateScale = minOf(
                 (maxWidth - 6.dp).coerceAtLeast(1.dp) / measured.dateWidth.coerceAtLeast(1.dp),
                 (maxHeight - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
-                1f,
+                if (calendarFontScale >= 1.8f && maxWidth < 48.dp) .72f else 1f,
             ).coerceAtLeast(.25f)
             val compactCell = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 2f &&
                 maxWidth < 48.dp && maxHeight < measured.dateHeight + measured.captionHeight + 12.dp

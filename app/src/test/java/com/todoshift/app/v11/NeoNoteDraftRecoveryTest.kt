@@ -15,7 +15,10 @@ class NeoNoteDraftRecoveryTest {
         assertTrue(result.contains("Mention $original in prose"))
         assertTrue(result.contains("[[neo-image:$imported:80:center]]"))
         assertTrue(result.contains("prefix [[neo-image:$original:80:center]]"))
-        assertTrue(result.contains("[[neo-image:$original:120:center]]"))
+        // Both standalone image blocks are real attachments and MUST be
+        // remapped so a recovered note never points at the original owner.
+        assertTrue(result.contains("[[neo-image:$imported:120:center]]"))
+        assertFalse(NeoNoteDraftRecovery.referencedImageNames(result).contains(original))
     }
 
     @Test fun unrelatedImageBlocksStayUnchanged() {
@@ -43,7 +46,7 @@ class NeoNoteDraftRecoveryTest {
 
     @Test fun recoveryRequiresEveryOriginalImageReferenceToBeRemapped() {
         val second="neo-attachment-99999999-1234-1234-1234-123456789abc.png"
-        val source="[[neo-image:$original:80:center]]\\r\\n[[neo-image:$second:60:left]]"
+        val source="[[neo-image:$original:80:center]]\r\n[[neo-image:$second:60:left]]"
         val references=NeoNoteDraftRecovery.referencedImageNames(source)
         val partiallyRecovered=NeoNoteDraftRecovery.replaceImageReference(source,original,imported)
         assertFalse(NeoNoteDraftRecovery.allReferencesRemapped(references,partiallyRecovered))

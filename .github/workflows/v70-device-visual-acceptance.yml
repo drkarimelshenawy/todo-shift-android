@@ -1,4 +1,5 @@
 name: v70 Android 35 device visual and interaction audit
+# Test navigation follows the Settings IA group -> Appearance Studio route.
 
 on:
   push:

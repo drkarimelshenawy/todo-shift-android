@@ -70,6 +70,8 @@ class NeoThemeDeviceTest {
             rule.waitUntil(30_000) { rule.onAllNodesWithText(settings).fetchSemanticsNodes().isNotEmpty() }
             tab(settings).performClick()
             rule.onNodeWithText(if (arabic) "المظهر والتصميم" else "Appearance & Design").performScrollTo().performClick()
+            // Settings IA now has a dedicated group before the actual Studio.
+            rule.onNodeWithText(if (arabic) "استوديو المظهر" else "Appearance Studio").performScrollTo().performClick()
             rule.onNodeWithText(if (arabic) "إخفاء المعاينة" else "Hide preview").performScrollTo().performClick()
             val selector = if (brightness == NeoBrightness.DARK) {
                 if (arabic) "داكن" else "Dark"

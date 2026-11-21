@@ -70,7 +70,29 @@ fun V11FinanceScreen(
     var salaryQuery by rememberSaveable {mutableStateOf("")}
     val visibleWorkplaces=result.byWorkplace.filter {row->salaryQuery.isBlank()||month.toString().contains(salaryQuery)||workplaces.firstOrNull {it.id==row.workplaceId}?.name?.contains(salaryQuery,true)==true}
     val obligationDue = V11AccountsController.monthObligationDue(db, month)
-
+    if (LocalV11NeoEnabled.current) {
+        val navigator = LocalNeoFeatures.current
+        NeoSalaryDashboard(
+            month = month,
+            db = db,
+            workplaces = workplaces,
+            moneyVisible = moneyVisible,
+            onPrevious = onPrevious,
+            onNext = onNext,
+            onReceive = { workplaceId ->
+                receiveWorkplace = workplaceId
+                receiveOpen = true
+            },
+            onRecordPayment = { paymentOpen = true },
+            onOpenWorkplace = { workplaceDetailsId = it },
+            onPaymentDetails = { paymentDetailsId = it },
+            onIncomeSources = { sourceManagerOpen = true },
+            onPaymentMethods = { methodManagerOpen = true },
+            onRates = { navigator.open("RATES") },
+            onStatement = { workplaceId -> navigator.open("STATEMENT", workplaceId) },
+            onReview = { navigator.open("MONTH_REVIEW") },
+        )
+    } else {
     Column(
         modifier =
             Modifier.fillMaxSize()
@@ -474,6 +496,7 @@ fun V11FinanceScreen(
             }
         }
         Spacer(Modifier.height(30.dp))
+    }
     }
 
     workplaceDetailsId?.let { workplaceId ->

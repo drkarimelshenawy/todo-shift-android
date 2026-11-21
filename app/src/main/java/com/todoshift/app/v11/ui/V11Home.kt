@@ -904,6 +904,7 @@ fun V11Home(
                                             searchScope = when(navigation.tab) { 4 -> "TASKS"; 2 -> "SALARY"; 1 -> "CASHBOOK"; 3 -> "SETTINGS"; else -> "CALENDAR" },
                                             focused = true,
                                             initialOwner = navigation.owner,
+                                            initialMonth = month,
                                         )
                                 }
                             } else if (navigation.workplacesOpen) {

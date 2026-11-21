@@ -34,6 +34,7 @@ fun NeoModernHub(
     focused: Boolean = false,
     initialOwner: String? = null,
     searchScope: String = "CALENDAR",
+    initialMonth: YearMonth? = null,
 ) {
     val commit = rememberNeoCommit(onChange)
     val context = LocalContext.current
@@ -58,12 +59,21 @@ fun NeoModernHub(
     var confirmationBase by remember { mutableStateOf(db) }
     var confirmation by remember { mutableStateOf<Pair<String, V11Database>?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
-    var from by rememberSaveable { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
-    var to by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    var from by rememberSaveable(initialMonth) {
+        mutableStateOf((initialMonth ?: YearMonth.now()).atDay(1).toString())
+    }
+    var to by rememberSaveable(initialMonth) {
+        mutableStateOf((initialMonth ?: YearMonth.now()).atEndOfMonth().toString())
+    }
     var destination by rememberSaveable { mutableStateOf(LocalDate.now().plusDays(7).toString()) }
-    var monthA by rememberSaveable { mutableStateOf(YearMonth.now().toString()) }
+    var monthA by rememberSaveable(initialMonth) {
+        mutableStateOf((initialMonth ?: YearMonth.now()).toString())
+    }
     var monthB by rememberSaveable { mutableStateOf(YearMonth.now().minusMonths(1).toString()) }
-    var workplace by rememberSaveable { mutableStateOf(workplaces.firstOrNull()?.id) }
+    var workplace by rememberSaveable(initialOwner) {
+        mutableStateOf(initialOwner?.takeIf { selected -> workplaces.any { it.id == selected } }
+            ?: workplaces.firstOrNull()?.id)
+    }
     var type by rememberSaveable { mutableStateOf(ShiftKind.FULL_DAY) }
     var name by rememberSaveable { mutableStateOf("") }
     var titles by rememberSaveable { mutableStateOf("") }

@@ -20,7 +20,9 @@ internal object NeoA4PrintMetrics {
 
     /** TextMeasurer runs outside the preview's overridden LocalDensity. */
     fun measuredSizeSp(printPt:Float,sheetWidthDp:Float,hostFontScale:Float):Float {
-        require(printPt>0f && hostFontScale>0f)
-        return printPt*sheetScale(sheetWidthDp)/hostFontScale
+        require(printPt>0f && printPt.isFinite() && hostFontScale>0f && hostFontScale.isFinite())
+        val result=printPt*sheetScale(sheetWidthDp)/hostFontScale
+        require(result>0f && result.isFinite())
+        return result
     }
 }

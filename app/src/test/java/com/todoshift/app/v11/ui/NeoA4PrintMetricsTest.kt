@@ -32,6 +32,25 @@ class NeoA4PrintMetricsTest {
         assertEquals(12f,NeoA4PrintMetrics.BODY_PT,0.00001f)
     }
 
+    @Test fun invalidTextMetricsFailClosedInsteadOfProducingNaNOrInfinity() {
+        val invalid=listOf(Float.NaN,Float.POSITIVE_INFINITY,
+            Float.NEGATIVE_INFINITY,0f,-1f)
+        for(value in invalid) {
+            var rejectedPrint=false
+            try { NeoA4PrintMetrics.measuredSizeSp(value,360f,1f) }
+            catch(_:IllegalArgumentException) { rejectedPrint=true }
+            assertTrue("Invalid print size must be rejected",rejectedPrint)
+            var rejectedScale=false
+            try { NeoA4PrintMetrics.measuredSizeSp(12f,360f,value) }
+            catch(_:IllegalArgumentException) { rejectedScale=true }
+            assertTrue("Invalid font scale must be rejected",rejectedScale)
+        }
+        var rejectedOverflow=false
+        try { NeoA4PrintMetrics.measuredSizeSp(Float.MAX_VALUE,Float.MAX_VALUE,1f) }
+        catch(_:IllegalArgumentException) { rejectedOverflow=true }
+        assertTrue("Overflow must not produce infinite A4 text size",rejectedOverflow)
+    }
+
     @Test fun invalidWidthsAndFontScaleCannotCreateBrokenPageGeometry() {
         var rejected=0
         listOf(-1f,0f,Float.NaN,Float.POSITIVE_INFINITY).forEach { width ->

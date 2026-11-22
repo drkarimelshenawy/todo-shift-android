@@ -721,8 +721,8 @@ private fun V11CompactHeader(activeCalendarName: String, onManageCalendars: () -
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "ExMore",
-                fontSize = 17.sp,
+                "ExMore — Life Planner",
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Black,
                 color = if (neo) colors.onSurface else Color(0xFF162A46),
                 maxLines = 1,

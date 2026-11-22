@@ -1,0 +1,177 @@
+name: v4.4.0 ExMore Full Name & Splash — Signed APK and Upgrade Validation
+
+on:
+  push:
+    branches: [feat/v4.4.0-name-splash-polish-20261122]
+    paths:
+      - 'cashbook-core/**'
+      - 'cashbook-feature/**'
+      - 'app/**'
+      - '.github/workflows/v4.4.0-exmore-name-splash.yml'
+      - 'tools/PREMIUM_CANDIDATE.json'
+      - 'tools/verify_exmore_v440_brand.py'
+      - 'scripts/check_v44_cashbook_integration.py'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: exmore-brand-v440-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  signed-apk:
+    if: github.ref == 'refs/heads/feat/v4.4.0-name-splash-polish-20261122'
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Pin source branch
+        run: git checkout -B "$GITHUB_REF_NAME" "$GITHUB_SHA"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Verify ExMore source artwork and splash consistency
+        run: python3 tools/verify_exmore_v440_brand.py
+      - name: Verify integration structure
+        run: python3 scripts/check_v44_cashbook_integration.py
+      - name: Restore persistent signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Run full unit tests (retain failure evidence)
+        id: full_qa
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
+            :cashbook-core:check :cashbook-feature:testDebugUnitTest :app:testDebugUnitTest --stacktrace
+      - name: Run lint and build the signed installation candidate
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
+            :app:lintDebug :app:assembleRelease --stacktrace
+      - name: Diagnose Android test failures
+        if: failure() && steps.full_qa.outcome == 'failure'
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+          for file in glob.glob("app/build/test-results/testDebugUnitTest/TEST-*.xml"):
+              try:
+                  root=ET.parse(file).getroot()
+                  for case in root.iter("testcase"):
+                      fail=case.find("failure")
+                      if fail is not None:
+                          print("FAILED TEST:",case.get("classname"),case.get("name"))
+                          print("MESSAGE:",fail.get("message",""))
+                          print((fail.text or "")[:6000])
+              except Exception as error:
+                  print("Failed to read XML:",file,error)
+          PY
+      - name: Save complete QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExMore-v440-full-QA-evidence
+          path: |
+            app/build/test-results/testDebugUnitTest/*.xml
+            cashbook-core/build/test-results/**/*.xml
+            cashbook-feature/build/test-results/**/*.xml
+            app/build/reports/lint-results-debug.*
+            app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Verify APK signature and identity
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/release/app-release.apk \
+            --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
+            --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
+            --expected-sha "$GITHUB_SHA" \
+            --expected-branch "$GITHUB_REF_NAME" --require-release \
+            --output delivery/identity
+          cp app/build/outputs/apk/release/app-release.apk delivery/ExMore-4.4.0-Life-Planner.apk
+          (cd delivery && sha256sum *.apk > SHA256SUMS)
+      - name: Enable hardware acceleration for Android emulator
+        run: |
+          sudo chmod 666 /dev/kvm
+      - name: Android 35 cold-start and splash visual evidence
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_4
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -e
+            mkdir -p delivery/device-evidence
+            curl --fail --location --retry 3 --silent --show-error -o /tmp/exmore-v72-baseline.apk https://github.com/drkarimelshenawy/todo-shift-android/releases/download/v72-premium-brand-candidate-6f7ded3e437d/ExMore-v72-Premium-Brand.apk
+            adb install /tmp/exmore-v72-baseline.apk
+            adb shell dumpsys package com.todoshift.app | grep -q 'versionCode=78'
+            adb install -r delivery/ExMore-4.4.0-Life-Planner.apk
+            adb shell dumpsys package com.todoshift.app | grep -q 'versionCode=79'
+            adb shell am force-stop com.todoshift.app
+            adb logcat -c
+            adb shell screenrecord --time-limit 7 /sdcard/exmore-v72-startup.mp4 >/dev/null 2>&1 &
+            sleep 1
+            adb shell am start -W -n com.todoshift.app/.MainActivity
+            sleep 5
+            adb shell pidof com.todoshift.app
+            adb exec-out screencap -p > delivery/device-evidence/android35-after-start.png
+            adb pull /sdcard/exmore-v72-startup.mp4 delivery/device-evidence/android35-startup.mp4 || true
+      - name: Upload Android device visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExMore-v440-device-startup-evidence
+          path: delivery/device-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ExMore-v440-signed-APK
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v4.4.0-brand-candidate-${GITHUB_SHA:0:12}"
+          gh release create "$TAG" delivery/ExMore-4.4.0-Life-Planner.apk delivery/SHA256SUMS --target "$GITHUB_SHA" --prerelease --title "ExMore v4.4.0 — Full Name, Improved Splash and Android 35 Upgrade" --notes "ExMore 4.4.0 full brand and splash candidate. Source: $GITHUB_SHA. Full unit suite, lint, signing, archive check and emulator Android 35 update from signed v72 passed. Physical device update and visual approval remain outstanding."
+      - name: Verify published APK bytes and archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v4.4.0-brand-candidate-${GITHUB_SHA:0:12}"
+          mkdir -p "$RUNNER_TEMP/published"
+          gh release download "$TAG" --pattern ExMore-4.4.0-Life-Planner.apk --dir "$RUNNER_TEMP/published"
+          cmp delivery/ExMore-4.4.0-Life-Planner.apk "$RUNNER_TEMP/published/ExMore-4.4.0-Life-Planner.apk"
+          python3 -c "import zipfile; z=zipfile.ZipFile('$RUNNER_TEMP/published/ExMore-4.4.0-Life-Planner.apk'); assert z.testzip() is None"
+      - name: Remove private signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

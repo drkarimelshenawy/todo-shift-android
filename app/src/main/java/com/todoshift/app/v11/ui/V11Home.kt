@@ -192,16 +192,7 @@ fun V11Home(
                 else {
                     // Display the approved brand artwork only while essential data loads.
                     // No artificial startup delay; recovery/error actions above stay usable.
-                    androidx.compose.foundation.Image(
-                        painter = painterResource(
-                            if (androidx.compose.foundation.isSystemInDarkTheme())
-                                R.drawable.exmore_splash_full_dark
-                            else R.drawable.exmore_splash_full_light
-                        ),
-                        contentDescription = "ExMore — Life Planner",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    )
+                    ExMoreBootSplash()
                 }
             }
         }
@@ -1338,8 +1329,8 @@ private fun V11GlobalHeader(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "ExMore",
-                    style = MaterialTheme.typography.titleMedium,
+                    "ExMore — Life Planner",
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Black,
                     maxLines = 1,
                 )

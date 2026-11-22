@@ -189,7 +189,20 @@ fun V11Home(
                             Text("استعادة نسخة موثوقة / Recover from backup")
                         }
                     }
-                else CircularProgressIndicator()
+                else {
+                    // Display the approved brand artwork only while essential data loads.
+                    // No artificial startup delay; recovery/error actions above stay usable.
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(
+                            if (androidx.compose.foundation.isSystemInDarkTheme())
+                                R.drawable.exmore_splash_full_dark
+                            else R.drawable.exmore_splash_full_light
+                        ),
+                        contentDescription = "ExMore — Life Planner",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    )
+                }
             }
         }
         return
@@ -1316,7 +1329,7 @@ private fun V11GlobalHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             androidx.compose.foundation.Image(
-                painter = painterResource(R.drawable.exmore_splash_center),
+                painter = painterResource(R.drawable.exmore_header_icon),
                 contentDescription = "ExMore",
                 modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.medium),
             )

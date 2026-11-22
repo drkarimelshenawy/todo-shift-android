@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 77,
-  "versionName": "4.33.0-premium-v71-exmore-branding",
-  "branch": "feat/v71-exmore-branding-splash-20261122",
-  "baseline": "f6b84cd5300a85d36a0182df97a4d531e00fa1c6",
-  "classification": "ExMore v71 launcher, shortcuts and color-consistent system/legacy splash using approved v2 brand artwork"
+  "versionCode": 78,
+  "versionName": "4.34.0-premium-v72-brand-identity",
+  "branch": "feat/v72-exmore-premium-brand-20261122",
+  "baseline": "933c74822db83e4ff9b620ee05fe07f7aaa179ae",
+  "classification": "ExMore v72 Premium branding: approved original Android resources, dynamic header emblem, native launcher/shortcut icons, and light/dark data-load splash without delay"
 }

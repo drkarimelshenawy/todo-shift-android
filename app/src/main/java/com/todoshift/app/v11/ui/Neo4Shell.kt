@@ -69,7 +69,7 @@ fun Neo4CompactHeader(
                     androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
             if (p.showBrand) {
                 androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(com.todoshift.app.R.drawable.exmore_splash_center),
+                    painter = androidx.compose.ui.res.painterResource(com.todoshift.app.R.drawable.exmore_header_icon),
                     contentDescription = null,
                     modifier = Modifier.size(if (constrained) 26.dp else 32.dp),
                 )

@@ -15,7 +15,9 @@ internal object NeoA4PrintMetrics {
 
     fun sheetScale(sheetWidthDp:Float):Float {
         require(sheetWidthDp>0f && sheetWidthDp.isFinite())
-        return sheetWidthDp/PAGE_WIDTH_PT
+        val scale=sheetWidthDp/PAGE_WIDTH_PT
+        require(scale>0f && scale.isFinite()) { "A4 preview width is too small to represent" }
+        return scale
     }
 
     /** TextMeasurer runs outside the preview's overridden LocalDensity. */

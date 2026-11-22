@@ -143,10 +143,7 @@ jobs:
             adb shell pidof com.todoshift.app
             adb shell uiautomator dump /sdcard/exmore-v440-ui.xml >/dev/null
             adb shell cat /sdcard/exmore-v440-ui.xml > delivery/device-evidence/android35-ui.xml
-            if grep -Eiq 'launcher isn.t responding|system ui isn.t responding|app isn.t responding' delivery/device-evidence/android35-ui.xml; then
-              echo "Emulator system ANR obscures visual evidence"
-              exit 1
-            fi
+            ! grep -Eiq 'isn.t responding' delivery/device-evidence/android35-ui.xml
             adb exec-out screencap -p > delivery/device-evidence/android35-after-start.png
             adb pull /sdcard/exmore-v72-startup.mp4 delivery/device-evidence/android35-startup.mp4 || true
       - name: Upload Android device visual evidence

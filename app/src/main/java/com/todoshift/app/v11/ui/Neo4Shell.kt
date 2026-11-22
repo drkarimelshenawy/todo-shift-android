@@ -75,20 +75,36 @@ fun Neo4CompactHeader(
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            Column(Modifier.weight(1f)) {
-                Text(
-                    buildAnnotatedString {
-                        if (p.showBrand && onBack == null) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                if (p.showBrand && onBack == null) {
+                    Text(
+                        buildAnnotatedString {
                             withStyle(SpanStyle(color = MaterialTheme.colorScheme.onPrimaryContainer)) { append("Ex") }
                             withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) { append("More") }
-                        } else append(title)
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        "Life Planner",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (calendar) {
                 IconButton(onClick = onManage, modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)) {

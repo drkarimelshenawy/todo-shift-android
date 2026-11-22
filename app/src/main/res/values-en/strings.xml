@@ -1,7 +1,7 @@
 <resources>
     <string name="shortcut_new_task">New task</string>
     <string name="shortcut_new_note">New note</string>
-    <string name="app_name">ExMore</string>
+    <string name="app_name">ExMore — Life Planner</string>
     <string name="notification_channel_name">Shift reminders</string>
     <string name="notification_channel_description">Upcoming shift and task alerts</string>
     <string name="widget_description">ExMore calendar widget</string>

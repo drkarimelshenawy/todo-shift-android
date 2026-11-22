@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 78,
-  "versionName": "4.34.0-premium-v72-brand-identity",
-  "branch": "feat/v72-exmore-premium-brand-20261122",
-  "baseline": "933c74822db83e4ff9b620ee05fe07f7aaa179ae",
-  "classification": "ExMore v72 Premium branding: approved original Android resources, dynamic header emblem, native launcher/shortcut icons, and light/dark data-load splash without delay"
+  "versionCode": 79,
+  "versionName": "4.4.0",
+  "branch": "feat/v4.4.0-name-splash-polish-20261122",
+  "baseline": "6f7ded3e437db62d805e0b67a8446950e7633fcd",
+  "classification": "ExMore Life Planner — complete launcher app label, responsive compact headers, professionally typeset in-app launch splash; signed APK update over v72 with intact data schema"
 }

@@ -7,7 +7,7 @@
     <string name="widget_add_glyph" translatable="false">+</string>
     <string name="widget_zero" translatable="false">0</string>
     <string name="tasks_widget_empty_text">لا توجد مهام حالياً</string>
-    <string name="app_name">ExMore</string>
+    <string name="app_name">ExMore — Life Planner</string>
     <string name="notification_channel_name">تذكيرات الشيفتات</string>
     <string name="notification_channel_description">تنبيهات الشيفتات والمهام القادمة</string>
     <string name="widget_description">تقويم ExMore للشيفتات</string>

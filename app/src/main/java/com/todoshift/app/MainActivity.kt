@@ -255,7 +255,8 @@ private fun AppHeader(
     ) {
         Text(
             text = title,
-            fontSize = 28.sp,
+            fontSize = if (title.startsWith("ExMore")) 20.sp else 28.sp,
+            maxLines = 2,
             fontWeight = FontWeight.Black,
             color = Color(0xFF1F2937),
             textAlign = TextAlign.End
@@ -328,7 +329,7 @@ private fun CalendarScreen(
             .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 24.dp)
     ) {
         AppHeader(
-            title = "ExMore",
+            title = "ExMore — Life Planner",
             subtitle = "جدول الشيفتات"
         )
 
@@ -2369,7 +2370,7 @@ private fun V10ReleaseStatusPanel(
         ) {
 
             Text(
-                "ExMore",
+                "ExMore — Life Planner",
                 modifier =
                     Modifier.fillMaxWidth(),
                 textAlign =
@@ -2564,7 +2565,7 @@ private fun MoreScreen(
 
         AppHeader(
             "المزيد",
-            "إعدادات ExMore"
+            "إعدادات ExMore — Life Planner"
         )
 
         Spacer(Modifier.height(18.dp))
@@ -4288,7 +4289,7 @@ private fun V09CalendarScreen(
         ) {
 
             AppHeader(
-                title = "ExMore",
+                title = "ExMore — Life Planner",
                 subtitle =
                     if (painterState == null)
                         "اضغط على + لإضافة الشيفتات"

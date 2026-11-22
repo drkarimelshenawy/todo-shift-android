@@ -51,6 +51,13 @@ class NeoA4PrintMetricsTest {
         assertTrue("Overflow must not produce infinite A4 text size",rejectedOverflow)
     }
 
+    @Test fun subnormalWidthsFailClosedInsteadOfCollapsingA4Preview() {
+        var rejected=false
+        try { NeoA4PrintMetrics.sheetScale(Float.MIN_VALUE) }
+        catch(_:IllegalArgumentException) { rejected=true }
+        assertTrue("Subnormal sheet width must not collapse A4 scale to zero",rejected)
+    }
+
     @Test fun invalidWidthsAndFontScaleCannotCreateBrokenPageGeometry() {
         var rejected=0
         listOf(-1f,0f,Float.NaN,Float.POSITIVE_INFINITY).forEach { width ->

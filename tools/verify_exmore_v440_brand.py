@@ -127,10 +127,10 @@ verify(app.attrib.get(ANDROID + "icon") == "@mipmap/ic_launcher", "Launcher reso
 verify(app.attrib.get(ANDROID + "roundIcon") == "@mipmap/ic_launcher_round", "Round launcher path changed")
 gradle = (ROOT / "app/build.gradle.kts").read_text()
 verify('applicationId = "com.todoshift.app"' in gradle, "Application ID changed: update safety violation")
-verify(re.search(r"\bversionCode\s*=\s*78\b", gradle) is not None, "v4.4.0 versionCode not 79")
+verify(re.search(r"\bversionCode\s*=\s*79\b", gradle) is not None, "v4.4.0 versionCode not 79")
 verify('versionName = "4.4.0"' in gradle, "v4.4.0 versionName mismatched")
 print("ExMore v4.4.0 brand QA PASS: approved SHA-256 images, full splash variants, launcher densities,"
-      " adaptive icons, header wiring, static + pinned shortcuts, preserved app id and v72 identity")
+      " adaptive icons, header wiring, static + pinned shortcuts, preserved app id and v4.4.0 identity")
 
 # v4.4.0 complete application label across locales and compact headers.
 for locale in ["values", "values-ar", "values-en"]:

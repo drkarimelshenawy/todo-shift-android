@@ -407,7 +407,7 @@ private fun NeoRescueSettingsContent(
                     }
                     "ABOUT" -> {
                         Text(
-                            "ExMore ${com.todoshift.app.BuildConfig.VERSION_NAME} (${com.todoshift.app.BuildConfig.VERSION_CODE})"
+                            "ExMore — Life Planner • ${com.todoshift.app.BuildConfig.VERSION_NAME} (${com.todoshift.app.BuildConfig.VERSION_CODE})"
                         )
                         Text(
                             "${com.todoshift.app.BuildConfig.APPLICATION_ID} • Schema ${db.schemaVersion}"

@@ -22,7 +22,7 @@ fun NeoShortcutControls() {
         Triple("tasks",neoLabel("المهام","Tasks"),4),
         Triple("notes",neoLabel("الملاحظات","Notes"),2),
         Triple("new_note",neoLabel("ملاحظة جديدة","New note"),2),
-        Triple("cashbook",neoLabel("الإدارة المالية","Cash Book"),1),
+        Triple("cashbook",neoLabel("الإدارة المالية","Cash Book"),1),\n        Triple("settings",neoLabel("الإعدادات","Settings"),3),
     )
     if(manager?.isRequestPinShortcutSupported!=true)
         Text(neoLabel("المشغّل الحالي لا يدعم طلب تثبيت الاختصارات","This launcher does not support shortcut pin requests"))
@@ -37,7 +37,7 @@ fun NeoShortcutControls() {
                 if(id=="new_note") intent.putExtra("todo_shift_task_action","new_note")
                 val icon=when(id){
                     "calendar"->R.drawable.exmore_shortcut_calendar_work
-                    "cashbook"->R.drawable.exmore_shortcut_cash_book
+                    "cashbook"->R.drawable.exmore_shortcut_cash_book\n                    "settings"->R.drawable.exmore_shortcut_settings
                     "notes", "new_note"->R.drawable.exmore_shortcut_notes
                     else->R.drawable.exmore_shortcut_tasks
                 }

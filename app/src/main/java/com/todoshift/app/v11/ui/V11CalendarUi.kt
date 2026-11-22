@@ -712,7 +712,7 @@ private fun V11CompactHeader(activeCalendarName: String, onManageCalendars: () -
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.exmore_splash_center),
+            painter = painterResource(R.drawable.exmore_header_icon),
             contentDescription = "ExMore",
             modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)),
         )

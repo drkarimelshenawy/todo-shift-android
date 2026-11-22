@@ -122,7 +122,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_4
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
@@ -141,6 +141,12 @@ jobs:
             adb shell am start -W -n com.todoshift.app/.MainActivity
             sleep 5
             adb shell pidof com.todoshift.app
+            adb shell uiautomator dump /sdcard/exmore-v440-ui.xml >/dev/null
+            adb shell cat /sdcard/exmore-v440-ui.xml > delivery/device-evidence/android35-ui.xml
+            if grep -Eiq 'launcher isn.t responding|system ui isn.t responding|app isn.t responding' delivery/device-evidence/android35-ui.xml; then
+              echo "Emulator system ANR obscures visual evidence"
+              exit 1
+            fi
             adb exec-out screencap -p > delivery/device-evidence/android35-after-start.png
             adb pull /sdcard/exmore-v72-startup.mp4 delivery/device-evidence/android35-startup.mp4 || true
       - name: Upload Android device visual evidence

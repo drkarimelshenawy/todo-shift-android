@@ -67,6 +67,18 @@ class NeoRichFormattingV7Test {
         assertEquals(NeoRichParagraphStyle("justify",2),NeoRichEditorState.open(saved).paragraphs[1])
     }
 
+    @Test fun liveA4VisualTransformationKeepsParagraphAlignmentAndIndent() {
+        val state=NeoRichEditorState.open("Hello")
+            .paragraphAlign("center").paragraphIndent(1)
+        val projected=NeoNoteTypefaces.richVisual(state.characters,"system","system")
+            .filter(state.value.annotatedString).text
+        assertEquals("Hello",projected.text)
+        assertEquals(1,projected.paragraphStyles.size)
+        assertEquals(TextAlign.Center,projected.paragraphStyles.single().item.textAlign)
+        assertTrue(projected.paragraphStyles.single().item.textIndent?.firstLine
+            != androidx.compose.ui.unit.TextUnit.Unspecified)
+    }
+
     @Test fun pressingEnterInFormattedParagraphInheritsItsFormat() {
         val first=NeoRichEditorState.open("one").paragraphAlign("right").paragraphIndent(1).paragraphIndent(1)
         val changed=first.input(TextFieldValue("one\ntwo",TextRange(7)))

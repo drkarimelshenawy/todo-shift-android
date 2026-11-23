@@ -810,6 +810,14 @@ internal fun NeoCalendarCell(
             ).coerceAtLeast(.25f)
             val compactCell = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 2f &&
                 maxWidth < 48.dp && maxHeight < measured.dateHeight + measured.captionHeight + 12.dp
+            // Draw text directly over the shift bands, with a glyph-only halo for contrast.
+            // The day number, notes and badges must never reserve a painted date strip.
+            val overlayShadow = androidx.compose.ui.graphics.Shadow(
+                color = if (c.onSurface.luminance() > .5f)
+                    Color.Black.copy(alpha = .85f) else Color.White.copy(alpha = .9f),
+                offset = androidx.compose.ui.geometry.Offset.Zero,
+                blurRadius = 2.5f,
+            )
             Neo4ShiftFill(
                 segments,
                 workplaces,
@@ -828,14 +836,13 @@ internal fun NeoCalendarCell(
                         // 37px, even after scaling, clipping two-digit dates.
                         .fillMaxWidth()
                         .padding(horizontal = 1.dp, vertical = 2.dp)
-                        .then(if (segments.any { it.kind != ShiftKind.OFF })
-                            Modifier.background(c.surface.copy(alpha = .94f), RoundedCornerShape(3.dp))
-                            else Modifier)
+                        // Date is a transparent overlay; paint continues behind its entire row.
                         .padding(vertical = 1.dp)
                         .semantics { this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight metric=${measured.dateWidth}/${measured.dateHeight} scale=$dateScale" },
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = MaterialTheme.typography.labelMedium.fontSize * dateScale,
                     lineHeight = 16.sp * dateScale,
+                    shadow = overlayShadow,
                 ),
                 maxLines = 1,
                 softWrap = false,
@@ -900,7 +907,8 @@ internal fun NeoCalendarCell(
                                     overflow = TextOverflow.Ellipsis,
                                     style =
                                         MaterialTheme.typography.labelSmall.copy(
-                                            lineHeight = 14.sp
+                                            lineHeight = 14.sp,
+                                            shadow = overlayShadow,
                                         ),
                                     color = c.onSurface,
                                     modifier =
@@ -915,10 +923,6 @@ internal fun NeoCalendarCell(
                                                         RoundedCornerShape(3.dp),
                                                     )
                                                 else Modifier
-                                            )
-                                            .background(
-                                                c.surface.copy(alpha = .85f),
-                                                RoundedCornerShape(3.dp),
                                             ),
                                 )
                             }
@@ -926,13 +930,13 @@ internal fun NeoCalendarCell(
                     if (p.showWorkplaceNames && segments.isNotEmpty()) {
                         val placeNames = segments.mapNotNull { segment -> workplaces.firstOrNull { it.id == segment.workplaceId }?.name }.distinct().joinToString(" / ").ifEmpty { if(segments.all {it.kind==ShiftKind.OFF}) neoLabel("راحة","Off") else "" }
                         if (placeNames.isNotEmpty()) Text(placeNames, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp), color = c.onSurface,
-                            modifier = Modifier.background(c.surface.copy(alpha = .85f), RoundedCornerShape(3.dp)))
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp, shadow = overlayShadow), color = c.onSurface,
+                            modifier = Modifier)
                     }
                     if(p.showShiftNames) segments.filter {it.kind!=ShiftKind.OFF}.take(2).forEach {segment ->
                         Text(workplaces.firstOrNull {it.id==segment.workplaceId}?.shiftNames?.get(segment.kind.name) ?: neoShiftLabel(segment.kind),maxLines=1,overflow=TextOverflow.Ellipsis,
-                            style=MaterialTheme.typography.labelSmall,color=c.onSurface,
-                            modifier=Modifier.background(c.surface.copy(alpha=.9f),RoundedCornerShape(3.dp)).then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier))
+                            style=MaterialTheme.typography.labelSmall.copy(shadow = overlayShadow),color=c.onSurface,
+                            modifier=Modifier.then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier))
                     }
 
                 }
@@ -951,28 +955,22 @@ internal fun NeoCalendarCell(
                     if (p.showTaskIndicators && tasks > 0)
                         Text(
                             "☑${if(tasks>99) "99+" else tasks}",
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp, shadow = overlayShadow),
                             color = c.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier =
-                                Modifier.then(if(onOpenTasks!=null) Modifier.clickable {onOpenTasks()} else Modifier).background(
-                                    c.surface.copy(alpha = .95f),
-                                    RoundedCornerShape(3.dp),
-                                ),
+                                Modifier.then(if(onOpenTasks!=null) Modifier.clickable {onOpenTasks()} else Modifier),
                         )
                     if (p.showTaskIndicators && events > 0)
                         Text(
                             "◷${if(events>99) "99+" else events}",
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp, shadow = overlayShadow),
                             color = c.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier =
-                                Modifier.then(if(onOpenEvents!=null) Modifier.clickable {onOpenEvents()} else Modifier).background(
-                                    c.surface.copy(alpha = .95f),
-                                    RoundedCornerShape(3.dp),
-                                ),
+                                Modifier.then(if(onOpenEvents!=null) Modifier.clickable {onOpenEvents()} else Modifier),
                         )
 
                 }

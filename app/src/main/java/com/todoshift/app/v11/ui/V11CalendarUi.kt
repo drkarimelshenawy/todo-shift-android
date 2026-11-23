@@ -1076,11 +1076,11 @@ private fun V11DayCell(
                         if (segment.kind == ShiftKind.OFF) Color(0xFFECEFF1)
                         else place?.let { v11Color(it.colorHex) } ?: Color(0xFFE5E7EB)
 
-                    val range = segment.timeRange()
-
-                    val startFraction = if (range == null) 0f else range.startMinute / 1440f
-
-                    val heightFraction = if (range == null) 1f else range.durationMinutes / 1440f
+                    // Visual fraction is canonical for the shift kind; persisted times are unchanged.
+                    // The OFF marker keeps its previous neutral full-cell treatment.
+                    val coverage = neo4Coverage(segment.kind)
+                    val startFraction = coverage?.top ?: 0f
+                    val heightFraction = coverage?.let { it.bottom - it.top } ?: 1f
 
                     Box(
                         modifier =
@@ -1121,12 +1121,19 @@ private fun V11DayCell(
             modifier =
                 Modifier.align(Alignment.TopStart)
                     .padding(5.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.90f))
+                    // No white capsule behind the number: this is a pure overlay.
                     .padding(horizontal = 5.dp, vertical = 2.dp),
             fontSize = 12.sp,
             fontWeight = FontWeight.Black,
-            color = Color(0xFF111827),
+            color = MaterialTheme.colorScheme.onSurface,
+            style = androidx.compose.ui.text.TextStyle(
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = if (MaterialTheme.colorScheme.onSurface.luminance() > .5f)
+                        Color.Black.copy(alpha = .85f) else Color.White.copy(alpha = .9f),
+                    offset = androidx.compose.ui.geometry.Offset.Zero,
+                    blurRadius = 2.5f,
+                ),
+            ),
         )
 
         if (segments.size > 4) {

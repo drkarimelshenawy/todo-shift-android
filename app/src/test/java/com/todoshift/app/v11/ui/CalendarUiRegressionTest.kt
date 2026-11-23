@@ -32,6 +32,7 @@ class CalendarUiRegressionTest {
         showNames: Boolean = false,
         width: Int = 360,
         withTasks: Boolean = false,
+        brightness: NeoBrightness = NeoBrightness.SYSTEM,
     ) {
         val db =
             V11Database(
@@ -64,6 +65,7 @@ class CalendarUiRegressionTest {
             NeoEnvironment(
                 NeoAppearance(
                     language = language,
+                    brightness = brightness,
                     uiDirection =
                         if (language == NeoLanguage.ARABIC) NeoDirection.RTL else NeoDirection.LTR,
                     fontScale = fontScale,
@@ -96,6 +98,34 @@ class CalendarUiRegressionTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun amoledMonthKeepsNoteBelowDayNumberAndPreservesFullCellSemantics() {
+        render(
+            kind = ShiftKind.FULL_DAY,
+            paint = true,
+            width = 360,
+            showNames = true,
+            withTasks = true,
+            brightness = NeoBrightness.AMOLED,
+        )
+        val dateBounds = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val captionBounds = compose.onNodeWithText("Fixture", substring = true,
+            useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        org.junit.Assert.assertTrue(
+            "Day caption must sit below its date rather than overlap: $dateBounds $captionBounds",
+            captionBounds.top >= dateBounds.bottom,
+        )
+        val day = compose.onNodeWithContentDescription(date.toString(), substring = true)
+        day.assertExists()
+        val description = day.fetchSemanticsNode().config[
+            androidx.compose.ui.semantics.SemanticsProperties.ContentDescription
+        ].joinToString(" ")
+        org.junit.Assert.assertTrue(description.contains("Fixture"))
+        org.junit.Assert.assertTrue(description.contains("FULL") ||
+            description.contains("24h") || description.contains("Full"))
     }
 
     @Test

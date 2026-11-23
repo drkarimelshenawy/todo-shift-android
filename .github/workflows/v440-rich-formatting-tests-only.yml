@@ -90,7 +90,7 @@ jobs:
           for attempt in 1 2 3; do
             if gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
               :app:testDebugUnitTest --tests com.todoshift.app.v11.ui.NeoRichFormattingV7Test --tests com.todoshift.app.v11.NeoRichNoteEditingTest --tests com.todoshift.app.v11.ui.NeoDocumentDocxTest --tests com.todoshift.app.v11.ui.NeoA4FormattingAndBordersTest --tests com.todoshift.app.v11.ui.NeoNoteFormatVisualChoicesTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/rate-unit-test-${attempt}.log"; then exit 0; fi
-            if ! grep -Eq 'Received status code 429|Too Many Requests' "$RUNNER_TEMP/rate-unit-test-${attempt}.log" || [ "$attempt" = 3 ]; then exit 1; fi
+            if ! grep -Eq 'Received status code 429|Too Many Requests|MavenArtifactFetcher|HttpURLConnection.java' "$RUNNER_TEMP/rate-unit-test-${attempt}.log" || [ "$attempt" = 3 ]; then exit 1; fi
             sleep $((attempt * 35))
           done
       - name: Archive unit-test evidence only

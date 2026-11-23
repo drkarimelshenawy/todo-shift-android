@@ -858,8 +858,13 @@ internal fun NeoCalendarCell(
             val dateInk = neoCalendarOverlayInk(
                 segments, workplaces, paintAppearance, .04f, c.onSurface
             )
+            val firstNoteMarker = if (p.showNoteIcons)
+                notes.firstOrNull()?.title?.let { title ->
+                    listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
+                } else null
             val captionsStart = scaledDateHeight +
-                if (p.showNoteIcons && calendarFontScale > 1.3f) measured.captionHeight else 0.dp
+                if (firstNoteMarker != null && calendarFontScale > 1.3f)
+                    measured.captionHeight else 0.dp
             val badgeReserved = if (p.showTaskIndicators && (tasks > 0 || events > 0))
                 measured.captionHeight + 5.dp else 0.dp
             val captionBudget = (maxHeight - captionsStart - badgeReserved - 4.dp)
@@ -910,12 +915,7 @@ internal fun NeoCalendarCell(
                 fontWeight = FontWeight.Bold,
                 color = dateInk,
             )
-            val marker =
-                if (p.showNoteIcons)
-                    notes.firstOrNull()?.title?.let { title ->
-                        listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
-                    }
-                else null
+            val marker = firstNoteMarker
             val markerLine =
                 marker != null && androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
             if (marker != null && !compactCell)

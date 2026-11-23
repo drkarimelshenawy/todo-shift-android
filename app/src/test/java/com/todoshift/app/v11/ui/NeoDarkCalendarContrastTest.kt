@@ -29,7 +29,7 @@ class NeoDarkCalendarContrastTest {
         for (rows in 4..6) {
             val rowHeight = fittedCalendarRowHeight(gridHeight - gap * rows, headerHeight, rows)
             assertTrue(rowHeight > 0.dp)
-            assertTrue(headerHeight + rows * (rowHeight + gap) <= gridHeight + .01.dp)
+            assertTrue(headerHeight + (rowHeight + gap) * rows <= gridHeight + .01.dp)
         }
         assertEquals(Neo4Coverage(0f, 1f), neo4Coverage(ShiftKind.FULL_DAY))
         assertEquals(Neo4Coverage(0f, .5f), neo4Coverage(ShiftKind.LONG))

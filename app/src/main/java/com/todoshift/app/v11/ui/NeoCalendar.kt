@@ -850,17 +850,36 @@ internal fun NeoCalendarCell(
                 maxWidth < 48.dp && maxHeight < measured.dateHeight + measured.captionHeight + 12.dp
             // Draw text directly over the shift bands, with a glyph-only halo for contrast.
             // The day number, notes and badges must never reserve a painted date strip.
-            val overlayShadow = androidx.compose.ui.graphics.Shadow(
-                color = if (c.onSurface.luminance() > .5f)
-                    Color.Black.copy(alpha = .85f) else Color.White.copy(alpha = .9f),
-                offset = androidx.compose.ui.geometry.Offset.Zero,
-                blurRadius = 2.5f,
+            val paintAppearance = if (p.showShiftPaint) p else p.copy(shiftPaints = emptyMap())
+            val dateInk = neoCalendarOverlayInk(
+                segments, workplaces, paintAppearance, .04f, c.onSurface
             )
+            val captionsStart = scaledDateHeight +
+                if (p.showNoteIcons && calendarFontScale > 1.3f) measured.captionHeight else 0.dp
+            val badgeReserved = if (p.showTaskIndicators && (tasks > 0 || events > 0))
+                measured.captionHeight + 5.dp else 0.dp
+            val captionBudget = (maxHeight - captionsStart - badgeReserved - 4.dp)
+                .coerceAtLeast(0.dp)
+            val captionLines = (captionBudget / measured.captionHeight.coerceAtLeast(1.dp))
+                .toInt().coerceIn(0, 3)
+            val captionPosition = ((captionsStart + measured.captionHeight / 2) /
+                maxHeight.coerceAtLeast(1.dp)).coerceIn(0f, .99f)
+            val captionInk = neoCalendarOverlayInk(
+                segments, workplaces, paintAppearance, captionPosition, c.onSurface
+            )
+            fun shadowFor(ink: Color) = androidx.compose.ui.graphics.Shadow(
+                color = if (ink.luminance() > .5f)
+                    Color.Black.copy(alpha = .9f) else Color.White.copy(alpha = .85f),
+                offset = androidx.compose.ui.geometry.Offset.Zero,
+                blurRadius = 1.6f,
+            )
+            val overlayShadow = shadowFor(dateInk)
+            val captionShadow = shadowFor(captionInk)
             Neo4ShiftFill(
                 segments,
                 workplaces,
                 Modifier.fillMaxSize(),
-                appearance = if (p.showShiftPaint) p else p.copy(shiftPaints = emptyMap()),
+                appearance = paintAppearance,
                 onSegments=if(onOpenShift==null) null else {items->if(items.size==1) onOpenShift(items.first()) else pickedShifts=items},onEmpty=onClick,
             )
             NeoTodayDecoration(today, date == LocalDate.now().plusDays(1), p)
@@ -885,7 +904,7 @@ internal fun NeoCalendarCell(
                 maxLines = 1,
                 softWrap = false,
                 fontWeight = FontWeight.Bold,
-                color = c.onSurface,
+                color = dateInk,
             )
             val marker =
                 if (p.showNoteIcons)
@@ -905,112 +924,138 @@ internal fun NeoCalendarCell(
                         else Modifier.align(Alignment.TopEnd).padding(2.dp),
                     style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
                 )
-            if (!compactCell && ((p.showNotes && notes.isNotEmpty()) || ((p.showShiftNames || p.showWorkplaceNames) && segments.isNotEmpty())))
+            if (!compactCell && captionLines > 0 &&
+                ((p.showNotes && notes.isNotEmpty()) ||
+                    ((p.showShiftNames || p.showWorkplaceNames) && segments.isNotEmpty())))
                 Column(
                     Modifier.align(Alignment.TopStart)
                         .fillMaxWidth()
                         .padding(
-                            start = 2.dp,
-                            end = 2.dp,
-                            top =
-                                scaledDateHeight +
-                                    if (markerLine) measured.captionHeight else 0.dp,
-                            bottom =
-                                if (p.showTaskIndicators && (tasks > 0 || events > 0))
-                                    measured.captionHeight + 8.dp
-                                else 2.dp,
+                            start = 3.dp, end = 3.dp,
+                            top = captionsStart,
+                            bottom = badgeReserved + 2.dp,
                         )
+                        .heightIn(max = captionBudget)
+                        .clipToBounds(),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
                 ) {
-                    if (p.showNotes)
-                        notes.take(2).forEach { note ->
-                            val noteColor =
-                                neoHexColor(
-                                    noteMetadata
-                                        .optJSONObject("noteColors")
-                                        ?.optString(note.id, "#D8AD55") ?: "#D8AD55"
-                                )
-                            val noteBorder =
-                                noteMetadata
-                                    .optJSONObject("noteBorders")
-                                    ?.optBoolean(note.id, false) == true
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (!noteBorder)
-                                    Box(Modifier.size(4.dp).background(noteColor, CircleShape))
-                                Text(
-                                    note.title
-                                        .removePrefix("📌 ")
-                                        .removePrefix("★ ")
-                                        .removePrefix("⚠ "),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style =
-                                        MaterialTheme.typography.labelSmall.copy(
-                                            lineHeight = 14.sp,
-                                            shadow = overlayShadow,
-                                        ),
-                                    color = c.onSurface,
-                                    modifier =
-                                        Modifier.weight(1f)
-                                            .then(if (onOpenNote != null) Modifier.clickable { onOpenNote(note) } else Modifier)
-                                            .semantics { contentDescription = note.title }
-                                            .then(
-                                                if (noteBorder)
-                                                    Modifier.border(
-                                                        1.dp,
-                                                        noteColor,
-                                                        RoundedCornerShape(3.dp),
-                                                    )
-                                                else Modifier
-                                            ),
-                                )
-                            }
+                    var usedLines = 0
+                    if (p.showNotes && notes.isNotEmpty() && usedLines < captionLines) {
+                        val note = notes.first()
+                        val noteColor = neoHexColor(
+                            noteMetadata.optJSONObject("noteColors")
+                                ?.optString(note.id, "#D8AD55") ?: "#D8AD55"
+                        )
+                        val noteBorder = noteMetadata.optJSONObject("noteBorders")
+                            ?.optBoolean(note.id, false) == true
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            if (!noteBorder)
+                                Box(Modifier.size(4.dp).background(noteColor, CircleShape))
+                            Text(
+                                note.title.removePrefix("📌 ").removePrefix("★ ")
+                                    .removePrefix("⚠ "),
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    lineHeight = 14.sp, shadow = captionShadow
+                                ),
+                                color = captionInk,
+                                modifier = Modifier.weight(1f)
+                                    .then(if (onOpenNote != null) Modifier.clickable {
+                                        onOpenNote(note)
+                                    } else Modifier)
+                                    .semantics { contentDescription = note.title }
+                                    .then(if (noteBorder) Modifier.border(
+                                        1.dp, noteColor, RoundedCornerShape(3.dp)
+                                    ) else Modifier),
+                            )
+                            if (notes.size > 1) Text(
+                                "+${notes.size - 1}",
+                                color = captionInk,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    shadow = captionShadow
+                                ),
+                                maxLines = 1,
+                            )
                         }
-                    if (p.showWorkplaceNames && segments.isNotEmpty()) {
-                        val placeNames = segments.mapNotNull { segment -> workplaces.firstOrNull { it.id == segment.workplaceId }?.name }.distinct().joinToString(" / ").ifEmpty { if(segments.all {it.kind==ShiftKind.OFF}) neoLabel("راحة","Off") else "" }
-                        if (placeNames.isNotEmpty()) Text(placeNames, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp, shadow = overlayShadow), color = c.onSurface,
-                            modifier = Modifier)
+                        usedLines++
                     }
-                    if(p.showShiftNames) segments.filter {it.kind!=ShiftKind.OFF}.take(2).forEach {segment ->
-                        Text(workplaces.firstOrNull {it.id==segment.workplaceId}?.shiftNames?.get(segment.kind.name) ?: neoShiftLabel(segment.kind),maxLines=1,overflow=TextOverflow.Ellipsis,
-                            style=MaterialTheme.typography.labelSmall.copy(shadow = overlayShadow),color=c.onSurface,
-                            modifier=Modifier.then(if(onOpenShift!=null) Modifier.clickable {onOpenShift(segment)} else Modifier))
+                    if (p.showWorkplaceNames && segments.isNotEmpty() &&
+                        usedLines < captionLines) {
+                        val names = segments.mapNotNull { segment ->
+                            workplaces.firstOrNull { it.id == segment.workplaceId }?.name
+                        }.distinct().joinToString(" / ").ifEmpty {
+                            if (segments.all { it.kind == ShiftKind.OFF })
+                                neoLabel("راحة", "Off") else ""
+                        }
+                        if (names.isNotEmpty()) {
+                            Text(
+                                names, maxLines = 1, softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    lineHeight = 14.sp, shadow = captionShadow),
+                                color = captionInk,
+                            )
+                            usedLines++
+                        }
                     }
-
+                    if (p.showShiftNames && usedLines < captionLines) {
+                        segments.firstOrNull { it.kind != ShiftKind.OFF }?.let { segment ->
+                            Text(
+                                workplaces.firstOrNull { it.id == segment.workplaceId }
+                                    ?.shiftNames?.get(segment.kind.name) ?: neoShiftLabel(segment.kind),
+                                maxLines = 1, softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    lineHeight = 14.sp, shadow = captionShadow),
+                                color = captionInk,
+                                modifier = Modifier.then(if (onOpenShift != null)
+                                    Modifier.clickable { onOpenShift(segment) } else Modifier),
+                            )
+                        }
+                    }
                 }
             if (compactCell && notes.isNotEmpty() && (p.showNotes || p.showNoteIcons))
                 Box(Modifier.align(Alignment.BottomEnd).padding(3.dp).size(4.dp).background(c.secondary, CircleShape))
             if (compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
                 Box(Modifier.align(Alignment.BottomStart).padding(3.dp).size(4.dp).background(c.primary, CircleShape))
             if (!compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
-                FlowRow(
-                    Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(2.dp),
+                Row(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                        .padding(horizontal = 3.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    maxItemsInEachRow =
-                        if (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f) 1
-                        else Int.MAX_VALUE,
                 ) {
-                    if (p.showTaskIndicators && tasks > 0)
-                        Text(
-                            "☑${if(tasks>99) "99+" else tasks}",
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp, shadow = overlayShadow),
-                            color = c.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier =
-                                Modifier.then(if(onOpenTasks!=null) Modifier.clickable {onOpenTasks()} else Modifier),
-                        )
-                    if (p.showTaskIndicators && events > 0)
-                        Text(
-                            "◷${if(events>99) "99+" else events}",
-                            style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp, shadow = overlayShadow),
-                            color = c.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier =
-                                Modifier.then(if(onOpenEvents!=null) Modifier.clickable {onOpenEvents()} else Modifier),
-                        )
-
+                    if (tasks > 0) Text(
+                        "☑${if (tasks > 99) "99+" else tasks}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            lineHeight = 14.sp, shadow = captionShadow),
+                        color = neoCalendarOverlayInk(segments, workplaces,
+                            paintAppearance, .97f, c.onSurface),
+                        maxLines = 1, softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false).then(
+                            if (onOpenTasks != null) Modifier.clickable { onOpenTasks() }
+                            else Modifier
+                        ),
+                    )
+                    if (events > 0) Text(
+                        "◷${if (events > 99) "99+" else events}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            lineHeight = 14.sp, shadow = captionShadow),
+                        color = neoCalendarOverlayInk(segments, workplaces,
+                            paintAppearance, .97f, c.onSurface),
+                        maxLines = 1, softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false).then(
+                            if (onOpenEvents != null) Modifier.clickable { onOpenEvents() }
+                            else Modifier
+                        ),
+                    )
                 }
         }
     }

@@ -57,7 +57,7 @@ class NeoRichFormattingV7Test {
         assertEquals(NeoRichParagraphStyle("center",1),first.paragraphs[0])
         assertEquals(NeoRichParagraphStyle(),first.paragraphs[1])
         assertEquals(TextAlign.Center,first.value.annotatedString.paragraphStyles.first().item.textAlign)
-        val second=select(first,7,16).paragraphAlign("justify").paragraphIndent(2)
+        val second=select(first,6,15).paragraphAlign("justify").paragraphIndent(2)
         val saved=second.stored()
         assertTrue(saved.contains("<!--neo-p:center:1-->"))
         assertTrue(saved.contains("<!--neo-p:justify:2-->"))

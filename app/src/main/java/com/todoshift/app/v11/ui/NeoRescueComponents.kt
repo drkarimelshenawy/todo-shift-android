@@ -347,6 +347,17 @@ fun NeoLocalizedMenu(expanded: Boolean, onDismissRequest: () -> Unit,
     }
 }
 
+/**
+ * Global-shell overflow is rendered only when the menu has meaningful commands.
+ * Notes has its own complete in-page menu (sort, archive, trash, selection, settings);
+ * showing an empty second menu in the global header is misleading.
+ */
+internal fun neoHasHeaderContextActions(destination: String): Boolean =
+    destination == "Calendar" ||
+        destination == "Cash Book" ||
+        (destination !in setOf("", "Notes", "Tasks", "Settings") &&
+            NeoFeatureCatalog.entries.any { it.destination == destination })
+
 @Composable
 fun NeoContextActions(destination: String) {
     val nav = LocalNeoFeatures.current

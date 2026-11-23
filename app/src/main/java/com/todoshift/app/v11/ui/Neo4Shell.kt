@@ -118,7 +118,7 @@ fun Neo4CompactHeader(
                 IconButton(onClick = onOverview, modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)) {
                     Icon(Icons.Rounded.Search, neoLabel("بحث", "Search"))
                 }
-            if (destination.isNotEmpty() && destination !in listOf("Settings", "Tasks"))
+            if (neoHasHeaderContextActions(destination))
                 NeoContextActions(destination)
             if (showMoney)
                 IconButton(onClick = onMoney) {

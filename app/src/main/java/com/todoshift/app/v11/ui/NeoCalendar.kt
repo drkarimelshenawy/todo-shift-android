@@ -198,19 +198,18 @@ fun NeoCalendarArea(
     val inheritedDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
     val gridDirection = neoDirection(p.gridDirection, inheritedDirection)
     val premiumCashBook = true
+    val frameColors = MaterialTheme.colorScheme
     Column(
         modifier.fillMaxSize()
-            .shadow(8.dp, RoundedCornerShape(28.dp), clip = false)
-            .border(1.dp, MaterialTheme.colorScheme.surface.copy(alpha = .9f), RoundedCornerShape(28.dp))
-            .then(
-                if (premiumCashBook) Modifier.background(
-                    Brush.verticalGradient(
-                        listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.background)
-                    ),
-                    RoundedCornerShape(24.dp),
-                ) else Modifier
+            .shadow(4.dp, RoundedCornerShape(24.dp), clip = false)
+            .border(1.dp, frameColors.outlineVariant, RoundedCornerShape(24.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(frameColors.surfaceContainerLow, frameColors.surfaceContainer)
+                ),
+                RoundedCornerShape(24.dp),
             )
-            .padding(if (premiumCashBook) 5.dp else 0.dp)
+            .padding(5.dp)
     ) {
         Column(Modifier.fillMaxWidth()) {
             // Month controls keep the previous month at the visual right in Arabic,
@@ -367,9 +366,18 @@ fun NeoCalendarArea(
                 // Month fit is a hard layout constraint: labels and text preferences must
                 // never enlarge the month grid or introduce calendar scrolling.
                 // Text is ellipsized/clipped inside a cell; full details remain tappable.
-                val rowHeight = fittedCalendarRowHeight(maxHeight, headerHeight, rows)
+                // Grid spacing comes out of the fixed height. No extra scrolling.
+                val gridGap = if (shownView == NeoCalendarView.MONTH) 3.dp else 2.dp
+                val rowHeight = fittedCalendarRowHeight(
+                    (maxHeight - gridGap * rows).coerceAtLeast(0.dp),
+                    headerHeight,
+                    rows,
+                )
                 Column(Modifier.fillMaxSize().clipToBounds()) {
-                    Column(Modifier.fillMaxSize()) {
+                    Column(
+                        Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(gridGap),
+                    ) {
                         CompositionLocalProvider(
                             androidx.compose.ui.platform.LocalLayoutDirection provides
                                 neoDirection(p.weekdayDirection, gridDirection)
@@ -417,7 +425,7 @@ fun NeoCalendarArea(
                             repeat(rows) { row ->
                                 Row(
                                     Modifier.fillMaxWidth().height(rowHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 1.dp else 0.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(if (premiumCashBook) 2.dp else 0.dp),
                                 ) {
                                     repeat(columns) { col ->
                                         val cellDate =
@@ -449,7 +457,7 @@ fun NeoCalendarArea(
                                                 YearMonth.from(cellDate) != shownMonth,
                                                 Modifier.weight(1f)
                                                     .fillMaxHeight()
-                                                    .padding(if (premiumCashBook) 1.dp else 0.dp)
+                                                    .padding(if (premiumCashBook) .5.dp else 0.dp)
                                                     .drawWithContent {
                                                         drawContent()
                                                         if (shownView == NeoCalendarView.MONTH && !premiumCashBook) {
@@ -664,6 +672,32 @@ fun NeoCalendarArea(
     }
 }
 
+/**
+ * Glyph-only day and note overlays choose ink for the shift band below.
+ * Never paint a special date header: 24h/12h/6h coverage remains unchanged.
+ */
+internal fun neoCalendarOverlayInk(
+    segments: List<ShiftSegmentV11>,
+    workplaces: List<Workplace>,
+    appearance: NeoAppearance,
+    fraction: Float,
+    fallback: Color,
+): Color {
+    val active = segments.filter { segment ->
+        neo4Coverage(segment.kind)?.let { fraction >= it.top && fraction < it.bottom } == true
+    }
+    if (active.isEmpty()) return fallback
+    val segment = active.first()
+    val place = workplaces.firstOrNull { it.id == segment.workplaceId }
+    val own = place?.shiftColors?.get(segment.kind.name)
+    val style = appearance.shiftPaints[segment.kind] ?: NeoShiftPaint()
+    val color = neoHexColor(
+        if (own != null || style.mode == NeoPaintMode.INHERIT)
+            own ?: place?.colorHex ?: "#8BBACB" else style.first
+    )
+    return neoInkOn(color)
+}
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun NeoCalendarCell(
@@ -718,7 +752,8 @@ internal fun NeoCalendarCell(
                 .shadow(if(today||chosen) 3.dp else 1.dp,RoundedCornerShape(9.dp))
                 .combinedClickable(onClick=onClick,onLongClick=onLongClick)
                 .semantics { contentDescription=description;selected=chosen },
-            color=c.surface.copy(alpha=p.cardOpacity),
+            color=c.surface.copy(alpha=if (c.background.luminance()<.12f)
+                p.cardOpacity.coerceAtLeast(.94f) else p.cardOpacity),
             shape=RoundedCornerShape(9.dp),
             border=BorderStroke(if(chosen||today||painting) 2.dp else .5.dp,
                 if(chosen) c.secondary else if(today) neoHexColor(p.todayColor) else c.outlineVariant)
@@ -780,11 +815,14 @@ internal fun NeoCalendarCell(
                 selected = chosen
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        color = (if (muted) c.surfaceContainerLowest else c.surface).copy(alpha = p.cardOpacity),
+        color = (if (muted) c.surfaceContainerLowest else c.surface).copy(
+            alpha = if (c.background.luminance() < .12f)
+                p.cardOpacity.coerceAtLeast(.94f) else p.cardOpacity
+        ),
         shape = RoundedCornerShape(9.dp),
         border =
             BorderStroke(
-                if (today || chosen || painting) 2.dp else 0.5.dp,
+                if (today || chosen || painting) 2.dp else 0.85.dp,
                 when {
                     painting -> c.tertiary
                     chosen -> c.secondary
@@ -794,7 +832,7 @@ internal fun NeoCalendarCell(
             ),
     ) {
         BoxWithConstraints(Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(c.surface, androidx.compose.ui.graphics.lerp(c.surface, c.background, .4f)))
+            Brush.verticalGradient(listOf(c.surfaceContainerLow, c.surfaceContainer))
         )) {
             // Keep two-digit dates legible in a fixed seven-column month even at 200% text.
             // Full-size text remains available in day details; cells never grow the grid.

@@ -662,7 +662,9 @@ internal fun NeoNotePreview(
     }
 }
 /** A stable token travels with its checklist line, but is never shown or shared. */
-internal fun noteDisplayText(text:String):String = text.replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
+internal fun noteDisplayText(text:String):String = text
+    .replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
+    .replace(NeoRichParagraphStyle.TOKEN,"")
 
 /** Selection offsets map to the portable source while editing displays formatted text. */
 internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.VisualTransformation {
@@ -672,6 +674,9 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         val spans=mutableListOf<Triple<Int,Int,SpanStyle>>()
         fun hide(start:Int,end:Int) {for(i in start until end) hidden[i]=true}
         Regex(" ?<!--task:[A-Za-z0-9_-]+-->").findAll(source).forEach {hide(it.range.first,it.range.last+1)}
+        NeoRichParagraphStyle.TOKEN.findAll(source).forEach {
+            hide(it.range.first,it.range.last+1)
+        }
         Regex("\\*\\*([^\\n]+?)\\*\\*|(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)").findAll(source).forEach {
             val bold=it.groupValues[1].isNotEmpty();val count=if(bold) 2 else 1
             hide(it.range.first,it.range.first+count);hide(it.range.last-count+1,it.range.last+1)
@@ -680,9 +685,9 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         // Keep the portable source unchanged while hiding paired HTML tags in the editor.
         data class OpenMark(val kind:String,val start:Int,val end:Int,val style:SpanStyle)
         val opened=mutableListOf<OpenMark>()
-        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<size sp="([0-9]{1,3})">|</size>|<face key="(amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>|<b>|</b>|<i>|</i>|<u>|</u>|<s>|</s>""").findAll(source).forEach { token ->
+        Regex("""<font color="(#[0-9A-Fa-f]{6})">|</font>|<size sp="([0-9]{1,3})">|</size>|<face key="(amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>|<b>|</b>|<i>|</i>|<u>|</u>|<s>|</s>|<mark color="#[0-9A-Fa-f]{6}">|</mark>|<sup>|</sup>|<sub>|</sub>""").findAll(source).forEach { token ->
             val raw=token.value
-            val kind=when {raw.startsWith("<font ")||raw=="</font>" -> "font";raw.startsWith("<size ")||raw=="</size>" -> "size";raw.startsWith("<face ")||raw=="</face>" -> "face";raw=="<b>"||raw=="</b>" -> "b";raw=="<i>"||raw=="</i>" -> "i";raw=="<u>"||raw=="</u>" -> "u";else -> "s"}
+            val kind=when {raw.startsWith("<font ")||raw=="</font>" -> "font";raw.startsWith("<size ")||raw=="</size>" -> "size";raw.startsWith("<face ")||raw=="</face>" -> "face";raw=="<b>"||raw=="</b>" -> "b";raw=="<i>"||raw=="</i>" -> "i";raw=="<u>"||raw=="</u>" -> "u";raw.startsWith("<mark ")||raw=="</mark>" -> "mark";raw=="<sup>"||raw=="</sup>" -> "sup";raw=="<sub>"||raw=="</sub>" -> "sub";else -> "s"}
             if(!raw.startsWith("</")) {
                 val style=when(kind) {
                     "font" -> SpanStyle(color=Color(android.graphics.Color.parseColor(token.groupValues[1])))
@@ -691,6 +696,14 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
                     "b" -> SpanStyle(fontWeight=FontWeight.Bold)
                     "i" -> SpanStyle(fontStyle=FontStyle.Italic)
                     "u" -> SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.Underline)
+                    "mark" -> SpanStyle(background=Color(android.graphics.Color.parseColor(
+                        raw.substringAfter("color=\"").substringBefore('"'))))
+                    "sup" -> SpanStyle(
+                        baselineShift=androidx.compose.ui.text.style.BaselineShift.Superscript,
+                        fontSize=12.sp)
+                    "sub" -> SpanStyle(
+                        baselineShift=androidx.compose.ui.text.style.BaselineShift.Subscript,
+                        fontSize=12.sp)
                     else -> SpanStyle(textDecoration=androidx.compose.ui.text.style.TextDecoration.LineThrough)
                 }
                 opened.add(OpenMark(kind,token.range.first,token.range.last+1,style))
@@ -716,7 +729,17 @@ internal class NeoNoteVisualTransformation : androidx.compose.ui.text.input.Visu
         for(i in original.indices) reverse[original[i]]=i
         val result=buildAnnotatedString {
             append(visible.toString())
-            spans.forEach {(start,end,style)->if(original[start]<original[end])addStyle(style,original[start],original[end])}
+            spans.forEach {(start,end,style)->
+                if(original[start]<original[end])addStyle(style,original[start],original[end])
+            }
+            var start=0
+            source.split('\n').forEach { line ->
+                val end=(start+line.length).coerceAtMost(source.length)
+                val paragraph=NeoRichParagraphStyle.fromSavedLine(line)
+                if(paragraph!=NeoRichParagraphStyle() && original[start]<original[end])
+                    addStyle(paragraph.asCompose(),original[start],original[end])
+                start=end+1
+            }
         }
         return androidx.compose.ui.text.input.TransformedText(result,object:androidx.compose.ui.text.input.OffsetMapping {
             override fun originalToTransformed(offset:Int)=original[offset.coerceIn(original.indices)]

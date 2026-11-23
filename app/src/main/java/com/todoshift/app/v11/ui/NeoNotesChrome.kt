@@ -311,24 +311,30 @@ internal fun NeoNoteFormatSheet(
                 }
                 1 -> {
                     Text(neoLabel("قوائم","Lists"),style=MaterialTheme.typography.titleSmall)
-                    Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                        listOf(
-                            "bullet" to neoLabel("نقاط","Bullets"),
-                            "circle" to neoLabel("دوائر","Circles"),
-                            "square" to neoLabel("مربعات","Squares"),
-                            "check" to neoLabel("قائمة اختيار","Checklist"),
-                            "number" to neoLabel("أرقام","Numbers"),
-                            "numberParen" to neoLabel("أرقام بأقواس","Numbered parentheses"),
-                            "letter" to neoLabel("حروف لاتينية","Latin letters"),
-                            "letterParen" to neoLabel("حروف بأقواس","Letter parentheses"),
-                            "arabic" to neoLabel("حروف عربية","Arabic letters")
-                        ).chunked(3).forEach {row ->
-                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                                row.forEach {(key,label) ->
-                                    FilterChip(
-                                        selected=state.listActive(key),
-                                        onClick={onChange(state.list(key))},
-                                        label={Text(label,maxLines=1)},
+                    Text(
+                        neoLabel("اختر الشكل من معاينة القائمة التي ستظهر في الفقرة.",
+                            "Choose a visual preview of the list to apply to this paragraph."),
+                        style=MaterialTheme.typography.bodySmall,
+                        color=MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        neoNoteListKinds.map { kind -> kind to when(kind) {
+                            "bullet" -> neoLabel("نقاط","Bullets")
+                            "circle" -> neoLabel("دوائر","Circles")
+                            "square" -> neoLabel("مربعات","Squares")
+                            "check" -> neoLabel("قائمة اختيار","Checklist")
+                            "number" -> neoLabel("أرقام","Numbers")
+                            "numberParen" -> neoLabel("أرقام بأقواس","Number parentheses")
+                            "letter" -> neoLabel("حروف لاتينية","Latin letters")
+                            "letterParen" -> neoLabel("حروف بأقواس","Letter parentheses")
+                            else -> neoLabel("حروف عربية","Arabic letters")
+                        } }.chunked(3).forEach { row ->
+                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                                row.forEach { (kind,label) ->
+                                    NeoNoteListStyleTile(
+                                        kind=kind,label=label,
+                                        selected=state.listActive(kind),
+                                        onClick={onChange(state.list(kind))},
                                         modifier=Modifier.weight(1f)
                                     )
                                 }
@@ -363,19 +369,29 @@ internal fun NeoNoteFormatSheet(
                     Text(neoLabel("إطارات خارج هوامش الكتابة والعنوان، وتظهر في A4 وPDF وWord.",
                         "Borders stay outside the title and text margins, in A4, PDF and Word."),
                         style=MaterialTheme.typography.bodySmall)
-                    listOf(
-                        listOf(NeoPageBorders.NONE to neoLabel("بدون", "None"),
-                            NeoPageBorders.SINGLE to neoLabel("بسيط", "Simple"),
-                            NeoPageBorders.DOUBLE to neoLabel("مزدوج", "Double")),
-                        listOf(NeoPageBorders.DASHED to neoLabel("متقطع", "Dashed"),
-                            NeoPageBorders.DOTTED to neoLabel("منقّط", "Dotted"))
-                    ).forEach { row ->
-                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        neoLabel("معاينة مصغّرة لحدود الصفحة قبل تطبيقها على المستند.",
+                            "See the border's appearance on a page before applying it."),
+                        style=MaterialTheme.typography.bodySmall,
+                        color=MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    neoNotePageBorderChoices.map { style -> style to when(style) {
+                        NeoPageBorders.NONE -> neoLabel("بدون إطار","No border")
+                        NeoPageBorders.SINGLE -> neoLabel("خط مفرد","Single")
+                        NeoPageBorders.DOUBLE -> neoLabel("خط مزدوج","Double")
+                        NeoPageBorders.DASHED -> neoLabel("خط متقطع","Dashed")
+                        else -> neoLabel("خط منقّط","Dotted")
+                    } }.chunked(3).forEach { row ->
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                             row.forEach { (style,label) ->
-                                FilterChip(selected=pageBorderStyle==style,
+                                NeoNotePageBorderTile(
+                                    style=style,label=label,
+                                    selected=pageBorderStyle==style,
                                     onClick={onPageBorderChange(style)},
-                                    label={Text(label,maxLines=1)},modifier=Modifier.weight(1f))
+                                    modifier=Modifier.weight(1f)
+                                )
                             }
+                            repeat(3-row.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                     OutlinedButton(onClick=onPageColor,modifier=Modifier.fillMaxWidth()) {

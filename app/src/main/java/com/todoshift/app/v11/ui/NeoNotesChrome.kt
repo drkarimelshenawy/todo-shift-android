@@ -257,7 +257,19 @@ internal fun NeoNoteFormatSheet(
                         style=MaterialTheme.typography.titleSmall)
                     Box {
                         OutlinedButton(onClick={fontMenu=true}) {
-                            Text("Aa  "+(state.effective().face ?: neoLabel("الافتراضي","Default")))
+                            Text("Aa  "+when(state.effective().face) {
+                                null -> neoLabel("الافتراضي","Default")
+                                "sans" -> "Sans Serif"
+                                "serif" -> "Serif"
+                                "mono" -> "Monospace"
+                                "amiri" -> "Amiri"
+                                "tajawal" -> "Tajawal"
+                                "reem" -> "Reem Kufi"
+                                "montserrat" -> "Montserrat"
+                                "lora" -> "Lora"
+                                "oswald" -> "Oswald"
+                                else -> neoLabel("الافتراضي","Default")
+                            })
                             Spacer(Modifier.width(8.dp))
                             Icon(Icons.Rounded.ArrowDropDown,null)
                         }

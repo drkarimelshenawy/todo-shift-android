@@ -197,7 +197,13 @@ internal fun neoNoteHeading(state:NeoRichEditorState,level:Int):NeoRichEditorSta
         if(level==0) clean else "#".repeat(level)+" "+clean
     }
     val updated=text.replaceRange(from,to,replacement)
-    return state.input(TextFieldValue(updated,
+    // An existing heading prefix is stored as a hidden structural token.
+    // If the user changes its level, remove the old prefix before applying
+    // the visible edit so headings are never doubled or moved after the line.
+    val clean=state.copy(hidden=state.hidden.filterNot { token ->
+        token.text.matches(Regex("^#{1,3} ")) && token.position in from..to
+    })
+    return clean.input(TextFieldValue(updated,
         TextRange((from+replacement.length).coerceIn(0,updated.length))))
 }
 

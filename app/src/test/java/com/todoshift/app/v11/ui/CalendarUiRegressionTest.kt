@@ -112,6 +112,11 @@ class CalendarUiRegressionTest {
         )
         val dateBounds = compose.onNodeWithText("9", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
+        val noteFit = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().config[NeoDateFitInfo]
+        org.junit.Assert.assertTrue("Note caption missing; $noteFit",
+            compose.onAllNodesWithText("Fixture", substring = true,
+                useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
         val captionBounds = compose.onNodeWithText("Fixture", substring = true,
             useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
         org.junit.Assert.assertTrue(
@@ -144,7 +149,11 @@ class CalendarUiRegressionTest {
     @Test
     fun offDayHasAnExplicitMarker() {
         render(ShiftKind.OFF, true)
-        compose.onNodeWithText("Off").assertExists()
+        val offFit = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().config[NeoDateFitInfo]
+        org.junit.Assert.assertTrue("OFF label missing; $offFit",
+            compose.onAllNodesWithText("Off", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty())
     }
 
     @Test
@@ -182,11 +191,14 @@ class CalendarUiRegressionTest {
         render(ShiftKind.MORNING, false, fontScale = 1.8f, showNames = true)
         val dateBounds =
             compose.onNodeWithText("9", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val largeFit = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().config[NeoDateFitInfo]
+        org.junit.Assert.assertTrue("Morning label missing; $largeFit",
+            compose.onAllNodesWithText("Morning", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty())
         val nameBounds =
-            compose
-                .onNodeWithText("Morning", useUnmergedTree = true)
-                .fetchSemanticsNode()
-                .boundsInRoot
+            compose.onNodeWithText("Morning", useUnmergedTree = true)
+                .fetchSemanticsNode().boundsInRoot
         org.junit.Assert.assertTrue("Date and shift name need separate lines",nameBounds.top >= dateBounds.bottom)
         compose.onNodeWithText("×1").assertDoesNotExist()
 

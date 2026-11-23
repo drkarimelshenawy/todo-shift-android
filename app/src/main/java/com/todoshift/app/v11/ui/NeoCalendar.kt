@@ -915,7 +915,9 @@ internal fun NeoCalendarCell(
                         .padding(horizontal = 1.dp, vertical = 2.dp)
                         // Date is a transparent overlay; paint continues behind its entire row.
                         .padding(vertical = 1.dp)
-                        .semantics { this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight metric=${measured.dateWidth}/${measured.dateHeight} scale=$dateScale" },
+                        .semantics {
+                            this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight date=${measured.dateHeight} caption=${measured.captionHeight} budget=$captionBudget rows=$captionLines scale=$dateScale"
+                        },
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = MaterialTheme.typography.labelMedium.fontSize * dateScale,
                     lineHeight = 16.sp * dateScale,

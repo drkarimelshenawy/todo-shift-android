@@ -2,12 +2,30 @@ package com.todoshift.app.v11
 
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class V70MissingRateDiagnosticsTest {
     private val month = YearMonth.parse("2026-02")
     private val shift = ShiftSegmentV11("shift", ShiftKind.NIGHT, "work")
     private val day = DayEntryV11("day", "2026-02-07", "cal", listOf(shift))
+
+    @Test fun rateDetailsIdentifyDatesTypesAndUnassignedWithoutMutatingData() {
+        val other = DayEntryV11("other", "2026-02-10", "cal", listOf(
+            ShiftSegmentV11("morning", ShiftKind.MORNING, "work"),
+            ShiftSegmentV11("orphan", ShiftKind.NIGHT, null),
+        ))
+        val db = V11Database(days = listOf(day, other))
+        val before = db.copy()
+        val details = V11FinanceEngine.missingRateDetails(db, month)
+        assertEquals(3, details.size)
+        assertEquals(details.size, V11FinanceEngine.missingRateCount(db, month))
+        assertTrue(details.any { it.date == "2026-02-07" && it.kind == ShiftKind.NIGHT && it.workplaceId == "work" })
+        assertTrue(details.any { it.date == "2026-02-10" && it.kind == ShiftKind.MORNING })
+        assertTrue(details.any { it.date == "2026-02-10" && it.workplaceId == null })
+        assertEquals(before, db)
+        assertTrue(db.rates.isEmpty())
+    }
 
     @Test fun missingRateIsFlaggedRatherThanSilentlyTreatedAsRealZero() {
         val db = V11Database(

@@ -900,6 +900,10 @@ fun V11Home(
                                                 calendarAction = null
                                             },
                                             { navigation.back() },
+                                            onRevealMoney = {
+                                                // Explicit user action; finance lock remains authoritative.
+                                                if (financialAccess && !moneyVisible) moneyVisible = true
+                                            },
                                             initialSection = navigation.feature,
                                             searchScope = when(navigation.tab) { 4 -> "TASKS"; 2 -> "SALARY"; 1 -> "CASHBOOK"; 3 -> "SETTINGS"; else -> "CALENDAR" },
                                             focused = true,

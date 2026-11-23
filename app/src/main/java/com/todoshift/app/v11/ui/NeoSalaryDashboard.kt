@@ -138,7 +138,8 @@ internal fun NeoSalaryDashboard(
     onReview: () -> Unit,
 ) {
     val summary = remember(db, month) { V11FinanceEngine.month(db, month) }
-    val missingRateCount = remember(db, month) { V11FinanceEngine.missingRateCount(db, month) }
+    val missingRateDetails = remember(db, month) { V11FinanceEngine.missingRateDetails(db, month) }
+    val missingRateCount = missingRateDetails.size
     val payments = remember(db, month) { NeoSalaryDashboardLogic.relevantPayments(db, month) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     // Independent searches: filtering one tab must not hide records in another.
@@ -235,6 +236,34 @@ internal fun NeoSalaryDashboard(
                                     "$missingRateCount shifts have no rate effective on their dates; their amounts may show zero. Review rate start dates."
                                 ),
                                 color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            val groups = missingRateDetails.groupBy { it.workplaceId to it.kind }
+                                .entries.sortedBy { item -> item.value.minOf { it.date } }
+                            groups.take(5).forEach { group ->
+                                val place = workplaces.firstOrNull { it.id == group.key.first }?.name
+                                    ?: neoLabel("مكان عمل غير محدد", "Unassigned workplace")
+                                val first = group.value.minOf { it.date }
+                                Text(
+                                    "$place • " + neoShiftLabel(group.key.second) +
+                                        " • " + group.value.size.toString() + " • " + first,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                )
+                            }
+                            if (groups.size > 5) Text(
+                                neoLabel("مجموعات أخرى: ", "Other groups: ") + (groups.size - 5),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            if (missingRateDetails.any { it.workplaceId == null }) Text(
+                                neoLabel("بعض الورديات بلا مكان عمل. اربطها بمكان عمل قبل تحديد السعر.",
+                                    "Some shifts have no workplace. Assign one before setting rates."),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                neoLabel("سجّل السعر بتاريخ لا يتأخر عن أول وردية ناقصة من نفس النوع والمكان.",
+                                    "Enter a rate effective no later than the first missing shift for each type and workplace."),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
                             )
                             TextButton(onClick = onRates) {
                                 Text(neoLabel("مراجعة أسعار الورديات", "Review shift rates"))

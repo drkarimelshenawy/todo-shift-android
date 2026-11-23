@@ -30,6 +30,7 @@ fun NeoModernHub(
     onChange: (V11Database) -> Unit,
     onOpenDate: (LocalDate) -> Unit,
     onBack: () -> Unit,
+    onRevealMoney: () -> Unit = {},
     initialSection: String = "SEARCH",
     focused: Boolean = false,
     initialOwner: String? = null,
@@ -65,7 +66,14 @@ fun NeoModernHub(
     var to by rememberSaveable(initialMonth) {
         mutableStateOf((initialMonth ?: YearMonth.now()).atEndOfMonth().toString())
     }
-    var destination by rememberSaveable { mutableStateOf(LocalDate.now().plusDays(7).toString()) }
+    // Open historical salary rate reviews on the inspected accrual month by default;
+    // any backdated rate is still explicit, reviewed and manually saved.
+    var destination by rememberSaveable(initialSection, initialMonth) {
+        mutableStateOf(
+            if (initialSection == "RATES") (initialMonth ?: YearMonth.now()).atDay(1).toString()
+            else LocalDate.now().plusDays(7).toString()
+        )
+    }
     var monthA by rememberSaveable(initialMonth) {
         mutableStateOf((initialMonth ?: YearMonth.now()).toString())
     }
@@ -272,14 +280,32 @@ fun NeoModernHub(
         if (
             section in listOf("RATES", "COMPARE", "STATEMENT", "PAYMENTS", "MONTH_REVIEW") &&
                 !financial
-        )
-            Text(
-                neoLabel(
-                    "افتح الحسابات وأظهر المبالغ أولًا",
-                    "Unlock Finance and show amounts first",
-                ),
-                color = MaterialTheme.colorScheme.error,
-            )
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(neoLabel("عرض المبالغ مخفي أو محمي", "Amounts are hidden or protected"),
+                        style = MaterialTheme.typography.titleMedium)
+                    if (financeAuthorized && !moneyVisible) {
+                        Text(neoLabel("الحسابات مفتوحة، لكنك أخفيت المبالغ. يمكنك إظهارها من هنا.",
+                            "Finance is unlocked, but the amounts are hidden. Reveal them here."))
+                        Button(onClick = onRevealMoney) {
+                            Text(neoLabel("إظهار المبالغ وفتح الصفحة", "Show amounts and open page"))
+                        }
+                    } else {
+                        Text(neoLabel("ارجع للإدارة المالية وافتح الحسابات أولًا، ثم أظهر المبالغ.",
+                            "Return to Finance and unlock it before showing amounts."))
+                        OutlinedButton(onClick = onBack) {
+                            Text(neoLabel("العودة للإدارة المالية", "Back to Finance"))
+                        }
+                    }
+                }
+            }
+        }
         when (section) {
             "SEARCH" -> {
                 val navigator = LocalNeoFeatures.current
@@ -478,6 +504,16 @@ fun NeoModernHub(
             }
             "RATES" ->
                 if (financial) {
+                    Text(
+                        neoLabel("اختر مكان العمل ونوع الشيفت وتاريخ بدء سريان السعر ثم احفظه بنفسك.",
+                            "Select the workplace, shift type, effective date and amount, then save explicitly."),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (workplaces.isEmpty()) Text(
+                        neoLabel("لا توجد أماكن عمل. أضف مكان عمل من التقويم أولًا.",
+                            "No workplaces found. Add a workplace in Calendar first."),
+                    )
                     NeoChoice(
                         neoLabel("مكان العمل", "Workplace"),
                         workplaces.map { it.id },

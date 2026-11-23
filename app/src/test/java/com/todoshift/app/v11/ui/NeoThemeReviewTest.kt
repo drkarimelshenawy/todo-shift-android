@@ -39,6 +39,27 @@ class NeoThemeReviewTest {
         }
     }
 
+    @Test fun amoledRetainsBlackCanvasButReadableOpaquePanelsAcrossPalettes() {
+        for (palette in NeoPalette.entries) for (accent in listOf("", "#000000", "#FFFFFF")) {
+            val p = NeoAppearance(
+                palette = palette,
+                brightness = NeoBrightness.AMOLED,
+                accentHex = accent,
+            )
+            val scheme = neoColorScheme(p, systemDark = false)
+            assertEquals(Color.Black, scheme.background)
+            assertEquals(Color.Black, scheme.surfaceDim)
+            assertTrue("$palette/$accent card should differ from black",
+                contrast(scheme.surface, scheme.background) >= 1.20f)
+            assertTrue("$palette/$accent variant must be distinguishable",
+                contrast(scheme.surfaceVariant, scheme.surface) >= 1.20f)
+            assertTrue(contrast(scheme.onSurface, scheme.surface) >= 7.0f)
+            assertTrue(contrast(scheme.onSurfaceVariant, scheme.surfaceVariant) >= 4.5f)
+            assertTrue(contrast(scheme.onPrimaryContainer, scheme.primaryContainer) >= 4.5f)
+            assertTrue(contrast(scheme.onSecondaryContainer, scheme.secondaryContainer) >= 4.5f)
+        }
+    }
+
     @Test fun jadeSurvivesPreferencesAndPortableProfileRoundTrip() {
         val store = NeoAppearanceStore(RuntimeEnvironment.getApplication())
         val selected = NeoAppearance(palette = NeoPalette.NILE_JADE, language = NeoLanguage.ARABIC,

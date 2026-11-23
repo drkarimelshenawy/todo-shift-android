@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalDensity
@@ -141,10 +142,16 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
         }
         return
     }
+    val colors = MaterialTheme.colorScheme
+    val darkFinance = colors.background.luminance() < .12f
+    val barColor = if (darkFinance) colors.primaryContainer else colors.primary
+    val barInk = if (darkFinance) colors.onPrimaryContainer else colors.onPrimary
     CompositionLocalProvider(LocalLayoutDirection provides if (CashBookText.arabic()) LayoutDirection.Rtl else LayoutDirection.Ltr) {
-        Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(modifier.fillMaxSize().background(
+            if (darkFinance) colors.background else colors.surfaceVariant
+        )) {
             // Cash Book partitions. Work entitlements deliberately have no local salary data.
-            Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primary).padding(horizontal = 6.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(Modifier.fillMaxWidth().background(barColor).padding(horizontal = 6.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 listOf(
                     Triple("accounts", R.string.cb_section_accounts, "section_accounts"),
                     Triple("debts", R.string.cb_section_debts, "section_debts"),
@@ -157,8 +164,13 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 2.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (chosen) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.13f),
-                            contentColor = if (chosen) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
+                            containerColor = if (chosen) {
+                                if (darkFinance) colors.secondaryContainer else colors.onPrimary
+                            } else if (darkFinance) colors.surfaceContainerHigh
+                            else colors.onPrimary.copy(alpha = 0.13f),
+                            contentColor = if (chosen) {
+                                if (darkFinance) colors.onSecondaryContainer else colors.primary
+                            } else if (darkFinance) colors.onSurface else colors.onPrimary
                         )
                     ) { Text(tr(label), fontSize = 12.sp, maxLines = 2) }
                 }
@@ -206,17 +218,17 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
                 }
             } else {
             // Section navigation: account selector, summary, search and management options.
-            Row(Modifier.fillMaxWidth().heightIn(min = CashBookCompact.HeaderHeight).background(MaterialTheme.colorScheme.primary), verticalAlignment = Alignment.CenterVertically) {
-                if(page != "movement" || (mainSection == "debts" && debtDetail)) IconButton(onClick={if (mainSection == "debts") debtDetail = false else page="movement"}){RefIcon(R.drawable.cb_back,tr(R.string.cb_003),tint=MaterialTheme.colorScheme.onPrimary)}
+            Row(Modifier.fillMaxWidth().heightIn(min = CashBookCompact.HeaderHeight).background(barColor), verticalAlignment = Alignment.CenterVertically) {
+                if(page != "movement" || (mainSection == "debts" && debtDetail)) IconButton(onClick={if (mainSection == "debts") debtDetail = false else page="movement"}){RefIcon(R.drawable.cb_back,tr(R.string.cb_003),tint=barInk)}
                 Box(Modifier.weight(1f)) {
                     TextButton(onClick = { archivedMenu=false;accountMenu = true }, enabled = accounts.isNotEmpty(), modifier = Modifier.testTag("account_picker_open")) {
-                        if(page=="movement"&&activeAccount!=null){AccountName(activeAccount,color=MaterialTheme.colorScheme.onPrimary);Text(" ▾",color=MaterialTheme.colorScheme.onPrimary)}else Text(if(page=="summary") tr(R.string.cb_004) else if(page=="trash") tr(R.string.cb_005) else tr(R.string.cb_006),color=MaterialTheme.colorScheme.onPrimary)
+                        if(page=="movement"&&activeAccount!=null){AccountName(activeAccount,color=barInk);Text(" ▾",color=barInk)}else Text(if(page=="summary") tr(R.string.cb_004) else if(page=="trash") tr(R.string.cb_005) else tr(R.string.cb_006),color=barInk)
                     }
                 }
-                IconButton(onClick = { page = if(page=="summary") "movement" else "summary" }, modifier = Modifier.testTag("summary_open").semantics { contentDescription = tr(R.string.cb_004) }) { RefIcon(R.drawable.cb_report, tr(R.string.cb_007), tint = MaterialTheme.colorScheme.onPrimary) }
-                IconButton(onClick = { showSearch = !showSearch; if (!showSearch) search = "" }, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_008) }) { RefIcon(R.drawable.cb_search, tr(R.string.cb_008), tint = MaterialTheme.colorScheme.onPrimary) }
+                IconButton(onClick = { page = if(page=="summary") "movement" else "summary" }, modifier = Modifier.testTag("summary_open").semantics { contentDescription = tr(R.string.cb_004) }) { RefIcon(R.drawable.cb_report, tr(R.string.cb_007), tint = barInk) }
+                IconButton(onClick = { showSearch = !showSearch; if (!showSearch) search = "" }, modifier = Modifier.semantics { contentDescription = tr(R.string.cb_008) }) { RefIcon(R.drawable.cb_search, tr(R.string.cb_008), tint = barInk) }
                 Box {
-                    IconButton(onClick = { overflow = true }, modifier = Modifier.testTag("section_options").semantics { contentDescription = tr(R.string.cb_009) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = MaterialTheme.colorScheme.onPrimary) }
+                    IconButton(onClick = { overflow = true }, modifier = Modifier.testTag("section_options").semantics { contentDescription = tr(R.string.cb_009) }) { RefIcon(R.drawable.cb_more, tr(R.string.cb_010), tint = barInk) }
                     CashBookMenu(overflow, { overflow = false }) {
                         DropdownMenuItem(text={Text(if (CashBookText.arabic()) "القسم الافتراضي" else "Default section")},
                             leadingIcon={Icon(Icons.Rounded.Home, null)},
@@ -234,7 +246,35 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
             if (snapshot == null) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { if (!state.busy) Button(onClick = vm::reload) { Text(tr(R.string.cb_014)) } }
             } else if (accounts.isEmpty() && !(mainSection == "debts" && debtDetail && activeDebt != null)) {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Button(onClick = { addAccount = true }) { Text(tr(R.string.cb_015)) } }
+                Box(Modifier.weight(1f).fillMaxWidth().padding(20.dp),
+                    contentAlignment = Alignment.Center) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = colors.surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant)
+                    ) {
+                        Column(
+                            Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                if (CashBookText.arabic()) "لا توجد حسابات مالية بعد"
+                                else "No financial accounts yet",
+                                color = colors.onSurface,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                if (CashBookText.arabic()) "أنشئ حسابًا علشان تتابع دخلك ومصروفاتك."
+                                else "Create an account to track your income and expenses.",
+                                color = colors.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Button(onClick = { addAccount = true }) { Text(tr(R.string.cb_015)) }
+                        }
+                    }
+                }
             } else if(activeDebt!=null&&page=="movement"){
                 DebtPanel(snapshot,activeDebt,Modifier.weight(1f))
             } else {

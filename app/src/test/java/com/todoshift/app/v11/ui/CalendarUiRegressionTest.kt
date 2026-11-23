@@ -32,6 +32,7 @@ class CalendarUiRegressionTest {
         showNames: Boolean = false,
         width: Int = 360,
         withTasks: Boolean = false,
+        brightness: NeoBrightness = NeoBrightness.SYSTEM,
     ) {
         val db =
             V11Database(
@@ -64,6 +65,7 @@ class CalendarUiRegressionTest {
             NeoEnvironment(
                 NeoAppearance(
                     language = language,
+                    brightness = brightness,
                     uiDirection =
                         if (language == NeoLanguage.ARABIC) NeoDirection.RTL else NeoDirection.LTR,
                     fontScale = fontScale,
@@ -99,6 +101,39 @@ class CalendarUiRegressionTest {
     }
 
     @Test
+    fun amoledMonthKeepsNoteBelowDayNumberAndPreservesFullCellSemantics() {
+        render(
+            kind = ShiftKind.FULL_DAY,
+            paint = true,
+            width = 360,
+            showNames = true,
+            withTasks = true,
+            brightness = NeoBrightness.AMOLED,
+        )
+        val dateBounds = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val noteFit = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().config[NeoDateFitInfo]
+        org.junit.Assert.assertTrue("Note caption missing; $noteFit",
+            compose.onAllNodesWithText("Fixture", substring = true,
+                useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
+        val captionBounds = compose.onNodeWithText("Fixture", substring = true,
+            useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        org.junit.Assert.assertTrue(
+            "Day caption must sit below its date rather than overlap: $dateBounds $captionBounds",
+            captionBounds.top >= dateBounds.bottom,
+        )
+        val day = compose.onNodeWithContentDescription(date.toString(), substring = true)
+        day.assertExists()
+        val description = day.fetchSemanticsNode().config[
+            androidx.compose.ui.semantics.SemanticsProperties.ContentDescription
+        ].joinToString(" ")
+        org.junit.Assert.assertTrue(description.contains("Fixture"))
+        org.junit.Assert.assertTrue(description.contains("FULL") ||
+            description.contains("24h") || description.contains("Full"))
+    }
+
+    @Test
     fun singleShiftRemainsVisibleWithBothDecorativeOptionsDisabled() {
         render(ShiftKind.MORNING, false)
         compose.onNodeWithContentDescription(date.toString() + ", 1 shifts", substring = true).assertExists()
@@ -114,7 +149,11 @@ class CalendarUiRegressionTest {
     @Test
     fun offDayHasAnExplicitMarker() {
         render(ShiftKind.OFF, true)
-        compose.onNodeWithText("Off").assertExists()
+        val offFit = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().config[NeoDateFitInfo]
+        org.junit.Assert.assertTrue("OFF label missing; $offFit",
+            compose.onAllNodesWithText("Off", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty())
     }
 
     @Test
@@ -152,11 +191,14 @@ class CalendarUiRegressionTest {
         render(ShiftKind.MORNING, false, fontScale = 1.8f, showNames = true)
         val dateBounds =
             compose.onNodeWithText("9", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val largeFit = compose.onNodeWithText("9", useUnmergedTree = true)
+            .fetchSemanticsNode().config[NeoDateFitInfo]
+        org.junit.Assert.assertTrue("Morning label missing; $largeFit",
+            compose.onAllNodesWithText("Morning", useUnmergedTree = true)
+                .fetchSemanticsNodes().isNotEmpty())
         val nameBounds =
-            compose
-                .onNodeWithText("Morning", useUnmergedTree = true)
-                .fetchSemanticsNode()
-                .boundsInRoot
+            compose.onNodeWithText("Morning", useUnmergedTree = true)
+                .fetchSemanticsNode().boundsInRoot
         org.junit.Assert.assertTrue("Date and shift name need separate lines",nameBounds.top >= dateBounds.bottom)
         compose.onNodeWithText("×1").assertDoesNotExist()
 

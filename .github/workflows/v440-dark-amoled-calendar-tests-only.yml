@@ -4,6 +4,10 @@ on:
     branches: [fix/v440-dark-amoled-calendar-contrast-20261124]
     paths: ['app/**', 'cashbook-feature/**', '.github/workflows/v440-dark-amoled-calendar-tests-only.yml']
   workflow_dispatch:
+# Only the newest branch revision needs tests; prevent redundant Gradle/Maven downloads.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

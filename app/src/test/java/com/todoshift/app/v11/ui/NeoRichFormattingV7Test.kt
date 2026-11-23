@@ -127,6 +127,21 @@ class NeoRichFormattingV7Test {
         assertTrue(above.getSpans(1,2,SuperscriptSpan::class.java).isNotEmpty())
     }
 
+    @Test fun paragraphStylesCannotTurnTablesImagesOrPageBreaksIntoPlainText() {
+        val img=NeoDocumentBlocks.image(
+            "neo-attachment-01234567-89ab-cdef-0123-456789abcdef.png")
+        val table=NeoDocumentBlocks.table(3,2)
+        val original="Intro\n"+table+"\n"+NeoDocumentBlocks.PAGE_BREAK+"\n"+img+"\nEnd"
+        val all=select(NeoRichEditorState.open(original),0,original.length)
+            .paragraphAlign("center").paragraphIndent(1)
+        val saved=all.stored()
+        val blocks=NeoDocumentBlocks.parse(saved)
+        assertEquals(1,blocks.filterIsInstance<NeoDocumentBlocks.Block.Table>().size)
+        assertEquals(1,blocks.filterIsInstance<NeoDocumentBlocks.Block.PageBreak>().size)
+        assertEquals(1,blocks.filterIsInstance<NeoDocumentBlocks.Block.Image>().size)
+        assertEquals(original,NeoRichEditorState.open(saved).value.text)
+    }
+
     @Test fun olderUnformattedNotesKeepTheirTextAndDataExactly() {
         val original="Plain English\nالسطر الثاني\n1. List"
         val state=NeoRichEditorState.open(original)

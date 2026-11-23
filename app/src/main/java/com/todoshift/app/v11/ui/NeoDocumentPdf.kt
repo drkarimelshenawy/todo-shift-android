@@ -138,6 +138,17 @@ internal object NeoDocumentPdf {
             // baseline, and size spans across all page breaks.
             val inset=paragraph.indent*20f
             val width=(CONTENT_WIDTH-inset).coerceAtLeast(100f).toInt()
+            val firstStrong=sourceText.firstOrNull { it.isLetter() }
+            val rightToLeft=firstStrong?.let {
+                val direction=Character.getDirectionality(it)
+                direction==Character.DIRECTIONALITY_RIGHT_TO_LEFT ||
+                    direction==Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
+            } == true
+            val insetFromRight=when(paragraph.align) {
+                "right" -> true
+                "left" -> false
+                else -> rightToLeft
+            }
             val wrapped=layout(sourceText,width,paragraph.align,center)
             for(index in 0 until wrapped.lineCount) {
                 // Render each line from the ORIGINAL shaped layout. Rebuilding a
@@ -149,7 +160,7 @@ internal object NeoDocumentPdf {
                 ensure(height)
                 val canvas=page!!.canvas
                 canvas.save()
-                canvas.translate(MARGIN+if(paragraph.align=="right") 0f else inset,y)
+                canvas.translate(MARGIN+if(insetFromRight) 0f else inset,y)
                 canvas.clipRect(0f,0f,width.toFloat(),height)
                 canvas.translate(0f,-lineTop.toFloat())
                 wrapped.draw(canvas)

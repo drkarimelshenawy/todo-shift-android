@@ -845,9 +845,14 @@ internal fun NeoCalendarCell(
             // returned by TextMeasurer under large accessibility font scaling.
             // Reserve a safety factor in 320dp / 7-column calendars, without
             // changing the fixed cell or grid height.
+            // Divide tiny fixed-height month cells into independent date,
+            // caption and indicator slots. On a 62dp cell the old 45dp date
+            // + 40dp badge reservations left literally zero space for notes.
+            val dateSlot = minOf(scaledDateHeight, maxHeight * .44f)
+                .coerceAtLeast(12.dp)
             val dateScale = minOf(
                 (maxWidth - 6.dp).coerceAtLeast(1.dp) / measured.dateWidth.coerceAtLeast(1.dp),
-                (maxHeight - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
+                (dateSlot - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
                 if (calendarFontScale >= 1.8f && maxWidth < 48.dp) .72f else 1f,
             ).coerceAtLeast(.25f)
             val compactCell = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 2f &&
@@ -862,12 +867,16 @@ internal fun NeoCalendarCell(
                 notes.firstOrNull()?.title?.let { title ->
                     listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
                 } else null
-            val captionsStart = scaledDateHeight +
+            val captionsStart = dateSlot + 1.dp +
                 if (firstNoteMarker != null && calendarFontScale > 1.3f)
-                    measured.captionHeight else 0.dp
+                    minOf(measured.captionHeight, maxHeight * .12f) else 0.dp
             val badgeReserved = if (p.showTaskIndicators && (tasks > 0 || events > 0))
-                measured.captionHeight + 5.dp else 0.dp
-            val captionBudget = (maxHeight - captionsStart - badgeReserved - 4.dp)
+                minOf(measured.captionHeight + 2.dp, maxHeight * .22f) else 0.dp
+            val badgeScale = if (badgeReserved > 0.dp)
+                minOf(1f, badgeReserved / measured.captionHeight.coerceAtLeast(1.dp))
+                    .coerceAtLeast(.35f)
+            else 1f
+            val captionBudget = (maxHeight - captionsStart - badgeReserved - 2.dp)
                 .coerceAtLeast(0.dp)
             // Preserve a compact caption at large accessibility scales instead
             // of hiding it when it misses the nominal line height by a few dp.
@@ -916,7 +925,7 @@ internal fun NeoCalendarCell(
                         // Date is a transparent overlay; paint continues behind its entire row.
                         .padding(vertical = 1.dp)
                         .semantics {
-                            this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight date=${measured.dateHeight} caption=${measured.captionHeight} budget=$captionBudget rows=$captionLines scale=$dateScale"
+                            this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight date=${measured.dateHeight} slot=$dateSlot badge=$badgeReserved caption=${measured.captionHeight} budget=$captionBudget rows=$captionLines scale=$dateScale"
                         },
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = MaterialTheme.typography.labelMedium.fontSize * dateScale,
@@ -1054,7 +1063,8 @@ internal fun NeoCalendarCell(
                     if (tasks > 0) Text(
                         "☑${if (tasks > 99) "99+" else tasks}",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            lineHeight = 14.sp, shadow = captionShadow),
+                            fontSize = MaterialTheme.typography.labelSmall.fontSize * badgeScale,
+                            lineHeight = 14.sp * badgeScale, shadow = captionShadow),
                         color = neoCalendarOverlayInk(segments, workplaces,
                             paintAppearance, .97f, c.onSurface),
                         maxLines = 1, softWrap = false,
@@ -1067,7 +1077,8 @@ internal fun NeoCalendarCell(
                     if (events > 0) Text(
                         "◷${if (events > 99) "99+" else events}",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            lineHeight = 14.sp, shadow = captionShadow),
+                            fontSize = MaterialTheme.typography.labelSmall.fontSize * badgeScale,
+                            lineHeight = 14.sp * badgeScale, shadow = captionShadow),
                         color = neoCalendarOverlayInk(segments, workplaces,
                             paintAppearance, .97f, c.onSurface),
                         maxLines = 1, softWrap = false,

@@ -60,6 +60,19 @@ class FixedSalaryIntegrityTest {
         assertEquals(0.0, V11FinanceEngine.month(archived, YearMonth.now().plusMonths(1)).expected, 0.0)
     }
 
+    @Test fun monthlySalarySaveDoesNotOverwriteInvisibleShiftRateHistory() {
+        val place=com.todoshift.app.data.Workplace("hospital","Hospital","#112233",fullDayRate=0.0)
+        val old=V11Database(
+            rates=listOf(RateHistoryEntryV11("old","hospital",ShiftKind.FULL_DAY,"2026-01-01",500.0)),
+            incomeSources=listOf(source.copy(type=IncomeSourceTypeV11.SHIFT_BASED,fixedMonthlyAmount=null))
+        )
+        val update=NeoWorkplaceEdit.apply(old,place,place,8400.0,"2026-08-01")
+        assertEquals(old.rates,update.rates)
+        assertEquals(8400.0,V11FinanceEngine.month(update,YearMonth.parse("2026-08")).expected,0.0)
+        assertEquals(0.0,V11FinanceEngine.month(update,YearMonth.parse("2026-07")).expected,0.0)
+        assertEquals(500.0,V11RateEngine.applicableRate(update.rates,"hospital",ShiftKind.FULL_DAY,"2026-07-15"),0.0)
+    }
+
     @Test fun switchingBetweenShiftAndMonthlyPayKeepsHistoricalEarningsAndReceipts() {
         val place=com.todoshift.app.data.Workplace("hospital","Hospital","#112233",fullDayRate=500.0)
         val old=database(1).copy(incomeSources=listOf(source.copy(type=IncomeSourceTypeV11.SHIFT_BASED,fixedMonthlyAmount=null)),payments=listOf(PaymentV11("p",100.0,"2026-11-20","2026-11",sourceId="salary")))

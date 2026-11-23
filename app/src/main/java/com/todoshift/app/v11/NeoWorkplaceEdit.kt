@@ -22,7 +22,8 @@ internal object NeoWorkplaceEdit {
             next=next.copy(incomeSources=next.incomeSources.map {if(it.id==source.id) it.copy(compensationHistory=(history.filterNot {h->h.effectiveMonth==month}+FixedSalaryPeriodV11(month,monthly ?: 0.0,monthly==null)).sortedBy {h->h.effectiveMonth}) else it})
         }
         fun rate(p:Workplace,k:ShiftKind)=when(k){ShiftKind.FULL_DAY->p.fullDayRate;ShiftKind.LONG->p.longRate;ShiftKind.NIGHT->p.nightRate;ShiftKind.MORNING->p.morningRate;ShiftKind.EVENING->p.eveningRate;ShiftKind.OFF->0.0}
-        ShiftKind.entries.filter {it!=ShiftKind.OFF}.forEach {kind ->
+        // Monthly salary and shift-rate history are independent. Never write hidden rates.
+        if (monthly == null) ShiftKind.entries.filter {it!=ShiftKind.OFF}.forEach {kind ->
             val amount=rate(place,kind);require(amount.isFinite()&&amount>=0)
             val current=next.rates.filter {it.workplaceId==place.id&&it.shiftKind==kind&&it.effectiveFrom<=effectiveDate}.maxByOrNull {it.effectiveFrom}
             if(original==null || current==null || current.amount!=amount) {

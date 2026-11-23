@@ -6,7 +6,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.todoshift.app.data.Workplace
@@ -16,6 +18,8 @@ import java.time.YearMonth
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 
 internal fun remainingWorkEntitlement(db:V11Database,workplace:String,month:YearMonth):Long {
     val sourceIds=db.incomeSources.filter {it.workplaceId==workplace}.map {it.id}.toSet()
@@ -26,6 +30,31 @@ internal fun remainingWorkEntitlement(db:V11Database,workplace:String,month:Year
     }
     val settled=db.settlements.filter {(it.sourceId in sourceIds || it.workplaceId==workplace) && it.accrualMonth==month.toString() && it.action in setOf(SettlementActionV11.WRITE_OFF,SettlementActionV11.CANCEL_ENTITLEMENT,SettlementActionV11.ADJUSTMENT)}.sumOf {LocalizedNumbers.cents(it.amount)}
     return (earned-received-settled).coerceAtLeast(0)
+}
+
+/**
+ * Read-only receipt preview. No allocation may exceed its real outstanding
+ * entitlement. One transfer may cover several months but must be positive.
+ */
+internal fun receiptDraftMinor(
+    db: V11Database,
+    workplaceId: String?,
+    months: List<YearMonth>,
+    amounts: Map<String, String>,
+): Long? {
+    val place = workplaceId ?: return null
+    if (months.isEmpty()) return null
+    var total = 0L
+    for (month in months) {
+        val minor = runCatching {
+            LocalizedNumbers.cents(
+                requireNotNull(MoneyInput.parse(amounts[month.toString()].orEmpty()).amount)
+            )
+        }.getOrNull() ?: return null
+        if (minor < 0 || minor > remainingWorkEntitlement(db, place, month)) return null
+        total = runCatching { Math.addExact(total, minor) }.getOrNull() ?: return null
+    }
+    return total.takeIf { it > 0L }
 }
 
 @Composable
@@ -70,13 +99,98 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
     var receivedDate by rememberSaveable {mutableStateOf(LocalDate.now().toString())}
     var account by rememberSaveable {mutableStateOf<String?>(null)}
     var method by rememberSaveable {mutableStateOf<String?>(null)}
-    var accounts by remember {mutableStateOf(emptyList<com.todoshift.cashbook.ui.SalaryIncomeLedgerBridge.EligibleAccount>())}
+    var accounts by remember {
+        mutableStateOf(emptyList<com.todoshift.cashbook.ui.SalaryIncomeLedgerBridge.EligibleAccount>())
+    }
+    var loadingAccounts by remember { mutableStateOf(true) }
+    var creatingAccount by remember { mutableStateOf(false) }
+    var createAccountDialog by remember { mutableStateOf(false) }
+    var newAccountName by rememberSaveable { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    val draftMinor = remember(db, workplace, months, amounts) {
+        receiptDraftMinor(db, workplace, months, amounts)
+    }
+    val selectedAccount = accounts.firstOrNull { it.id == account }
     var error by remember {mutableStateOf<String?>(null)}
     var review by remember {mutableStateOf<V11Database?>(null)}
     var submitted by remember {mutableStateOf(false)}
     val write=LocalNeoEditorWriteState.current
     LaunchedEffect(write.error) {if(write.error!=null) submitted=false}
-    LaunchedEffect(Unit) {try {accounts=withContext(Dispatchers.IO) {com.todoshift.cashbook.ui.SalaryIncomeLedgerBridge(context).accounts()}} catch(_:Exception) {error="تعذر تحميل الحسابات / Could not load accounts"}}
+    LaunchedEffect(Unit) {
+        try {
+            accounts = withContext(Dispatchers.IO) {
+                com.todoshift.cashbook.ui.SalaryIncomeLedgerBridge(context).accounts()
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            error = "تعذر تحميل حسابات Cash Book؛ حاول تحديث القائمة / Could not load Cash Book accounts"
+        } finally {
+            loadingAccounts = false
+        }
+    }
+    if (createAccountDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!creatingAccount) createAccountDialog = false },
+            title = { Text(neoLabel("إنشاء حساب للاستلام", "Create receiving account")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        neoLabel(
+                            "سيتم إنشاء حساب عادي في Cash Book بالجنيه ورصيد افتتاحي صفر. الحساب يُحفظ فورًا حتى لو ألغيت الاستلام بعد ذلك.",
+                            "Creates a regular EGP account with zero opening balance, saved immediately even if this receipt is cancelled.",
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    OutlinedTextField(
+                        value = newAccountName,
+                        onValueChange = { newAccountName = it.take(80) },
+                        label = { Text(neoLabel("اسم الحساب", "Account name")) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !creatingAccount && newAccountName.trim().isNotEmpty(),
+                    onClick = {
+                        if (!creatingAccount) {
+                            creatingAccount = true
+                            error = null
+                            scope.launch {
+                                try {
+                                    val (newAccount, freshAccounts) = withContext(Dispatchers.IO) {
+                                        val bridge = com.todoshift.cashbook.ui.SalaryIncomeLedgerBridge(context)
+                                        val created = bridge.createReceivingAccount(newAccountName)
+                                        created to bridge.accounts()
+                                    }
+                                    accounts = freshAccounts
+                                    account = newAccount.id
+                                    newAccountName = ""
+                                    createAccountDialog = false
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (failure: Exception) {
+                                    error = failure.message ?: "تعذر إنشاء الحساب / Could not create account"
+                                } finally {
+                                    creatingAccount = false
+                                }
+                            }
+                        }
+                    }
+                ) { Text(neoLabel("إنشاء الحساب", "Create account")) }
+            },
+            dismissButton = {
+                TextButton(enabled = !creatingAccount, onClick = {
+                    createAccountDialog = false
+                    error = null
+                }) { Text(neoLabel("إلغاء", "Cancel")) }
+            },
+        )
+        return
+    }
     if(review!=null) {
         val receipt=review!!.payments.single {it.id==requestId}
         AlertDialog(onDismissRequest={if(!submitted) review=null},title={Text(neoLabel("مراجعة الاستلام","Review receipt"))},text={Column {

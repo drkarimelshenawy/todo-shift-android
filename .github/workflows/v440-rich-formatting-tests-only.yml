@@ -65,7 +65,7 @@ jobs:
           assert "NeoNotePageBorderTile(" in preview
           model=(d/"ui/NeoRichDocument.kt").read_text()
           paragraph=(d/"ui/NeoRichParagraphStyle.kt").read_text()
-          exports=[(d/"ui/"+x).read_text() for x in ("NeoDocumentDocx.kt","NeoDocumentPdf.kt","NeoNoteExporter.kt")]
+          exports=[(d/"ui"/x).read_text() for x in ("NeoDocumentDocx.kt","NeoDocumentPdf.kt","NeoNoteExporter.kt")]
           assert "fun paragraphAlign(" in model and "fun paragraphIndent(" in model
           assert "fun highlight(" in model and "fun script(" in model
           assert "portableTag()" in model and "fromSavedLine(" in paragraph

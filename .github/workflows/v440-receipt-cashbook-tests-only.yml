@@ -1,0 +1,83 @@
+name: Premium salary-to-CashBook receipt — tests only, NO APK
+on:
+  push:
+    branches: [feat/v440-receipt-cashbook-premium-flow-20261123]
+    paths: ['app/**', '.github/workflows/v440-receipt-cashbook-tests-only.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Check rate access and safe visible-money callback
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          d=Path("app/src/main/java/com/todoshift/app/v11")
+          hub=(d/"ui/NeoModernHub.kt").read_text()
+          home=(d/"ui/V11Home.kt").read_text()
+          assert 'fun canUseFinance() = latestFinancial && (rootFinance?.invoke() ?: true)' in hub
+          assert 'if (financeAuthorized && !moneyVisible)' in hub
+          assert 'if (financialAccess && !moneyVisible) moneyVisible = true' in home
+          assert 'if (initialSection == "RATES") (initialMonth ?: YearMonth.now()).atDay(1)' in hub
+          assert 'fun missingRateDetails(' in (d/"V11FinanceEngine.kt").read_text()
+          editor=(d/"ui/V11WorkplacesUi.kt").read_text()
+          edit=(d/"NeoWorkplaceEdit.kt").read_text()
+          assert "workplaceCompensationInputsValid(" in editor
+          assert "if (monthly) validAmount(salary) else shiftRates.all(::validAmount)" in editor
+          assert "if (monthly == null)" in edit
+          dialog=(d/"ui/NeoReceiveEntitlements.kt").read_text()
+          bridge=Path("cashbook-feature/src/main/java/com/todoshift/cashbook/ui/SalaryIncomeLedgerBridge.kt").read_text()
+          home=(d/"ui/V11Home.kt").read_text()
+          assert "receiptDraftMinor(" in dialog and "createReceivingAccount(" in dialog
+          assert "createReceivingAccount(" in bridge and "snapshot.balance(it.id)" in bridge
+          assert "acknowledgedCashRevisions" in home and "cashSyncNotice" in home
+          assert "cashSyncError" in home and "SalaryCashSync.reconcile" in home
+          print("PASS: protected receipt, explicit account, balance preview and sync confirmation")
+          PY
+      - name: Configure temporary keystore for unit test classpath only
+        env:
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Unit tests only — no assemble, no signed artifact
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$TODOSHIFT_SIGNING_PASSWORD"
+          set -o pipefail
+          for attempt in 1 2 3; do
+            if gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
+              :app:testDebugUnitTest --tests com.todoshift.app.v11.ui.NeoReceiptCashBookPremiumTest --tests com.todoshift.app.v11.SalaryReceiptOperationsTest --tests com.todoshift.app.v11.ui.ClassicReceiptSafetyTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/rate-unit-test-${attempt}.log"; then exit 0; fi
+            if ! grep -Eq 'Received status code 429|Too Many Requests' "$RUNNER_TEMP/rate-unit-test-${attempt}.log" || [ "$attempt" = 3 ]; then exit 1; fi
+            sleep $((attempt * 35))
+          done
+      - name: Archive unit-test evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-receipt-cashbook-unit-tests
+          path: |
+            app/build/test-results/testDebugUnitTest/*.xml
+            app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: warn
+      - name: Remove transient keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

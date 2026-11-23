@@ -748,7 +748,9 @@ internal fun NeoCalendarCell(
     if(detailMode>0) {
         val roomy = detailMode==2
         Surface(
-            modifier.alpha(if(muted) .38f else 1f)
+            modifier.alpha(if (muted) {
+                if (c.background.luminance() < .12f) .72f else .5f
+            } else 1f)
                 .shadow(if(today||chosen) 3.dp else 1.dp,RoundedCornerShape(9.dp))
                 .combinedClickable(onClick=onClick,onLongClick=onLongClick)
                 .semantics { contentDescription=description;selected=chosen },

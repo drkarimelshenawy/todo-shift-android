@@ -43,8 +43,21 @@ jobs:
           TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
         run: |
           test -n "$TODOSHIFT_SIGNING_PASSWORD"
-          gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
-            :app:testDebugUnitTest --tests com.todoshift.app.v11.NeoCalendarPresentationTest --tests com.todoshift.app.v11.ui.CalendarUiRegressionTest --stacktrace
+          for attempt in 1 2 3; do
+            if gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
+              :app:testDebugUnitTest --tests com.todoshift.app.v11.NeoCalendarPresentationTest --tests com.todoshift.app.v11.ui.CalendarUiRegressionTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/calendar-tests-attempt-$attempt.log"; then
+              exit 0
+            fi
+            if ! grep -Eq 'Received status code 429|Too Many Requests|HTTP/1.1 429|HTTP/2 429' "$RUNNER_TEMP/calendar-tests-attempt-$attempt.log"; then
+              echo "Test failed for a non-rate-limit reason; not retrying." >&2
+              exit 1
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Dependency server rate-limited all three attempts." >&2
+              exit 1
+            fi
+            sleep $((attempt * 35))
+          done
       - name: Upload unit-test evidence only (NO APK)
         if: always()
         uses: actions/upload-artifact@v4

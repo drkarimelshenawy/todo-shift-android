@@ -421,21 +421,24 @@ private fun V11WorkplaceEditor(
         confirmButton = {
             leave.SaveButton(
                 enabled =
-                    name.trim().isNotEmpty() && enabledKinds.isNotEmpty() && colors.values.all {it.isBlank()||it.matches(Regex("#[0-9a-fA-F]{6}"))} && (!monthly||salary.toMoneyOrNull()!=null) && runCatching {java.time.LocalDate.parse(effective)}.isSuccess &&
-                        listOf(fullDay, longRate, night, morning, evening).all {
-                            it.toMoneyOrNull() != null
-                        },
+                    name.trim().isNotEmpty() && enabledKinds.isNotEmpty() &&
+                        colors.values.all { it.isBlank() || it.matches(Regex("#[0-9a-fA-F]{6}")) } &&
+                        runCatching { java.time.LocalDate.parse(effective) }.isSuccess &&
+                        workplaceCompensationInputsValid(
+                            monthly, salary, listOf(fullDay, longRate, night, morning, evening)
+                        ),
                 onClick = {
                     try {onSave(
                         Workplace(
                             id = recordId,
                             name = name.trim(),
                             colorHex = colorHex,
-                            fullDayRate = fullDay.toMoneyOrNull() ?: 0.0,
-                            longRate = longRate.toMoneyOrNull() ?: 0.0,
-                            nightRate = night.toMoneyOrNull() ?: 0.0,
-                            morningRate = morning.toMoneyOrNull() ?: 0.0,
-                            eveningRate = evening.toMoneyOrNull() ?: 0.0,
+                            // Monthly-pay edits must not overwrite hidden per-shift values.
+                            fullDayRate = if (monthly) initial?.fullDayRate ?: 0.0 else fullDay.toMoneyOrNull() ?: 0.0,
+                            longRate = if (monthly) initial?.longRate ?: 0.0 else longRate.toMoneyOrNull() ?: 0.0,
+                            nightRate = if (monthly) initial?.nightRate ?: 0.0 else night.toMoneyOrNull() ?: 0.0,
+                            morningRate = if (monthly) initial?.morningRate ?: 0.0 else morning.toMoneyOrNull() ?: 0.0,
+                            eveningRate = if (monthly) initial?.eveningRate ?: 0.0 else evening.toMoneyOrNull() ?: 0.0,
                             enabledShiftKinds=enabledKinds,shiftNames=names.filterValues {it.isNotBlank()},shiftColors=colors.filterValues {it.isNotBlank()},
                         ),if(monthly) salary.toMoneyOrNull() else null,effective
                     )} catch(failure:Exception) {editError=failure.message}
@@ -480,4 +483,15 @@ private fun Double.cleanMoney(): String =
     else String.format(java.util.Locale.ROOT, "%.2f", this)
 
 private fun Double.editableMoney(): String =
-    if (this == 0.0) "" else if (this % 1.0 == 0.0) toInt().toString() else toString()
+    if (this % 1.0 == 0.0) toInt().toString() else toString()
+
+/** Fixed monthly pay must not depend on hidden per-shift inputs. */
+internal fun workplaceCompensationInputsValid(
+    monthly: Boolean,
+    salary: String,
+    shiftRates: List<String>,
+): Boolean {
+    fun validAmount(input: String): Boolean =
+        input.toMoneyOrNull()?.let { it.isFinite() && it >= 0.0 } == true
+    return if (monthly) validAmount(salary) else shiftRates.all(::validAmount)
+}

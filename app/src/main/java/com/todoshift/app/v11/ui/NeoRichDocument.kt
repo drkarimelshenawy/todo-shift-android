@@ -145,6 +145,7 @@ internal data class NeoRichEditorState(
         }
         val tokens=hidden.map {token ->token.copy(
             position=(when {
+                token.text.matches(Regex("^#{1,3} ")) && token.position==start -> start
                 token.position<start -> token.position
                 token.position>=oldEnd -> token.position+delta
                 else -> newEnd
@@ -348,9 +349,18 @@ internal data class NeoRichEditorState(
             val transformed=NeoNoteVisualTransformation().filter(AnnotatedString(source))
             val annotated=transformed.text
             val paragraphFormats=source.split('\n').map(NeoRichParagraphStyle::fromSavedLine)
-            val tokens=Regex(" ?<!--task:[A-Za-z0-9_-]+-->").findAll(source).map{token ->
-                NeoRichHiddenToken(transformed.offsetMapping.originalToTransformed(token.range.first),token.value)
-            }.toList()
+            val internalTaskTokens=Regex(" ?<!--task:[A-Za-z0-9_-]+-->")
+                .findAll(source).map { token ->
+                    NeoRichHiddenToken(
+                        transformed.offsetMapping.originalToTransformed(token.range.first),
+                        token.value)
+                }
+            val headingTokens=Regex("(?m)^#{1,3} ").findAll(source).map { token ->
+                NeoRichHiddenToken(
+                    transformed.offsetMapping.originalToTransformed(token.range.first),
+                    token.value)
+            }
+            val tokens=(internalTaskTokens+headingTokens).sortedBy { it.position }.toList()
             val styles=MutableList(annotated.length){NeoRichCharStyle()}
             annotated.spanStyles.forEach{range ->
                 for(i in range.start.coerceAtLeast(0) until range.end.coerceAtMost(styles.size)){

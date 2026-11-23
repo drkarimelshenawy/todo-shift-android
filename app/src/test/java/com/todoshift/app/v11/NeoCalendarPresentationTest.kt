@@ -73,6 +73,25 @@ class NeoCalendarPresentationTest {
         assertEquals(Neo4Coverage(0f, .25f), neo4Coverage(recorded.kind))
         assertEquals(480, recorded.timeRange()!!.durationMinutes)
     }
+    @Test fun dateNumbersAndNotesDoNotShrinkApprovedFullCellPaintBands() {
+        // 23/24/25/26/27 November: FULL_DAY/Long/Morning/Evening/Night.
+        // The visual bands use the entire cell even when a date or note is overlaid.
+        val expected = listOf(
+            ShiftKind.FULL_DAY to Neo4PaintBand(0f, 1f, listOf(0)),
+            ShiftKind.LONG to Neo4PaintBand(0f, .5f, listOf(0)),
+            ShiftKind.MORNING to Neo4PaintBand(0f, .25f, listOf(0)),
+            ShiftKind.EVENING to Neo4PaintBand(.25f, .5f, listOf(0)),
+            ShiftKind.NIGHT to Neo4PaintBand(.5f, 1f, listOf(0)),
+        )
+        expected.forEach { (kind, band) ->
+            assertEquals("Full-cell paint coverage for $kind", listOf(band), neo4PaintBands(listOf(kind)))
+        }
+        // Painting remains presentational: original custom start/end times are preserved.
+        val custom = ShiftSegmentV11("actual", ShiftKind.LONG, startMinute = 420, endMinute = 900)
+        assertEquals(Neo4Coverage(0f, .5f), neo4Coverage(custom.kind))
+        assertEquals(480, custom.timeRange()!!.durationMinutes)
+    }
+
     @Test fun lastCalendarIsRetainedEvenWhenItIsHiddenAndEmpty() {
         val data = V11Database(calendars = listOf(AppCalendarV11("only", "Only", "#123456", visible = false)))
         assertEquals(data, V11CalendarController.deleteCalendar(data, "only"))

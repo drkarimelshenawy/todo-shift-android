@@ -8,7 +8,7 @@ neo = (root / "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt").read_
 legacy = (root / "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt").read_text()
 coverage = (root / "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt").read_text()
 month = neo.split("    Surface(\n        modifier\n            .alpha(if (muted)", 1)[1].split("\nfun neoHexColor(hex: String)", 1)[0]
-for required in ("Neo4ShiftFill(", "Modifier.fillMaxSize()", "val overlayShadow", "shadow = overlayShadow", "Transparent annotation"):
+for required in ("Neo4ShiftFill(", "Modifier.fillMaxSize()", "val overlayShadow", "shadow = overlayShadow", "Date is a transparent overlay"):
     assert required in month, "missing overlay rule: " + required
 for forbidden in (
     "Modifier.background(c.surface.copy(alpha",

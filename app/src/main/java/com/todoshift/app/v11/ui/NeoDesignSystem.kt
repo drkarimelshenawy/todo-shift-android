@@ -38,7 +38,7 @@ fun neoAccent(palette: NeoPalette): Color = Color(neo4AccentArgb(palette))
 fun neoContrastAccent(raw: Color, dark: Boolean): Color {
     var color = raw
     repeat(24) {
-        if (dark && color.luminance() < 0.32f) color = lerp(color, Color.White, 0.08f)
+        if (dark && color.luminance() < 0.40f) color = lerp(color, Color.White, 0.08f)
         else if (!dark && color.luminance() > 0.13f) color = lerp(color, Color.Black, 0.08f)
     }
     return color

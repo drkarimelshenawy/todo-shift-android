@@ -869,8 +869,17 @@ internal fun NeoCalendarCell(
                 measured.captionHeight + 5.dp else 0.dp
             val captionBudget = (maxHeight - captionsStart - badgeReserved - 4.dp)
                 .coerceAtLeast(0.dp)
-            val captionLines = (captionBudget / measured.captionHeight.coerceAtLeast(1.dp))
-                .toInt().coerceIn(0, 3)
+            // Preserve a compact caption at large accessibility scales instead
+            // of hiding it when it misses the nominal line height by a few dp.
+            val baselineCaption = measured.captionHeight.coerceAtLeast(1.dp)
+            val minCaption = baselineCaption * .55f
+            val captionLines = if (captionBudget >= minCaption)
+                (captionBudget / (baselineCaption * .82f)).toInt().coerceIn(1, 3)
+            else 0
+            val captionScale = if (captionLines > 0)
+                minOf(1f, captionBudget / (baselineCaption * captionLines))
+                    .coerceAtLeast(.48f)
+            else 1f
             val captionPosition = ((captionsStart + measured.captionHeight / 2) /
                 maxHeight.coerceAtLeast(1.dp)).coerceIn(0f, .99f)
             val captionInk = neoCalendarOverlayInk(
@@ -966,7 +975,9 @@ internal fun NeoCalendarCell(
                                 softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    lineHeight = 14.sp, shadow = captionShadow
+                                    lineHeight = 14.sp * captionScale,
+                                    fontSize = MaterialTheme.typography.labelSmall.fontSize * captionScale,
+                                    shadow = captionShadow
                                 ),
                                 color = captionInk,
                                 modifier = Modifier.weight(1f)
@@ -982,6 +993,8 @@ internal fun NeoCalendarCell(
                                 "+${notes.size - 1}",
                                 color = captionInk,
                                 style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = MaterialTheme.typography.labelSmall.fontSize * captionScale,
+                                    lineHeight = 14.sp * captionScale,
                                     shadow = captionShadow
                                 ),
                                 maxLines = 1,
@@ -1002,7 +1015,9 @@ internal fun NeoCalendarCell(
                                 names, maxLines = 1, softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    lineHeight = 14.sp, shadow = captionShadow),
+                                    lineHeight = 14.sp * captionScale,
+                                    fontSize = MaterialTheme.typography.labelSmall.fontSize * captionScale,
+                                    shadow = captionShadow),
                                 color = captionInk,
                             )
                             usedLines++
@@ -1016,7 +1031,9 @@ internal fun NeoCalendarCell(
                                 maxLines = 1, softWrap = false,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    lineHeight = 14.sp, shadow = captionShadow),
+                                    lineHeight = 14.sp * captionScale,
+                                    fontSize = MaterialTheme.typography.labelSmall.fontSize * captionScale,
+                                    shadow = captionShadow),
                                 color = captionInk,
                                 modifier = Modifier.then(if (onOpenShift != null)
                                     Modifier.clickable { onOpenShift(segment) } else Modifier),

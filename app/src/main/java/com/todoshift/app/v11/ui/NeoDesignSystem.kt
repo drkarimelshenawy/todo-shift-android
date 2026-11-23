@@ -55,6 +55,8 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
             NeoBrightness.LIGHT -> false
             else -> true
         }
+    // True AMOLED black remains the canvas; foreground surfaces must never blend into it.
+    val amoled = p.brightness == NeoBrightness.AMOLED
     val jade = p.palette == NeoPalette.NILE_JADE
     val paletteAccent = when {
         jade && dark -> Color(0xFF87DAB6)
@@ -78,9 +80,16 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
                 Color(0xFF101216)
             else -> Color(0xFF08233D)
         }
-    val surface = if (dark) lerp(bg, Color.White, 0.045f) else if (jade) Color(0xFFFFFCF3) else Color(0xFFF4F6FB)
-    val variant = lerp(surface, accent, if (dark) 0.10f else 0.05f)
-    val container = lerp(surface, accent, 0.12f + p.intensity * 0.12f)
+    val surface = when {
+        amoled -> Color(0xFF18202B)
+        dark -> lerp(bg, Color.White, 0.09f)
+        jade -> Color(0xFFFFFCF3)
+        else -> Color(0xFFF4F6FB)
+    }
+    val variant = if (amoled) Color(0xFF293544)
+        else lerp(surface, accent, if (dark) 0.10f else 0.05f)
+    val container = if (amoled) Color(0xFF253348)
+        else lerp(surface, accent, 0.12f + p.intensity * 0.12f)
     val secondary = when {
         jade && dark -> Color(0xFFF0BF81)
         jade -> Color(0xFF855316)
@@ -88,7 +97,9 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         else -> Color(0xFF755514)
     }
     val ink = if (jade && !dark) Color(0xFF152C24) else if (dark) Color(0xFFF2F5FC) else Color(0xFF08233D)
-    val muted = if (jade && !dark) Color(0xFF4D6559) else if (dark) Color(0xFFB8C4D6) else Color(0xFF526779)
+    val muted = if (jade && !dark) Color(0xFF4D6559)
+        else if (amoled) Color(0xFFCAD5E4)
+        else if (dark) Color(0xFFB8C4D6) else Color(0xFF526779)
     val onAccent = if (accent.luminance() > 0.18f) Color(0xFF07101A) else Color.White
     val base = if (dark) darkColorScheme() else lightColorScheme()
     return base.copy(
@@ -98,7 +109,8 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         onPrimaryContainer = ink,
         secondary = secondary,
         onSecondary = if (dark) Color(0xFF21180A) else Color.White,
-        secondaryContainer = lerp(surface, secondary, 0.15f),
+        secondaryContainer = if (amoled) Color(0xFF342C21)
+            else lerp(surface, secondary, 0.15f),
         onSecondaryContainer = ink,
         tertiary = accent,
         onTertiary = onAccent,
@@ -113,13 +125,18 @@ fun neoColorScheme(p: NeoAppearance, systemDark: Boolean): ColorScheme {
         surfaceTint = accent,
         surfaceDim = bg,
         surfaceBright = variant,
-        surfaceContainerLowest = bg,
+        surfaceContainerLowest = if (amoled) Color(0xFF101722)
+            else if (dark) lerp(bg, Color.White, 0.05f) else bg,
         surfaceContainerLow = surface,
-        surfaceContainer = lerp(surface, accent, 0.025f),
+        surfaceContainer = if (amoled) Color(0xFF212D3A)
+            else lerp(surface, accent, 0.025f),
         surfaceContainerHigh = variant,
-        surfaceContainerHighest = lerp(variant, accent, 0.025f),
-        outline = if (dark) Color(0xFF59687D) else Color(0xFF8A9BA9),
-        outlineVariant = lerp(surface, ink, if (dark) 0.18f else 0.09f),
+        surfaceContainerHighest = if (amoled) Color(0xFF344252)
+            else lerp(variant, accent, 0.025f),
+        outline = if (amoled) Color(0xFF8999AD)
+            else if (dark) Color(0xFF718096) else Color(0xFF8A9BA9),
+        outlineVariant = if (amoled) Color(0xFF516174)
+            else lerp(surface, ink, if (dark) 0.25f else 0.09f),
         error = if (dark) Color(0xFFFFABB1) else Color(0xFFAA2039),
         onError = if (dark) Color(0xFF450015) else Color.White,
         errorContainer = if (dark) Color(0xFF451724) else Color(0xFFFFDCE2),

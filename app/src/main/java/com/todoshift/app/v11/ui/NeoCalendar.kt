@@ -809,7 +809,9 @@ internal fun NeoCalendarCell(
     }
     Surface(
         modifier
-            .alpha(if (muted) .38f else 1f)
+            .alpha(if (muted) {
+                if (c.background.luminance() < .12f) .72f else .5f
+            } else 1f)
             .shadow(if (today || chosen) 3.dp else 1.dp, RoundedCornerShape(9.dp), clip = false)
             .clip(RoundedCornerShape(9.dp))
             .semantics {

@@ -16,7 +16,7 @@ internal object NeoNoteExporter {
     }
 
     private val permitted=Regex(
-        """ ?<!--task:[A-Za-z0-9_-]+-->|</?(?:b|i|u|s)>|<font color="#[0-9A-Fa-f]{6}">|</font>|<size sp="(?:14|16|18|20|24|28)">|</size>|<face key="(?:amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>"""
+        """ ?<!--task:[A-Za-z0-9_-]+-->|</?(?:b|i|u|s)>|<font color="#[0-9A-Fa-f]{6}">|</font>|<size sp="(?:14|16|18|20|24|28)">|</size>|<face key="(?:amiri|tajawal|reem|montserrat|lora|oswald|sans|serif|mono)">|</face>|<!--neo-p:(?:auto|left|center|right|justify):[0-4]-->|<mark color="#[0-9A-Fa-f]{6}">|</mark>|<sup>|</sup>|<sub>|</sub>"""
     )
 
     private fun safeInline(source:String):String {
@@ -26,7 +26,12 @@ internal object NeoNoteExporter {
             out.append(escape(source.substring(cursor,match.range.first)))
             val token=match.value
             when {
-                token.contains("<!--task:") -> Unit // internal linkage stays private
+                token.contains("<!--task:") || token.startsWith("<!--neo-p:") -> Unit
+                token.startsWith("<mark color=") -> {
+                    val hex=token.substringAfter("color=\"").substringBefore('"')
+                    out.append("<span style=\"background-color:").append(hex).append("\">")
+                }
+                token=="</mark>" -> out.append("</span>")
                 token.startsWith("<size sp=") -> {
                     val size=Regex("""\d+""").find(token)?.value ?: "16"
                     out.append("<span style=\"font-size:").append(size).append("pt\">")
@@ -77,13 +82,24 @@ internal object NeoNoteExporter {
                         val line=raw.replace(
                             Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
                         val heading=Regex("""^(#{1,3}) (.*)$""").matchEntire(line)
+                        val paragraph=NeoRichParagraphStyle.fromSavedLine(raw)
+                        val style=buildString {
+                            if(paragraph.align!="auto") {
+                                append("text-align:").append(paragraph.align).append(';')
+                            }
+                            if(paragraph.indent>0) {
+                                append("padding-inline-start:").append(paragraph.indent*24)
+                                    .append("px;")
+                            }
+                        }
                         if(heading!=null) {
                             val level=heading.groupValues[1].length
-                            append("<h").append(level).append(" dir=\"auto\">")
+                            append("<h").append(level).append(" dir=\"auto\" style=\"")
+                                .append(style).append("\">")
                             append(safeInline(heading.groupValues[2]))
                             append("</h").append(level).append(">")
                         } else {
-                            append("<p dir=\"auto\">")
+                            append("<p dir=\"auto\" style=\"").append(style).append("\">")
                             if(line.isBlank())append("&nbsp;")
                             else append(safeInline(line))
                             append("</p>")

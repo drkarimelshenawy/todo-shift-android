@@ -18,12 +18,20 @@ data class MonthFinanceV11(
     val byWorkplace: List<WorkplaceSummaryV11>,
 )
 
+data class MissingRateV11(
+    val date: String,
+    val segmentId: String,
+    val workplaceId: String?,
+    val kind: ShiftKind,
+)
+
+/** Finance projections are read-only; never create or guess dated rates. */
 object V11FinanceEngine {
     /**
      * A zero caused by a missing effective-dated rate is not an actual zero
      * salary. Do not back-fill guessed prices into historical earnings.
      */
-    fun missingRateCount(db: V11Database, month: YearMonth): Int {
+    fun missingRateDetails(db: V11Database, month: YearMonth): List<MissingRateV11> {
         val salariedWorkplaces = db.incomeSources.filter { source ->
             (source.fixedMonthlyAmount != null || source.compensationHistory.isNotEmpty()) &&
                 (if (source.compensationHistory.isEmpty()) source.active else
@@ -31,21 +39,24 @@ object V11FinanceEngine {
                         .filter { !YearMonth.parse(it.effectiveMonth).isAfter(month) }
                         .maxByOrNull { it.effectiveMonth }?.shiftBased == false)
         }.mapNotNull { it.workplaceId }.toSet()
-        return db.days.filter { it.date.startsWith(month.toString()) }
-            .sumOf { day ->
-                day.segments.count { shift ->
-                    shift.kind != ShiftKind.OFF &&
-                        shift.exceptionalAmount == null &&
-                        shift.workplaceId !in salariedWorkplaces &&
-                        db.rates.none { rate ->
-                            rate.workplaceId == shift.workplaceId &&
-                                rate.shiftKind == shift.kind &&
-                                rate.effectiveFrom <= day.date &&
-                                runCatching { java.time.LocalDate.parse(rate.effectiveFrom) }.isSuccess
-                        }
-                }
-            }
+        return db.days.asSequence()
+            .filter { it.date.startsWith(month.toString()) }
+            .flatMap { day -> day.segments.asSequence().filter { shift ->
+                shift.kind != ShiftKind.OFF &&
+                    shift.exceptionalAmount == null &&
+                    shift.workplaceId !in salariedWorkplaces &&
+                    db.rates.none { rate ->
+                        rate.workplaceId == shift.workplaceId &&
+                            rate.shiftKind == shift.kind &&
+                            rate.effectiveFrom <= day.date &&
+                            runCatching { java.time.LocalDate.parse(rate.effectiveFrom) }.isSuccess
+                    }
+            }.map { shift -> MissingRateV11(day.date, shift.id, shift.workplaceId, shift.kind) } }
+            .toList()
     }
+
+    fun missingRateCount(db: V11Database, month: YearMonth): Int =
+        missingRateDetails(db, month).size
 
     fun monthlyAmount(source: IncomeSourceV11, month: YearMonth): Double =
         if (source.compensationHistory.isEmpty()) {

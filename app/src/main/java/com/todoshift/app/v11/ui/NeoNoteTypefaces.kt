@@ -111,7 +111,10 @@ internal object NeoNoteTypefaces {
         english:String
     ):VisualTransformation=VisualTransformation {source ->
         val formatted=buildAnnotatedString {
-            append(source.text)
+            // Preserve the editable buffer's paragraph alignment and text indent
+            // while adding typeface/character spans. append(source.text) silently
+            // dropped all ParagraphStyles in the A4/live visual layer.
+            append(source)
             var index=0
             val count=minOf(source.length,characters.size)
             while(index<count) {

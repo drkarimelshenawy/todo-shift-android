@@ -10,6 +10,17 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
 import android.text.TextPaint
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.StyleSpan
+import android.text.style.UnderlineSpan
+import android.text.style.StrikethroughSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.BackgroundColorSpan
+import android.text.style.SuperscriptSpan
+import android.text.style.SubscriptSpan
+import android.text.style.RelativeSizeSpan
+import android.text.style.AbsoluteSizeSpan
 import com.todoshift.app.v11.NeoAttachmentStore
 import com.todoshift.app.v11.NeoSmartStore
 import java.io.File
@@ -21,6 +32,38 @@ internal object NeoDocumentPdf {
     private const val PAGE_HEIGHT=NeoA4PrintMetrics.PAGE_HEIGHT_PT
     private const val MARGIN=NeoA4PrintMetrics.MARGIN_PT
     private const val CONTENT_WIDTH=PAGE_WIDTH-2*MARGIN
+
+    /** Native Android glyph spans: preserve visible styling in the offline PDF export. */
+    internal fun formattedLine(source:String):CharSequence {
+        val rich=NeoRichEditorState.open(source)
+        val text=SpannableStringBuilder(rich.value.text)
+        val styles=rich.characters
+        var index=0
+        while(index<styles.size) {
+            val style=styles[index]
+            var end=index+1
+            while(end<styles.size && styles[end]==style)end++
+            fun mark(span:Any) {text.setSpan(span,index,end,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)}
+            val typeface=(if(style.bold) android.graphics.Typeface.BOLD else 0) or
+                (if(style.italic) android.graphics.Typeface.ITALIC else 0)
+            if(typeface!=0)mark(StyleSpan(typeface))
+            if(style.underline)mark(UnderlineSpan())
+            if(style.strike)mark(StrikethroughSpan())
+            style.color?.let { hex -> runCatching {
+                mark(ForegroundColorSpan(android.graphics.Color.parseColor(hex)))
+            } }
+            style.highlight?.let { hex -> runCatching {
+                mark(BackgroundColorSpan(android.graphics.Color.parseColor(hex)))
+            } }
+            style.size?.let { mark(AbsoluteSizeSpan(it,true)) }
+            when(style.script) {
+                "sup" -> {mark(SuperscriptSpan());mark(RelativeSizeSpan(.75f))}
+                "sub" -> {mark(SubscriptSpan());mark(RelativeSizeSpan(.75f))}
+            }
+            index=end
+        }
+        return text
+    }
 
     /** Returns actual PDF page count after a fully written export. */
     fun write(
@@ -66,19 +109,47 @@ internal object NeoDocumentPdf {
             if(page==null)newPage()
             if(y+height>PAGE_HEIGHT-MARGIN && y>MARGIN)newPage()
         }
-        fun layout(text:String,width:Int=CONTENT_WIDTH.toInt(),center:Boolean=false):StaticLayout {
-            val value=text.ifEmpty{" "}
-            return StaticLayout.Builder.obtain(value,0,value.length,paint,width)
-                .setAlignment(if(center) Layout.Alignment.ALIGN_CENTER else Layout.Alignment.ALIGN_NORMAL)
-                .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
-                .setIncludePad(false).build()
+        fun layout(text:CharSequence,width:Int=CONTENT_WIDTH.toInt(),
+            alignment:String="auto",center:Boolean=false):StaticLayout {
+            val value=if(text.isEmpty()) " " else text
+            val resolved=if(center) "center" else alignment
+            val builder=StaticLayout.Builder.obtain(value,0,value.length,paint,width)
+                .setAlignment(when(resolved) {
+                    "center" -> Layout.Alignment.ALIGN_CENTER
+                    "right" -> Layout.Alignment.ALIGN_NORMAL
+                    "left" -> Layout.Alignment.ALIGN_NORMAL
+                    else -> Layout.Alignment.ALIGN_NORMAL
+                })
+                .setTextDirection(when(resolved) {
+                    "left" -> TextDirectionHeuristics.LTR
+                    "right" -> TextDirectionHeuristics.RTL
+                    else -> TextDirectionHeuristics.FIRSTSTRONG_RTL
+                })
+                .setIncludePad(false)
+            if(resolved=="justify")
+                builder.setJustificationMode(Layout.JUSTIFICATION_MODE_INTER_WORD)
+            return builder.build()
         }
-        fun printText(sourceText:String,size:Float=NeoA4PrintMetrics.BODY_PT,space:Float=4f,center:Boolean=false) {
+        fun printText(sourceText:CharSequence,size:Float=NeoA4PrintMetrics.BODY_PT,
+            space:Float=4f,center:Boolean=false,
+            paragraph:NeoRichParagraphStyle=NeoRichParagraphStyle()) {
             paint.textSize=size
-            // Split at actual shaped layout line boundaries, so long text
-            // can paginate without clipping a whole multi-line paragraph.
-            val text=sourceText.ifBlank{" "}
-            val wrapped=layout(text,center=center)
+            // Use Android's shaped StaticLayout with real foreground/background,
+            // baseline, and size spans across all page breaks.
+            val inset=paragraph.indent*20f
+            val width=(CONTENT_WIDTH-inset).coerceAtLeast(100f).toInt()
+            val firstStrong=sourceText.firstOrNull { it.isLetter() }
+            val rightToLeft=firstStrong?.let {
+                val direction=Character.getDirectionality(it)
+                direction==Character.DIRECTIONALITY_RIGHT_TO_LEFT ||
+                    direction==Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
+            } == true
+            val insetFromRight=when(paragraph.align) {
+                "right" -> true
+                "left" -> false
+                else -> rightToLeft
+            }
+            val wrapped=layout(sourceText,width,paragraph.align,center)
             for(index in 0 until wrapped.lineCount) {
                 // Render each line from the ORIGINAL shaped layout. Rebuilding a
                 // new layout from a substring can change Arabic shaping, bidi
@@ -89,8 +160,8 @@ internal object NeoDocumentPdf {
                 ensure(height)
                 val canvas=page!!.canvas
                 canvas.save()
-                canvas.translate(MARGIN,y)
-                canvas.clipRect(0f,0f,CONTENT_WIDTH,height)
+                canvas.translate(MARGIN+if(insetFromRight) 0f else inset,y)
+                canvas.clipRect(0f,0f,width.toFloat(),height)
                 canvas.translate(0f,-lineTop.toFloat())
                 wrapped.draw(canvas)
                 canvas.restore()
@@ -121,8 +192,9 @@ internal object NeoDocumentPdf {
                                 line.startsWith("### ")->14f
                                 else ->NeoA4PrintMetrics.BODY_PT
                             }
-                            printText(NeoNoteDocumentTools.visible(line),size,
-                                if(line.isBlank()) 5f else 3f)
+                            printText(formattedLine(line),size,
+                                if(line.isBlank()) 5f else 3f,
+                                paragraph=NeoRichParagraphStyle.fromSavedLine(line))
                         }
                     }
                     // A terminal page-break marker should not produce an empty

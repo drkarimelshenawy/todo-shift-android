@@ -197,7 +197,13 @@ internal fun neoNoteHeading(state:NeoRichEditorState,level:Int):NeoRichEditorSta
         if(level==0) clean else "#".repeat(level)+" "+clean
     }
     val updated=text.replaceRange(from,to,replacement)
-    return state.input(TextFieldValue(updated,
+    // An existing heading prefix is stored as a hidden structural token.
+    // If the user changes its level, remove the old prefix before applying
+    // the visible edit so headings are never doubled or moved after the line.
+    val clean=state.copy(hidden=state.hidden.filterNot { token ->
+        token.text.matches(Regex("^#{1,3} ")) && token.position in from..to
+    })
+    return clean.input(TextFieldValue(updated,
         TextRange((from+replacement.length).coerceIn(0,updated.length))))
 }
 
@@ -251,7 +257,19 @@ internal fun NeoNoteFormatSheet(
                         style=MaterialTheme.typography.titleSmall)
                     Box {
                         OutlinedButton(onClick={fontMenu=true}) {
-                            Text("Aa  "+(state.effective().face ?: neoLabel("الافتراضي","Default")))
+                            Text("Aa  "+when(state.effective().face) {
+                                null -> neoLabel("الافتراضي","Default")
+                                "sans" -> "Sans Serif"
+                                "serif" -> "Serif"
+                                "mono" -> "Monospace"
+                                "amiri" -> "Amiri"
+                                "tajawal" -> "Tajawal"
+                                "reem" -> "Reem Kufi"
+                                "montserrat" -> "Montserrat"
+                                "lora" -> "Lora"
+                                "oswald" -> "Oswald"
+                                else -> neoLabel("الافتراضي","Default")
+                            })
                             Spacer(Modifier.width(8.dp))
                             Icon(Icons.Rounded.ArrowDropDown,null)
                         }
@@ -260,11 +278,17 @@ internal fun NeoNoteFormatSheet(
                                 listOf(
                                     "amiri" to "Amiri","tajawal" to "Tajawal",
                                     "reem" to "Reem Kufi","montserrat" to "Montserrat",
-                                    "lora" to "Lora","oswald" to "Oswald"
+                                    "lora" to "Lora","oswald" to "Oswald",
+                                    "sans" to neoLabel("بدون زوائد · Sans Serif","Sans Serif"),
+                                    "serif" to neoLabel("بزوائد · Serif","Serif"),
+                                    "mono" to neoLabel("أحادي العرض · Monospace","Monospace")
                                 )).forEach {(key,label) ->
-                                DropdownMenuItem(text={Text(label)},onClick={
-                                    fontMenu=false;onChange(state.face(key))
-                                })
+                                DropdownMenuItem(
+                                    text={Text(label,style=MaterialTheme.typography.bodyLarge.copy(
+                                        fontFamily=key?.let(NeoNoteTypefaces::family)
+                                    ))},
+                                    onClick={fontMenu=false;onChange(state.face(key))}
+                                )
                             }
                         }
                     }
@@ -294,6 +318,53 @@ internal fun NeoNoteFormatSheet(
                             }
                         }
                     }
+                    Text(neoLabel("الكتابة الفوقية والتحتية","Superscript / Subscript"),
+                        style=MaterialTheme.typography.titleSmall)
+                    Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                        FilterChip(
+                            selected=state.effective().script=="sup",
+                            onClick={onChange(state.script("sup"))},
+                            label={Text("X²")},
+                            leadingIcon={Icon(Icons.Rounded.VerticalAlignTop,null)}
+                        )
+                        FilterChip(
+                            selected=state.effective().script=="sub",
+                            onClick={onChange(state.script("sub"))},
+                            label={Text("X₂")},
+                            leadingIcon={Icon(Icons.Rounded.VerticalAlignBottom,null)}
+                        )
+                    }
+                    Text(neoLabel("تظليل النص المحدد","Text highlight"),
+                        style=MaterialTheme.typography.titleSmall)
+                    Text(
+                        neoLabel("التظليل خلف الكلمات، وليس لون الورقة.",
+                            "Highlight applies behind selected characters, not the page."),
+                        style=MaterialTheme.typography.bodySmall,
+                        color=MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement=Arrangement.spacedBy(8.dp),
+                        verticalAlignment=Alignment.CenterVertically) {
+                        listOf("#FFF59D","#C8E6C9","#BBDEFB","#F8BBD0","#E1BEE7")
+                            .forEach { hex ->
+                                val selected=state.effective().highlight==hex
+                                val description=neoLabel("تظليل", "Highlight")+" "+hex
+                                Surface(
+                                    onClick={onChange(state.highlight(hex))},
+                                    modifier=Modifier.size(42.dp).semantics {
+                                        contentDescription=description
+                                    },
+                                    color=Color(android.graphics.Color.parseColor(hex)),
+                                    shape=RoundedCornerShape(12.dp),
+                                    border=BorderStroke(if(selected) 3.dp else 1.dp,
+                                        if(selected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.outlineVariant)
+                                ) {}
+                            }
+                        OutlinedButton(onClick={onChange(state.highlight(null))}) {
+                            Text(neoLabel("بلا تظليل","Clear"))
+                        }
+                    }
                     Text(neoLabel("لون النص","Text color"),
                         style=MaterialTheme.typography.titleSmall)
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -310,6 +381,57 @@ internal fun NeoNoteFormatSheet(
                     }
                 }
                 1 -> {
+                    Text(neoLabel("محاذاة الفقرة","Paragraph alignment"),
+                        style=MaterialTheme.typography.titleSmall)
+                    Text(
+                        neoLabel("المحاذاة مستقلة عن اتجاه الكتابة.",
+                            "Alignment is independent of writing direction."),
+                        style=MaterialTheme.typography.bodySmall,
+                        color=MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            Triple("left",Icons.Rounded.FormatAlignLeft,neoLabel("يسار","Left")),
+                            Triple("center",Icons.Rounded.FormatAlignCenter,neoLabel("وسط","Center")),
+                            Triple("right",Icons.Rounded.FormatAlignRight,neoLabel("يمين","Right")),
+                            Triple("justify",Icons.Rounded.FormatAlignJustify,neoLabel("ضبط","Justify"))
+                        ).forEach { (key,icon,label) ->
+                            Surface(onClick={onChange(state.paragraphAlign(key))},
+                                shape=RoundedCornerShape(10.dp),
+                                color=if(state.currentParagraph().align==key)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceContainerLow,
+                                border=BorderStroke(1.dp,if(state.currentParagraph().align==key)
+                                    MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant)) {
+                                Row(Modifier.padding(horizontal=10.dp,vertical=9.dp),
+                                    verticalAlignment=Alignment.CenterVertically,
+                                    horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+                                    Icon(icon,label,modifier=Modifier.size(19.dp))
+                                    Text(label,style=MaterialTheme.typography.labelMedium)
+                                }
+                            }
+                        }
+                    }
+                    Row(verticalAlignment=Alignment.CenterVertically,
+                        horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text(neoLabel("المسافة البادئة","Indent"),
+                            modifier=Modifier.weight(1f),
+                            style=MaterialTheme.typography.titleSmall)
+                        NeoChromeIcon(
+                            Icons.Rounded.FormatIndentDecrease,
+                            neoLabel("تقليل المسافة البادئة","Decrease indent"),
+                            enabled=state.currentParagraph().indent>0
+                        ) {onChange(state.paragraphIndent(-1))}
+                        Text(state.currentParagraph().indent.toString())
+                        NeoChromeIcon(
+                            Icons.Rounded.FormatIndentIncrease,
+                            neoLabel("زيادة المسافة البادئة","Increase indent"),
+                            enabled=state.currentParagraph().indent<4
+                        ) {onChange(state.paragraphIndent(1))}
+                    }
+                    HorizontalDivider()
                     Text(neoLabel("قوائم","Lists"),style=MaterialTheme.typography.titleSmall)
                     Text(
                         neoLabel("اختر الشكل من معاينة القائمة التي ستظهر في الفقرة.",

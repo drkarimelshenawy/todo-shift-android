@@ -4,6 +4,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -22,7 +26,9 @@ internal data class NeoRichCharStyle(
     val bold: Boolean = false, val italic: Boolean = false,
     val underline: Boolean = false, val strike: Boolean = false,
     val size: Int? = null, val color: String? = null,
-    val face:String?=null
+    val face:String?=null,
+    val highlight:String?=null,
+    val script:String?=null
 ) {
     fun span(): SpanStyle = SpanStyle(
         fontWeight=if(bold) FontWeight.Bold else null,
@@ -34,8 +40,15 @@ internal data class NeoRichCharStyle(
             else -> null
         },
         fontFamily=face?.let(NeoNoteTypefaces::family),
-        fontSize=size?.sp ?: androidx.compose.ui.unit.TextUnit.Unspecified,
-        color=color?.let {runCatching {Color(android.graphics.Color.parseColor(it))}.getOrNull()} ?: Color.Unspecified
+        fontSize=if (script != null) ((size ?: 16) * 0.75f).sp
+            else size?.sp ?: androidx.compose.ui.unit.TextUnit.Unspecified,
+        color=color?.let {runCatching {Color(android.graphics.Color.parseColor(it))}.getOrNull()} ?: Color.Unspecified,
+        background=highlight?.let {runCatching {Color(android.graphics.Color.parseColor(it))}.getOrNull()} ?: Color.Unspecified,
+        baselineShift=when(script) {
+            "sup" -> BaselineShift.Superscript
+            "sub" -> BaselineShift.Subscript
+            else -> null
+        }
     )
 }
 
@@ -45,14 +58,20 @@ internal data class NeoRichEditorState(
     val value:TextFieldValue,
     val characters:List<NeoRichCharStyle>,
     val hidden:List<NeoRichHiddenToken> = emptyList(),
-    val pending:NeoRichCharStyle? = null
+    val pending:NeoRichCharStyle? = null,
+    val paragraphs:List<NeoRichParagraphStyle> =
+        List(value.text.count { it=='\n' } + 1) { NeoRichParagraphStyle() }
 ) {
-    init {require(value.text.length==characters.size)}
+    init {
+        require(value.text.length==characters.size)
+        require(paragraphs.size==value.text.count { it=='\n' }+1)
+    }
 
     // Paint the existing character styles over an IME buffer without dropping its
     // composition range. Earlier formatted lines must stay formatted while typing.
     private fun styledBuffer(
-        buffer:AnnotatedString,styles:List<NeoRichCharStyle>
+        buffer:AnnotatedString,styles:List<NeoRichCharStyle>,
+        paragraphs:List<NeoRichParagraphStyle>
     ):AnnotatedString=buildAnnotatedString {
         append(buffer)
         var index=0
@@ -62,16 +81,24 @@ internal data class NeoRichEditorState(
             if(styles[index]!=NeoRichCharStyle()) addStyle(styles[index].span(),index,until)
             index=until
         }
+        var offset=0
+        buffer.text.split('\n').forEachIndexed { line, value ->
+            val format=paragraphs.getOrElse(line) { NeoRichParagraphStyle() }
+            if (format!=NeoRichParagraphStyle() && value.isNotEmpty())
+                addStyle(format.asCompose(),offset,offset+value.length)
+            offset+=value.length+1
+        }
     }
 
     private fun withValue(
         text:String,styles:List<NeoRichCharStyle>,selection:TextRange,
         tokens:List<NeoRichHiddenToken> = hidden,
         typing:NeoRichCharStyle? = pending,
-        composition:TextRange? = null
+        composition:TextRange? = null,
+        paragraphFormats:List<NeoRichParagraphStyle> = paragraphs,
     ):NeoRichEditorState =
-        NeoRichEditorState(TextFieldValue(styledBuffer(AnnotatedString(text),styles),
-            selection,composition),styles,tokens,typing)
+        NeoRichEditorState(TextFieldValue(styledBuffer(AnnotatedString(text),styles,paragraphFormats),
+            selection,composition),styles,tokens,typing,paragraphFormats)
 
 
     /** Diff an IME edit and move its style ranges and linked-checklist anchors. */
@@ -98,8 +125,27 @@ internal data class NeoRichEditorState(
         val style=pending ?: characters.getOrNull(start-1) ?: characters.getOrNull(start) ?: NeoRichCharStyle()
         val styles=characters.take(start)+List(added){style}+characters.drop(oldEnd)
         val delta=added-(oldEnd-start)
+        // Track paragraph formats through IME changes and newline insertion/deletion.
+        // Every newly inserted line inherits the format of the edit's original line.
+        fun oldParagraph(offset:Int):NeoRichParagraphStyle {
+            val line=before.substring(0,offset.coerceIn(0,before.length)).count{it=='\n'}
+            return paragraphs.getOrElse(line){ NeoRichParagraphStyle() }
+        }
+        val nextParagraphs=buildList {
+            var newLineStart=0
+            after.split('\n').forEach { line ->
+                val previous=when {
+                    newLineStart < start -> newLineStart
+                    newLineStart >= newEnd -> newLineStart-delta
+                    else -> start
+                }
+                add(oldParagraph(previous))
+                newLineStart+=line.length+1
+            }
+        }
         val tokens=hidden.map {token ->token.copy(
             position=(when {
+                token.text.matches(Regex("^#{1,3} ")) && token.position==start -> start
                 token.position<start -> token.position
                 token.position>=oldEnd -> token.position+delta
                 else -> newEnd
@@ -121,12 +167,14 @@ internal data class NeoRichEditorState(
             val hasEarlierFormat=previousStyles.any {it!=NeoRichCharStyle()}
             return copy(
                 value=if(!hasEarlierFormat) next else TextFieldValue(
-                    styledBuffer(next.annotatedString,previousStyles),
+                    styledBuffer(next.annotatedString,previousStyles,nextParagraphs),
                     next.selection,next.composition),
-                characters=styles,hidden=tokens,pending=pending
+                characters=styles,hidden=tokens,pending=pending,
+                paragraphs=nextParagraphs
             )
         }
-        val edited=withValue(after,styles,next.selection,tokens,pending,next.composition)
+        val edited=withValue(after,styles,next.selection,tokens,pending,next.composition,
+            nextParagraphs)
         val smart=NeoSmartLists.onKeyboardEdit(before,after,next.selection.start)
         return if(smart!=null && smart.text!=after)
             edited.input(TextFieldValue(smart.text,TextRange(smart.caret)))
@@ -170,6 +218,44 @@ internal data class NeoRichEditorState(
     }
     fun fontSize(points:Int):NeoRichEditorState=style {it.copy(size=points)}
     fun ink(hex:String):NeoRichEditorState=style {it.copy(color=hex)}
+    fun highlight(hex:String?):NeoRichEditorState {
+        require(hex==null || Regex("#[0-9A-Fa-f]{6}").matches(hex))
+        return style { it.copy(highlight=hex) }
+    }
+    /** Mutually exclusive baseline positions; tapping an active script resets it. */
+    fun script(kind:String):NeoRichEditorState {
+        require(kind in setOf("sup","sub"))
+        val next=if(effective().script==kind) null else kind
+        return style {it.copy(script=next)}
+    }
+    fun paragraphAlign(alignment:String):NeoRichEditorState {
+        require(alignment in NeoRichParagraphStyle.ALIGNMENTS)
+        val selected=selectedParagraphs()
+        val updated=paragraphs.mapIndexed { index, format ->
+            if(index in selected) format.copy(align=alignment) else format
+        }
+        return withValue(value.text,characters,value.selection,paragraphFormats=updated)
+    }
+    fun paragraphIndent(delta:Int):NeoRichEditorState {
+        require(delta in -1..1)
+        val selected=selectedParagraphs()
+        val updated=paragraphs.mapIndexed { index, format ->
+            if(index in selected) format.copy(indent=(format.indent+delta).coerceIn(0,4))
+            else format
+        }
+        return withValue(value.text,characters,value.selection,paragraphFormats=updated)
+    }
+    fun currentParagraph():NeoRichParagraphStyle =
+        paragraphs.getOrElse(value.text.take(value.selection.min).count { it=='\n' }) {
+            NeoRichParagraphStyle()
+        }
+    private fun selectedParagraphs():IntRange {
+        val start=value.text.take(value.selection.min).count { it=='\n' }
+        val endOffset=if(value.selection.collapsed)value.selection.max
+            else (value.selection.max-1).coerceAtLeast(value.selection.min)
+        val end=value.text.take(endOffset).count { it=='\n' }
+        return start..end
+    }
     /** Applies selected font to highlighted text/word or future typing. */
     fun face(name:String?):NeoRichEditorState {
         require(name==null || name in com.todoshift.app.v11.NeoNotePresentation.FONT_KEYS)
@@ -222,12 +308,26 @@ internal data class NeoRichEditorState(
         }
         var open=emptyList<Pair<String,String>>()
         fun close() {open.asReversed().forEach{out.append(it.second)};open=emptyList()}
+        var lineIndex=0
+        val visibleLines=text.split('\n')
+        fun saveParagraph() {
+            val line=visibleLines.getOrElse(lineIndex){""}
+            // Page-breaks, embedded images and Markdown table rows are
+            // structural document blocks, not prose paragraphs. A trailing
+            // format token would make the block parser treat them as plain text.
+            val structural=line==NeoDocumentBlocks.PAGE_BREAK ||
+                line.startsWith("[[neo-image:") ||
+                (line.startsWith("|") && line.trimEnd().endsWith("|"))
+            if(!structural)
+                paragraphs.getOrNull(lineIndex)?.portableTag()?.let(out::append)
+            lineIndex++
+        }
         for(i in 0..text.length) {
             if(tokens[i].orEmpty().isNotEmpty()) {
                 close();tokens[i].orEmpty().forEach{out.append(it.text)}
             }
             if(i==text.length) break
-            if(text[i]=='\n') {close();out.append('\n');continue}
+            if(text[i]=='\n') {close();saveParagraph();out.append('\n');continue}
             val style=if(listMarker[i]) NeoRichCharStyle() else characters[i]
             val tags=buildList {
                 if(style.bold)add("<b>" to "</b>")
@@ -237,11 +337,14 @@ internal data class NeoRichEditorState(
                 style.size?.let{add("<size sp=\"$it\">" to "</size>")}
                 style.color?.let{add("<font color=\"$it\">" to "</font>")}
                 style.face?.let{add("<face key=\"$it\">" to "</face>")}
+                style.highlight?.let { add("<mark color=\"$it\">" to "</mark>") }
+                style.script?.let { add("<$it>" to "</$it>") }
             }
             if(tags!=open) {close();tags.forEach{out.append(it.first)};open=tags}
             out.append(text[i])
         }
         close()
+        saveParagraph()
         return out.toString()
     }
 
@@ -254,9 +357,19 @@ internal data class NeoRichEditorState(
         fun open(source:String):NeoRichEditorState {
             val transformed=NeoNoteVisualTransformation().filter(AnnotatedString(source))
             val annotated=transformed.text
-            val tokens=Regex(" ?<!--task:[A-Za-z0-9_-]+-->").findAll(source).map{token ->
-                NeoRichHiddenToken(transformed.offsetMapping.originalToTransformed(token.range.first),token.value)
-            }.toList()
+            val paragraphFormats=source.split('\n').map(NeoRichParagraphStyle::fromSavedLine)
+            val internalTaskTokens=Regex(" ?<!--task:[A-Za-z0-9_-]+-->")
+                .findAll(source).map { token ->
+                    NeoRichHiddenToken(
+                        transformed.offsetMapping.originalToTransformed(token.range.first),
+                        token.value)
+                }
+            val headingTokens=Regex("(?m)^#{1,3} ").findAll(source).map { token ->
+                NeoRichHiddenToken(
+                    transformed.offsetMapping.originalToTransformed(token.range.first),
+                    token.value)
+            }
+            val tokens=(internalTaskTokens+headingTokens).sortedBy { it.position }.toList()
             val styles=MutableList(annotated.length){NeoRichCharStyle()}
             annotated.spanStyles.forEach{range ->
                 for(i in range.start.coerceAtLeast(0) until range.end.coerceAtMost(styles.size)){
@@ -264,17 +377,27 @@ internal data class NeoRichEditorState(
                     val size=item.fontSize.takeIf{it.type==TextUnitType.Sp}?.value?.toInt()
                     val color=item.color.takeIf{it!=Color.Unspecified}?.toArgb()
                         ?.let{String.format("#%06X",it and 0xFFFFFF)}
+                    val baseline=when(item.baselineShift) {
+                        BaselineShift.Superscript -> "sup"
+                        BaselineShift.Subscript -> "sub"
+                        else -> null
+                    }
+                    val highlighted=item.background.takeIf { it!=Color.Unspecified }?.toArgb()
+                        ?.let { String.format("#%06X", it and 0xFFFFFF) }
                     styles[i]=prev.copy(
                         bold=prev.bold||(item.fontWeight?.weight ?: 0)>=FontWeight.SemiBold.weight,
                         italic=prev.italic||item.fontStyle==FontStyle.Italic,
                         underline=prev.underline||item.textDecoration?.contains(TextDecoration.Underline)==true,
                         strike=prev.strike||item.textDecoration?.contains(TextDecoration.LineThrough)==true,
-                        size=size?:prev.size,color=color?:prev.color,
-                        face=NeoNoteTypefaces.keyOf(item.fontFamily) ?: prev.face
+                        size=if(baseline!=null) prev.size else size?:prev.size,
+                        color=color?:prev.color,
+                        face=NeoNoteTypefaces.keyOf(item.fontFamily) ?: prev.face,
+                        highlight=highlighted?:prev.highlight,script=baseline?:prev.script
                     )
                 }
             }
-            return NeoRichEditorState(TextFieldValue(annotated,TextRange(annotated.length)),styles,tokens)
+            return NeoRichEditorState(TextFieldValue(annotated,TextRange(annotated.length)),
+                styles,tokens,paragraphs=paragraphFormats)
         }
     }
 }

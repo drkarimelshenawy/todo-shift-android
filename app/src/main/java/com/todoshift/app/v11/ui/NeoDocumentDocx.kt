@@ -45,6 +45,17 @@ internal object NeoDocumentDocx {
             Character.UnicodeScript.of(firstStrong.code)==Character.UnicodeScript.ARABIC
         val xml=StringBuilder("<w:p><w:pPr>")
         if(rtl)xml.append("<w:bidi w:val=\"1\"/>")
+        val paragraph=NeoRichParagraphStyle.fromSavedLine(text)
+        when(paragraph.align) {
+            "left" -> xml.append("<w:jc w:val=\"left\"/>")
+            "center" -> xml.append("<w:jc w:val=\"center\"/>")
+            "right" -> xml.append("<w:jc w:val=\"right\"/>")
+            "justify" -> xml.append("<w:jc w:val=\"both\"/>")
+        }
+        if(paragraph.indent>0) {
+            xml.append(if(rtl) "<w:ind w:right=\"" else "<w:ind w:left=\"")
+            xml.append(paragraph.indent*480).append("\"/>")
+        }
         if(heading>0)xml.append("<w:spacing w:before=\"200\" w:after=\"100\"/>")
         xml.append("</w:pPr>")
         var index=0
@@ -65,11 +76,21 @@ internal object NeoDocumentDocx {
             style.color?.takeIf{it.matches(Regex("#[0-9A-Fa-f]{6}"))}?.let{
                 xml.append("<w:color w:val=\"").append(it.drop(1)).append("\"/>")
             }
+            style.highlight?.takeIf{it.matches(Regex("#[0-9A-Fa-f]{6}"))}?.let{
+                xml.append("<w:shd w:val=\"clear\" w:fill=\"")
+                    .append(it.drop(1)).append("\"/>")
+            }
+            when(style.script) {
+                "sup" -> xml.append("<w:vertAlign w:val=\"superscript\"/>")
+                "sub" -> xml.append("<w:vertAlign w:val=\"subscript\"/>")
+            }
             style.face?.let {font ->
                 val face=when(font) {
                     "amiri"->"Amiri";"tajawal"->"Tajawal"
                     "reem"->"Reem Kufi";"montserrat"->"Montserrat"
                     "lora"->"Lora";"oswald"->"Oswald"
+                    // Office equivalents of the cross-platform generic families.
+                    "sans"->"Arial";"serif"->"Times New Roman";"mono"->"Courier New"
                     else->""
                 }
                 if(face.isNotBlank())xml.append("<w:rFonts w:ascii=\"")

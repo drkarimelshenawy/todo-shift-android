@@ -76,7 +76,12 @@ class PremiumWorkflowUiTest {
         }
         compose.onNodeWithText("Amount").assertExists()
         compose.runOnIdle { allowed.value = false }
+        // The sensitive Amount field must disappear immediately even if the
+        // incoming financeAuthorized / moneyVisible props have not yet changed.
         compose.onAllNodesWithText("Amount").assertCountEquals(0)
-        compose.onNodeWithText("Unlock Finance and show amounts first").assertExists()
+        // A relocked account must offer Back, never an unlock-bypass reveal button.
+        compose.onNodeWithText("Return to Finance and unlock it before showing amounts.").assertExists()
+        compose.onNodeWithText("Back to Finance").assertExists()
+        compose.onNodeWithText("Show amounts and open page").assertDoesNotExist()
     }
 }

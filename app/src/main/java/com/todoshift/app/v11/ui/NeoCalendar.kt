@@ -867,9 +867,9 @@ internal fun NeoCalendarCell(
                 notes.firstOrNull()?.title?.let { title ->
                     listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
                 } else null
-            val captionsStart = dateSlot + 1.dp +
-                if (firstNoteMarker != null && calendarFontScale > 1.3f)
-                    minOf(measured.captionHeight, maxHeight * .12f) else 0.dp
+            // Small note markers share the top corner; they do not steal an
+            // entire row that would otherwise hide the caption at large text.
+            val captionsStart = dateSlot + 1.dp
             val badgeReserved = if (p.showTaskIndicators && (tasks > 0 || events > 0))
                 minOf(measured.captionHeight + 2.dp, maxHeight * .22f) else 0.dp
             val badgeScale = if (badgeReserved > 0.dp)
@@ -938,17 +938,18 @@ internal fun NeoCalendarCell(
                 color = dateInk,
             )
             val marker = firstNoteMarker
-            val markerLine =
-                marker != null && androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
             if (marker != null && !compactCell)
                 Text(
                     marker,
-                    modifier =
-                        if (markerLine)
-                            Modifier.align(Alignment.TopStart)
-                                .padding(start = 2.dp, top = scaledDateHeight)
-                        else Modifier.align(Alignment.TopEnd).padding(2.dp),
-                    style = MaterialTheme.typography.labelSmall.copy(lineHeight = 14.sp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = MaterialTheme.typography.labelSmall.fontSize *
+                            minOf(1f, dateScale),
+                        lineHeight = 14.sp * minOf(1f, dateScale),
+                        shadow = overlayShadow,
+                    ),
+                    color = dateInk,
+                    maxLines = 1,
                 )
             if (!compactCell && captionLines > 0 &&
                 ((p.showNotes && notes.isNotEmpty()) ||

@@ -89,6 +89,8 @@ internal object NeoDocumentDocx {
                     "amiri"->"Amiri";"tajawal"->"Tajawal"
                     "reem"->"Reem Kufi";"montserrat"->"Montserrat"
                     "lora"->"Lora";"oswald"->"Oswald"
+                    // Office equivalents of the cross-platform generic families.
+                    "sans"->"Arial";"serif"->"Times New Roman";"mono"->"Courier New"
                     else->""
                 }
                 if(face.isNotBlank())xml.append("<w:rFonts w:ascii=\"")

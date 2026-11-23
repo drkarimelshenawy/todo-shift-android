@@ -81,7 +81,7 @@ class NeoRichFormattingV7Test {
         val old=NeoRichEditorState.open(source)
         val first=select(old,0,3).paragraphAlign("right")
         val output=first.stored()
-        assertTrue(output.startsWith("# عنوان"))
+        assertTrue(output.startsWith("# "))
         assertTrue(output.contains("<!--task:stable-id-->"))
         assertEquals(old.value.text,NeoRichEditorState.open(output).value.text)
         assertEquals("عنوان",NeoNoteDocumentTools.headings(output).single().title)

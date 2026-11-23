@@ -872,13 +872,15 @@ internal fun NeoCalendarCell(
             // Preserve a compact caption at large accessibility scales instead
             // of hiding it when it misses the nominal line height by a few dp.
             val baselineCaption = measured.captionHeight.coerceAtLeast(1.dp)
-            val minCaption = baselineCaption * .55f
-            val captionLines = if (captionBudget >= minCaption)
-                (captionBudget / (baselineCaption * .82f)).toInt().coerceIn(1, 3)
+            // A month cell is a compact overview. Keep a single actual line
+            // whenever at least 8dp remain; size it for that exact slot.
+            val captionLines = if (captionBudget >= 8.dp)
+                (captionBudget / (baselineCaption * .85f)).toInt()
+                    .coerceIn(1, 3)
             else 0
             val captionScale = if (captionLines > 0)
                 minOf(1f, captionBudget / (baselineCaption * captionLines))
-                    .coerceAtLeast(.48f)
+                    .coerceAtLeast(.40f)
             else 1f
             val captionPosition = ((captionsStart + measured.captionHeight / 2) /
                 maxHeight.coerceAtLeast(1.dp)).coerceIn(0f, .99f)
@@ -943,12 +945,8 @@ internal fun NeoCalendarCell(
                 Column(
                     Modifier.align(Alignment.TopStart)
                         .fillMaxWidth()
-                        .padding(
-                            start = 3.dp, end = 3.dp,
-                            top = captionsStart,
-                            bottom = badgeReserved + 2.dp,
-                        )
-                        .heightIn(max = captionBudget)
+                        .padding(start = 3.dp, end = 3.dp, top = captionsStart)
+                        .height(captionBudget)
                         .clipToBounds(),
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                 ) {

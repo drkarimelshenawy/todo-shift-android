@@ -309,8 +309,17 @@ internal data class NeoRichEditorState(
         var open=emptyList<Pair<String,String>>()
         fun close() {open.asReversed().forEach{out.append(it.second)};open=emptyList()}
         var lineIndex=0
+        val visibleLines=text.split('\n')
         fun saveParagraph() {
-            paragraphs.getOrNull(lineIndex)?.portableTag()?.let(out::append)
+            val line=visibleLines.getOrElse(lineIndex){""}
+            // Page-breaks, embedded images and Markdown table rows are
+            // structural document blocks, not prose paragraphs. A trailing
+            // format token would make the block parser treat them as plain text.
+            val structural=line==NeoDocumentBlocks.PAGE_BREAK ||
+                line.startsWith("[[neo-image:") ||
+                (line.startsWith("|") && line.trimEnd().endsWith("|"))
+            if(!structural)
+                paragraphs.getOrNull(lineIndex)?.portableTag()?.let(out::append)
             lineIndex++
         }
         for(i in 0..text.length) {

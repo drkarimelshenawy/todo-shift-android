@@ -330,10 +330,11 @@ internal fun NeoNoteFormatSheet(
                         listOf("#FFF59D","#C8E6C9","#BBDEFB","#F8BBD0","#E1BEE7")
                             .forEach { hex ->
                                 val selected=state.effective().highlight==hex
+                                val description=neoLabel("تظليل", "Highlight")+" "+hex
                                 Surface(
                                     onClick={onChange(state.highlight(hex))},
                                     modifier=Modifier.size(42.dp).semantics {
-                                        contentDescription=neoLabel("تظليل", "Highlight")+" "+hex
+                                        contentDescription=description
                                     },
                                     color=Color(android.graphics.Color.parseColor(hex)),
                                     shape=RoundedCornerShape(12.dp),

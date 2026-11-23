@@ -269,16 +269,35 @@ fun V11Home(
     }
     var db by remember { mutableStateOf(loaded.database) }
     var cashSyncError by remember { mutableStateOf<String?>(null) }
+    var cashSyncNotice by remember { mutableStateOf<String?>(null) }
+    // Startup reconciliation of historical receipts must not falsely signal a new deposit.
+    var acknowledgedCashRevisions by remember {
+        mutableStateOf(loaded.database.payments.filter { it.cashBookAccountId != null }
+            .associate { it.id to it.cashBookRevision })
+    }
     var cashSyncAttempt by remember { mutableIntStateOf(0) }
     LaunchedEffect(db.payments, cashSyncAttempt) {
+        val changed = db.payments.filter { payment ->
+            payment.cashBookAccountId != null &&
+                acknowledgedCashRevisions[payment.id] != payment.cashBookRevision
+        }
         try {
             withContext(Dispatchers.IO) {
                 com.todoshift.app.integration.SalaryCashSync.reconcile(context.applicationContext, db)
             }
             cashSyncError = null
+            acknowledgedCashRevisions = db.payments.filter { it.cashBookAccountId != null }
+                .associate { it.id to it.cashBookRevision }
+            if (changed.isNotEmpty()) {
+                cashSyncNotice = if (changed.all { it.reversedAt != null })
+                    "تم ترحيل إلغاء الاستلام إلى Cash Book دون إضافة دخل جديد. / Receipt reversal reconciled."
+                else
+                    "تم حفظ الاستلام وترحيل دخل واحد إلى حساب Cash Book المختار. / One income posted to Cash Book."
+            }
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (_: Exception) {
+            cashSyncNotice = null
             cashSyncError = "تم حفظ الدفعة. تعذر ترحيلها إلى كاش بوك؛ أعد المحاولة دون تسجيلها مرة أخرى. / Receipt saved. Cash Book posting pending; retry without adding another receipt."
         }
     }
@@ -287,6 +306,11 @@ fun V11Home(
             title = { Text("Cash Book") }, text = { Text(message) },
             confirmButton = { TextButton(onClick = { cashSyncAttempt++ }) { Text("إعادة المحاولة / Retry") } },
             dismissButton = { TextButton(onClick = { cashSyncError = null }) { Text("إغلاق / Close") } })
+    }
+    if (cashSyncError == null) cashSyncNotice?.let { message ->
+        AlertDialog(onDismissRequest = { cashSyncNotice = null },
+            title = { Text("Cash Book") }, text = { Text(message) },
+            confirmButton = { TextButton(onClick = { cashSyncNotice = null }) { Text("تم / OK") } })
     }
 
     var oldData by remember { mutableStateOf(loaded.legacy) }

@@ -589,6 +589,8 @@ internal fun NeoNotePreview(
         else androidx.compose.ui.text.style.TextAlign.Right)
     Column(verticalArrangement=Arrangement.spacedBy(0.dp)) {
         text.lines().forEachIndexed { index, rawLine ->
+            val paragraphFormat=NeoRichParagraphStyle.fromSavedLine(rawLine).asCompose()
+            val previewLineStyle=lineStyle.copy(textAlign=if(paragraphFormat.textAlign==androidx.compose.ui.text.style.TextAlign.Unspecified) lineStyle.textAlign else paragraphFormat.textAlign, textIndent=paragraphFormat.textIndent)
             val raw=noteDisplayText(rawLine)
             val rendered=NeoNoteTypefaces.styled(noteInline(raw),arabicFont,englishFont)
             // Parse the visible, formatted content: stored <b>/<i>/font wrappers
@@ -612,7 +614,7 @@ internal fun NeoNotePreview(
                         buildAnnotatedString {
                             append(if(done) "☑ " else "☐ ")
                             append(checklistLabel)
-                        },lineStyle,ruled=ruled
+                        },previewLineStyle,ruled=ruled
                     )
                 } else {
                     androidx.compose.runtime.CompositionLocalProvider(
@@ -627,7 +629,7 @@ internal fun NeoNotePreview(
                             onCheckedChange=onChecklist?.let{callback->{_:Boolean->callback(index)}},
                             enabled=onChecklist!=null
                         )
-                        NeoRuledParagraph(checklistLabel,lineStyle,Modifier.weight(1f).padding(top=6.dp),ruled)
+                        NeoRuledParagraph(checklistLabel,previewLineStyle,Modifier.weight(1f).padding(top=6.dp),ruled)
                         if(onCreateTask!=null) TextButton(onClick={onCreateTask(index,label)}) {
                             Text(if(rawLine.contains("<!--task:")) neoLabel("فتح المهمة","Open task")
                                 else neoLabel("إلى مهمة","To task"))
@@ -655,7 +657,7 @@ internal fun NeoNotePreview(
                 NeoRuledParagraph(
                     if(styled.isEmpty()) AnnotatedString(" ") else styled,
                     type.copy(fontSize=if(a4) (if(heading)15.sp else 12.sp) else type.fontSize,
-                        lineHeight=paraLineHeight,textDirection=textDirection),ruled=ruled
+                        lineHeight=paraLineHeight,textDirection=textDirection,textAlign=previewLineStyle.textAlign,textIndent=previewLineStyle.textIndent),ruled=ruled
                 )
             }
         }

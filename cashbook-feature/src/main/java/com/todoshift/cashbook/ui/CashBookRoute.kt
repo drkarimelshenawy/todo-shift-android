@@ -431,7 +431,7 @@ private fun EntryScreen(accounts: List<Ledger.Account>, selected: String?, initi
     val lineItems = draftItems(extras); val bills = draftBills(extras)
     var showAccounts by remember { mutableStateOf(false) }; var showItems by remember { mutableStateOf(false) }; var showBills by remember { mutableStateOf(false) }
     var calculator by remember { mutableStateOf(false) }; var discard by remember { mutableStateOf(false) }; var localError by remember { mutableStateOf<String?>(null) }
-    var focusEpoch by remember { mutableStateOf(0) }; val focus = remember { FocusRequester() }
+    var focusEpoch by remember { androidx.compose.runtime.mutableIntStateOf(0) }; val focus = remember { FocusRequester() }
     val context = LocalContext.current
     val dirty = if (editing == null) amount.isNotBlank() || note.isNotBlank() || extras != originalExtras else
         amount != com.todoshift.cashbook.core.WholeMoney.edit(editing.minor) || note != editing.note || day != editing.date || time != editing.time || kind != editing.kind || source != editing.accountId || target != editing.targetId || extras != originalExtras

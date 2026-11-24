@@ -58,6 +58,8 @@ class NeoSettingsHierarchyTest {
             "سلامة البيانات" to "HEALTH",
             "Shift notes in schedules" to "CALENDAR_DISPLAY",
             "Backup and restore" to "BACKUP",
+            "اختصارات المشغل" to "WIDGETS",
+            "Launcher shortcuts" to "WIDGETS",
             "شاشة بداية التطبيق" to "LAUNCH",
             "Nile Jade" to "APPEARANCE",
         )

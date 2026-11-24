@@ -17,5 +17,5 @@ val LocalV11NeoEnabled = compositionLocalOf { false }
 /** Decorative premium layer only: no persistence, finance or scheduling changes. */
 @Composable
 fun V11NeoSectionHero(title: String, subtitle: String, modifier: Modifier = Modifier) {
-    NeoPremiumBanner(title, if (LocalNeoAppearance.current.showDescriptions) subtitle else "", modifier.padding(vertical = 8.dp))
+    NeoPremiumBanner(title, modifier = modifier.padding(vertical = 8.dp), subtitle = if (LocalNeoAppearance.current.showDescriptions) subtitle else "")
 }

@@ -1,15 +1,8 @@
 <resources>
     <string name="shortcut_new_task">مهمة جديدة</string>
     <string name="shortcut_new_note">ملاحظة جديدة</string>
-    <string name="widget_previous_glyph" translatable="false">‹</string>
-    <string name="widget_next_glyph" translatable="false">›</string>
-    <string name="widget_complete_glyph" translatable="false">○</string>
-    <string name="widget_add_glyph" translatable="false">+</string>
-    <string name="widget_zero" translatable="false">0</string>
     <string name="tasks_widget_empty_text">لا توجد مهام حالياً</string>
     <string name="app_name">ExMore — Life Planner</string>
-    <string name="notification_channel_name">تذكيرات الشيفتات</string>
-    <string name="notification_channel_description">تنبيهات الشيفتات والمهام القادمة</string>
     <string name="widget_description">تقويم ExMore للشيفتات</string>
 
     <string name="tasks_widget_label">مهامي - ExMore</string>
@@ -28,10 +21,4 @@
     <string name="premium_settings_light">فاتح</string>
     <string name="premium_settings_dark">داكن</string>
     <string name="premium_title_workplaces">أماكن العمل</string>
-
-    <string name="premium_overview_title">نظرة عامة</string>
-    <string name="premium_overview_calendars">التقويمات</string>
-    <string name="premium_overview_tasks">المهام</string>
-    <string name="premium_overview_collapse">إخفاء</string>
-    <string name="premium_overview_expand">إظهار</string>
 </resources>

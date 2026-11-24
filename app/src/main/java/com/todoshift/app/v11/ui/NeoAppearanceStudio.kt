@@ -65,7 +65,7 @@ fun NeoAppearanceStudio(
         } else next()
     }
     fun leave() = requestLeave(onBack)
-    neoRegisterLeaveGuard { requestLeave(it) }
+    NeoRegisterLeaveGuard { requestLeave(it) }
     fun apply(next: () -> Unit = {}) {
         if (!valid) return
         if (commitAppearance != null) commitAppearance(draft, next)

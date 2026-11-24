@@ -2,8 +2,6 @@
     <string name="shortcut_new_task">New task</string>
     <string name="shortcut_new_note">New note</string>
     <string name="app_name">ExMore — Life Planner</string>
-    <string name="notification_channel_name">Shift reminders</string>
-    <string name="notification_channel_description">Upcoming shift and task alerts</string>
     <string name="widget_description">ExMore calendar widget</string>
     <string name="tasks_widget_label">My Tasks — ExMore</string>
     <string name="tasks_widget_description">Interactive tasks on your home screen</string>
@@ -21,10 +19,4 @@
     <string name="premium_settings_light">Light</string>
     <string name="premium_settings_dark">Dark</string>
     <string name="premium_title_workplaces">Workplaces</string>
-
-    <string name="premium_overview_title">Overview</string>
-    <string name="premium_overview_calendars">Calendars</string>
-    <string name="premium_overview_tasks">Tasks</string>
-    <string name="premium_overview_collapse">Collapse</string>
-    <string name="premium_overview_expand">Expand</string>
 </resources>

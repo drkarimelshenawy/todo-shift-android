@@ -132,7 +132,7 @@ fun NeoPainterBar(
     }
     LaunchedEffect(finishRequest) {if(finishRequest>0) requestExit {}}
     LaunchedEffect(queuePaused,error) {if(queuePaused||error!=null) onNeedsAttention()}
-    neoRegisterLeaveGuard { requestExit(it) }
+    NeoRegisterLeaveGuard { requestExit(it) }
     BackHandler {
         when {
             committing || write.pending || queue.isNotEmpty() -> { finishWhenSaved = true }

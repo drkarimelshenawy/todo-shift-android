@@ -141,7 +141,7 @@ fun V11DayDetailsScreen(
             if (LocalV11NeoEnabled.current) {
                 val locale = if (LocalNeoEnglish.current) java.util.Locale.ENGLISH else java.util.Locale.forLanguageTag("ar")
                 NeoPremiumBanner(date.format(java.time.format.DateTimeFormatter.ofPattern("EEEE، d MMMM yyyy",locale)),
-                    neoLabel("جدول اليوم","Daily schedule"))
+                    subtitle = neoLabel("جدول اليوم","Daily schedule"))
                 val shiftCount=entries.sumOf {it.segments.count {s -> s.kind != ShiftKind.OFF}}
                 val taskCount=db.tasks.count {it.date==date.toString()}
                 Row(Modifier.fillMaxWidth().padding(vertical=12.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)) {

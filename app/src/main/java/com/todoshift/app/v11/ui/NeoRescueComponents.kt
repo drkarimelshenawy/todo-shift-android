@@ -454,7 +454,7 @@ fun rememberNeoEditorExit(
             confirm = true
         } else next()
     }
-    neoRegisterLeaveGuard { next ->
+    NeoRegisterLeaveGuard { next ->
         request {
             onDismiss()
             next()

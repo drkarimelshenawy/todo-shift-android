@@ -34,7 +34,7 @@ object NeoPremium {
 fun neoPositiveColor(): Color = if (MaterialTheme.colorScheme.surface.luminance() < .3f) Color(0xFF99D9AC) else NeoPremium.Green
 
 @Composable
-fun NeoPremiumBanner(title: String, subtitle: String = "", modifier: Modifier = Modifier) {
+fun NeoPremiumBanner(title: String, modifier: Modifier = Modifier, subtitle: String = "") {
     Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary), shadowElevation = 3.dp) {

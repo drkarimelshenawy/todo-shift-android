@@ -127,7 +127,7 @@ internal object NeoDocumentPdf {
                 })
                 .setIncludePad(false)
             if(resolved=="justify")
-                builder.setJustificationMode(android.graphics.text.LineBreaker.JUSTIFICATION_MODE_INTER_WORD)
+                builder.setJustificationMode(1 /* LineBreaker.JUSTIFICATION_MODE_INTER_WORD; available since API 26 */)
             return builder.build()
         }
         fun printText(sourceText:CharSequence,size:Float=NeoA4PrintMetrics.BODY_PT,

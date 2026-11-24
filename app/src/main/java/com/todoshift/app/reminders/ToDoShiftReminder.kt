@@ -39,8 +39,6 @@ object ToDoShiftReminder {
     const val EXTRA_DATE = "reminder_date"
 
     fun createChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < 26) return
-
         val channel =
             NotificationChannel(
                     CHANNEL_ID,

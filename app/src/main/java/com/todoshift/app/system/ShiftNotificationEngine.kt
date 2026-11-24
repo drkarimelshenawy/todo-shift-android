@@ -3,7 +3,6 @@ package com.todoshift.app.system
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 
 object ShiftNotificationEngine {
 
@@ -13,11 +12,6 @@ object ShiftNotificationEngine {
     fun ensureChannel(
         context: Context
     ) {
-
-        if (
-            Build.VERSION.SDK_INT >=
-            Build.VERSION_CODES.O
-        ) {
 
             val manager =
                 context.getSystemService(
@@ -38,6 +32,5 @@ object ShiftNotificationEngine {
             manager.createNotificationChannel(
                 channel
             )
-        }
     }
 }

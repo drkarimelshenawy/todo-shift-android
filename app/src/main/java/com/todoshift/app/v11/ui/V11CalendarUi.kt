@@ -983,7 +983,7 @@ private fun V11CalendarGrid(
                                 paintSelected = paintMode && date in paintDates,
                                 muted = !isCurrentMonth,
                                 onClick = { onSelectedDate(date) },
-                                cellModifier = Modifier.fillMaxSize(),
+                                modifier = Modifier.fillMaxSize(),
                             )
                         }
                     }
@@ -1001,9 +1001,9 @@ private fun V11DayCell(
     uiSettings: V11UiSettings,
     selected: Boolean,
     paintSelected: Boolean,
-    muted: Boolean = false,
     onClick: () -> Unit,
-    cellModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
+    muted: Boolean = false,
 ) {
     val today = date == LocalDate.now()
 
@@ -1027,8 +1027,8 @@ private fun V11DayCell(
             V11CalendarStyle.CARDS -> 2.dp
         }
 
-    var modifier =
-        cellModifier
+    var cellBodyModifier =
+        modifier
             .padding(cellPadding)
             .fillMaxSize()
             .alpha(if (muted) 0.30f else 1f)
@@ -1045,18 +1045,18 @@ private fun V11DayCell(
             )
 
     if (paintSelected) {
-        modifier = modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape)
+        cellBodyModifier = cellBodyModifier.border(3.dp, MaterialTheme.colorScheme.primary, shape)
     } else if (
         today &&
             uiSettings.todayHighlightStyle in
                 listOf(TodayHighlightStyle.BORDER, TodayHighlightStyle.BORDER_TINT)
     ) {
-        modifier = modifier.border(2.dp, v11Color(uiSettings.todayHighlightColor), shape)
+        cellBodyModifier = cellBodyModifier.border(2.dp, v11Color(uiSettings.todayHighlightColor), shape)
     } else if (selected) {
-        modifier = modifier.border(2.dp, MaterialTheme.colorScheme.secondary, shape)
+        cellBodyModifier = cellBodyModifier.border(2.dp, MaterialTheme.colorScheme.secondary, shape)
     } else {
-        modifier =
-            modifier.border(
+        cellBodyModifier =
+            cellBodyModifier.border(
                 1.dp,
                 MaterialTheme.colorScheme.outline.copy(
                     alpha = if (uiSettings.calendarStyle == V11CalendarStyle.CARDS) 0.85f else 0.55f
@@ -1065,7 +1065,7 @@ private fun V11DayCell(
             )
     }
 
-    Box(modifier = modifier.clickable(onClick = onClick)) {
+    Box(modifier = cellBodyModifier.clickable(onClick = onClick)) {
         if (segments.isNotEmpty()) {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val totalHeight = maxHeight

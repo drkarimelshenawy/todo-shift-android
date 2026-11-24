@@ -148,7 +148,7 @@ class NeoLeaveGate {
 val LocalNeoLeaveGate = staticCompositionLocalOf<NeoLeaveGate?> { null }
 
 @Composable
-fun neoRegisterLeaveGuard(guard: ((() -> Unit) -> Unit)) {
+fun NeoRegisterLeaveGuard(guard: ((() -> Unit) -> Unit)) {
     val gate = LocalNeoLeaveGate.current
     val current by rememberUpdatedState(guard)
     val token = remember { Any() }

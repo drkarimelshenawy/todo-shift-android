@@ -1179,7 +1179,8 @@ fun NeoPremiumTasksScreen(db: V11Database, workplaces: List<Workplace>, onChange
                                     if(authorizedFolder(entry.value.id))
                                         deleteFolderId=entry.value.id
                                     else pendingUnlockFolder=entry.value.id
-                                }
+                                },
+                                modifier=Modifier.fillMaxWidth()
                             )
                         } else {
                         val note=(entry as NeoNoteLibraryEntry.Note).value
@@ -1630,7 +1631,7 @@ private fun NeoNoteFolderCard(
     onChild:()->Unit,
     onMove:()->Unit,
     onDelete:()->Unit,
-    modifier:Modifier=Modifier.fillMaxWidth()
+    modifier:Modifier=Modifier
 ) {
     var menu by remember {mutableStateOf(false)}
     val accent=remember(folder.color) {

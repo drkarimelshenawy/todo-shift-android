@@ -41,7 +41,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             discard = true
         } else next()
     }
-    neoRegisterLeaveGuard { request(it) }
+    NeoRegisterLeaveGuard { request(it) }
     androidx.activity.compose.BackHandler { request(onBack) }
     if (discard)
         AlertDialog(

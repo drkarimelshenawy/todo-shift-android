@@ -82,6 +82,8 @@ private fun CashBookContent(vm: CashBookViewModel, modifier: Modifier, weekStart
     val context = LocalContext.current
     val defaultSection = CashBookSectionPreference.load(context)
     var mainSection by rememberSaveable { mutableStateOf(entrySection ?: defaultSection) }
+    // Salary receipts write through a separate ledger instance while this route stays mounted.
+    LaunchedEffect(mainSection) { if (mainSection == "accounts" || mainSection == "debts") vm.reload() }
     val active = selected?.takeIf { id ->
         if (mainSection == "debts") allAccounts.any { it.id == id } && id in debtIds
         else selectableAccounts.any { it.id == id } && id !in debtIds

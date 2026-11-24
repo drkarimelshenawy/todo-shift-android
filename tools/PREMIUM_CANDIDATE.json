@@ -1,8 +1,8 @@
 {
   "applicationId": "com.todoshift.app",
-  "versionCode": 79,
-  "versionName": "4.4.0",
-  "branch": "feat/v4.4.0-name-splash-polish-20261122",
+  "versionCode": 80,
+  "versionName": "4.4.1",
+  "branch": "build/exmore-v440-fix1-9-qa-apk-20261124",
   "baseline": "6f7ded3e437db62d805e0b67a8446950e7633fcd",
-  "classification": "ExMore Life Planner — complete launcher app label, responsive compact headers, professionally typeset in-app launch splash; signed APK update over v72 with intact data schema"
+  "classification": "ExMore 4.4.1 Fix 1–9 original-key signed release candidate; installed certificate requires device verification"
 }

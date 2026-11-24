@@ -848,8 +848,14 @@ internal fun NeoCalendarCell(
             // Divide tiny fixed-height month cells into independent date,
             // caption and indicator slots. On a 62dp cell the old 45dp date
             // + 40dp badge reservations left literally zero space for notes.
-            val dateSlot = minOf(scaledDateHeight, maxHeight * .44f)
-                .coerceAtLeast(12.dp)
+            // On narrow 5/6-week month grids, preserve a minimum caption
+            // slot when notes exist. Date remains legible, but must not consume
+            // the only line available for the note title.
+            val hasVisibleNote = p.showNotes && notes.isNotEmpty()
+            val dateSlot = minOf(
+                scaledDateHeight,
+                maxHeight * if (hasVisibleNote) .34f else .44f,
+            ).coerceAtLeast(12.dp)
             val dateScale = minOf(
                 (maxWidth - 6.dp).coerceAtLeast(1.dp) / measured.dateWidth.coerceAtLeast(1.dp),
                 (dateSlot - 6.dp).coerceAtLeast(1.dp) / measured.dateHeight.coerceAtLeast(1.dp),
@@ -870,11 +876,14 @@ internal fun NeoCalendarCell(
             // Pinned marker has its own measured row BELOW the day number.
             // Corner placement overlapped the day date at large accessibility sizes.
             val markerRowHeight = if (firstNoteMarker != null && !compactCell)
-                minOf(measured.captionHeight * .70f, maxHeight * .17f)
-                    .coerceAtLeast(8.dp) else 0.dp
+                minOf(measured.captionHeight * .60f, maxHeight * .12f)
+                    .coerceAtLeast(6.dp) else 0.dp
             val captionsStart = dateSlot + markerRowHeight + 1.dp
             val badgeReserved = if (p.showTaskIndicators && (tasks > 0 || events > 0))
-                minOf(measured.captionHeight + 2.dp, maxHeight * .22f) else 0.dp
+                minOf(
+                    measured.captionHeight + 2.dp,
+                    maxHeight * if (hasVisibleNote) .18f else .22f,
+                ) else 0.dp
             val badgeScale = if (badgeReserved > 0.dp)
                 minOf(1f, badgeReserved / measured.captionHeight.coerceAtLeast(1.dp))
                     .coerceAtLeast(.35f)
@@ -886,7 +895,7 @@ internal fun NeoCalendarCell(
             val baselineCaption = measured.captionHeight.coerceAtLeast(1.dp)
             // A month cell is a compact overview. Keep a single actual line
             // whenever at least 8dp remain; size it for that exact slot.
-            val captionLines = if (captionBudget >= 8.dp)
+            val captionLines = if (captionBudget >= 7.dp)
                 (captionBudget / (baselineCaption * .85f)).toInt()
                     .coerceIn(1, 3)
             else 0

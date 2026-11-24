@@ -217,7 +217,7 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
                         keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
                         singleLine=true,
                         label={Text(neoLabel("مبلغ الاستلام","Receipt amount"))},
-                        isError=entered!=null && (entered<0 || entered>outstanding),
+                        isError=amounts[key].orEmpty().isNotBlank() && (entered==null || entered<0 || entered>outstanding),
                         supportingText={Text(neoLabel("المتبقي بعد الاستلام: ","Remaining after receipt: ")+
                             (entered?.takeIf {it in 0L..outstanding}?.let {receiptMoney(outstanding-it)} ?: "—"))}
                     )

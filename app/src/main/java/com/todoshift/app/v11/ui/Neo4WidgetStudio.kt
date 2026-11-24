@@ -30,7 +30,7 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
     var value by remember(kind,widgetId) { mutableStateOf(store.load(kind)) }
     val scope=rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
-    var opacity by remember(kind,value.backgroundOpacity) { mutableStateOf(value.backgroundOpacity) }
+    var opacity by remember(kind,value.backgroundOpacity) { mutableFloatStateOf(value.backgroundOpacity) }
     var saveError by remember { mutableStateOf<String?>(null) }
     var accent by rememberSaveable(kind, value.accent) { mutableStateOf(value.accent) }
     var pending by remember { mutableStateOf<(() -> Unit)?>(null) }

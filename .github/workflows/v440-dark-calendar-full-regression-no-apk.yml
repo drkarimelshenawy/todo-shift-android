@@ -1,7 +1,7 @@
 name: ExMore Fix 8 — full unit and lint dark calendar regression (NO APK)
 on:
   push:
-    branches: [fix/v440-dark-amoled-calendar-contrast-20261124]
+    branches: [fix/v440-dark-amoled-calendar-contrast-20261124, feat/exmore-v81-review-fixes]
     paths: ['app/**', 'cashbook-feature/**', '.github/workflows/v440-dark-calendar-full-regression-no-apk.yml']
   workflow_dispatch:
 # Only the newest branch revision needs tests; prevent redundant Gradle/Maven downloads.

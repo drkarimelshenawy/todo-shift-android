@@ -1,34 +1,79 @@
-name: ExMore Fix 1-9 QA APK (temporary signature)
+name: ExMore 4.4.1 Fix 1-9 signed APK
 on:
   push:
     branches:
       - build/exmore-v440-fix1-9-qa-apk-20261124
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build-qa-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin source branch
+        run: git checkout -B "$GITHUB_REF_NAME" "$GITHUB_SHA"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Generate isolated QA signing key
-        run: |
-          keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/exmore-qa.jks" -storepass "qa-only-2026" -keypass "qa-only-2026" -alias todoshift -keyalg RSA -keysize 2048 -validity 2 -dname "CN=ExMore QA,O=Temporary,C=EG"
-      - name: Build debug QA APK
+        with:
+          gradle-version: '8.9'
+      - name: Restore original signing key
         env:
-          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/exmore-qa.jks
-          TODOSHIFT_SIGNING_PASSWORD: qa-only-2026
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
-      - name: Upload QA APK
+          KEYSTORE_B64: ${{ secrets.TODOSHIFT_KEYSTORE_B64 }}
+          SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          test -n "$SIGNING_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/todoshift.jks"
+          chmod 600 "$RUNNER_TEMP/todoshift.jks"
+      - name: Test, lint and build signed release APK
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/todoshift.jks
+          TODOSHIFT_SIGNING_PASSWORD: ${{ secrets.TODOSHIFT_KEYSTORE_PASSWORD }}
+        run: |
+          gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
+            :cashbook-core:check :cashbook-feature:testDebugUnitTest :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --stacktrace
+      - name: Verify version, source and original signing certificate
+        run: |
+          python3 tools/verify_premium_apk.py app/build/outputs/apk/release/app-release.apk \
+            --build-tools "$ANDROID_HOME/build-tools/35.0.0" \
+            --expected-certificate aecf41e372d7204dacf6ebb93f02414b265c8d97fd5508023287aa2fc6da6ea9 \
+            --expected-sha "$GITHUB_SHA" --expected-branch "$GITHUB_REF_NAME" --require-release \
+            --output delivery/identity
+          cp app/build/outputs/apk/release/app-release.apk delivery/ExMore-4.4.1-vc80-Fix1-9.apk
+          (cd delivery && sha256sum *.apk > SHA256SUMS)
+      - name: Upload signed APK and identity
         uses: actions/upload-artifact@v4
         with:
-          name: ExMore-v4.4.0-Fix1-9-QA-APK-TEMP-SIGNATURE
-          path: app/build/outputs/apk/debug/*.apk
+          name: ExMore-4.4.1-vc80-Fix1-9-original-signature
+          path: delivery/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
+      - name: Upload test and lint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExMore-4.4.1-vc80-QA-evidence
+          path: |
+            app/build/test-results/testDebugUnitTest/
+            cashbook-core/build/test-results/
+            cashbook-feature/build/test-results/
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Remove restored signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/todoshift.jks"

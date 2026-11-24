@@ -148,6 +148,6 @@ fun NeoNotificationControls(db: V11Database) {
         }
     }
     NeoReminderRecurrenceControls(db)
-    NeoShortcutControls()
+    // Launcher shortcuts belong to Widgets & Shortcuts, never Notification Center.
     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 }

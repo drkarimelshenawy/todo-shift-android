@@ -248,7 +248,7 @@ object NeoFeatureRoutePolicy {
 
 object NeoSettingsHierarchy {
     val rootGroups = listOf(
-        "APPEARANCE", "LANGUAGE", "SECTIONS", "NOTIFICATIONS", "WIDGETS",
+        "APPEARANCE", "LANGUAGE", "SECTIONS", "NOTIFICATIONS", "WIDGETS", "SHORTCUTS",
         "SECURITY", "DATA", "ADVANCED",
     )
     val sectionGroups = listOf("CALENDAR", "TASKS", "NOTES", "SALARY", "CASHBOOK")

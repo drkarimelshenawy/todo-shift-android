@@ -152,7 +152,7 @@ class NeoRescueUiTest {
     }
 
     @Test
-    fun settingsHomeHasEightOrganizedGroupsAndNoToolsDump() {
+    fun settingsHomeHasNineOrganizedGroupsAndNoToolsDump() {
         val context = RuntimeEnvironment.getApplication()
         render {
             NeoRescueSettings(
@@ -173,7 +173,8 @@ class NeoRescueUiTest {
                 "Language & Direction",
                 "Section Settings",
                 "Notifications & Reminders",
-                "Widgets & Shortcuts",
+                "Widgets",
+                "Launcher shortcuts",
                 "Security & Privacy",
                 "Data & Backup",
                 "About & Advanced",

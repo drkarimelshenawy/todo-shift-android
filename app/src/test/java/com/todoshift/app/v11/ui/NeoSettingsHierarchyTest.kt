@@ -6,7 +6,7 @@ import org.junit.Test
 /** Regression guard: a canonical owner, a reachable destination, and predictable back paths. */
 class NeoSettingsHierarchyTest {
     @Test fun topLevelGroupsAreUniqueAndOrdered() {
-        assertEquals(listOf("APPEARANCE", "LANGUAGE", "SECTIONS", "NOTIFICATIONS", "WIDGETS",
+        assertEquals(listOf("APPEARANCE", "LANGUAGE", "SECTIONS", "NOTIFICATIONS", "WIDGETS", "SHORTCUTS",
             "SECURITY", "DATA", "ADVANCED"), NeoSettingsHierarchy.rootGroups)
         assertEquals(NeoSettingsHierarchy.rootGroups.size, NeoSettingsHierarchy.rootGroups.distinct().size)
         assertEquals(listOf("CALENDAR", "TASKS", "NOTES", "SALARY", "CASHBOOK"), NeoSettingsHierarchy.sectionGroups)
@@ -39,6 +39,7 @@ class NeoSettingsHierarchyTest {
             "STORAGE" to "DATA",
             "SECURITY" to "SECURITY",
             "WIDGETS" to "WIDGETS",
+            "SHORTCUTS" to "SHORTCUTS",
             "LAUNCH" to "APPEARANCE",
             "LEGAL" to "ADVANCED",
         )
@@ -58,8 +59,8 @@ class NeoSettingsHierarchyTest {
             "سلامة البيانات" to "HEALTH",
             "Shift notes in schedules" to "CALENDAR_DISPLAY",
             "Backup and restore" to "BACKUP",
-            "اختصارات المشغل" to "WIDGETS",
-            "Launcher shortcuts" to "WIDGETS",
+            "اختصارات المشغّل" to "SHORTCUTS",
+            "Launcher shortcuts" to "SHORTCUTS",
             "شاشة بداية التطبيق" to "LAUNCH",
             "Nile Jade" to "APPEARANCE",
         )

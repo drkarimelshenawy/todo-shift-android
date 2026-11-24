@@ -42,6 +42,7 @@ class AndroidDebtReminderHost(private val context:Context):DebtReminders.Host {
 }
 class DebtReminderReceiver:BroadcastReceiver(){
     override fun onReceive(context:Context,intent:Intent){
+        if (intent.action !in setOf("cashbook.reminder", Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED)) return
         CashBookText.initialize(context)
         val pending=goAsync()
         Executors.newSingleThreadExecutor().also{executor->executor.execute{

@@ -68,7 +68,7 @@ object NeoSettingsSearch {
         hit("ملخص الحسابات", "Finance summary in tasks", "TASK_OVERVIEW", "TASKS", "money overview"),
         hit("البطاقات الثانوية", "Secondary cards", "TASK_OVERVIEW", "TASKS", "dashboard"),
         hit("ملاحظات الورديات بالجداول", "Shift notes in schedules", "CALENDAR_DISPLAY", "CALENDAR", "notes"),
-        hit("اختصارات المشغّل", "Launcher shortcuts", "WIDGETS", "WIDGETS",
+        hit("اختصارات المشغّل", "Launcher shortcuts", "SHORTCUTS", "SHORTCUTS",
             "اختصارات الشاشة الرئيسية تثبيت اختصار home screen pin shortcut launcher"),
         hit("الثيم المستقل للويدجت", "Independent widget theme", "WIDGETS", "WIDGETS", "widget ويدجت"),
         hit("شفافية الويدجت", "Widget background opacity", "WIDGETS", "WIDGETS", "widget background transparent شفافية ودجت"),

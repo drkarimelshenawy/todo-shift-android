@@ -948,7 +948,7 @@ internal fun NeoCalendarCell(
                 Text(
                     marker,
                     modifier = Modifier.align(Alignment.TopEnd)
-                        .padding(top = dateSlot, end = 2.dp)
+                        .offset(y = dateSlot).padding(end = 2.dp)
                         .height(markerRowHeight).clipToBounds(),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = MaterialTheme.typography.labelSmall.fontSize *

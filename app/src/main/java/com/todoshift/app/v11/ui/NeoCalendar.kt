@@ -867,9 +867,12 @@ internal fun NeoCalendarCell(
                 notes.firstOrNull()?.title?.let { title ->
                     listOf("📌", "★", "⚠").firstOrNull { title.startsWith(it) }
                 } else null
-            // Small note markers share the top corner; they do not steal an
-            // entire row that would otherwise hide the caption at large text.
-            val captionsStart = dateSlot + 1.dp
+            // Pinned marker has its own measured row BELOW the day number.
+            // Corner placement overlapped the day date at large accessibility sizes.
+            val markerRowHeight = if (firstNoteMarker != null && !compactCell)
+                minOf(measured.captionHeight * .70f, maxHeight * .17f)
+                    .coerceAtLeast(8.dp) else 0.dp
+            val captionsStart = dateSlot + markerRowHeight + 1.dp
             val badgeReserved = if (p.showTaskIndicators && (tasks > 0 || events > 0))
                 minOf(measured.captionHeight + 2.dp, maxHeight * .22f) else 0.dp
             val badgeScale = if (badgeReserved > 0.dp)
@@ -887,9 +890,13 @@ internal fun NeoCalendarCell(
                 (captionBudget / (baselineCaption * .85f)).toInt()
                     .coerceIn(1, 3)
             else 0
+            // Each caption is bounded to a distinct slot inside the fixed cell.
+            val captionRowHeight = if (captionLines > 0)
+                ((captionBudget - (captionLines - 1).dp) / captionLines)
+                    .coerceAtLeast(1.dp) else 0.dp
             val captionScale = if (captionLines > 0)
-                minOf(1f, captionBudget / (baselineCaption * captionLines))
-                    .coerceAtLeast(.40f)
+                minOf(1f, (captionRowHeight - 2.dp).coerceAtLeast(1.dp) /
+                    baselineCaption).coerceAtLeast(.28f)
             else 1f
             val captionPosition = ((captionsStart + measured.captionHeight / 2) /
                 maxHeight.coerceAtLeast(1.dp)).coerceIn(0f, .99f)
@@ -920,10 +927,9 @@ internal fun NeoCalendarCell(
                         // cell width. wrapContentWidth previously compressed
                         // the layout to 20px while intrinsic glyph width was
                         // 37px, even after scaling, clipping two-digit dates.
-                        .fillMaxWidth()
-                        .padding(horizontal = 1.dp, vertical = 2.dp)
-                        // Date is a transparent overlay; paint continues behind its entire row.
-                        .padding(vertical = 1.dp)
+                        .fillMaxWidth().height(dateSlot).clipToBounds()
+                        .padding(horizontal = 1.dp)
+                        // Date remains transparent; shift paint stays full-height.
                         .semantics {
                             this[NeoDateFitInfo] = "cell=$maxWidth/$maxHeight date=${measured.dateHeight} slot=$dateSlot badge=$badgeReserved caption=${measured.captionHeight} budget=$captionBudget rows=$captionLines scale=$dateScale"
                         },
@@ -941,15 +947,17 @@ internal fun NeoCalendarCell(
             if (marker != null && !compactCell)
                 Text(
                     marker,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                    modifier = Modifier.align(Alignment.TopEnd)
+                        .padding(top = dateSlot, end = 2.dp)
+                        .height(markerRowHeight).clipToBounds(),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = MaterialTheme.typography.labelSmall.fontSize *
-                            minOf(1f, dateScale),
-                        lineHeight = 14.sp * minOf(1f, dateScale),
+                            minOf(1f, markerRowHeight / baselineCaption),
+                        lineHeight = 14.sp * minOf(1f, markerRowHeight / baselineCaption),
                         shadow = overlayShadow,
                     ),
                     color = dateInk,
-                    maxLines = 1,
+                    maxLines = 1, softWrap = false,
                 )
             if (!compactCell && captionLines > 0 &&
                 ((p.showNotes && notes.isNotEmpty()) ||
@@ -972,7 +980,7 @@ internal fun NeoCalendarCell(
                         val noteBorder = noteMetadata.optJSONObject("noteBorders")
                             ?.optBoolean(note.id, false) == true
                         Row(
-                            Modifier.fillMaxWidth(),
+                            Modifier.fillMaxWidth().height(captionRowHeight).clipToBounds(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
@@ -990,7 +998,8 @@ internal fun NeoCalendarCell(
                                     shadow = captionShadow
                                 ),
                                 color = captionInk,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).height(captionRowHeight)
+                                    .clipToBounds()
                                     .then(if (onOpenNote != null) Modifier.clickable {
                                         onOpenNote(note)
                                     } else Modifier)
@@ -1029,6 +1038,7 @@ internal fun NeoCalendarCell(
                                     fontSize = MaterialTheme.typography.labelSmall.fontSize * captionScale,
                                     shadow = captionShadow),
                                 color = captionInk,
+                                modifier = Modifier.height(captionRowHeight).clipToBounds(),
                             )
                             usedLines++
                         }
@@ -1045,7 +1055,8 @@ internal fun NeoCalendarCell(
                                     fontSize = MaterialTheme.typography.labelSmall.fontSize * captionScale,
                                     shadow = captionShadow),
                                 color = captionInk,
-                                modifier = Modifier.then(if (onOpenShift != null)
+                                modifier = Modifier.height(captionRowHeight).clipToBounds()
+                                    .then(if (onOpenShift != null)
                                     Modifier.clickable { onOpenShift(segment) } else Modifier),
                             )
                         }
@@ -1058,7 +1069,8 @@ internal fun NeoCalendarCell(
             if (!compactCell && p.showTaskIndicators && (tasks > 0 || events > 0))
                 Row(
                     Modifier.align(Alignment.BottomStart).fillMaxWidth()
-                        .padding(horizontal = 3.dp, vertical = 2.dp),
+                        .height(badgeReserved).clipToBounds()
+                        .padding(horizontal = 3.dp),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     if (tasks > 0) Text(

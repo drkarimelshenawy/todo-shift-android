@@ -27,7 +27,6 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
     var widgetId by rememberSaveable { mutableStateOf<Int?>(null) }
     val store = remember(widgetId) { Neo4WidgetSettings(context.applicationContext,widgetId) }
     var kind by rememberSaveable { mutableStateOf(Neo4WidgetKind.CALENDAR) }
-    var shortcutSectionExpanded by rememberSaveable { mutableStateOf(false) }
     var value by remember(kind,widgetId) { mutableStateOf(store.load(kind)) }
     val scope=rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
@@ -237,40 +236,5 @@ fun Neo4WidgetStudio(onBack: () -> Unit) {
             ),
             style = MaterialTheme.typography.bodySmall,
         )
-        HorizontalDivider()
-        // Dedicated, collapsible area inside the canonical Widgets & Shortcuts
-        // settings page; do not duplicate controls in Notifications.
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { shortcutSectionExpanded = !shortcutSectionExpanded },
-        ) {
-            Text(
-                if (shortcutSectionExpanded)
-                    neoLabel("إخفاء اختصارات المشغّل", "Hide launcher shortcuts")
-                else
-                    neoLabel("اختصارات المشغّل", "Launcher shortcuts")
-            )
-        }
-        if (shortcutSectionExpanded) {
-            Surface(
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-            ) {
-                Column(
-                    Modifier.fillMaxWidth().padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    Text(
-                        neoLabel(
-                            "أضف اختصارًا إلى الشاشة الرئيسية لفتح قسم مباشرةً. قد يطلب Android موافقتك.",
-                            "Pin a home-screen shortcut to open a section directly. Android may ask for approval.",
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    NeoShortcutControls()
-                }
-            }
-        }
     }
 }

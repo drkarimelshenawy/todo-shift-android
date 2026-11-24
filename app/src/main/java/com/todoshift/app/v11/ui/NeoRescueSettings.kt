@@ -26,7 +26,8 @@ val neoSettingsGroups =
         Triple("LANGUAGE", "اللغة والاتجاه", "Language & Direction"),
         Triple("SECTIONS", "إعدادات الأقسام", "Section Settings"),
         Triple("NOTIFICATIONS", "التنبيهات والتذكيرات", "Notifications & Reminders"),
-        Triple("WIDGETS", "الويدجت والاختصارات", "Widgets & Shortcuts"),
+        Triple("WIDGETS", "الويدجت", "Widgets"),
+        Triple("SHORTCUTS", "اختصارات المشغّل", "Launcher shortcuts"),
         Triple("SECURITY", "الأمان والخصوصية", "Security & Privacy"),
         Triple("DATA", "البيانات والنسخ الاحتياطي", "Data & Backup"),
         Triple("ADVANCED", "حول التطبيق والمتقدم", "About & Advanced"),
@@ -113,7 +114,7 @@ private fun NeoRescueSettingsContent(
     val update = LocalNeoOnChange.current
     fun back() {
         if (initialPage == "HOME" && page != "HOME") {
-            page = NeoSettingsHierarchy.parent(page)
+            page = if(page == "SHORTCUTS") "HOME" else NeoSettingsHierarchy.parent(page)
         } else onBack()
     }
     BackHandler(page != "HOME") { back() }
@@ -138,6 +139,13 @@ private fun NeoRescueSettingsContent(
                     back()
                 },
             )
+            return
+        }
+        "SHORTCUTS" -> {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(neoSpacing()), verticalArrangement = Arrangement.spacedBy(NeoSpace.gap)) {
+                NeoPageHeader(neoLabel("اختصارات المشغّل", "Launcher shortcuts"), { back() })
+                NeoShortcutControls()
+            }
             return
         }
         "WIDGETS" -> {
@@ -182,7 +190,7 @@ private fun NeoRescueSettingsContent(
             if (query.isBlank()) {
                 val icons = listOf(
                     Icons.Rounded.Palette, Icons.Rounded.Language, Icons.Rounded.CalendarMonth,
-                    Icons.Rounded.Notifications, Icons.Rounded.Widgets, Icons.Rounded.Shield,
+                    Icons.Rounded.Notifications, Icons.Rounded.Widgets, Icons.Rounded.Apps, Icons.Rounded.Shield,
                     Icons.Rounded.CloudUpload, Icons.Rounded.Tune,
                 )
                 val summaries = listOf(
@@ -190,7 +198,8 @@ private fun NeoRescueSettingsContent(
                     neoLabel("لغة التطبيق واتجاه الواجهة والتنقل", "Application language, layout and navigation direction"),
                     neoLabel("التقويم والمهام والملاحظات والمستحقات والمالية", "Calendar, tasks, notes, salary and finances"),
                     neoLabel("التذكيرات وإشعارات التطبيق", "Reminders and app notifications"),
-                    neoLabel("مظهر الويدجت والاختصارات", "Widget appearance and shortcuts"),
+                    neoLabel("مظهر الويدجت", "Widget appearance"),
+                    neoLabel("إضافة اختصارات الأقسام إلى الشاشة الرئيسية", "Pin section shortcuts to the home screen"),
                     neoLabel("PIN والبصمة وحماية الأقسام وإخفاء المبالغ", "PIN, biometrics, section locks and hidden amounts"),
                     neoLabel("النسخ والاستعادة وسلامة البيانات والتخزين", "Backup, restore, data health and storage"),
                     neoLabel("الإصدار والسياسات والأداء والتشخيص والتفضيلات القديمة", "Version, policies, performance, diagnostics and legacy settings"),
@@ -203,15 +212,16 @@ private fun NeoRescueSettingsContent(
                         2 -> Text(neoLabel("الأقسام والوظائف", "Sections and features"),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        5 -> Text(neoLabel("الأمان والبيانات", "Security and data"),
+                        6 -> Text(neoLabel("الأمان والبيانات", "Security and data"),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        7 -> Text(neoLabel("معلومات التطبيق", "App information"),
+                        8 -> Text(neoLabel("معلومات التطبيق", "App information"),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     NeoSettingsCompactTile(neoLabel(ar, en), summaries[index], icons[index]) {
                         when (id) {
+                            "SHORTCUTS" -> page = id
                             "NOTIFICATIONS", "WIDGETS", "SECURITY" -> nav.open(id)
                             else -> page = "${id}_GROUP"
                         }
@@ -231,7 +241,7 @@ private fun NeoRescueSettingsContent(
                     val groupNames = neoSettingsGroupNames(result.group)
                     Column(
                         Modifier.fillMaxWidth()
-                            .clickable { nav.open(result.destination) }
+                            .clickable { if(result.destination == "SHORTCUTS") page = "SHORTCUTS" else nav.open(result.destination) }
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {

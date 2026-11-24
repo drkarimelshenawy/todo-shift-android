@@ -23,6 +23,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 
+private fun receiptMoney(minor:Long):String = java.math.BigDecimal.valueOf(minor,2).stripTrailingZeros().toPlainString()
+
 internal fun remainingWorkEntitlement(db:V11Database,workplace:String,month:YearMonth):Long {
     val sourceIds=db.incomeSources.filter {it.workplaceId==workplace}.map {it.id}.toSet()
     val earned=V11FinanceEngine.month(db,month).byWorkplace.filter {it.workplaceId==workplace}.sumOf {LocalizedNumbers.cents(it.amount)}
@@ -92,9 +94,9 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
         amounts=months.associate {month ->
             val key = month.toString()
             key to ((if (keepAmounts) amounts[key] else null)
-                ?: LocalizedNumbers.amount(
+                ?: receiptMoney(
                     workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
-                ).toString())
+                ))
         }
         amountWorkplace = workplace
     }
@@ -198,23 +200,32 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
         if(availableMonths.isEmpty()) Text(neoLabel("لا توجد مستحقات متبقية لمكان العمل هذا", "No outstanding entitlements for this workplace"))
         availableMonths.forEach {month ->
             val key=month.toString()
-            Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                Checkbox(checked=key in selectedMonthKeys,onCheckedChange={checked ->
-                    selectedMonthKeys=if(checked) (selectedMonthKeys+key).distinct() else selectedMonthKeys-key
-                })
-                Text(key+" • "+LocalizedNumbers.amount(workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L))
+            val outstanding=workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
+            Column(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment=Alignment.CenterVertically) {
+                    Checkbox(checked=key in selectedMonthKeys,onCheckedChange={checked ->
+                        selectedMonthKeys=if(checked) (selectedMonthKeys+key).distinct() else selectedMonthKeys-key
+                    })
+                    Text(key+" • "+receiptMoney(outstanding))
+                }
+                if(key in selectedMonthKeys) {
+                    val entered=runCatching { LocalizedNumbers.cents(requireNotNull(MoneyInput.parse(amounts[key].orEmpty()).amount)) }.getOrNull()
+                    OutlinedTextField(
+                        amounts[key].orEmpty(),
+                        {amounts=amounts+(key to it)},
+                        modifier=Modifier.fillMaxWidth(),
+                        keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
+                        singleLine=true,
+                        label={Text(neoLabel("مبلغ الاستلام","Receipt amount"))},
+                        isError=entered!=null && (entered<0 || entered>outstanding),
+                        supportingText={Text(neoLabel("المتبقي بعد الاستلام: ","Remaining after receipt: ")+
+                            (entered?.takeIf {it in 0L..outstanding}?.let {receiptMoney(outstanding-it)} ?: "—"))}
+                    )
+                }
             }
         }
-        months.forEach {month ->
-            OutlinedTextField(
-                amounts[month.toString()].orEmpty(),
-                {amounts=amounts+(month.toString() to it)},
-                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
-                singleLine=true,
-                label={Text(neoLabel("مبلغ الاستلام: ","Received amount: ")+month)},
-                supportingText={Text(neoLabel("المتبقي: ","Remaining: ")+LocalizedNumbers.amount(workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L))}
-            )
-        }
+        Text(neoLabel("إجمالي الاستلام: ","Total receipt: ")+(draftMinor?.let {receiptMoney(it)} ?: "—"),
+            style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.SemiBold)
         NeoDateInput(neoLabel("تاريخ الاستلام الفعلي","Actual receipt date"),receivedDate){receivedDate=it}
         HorizontalDivider()
         Text(neoLabel("الفلوس هتتحط فين؟", "Where will the money go?"),
@@ -286,15 +297,15 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
                     verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(selectedAccount.name, style = MaterialTheme.typography.titleSmall)
                     Text(neoLabel("الرصيد قبل الاستلام: ", "Balance before: ")+
-                        LocalizedNumbers.amount(selectedAccount.balanceMinor)+" EGP")
+                        receiptMoney(selectedAccount.balanceMinor)+" EGP")
                     Text(neoLabel("المبلغ المستلم: ", "This receipt: ")+
-                        (draftMinor?.let { LocalizedNumbers.amount(it).toString() } ?: "—")+" EGP")
+                        (draftMinor?.let { receiptMoney(it) } ?: "—")+" EGP")
                     val after = draftMinor?.let {
                         runCatching { Math.addExact(selectedAccount.balanceMinor, it) }.getOrNull()
                     }
                     if (after != null) Text(
                         neoLabel("الرصيد المتوقع بعد الاستلام: ", "Estimated balance after: ")+
-                            LocalizedNumbers.amount(after)+" EGP",
+                            receiptMoney(after)+" EGP",
                         style = MaterialTheme.typography.titleSmall,
                     )
                     Text(

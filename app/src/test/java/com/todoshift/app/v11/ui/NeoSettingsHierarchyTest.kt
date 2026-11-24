@@ -26,6 +26,7 @@ class NeoSettingsHierarchyTest {
         assertEquals("CASHBOOK_GROUP", NeoSettingsHierarchy.parent("FINANCE_DISPLAY"))
         assertEquals("ADVANCED_GROUP", NeoSettingsHierarchy.parent("ABOUT"))
         assertEquals("HOME", NeoSettingsHierarchy.parent("DATA_GROUP"))
+        assertEquals("HOME", NeoSettingsHierarchy.parent("SHORTCUTS"))
     }
 
     @Test fun settingsBelongToTheCorrectOwner() {
@@ -39,7 +40,6 @@ class NeoSettingsHierarchyTest {
             "STORAGE" to "DATA",
             "SECURITY" to "SECURITY",
             "WIDGETS" to "WIDGETS",
-            "SHORTCUTS" to "SHORTCUTS",
             "LAUNCH" to "APPEARANCE",
             "LEGAL" to "ADVANCED",
         )

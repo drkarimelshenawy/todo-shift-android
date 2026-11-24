@@ -91,7 +91,7 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
         // Toggling another month must not overwrite an already-entered partial
         // receipt. Switching workplaces, however, resets incompatible amounts.
         val keepAmounts = workplace == amountWorkplace
-        amounts=months.associate {month ->
+        amounts=(if (keepAmounts) amounts else emptyMap()) + months.associate {month ->
             val key = month.toString()
             key to ((if (keepAmounts) amounts[key] else null)
                 ?: receiptMoney(

@@ -100,7 +100,7 @@ jobs:
           set -o pipefail
           for attempt in 1 2 3; do
             if gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
-              :app:testDebugUnitTest :app:lintDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/rate-unit-test-${attempt}.log"; then exit 0; fi
+              :cashbook-core:check :cashbook-feature:testDebugUnitTest :cashbook-feature:lintDebug :app:testDebugUnitTest :app:lintDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/rate-unit-test-${attempt}.log"; then exit 0; fi
             if ! grep -Eq 'Received status code 429|Too Many Requests|MavenArtifactFetcher|HttpURLConnection.java' "$RUNNER_TEMP/rate-unit-test-${attempt}.log" || [ "$attempt" = 3 ]; then exit 1; fi
             sleep $((attempt * 35))
           done
@@ -114,6 +114,9 @@ jobs:
             app/build/reports/tests/testDebugUnitTest/
             app/build/reports/lint-results-debug.*
             app/build/reports/lint/
+            cashbook-core/build/test-results/
+            cashbook-feature/build/test-results/
+            cashbook-feature/build/reports/lint-results-debug.*
           if-no-files-found: warn
       - name: Remove transient keystore
         if: always()

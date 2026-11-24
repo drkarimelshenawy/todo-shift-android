@@ -59,6 +59,8 @@ class SalaryReceiptOperationsTest {
         assertThrows(IllegalArgumentException::class.java) { SalaryCashSync.validateWrite(db, db.copy(payments = emptyList())) }
         assertThrows(IllegalArgumentException::class.java) { SalaryCashSync.validateWrite(db, db.copy(payments = listOf(payment.copy(amount = 80.0)))) }
         assertThrows(IllegalArgumentException::class.java) { SalaryCashSync.validateTransition(db, SalaryReceiptOperations.reverse(db, payment.id)) }
+        assertThrows(IllegalArgumentException::class.java) { SalaryCashSync.validateWrite(db, db.copy(payments = listOf(payment, payment))) }
+        assertThrows(IllegalArgumentException::class.java) { SalaryCashSync.validateTransition(db, db.copy(payments = listOf(payment, payment))) }
     }
     @Test fun multiMonthAllocationAndReversalPersistWithoutAnotherReceipt() {
         val context = org.robolectric.RuntimeEnvironment.getApplication()

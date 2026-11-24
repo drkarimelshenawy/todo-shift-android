@@ -9,6 +9,7 @@ import java.time.LocalDate
 /** The persisted receipt is the outbox; replay always uses its immutable ID. */
 internal object SalaryCashSync {
     fun validateTransition(previous: V11Database, next: V11Database) {
+        require(next.payments.map { it.id }.distinct().size == next.payments.size) { "Duplicate receipt ID" }
         previous.payments.filter { it.cashBookAccountId != null }.forEach { old ->
             val updated = next.payments.singleOrNull { it.id == old.id }
             require(updated != null && updated.cashBookAccountId == old.cashBookAccountId &&
@@ -27,6 +28,7 @@ internal object SalaryCashSync {
     }
     /** Normal writes may advance a linked receipt but cannot erase its outbox/tombstone. */
     fun validateWrite(previous: V11Database, next: V11Database) {
+        require(next.payments.map { it.id }.distinct().size == next.payments.size) { "Duplicate receipt ID" }
         previous.payments.filter { it.cashBookAccountId != null }.forEach { old ->
             val updated = requireNotNull(next.payments.singleOrNull { it.id == old.id }) { "Reverse linked receipts instead of deleting them" }
             require(old.reversedAt == null || updated == old) { "Reversed receipt is immutable" }

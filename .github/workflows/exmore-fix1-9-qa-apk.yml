@@ -1,0 +1,35 @@
+name: ExMore Fix 1-9 QA APK (temporary signature)
+on:
+  push:
+    branches:
+      - build/exmore-v440-fix1-9-qa-apk-20261124
+  workflow_dispatch:
+jobs:
+  build-qa-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Generate isolated QA signing key
+        run: |
+          keytool -genkeypair -noprompt -keystore "$RUNNER_TEMP/exmore-qa.jks" -storepass "qa-only-2026" -keypass "qa-only-2026" -alias todoshift -keyalg RSA -keysize 2048 -validity 2 -dname "CN=ExMore QA,O=Temporary,C=EG"
+      - name: Build debug QA APK
+        env:
+          TODOSHIFT_SIGNING_FILE: ${{ runner.temp }}/exmore-qa.jks
+          TODOSHIFT_SIGNING_PASSWORD: qa-only-2026
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Upload QA APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExMore-v4.4.0-Fix1-9-QA-APK-TEMP-SIGNATURE
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7

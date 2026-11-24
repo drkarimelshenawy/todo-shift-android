@@ -114,7 +114,6 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
     }
     val selectedAccount = accounts.firstOrNull { it.id == account }
     var error by remember {mutableStateOf<String?>(null)}
-    var review by remember {mutableStateOf<V11Database?>(null)}
     var submitted by remember {mutableStateOf(false)}
     val write=LocalNeoEditorWriteState.current
     LaunchedEffect(write.error) {if(write.error!=null) submitted=false}
@@ -191,41 +190,6 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
                 }) { Text(neoLabel("إلغاء", "Cancel")) }
             },
         )
-        return
-    }
-    if(review!=null) {
-        val receipt=review!!.payments.single {it.id==requestId}
-        AlertDialog(onDismissRequest={if(!submitted) review=null},title={Text(neoLabel("مراجعة الاستلام","Review receipt"))},text={Column {
-            Text(workplaces.firstOrNull {it.id==workplace}?.name.orEmpty(),
-                style = MaterialTheme.typography.titleMedium)
-            Text(selectedAccount?.name.orEmpty()+" • "+receipt.receivedDate)
-            receipt.allocations.forEach { Text(it.accrualMonth+" • "+it.amount) }
-            HorizontalDivider()
-            Text(neoLabel("المبلغ المستلم: ", "Receipt amount: ")+receipt.amount+" EGP",
-                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(neoLabel("الحساب المستلم: ", "Receiving account: ")+selectedAccount?.name.orEmpty())
-            Text(neoLabel("طريقة الاستلام: ", "Payment method: ")+
-                (db.paymentMethods.firstOrNull { it.id == method }?.name ?: neoLabel("غير محددة", "Not specified")))
-            selectedAccount?.let { receiving ->
-                Text(neoLabel("الرصيد قبل: ", "Before: ")+
-                    LocalizedNumbers.amount(receiving.balanceMinor)+" EGP")
-                val newBalance = runCatching {
-                    Math.addExact(receiving.balanceMinor, LocalizedNumbers.cents(receipt.amount))
-                }.getOrNull()
-                if (newBalance != null) Text(
-                    neoLabel("الرصيد المتوقع بعد: ", "Estimated after: ")+
-                        LocalizedNumbers.amount(newBalance)+" EGP")
-            }
-            Text(
-                neoLabel(
-                    "تأكيد الاستلام يسجّل دفعة واحدة موزّعة على الأشهر ويُرحّل دخلًا واحدًا إلى Cash Book. عند تعذر الترحيل أعد المزامنة دون تكرار القبض.",
-                    "Confirm saves one receipt allocated across months and posts one Cash Book income. If posting fails, retry syncing without creating a second receipt.",
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        }},confirmButton={TextButton(enabled=!submitted&&!write.pending,onClick={if(!submitted) {submitted=true;onSave(review!!)}}) {Text(neoLabel("تأكيد الاستلام","Confirm receipt"))}},dismissButton={TextButton(enabled=!submitted,onClick={review=null}) {Text(neoLabel("تعديل","Edit"))}})
         return
     }
     AlertDialog(onDismissRequest=onDismiss,title={Text(neoLabel("استلام المستحقات","Receive entitlements"))},text={Column(Modifier.heightIn(max=520.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -348,7 +312,7 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
             style = MaterialTheme.typography.bodySmall,
         )
         error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
-    }},confirmButton={TextButton(enabled=selectedAccount!=null&&workplace!=null&&draftMinor!=null&&!write.pending&&!loadingAccounts,onClick={
+    }},confirmButton={TextButton(enabled=selectedAccount!=null&&workplace!=null&&draftMinor!=null&&!write.pending&&!loadingAccounts&&!submitted,onClick={
         try {
             check(db.payments.none {it.id==requestId})
             check(selectedAccount != null && selectedAccount.id == account) { "Select a valid receiving account" }
@@ -367,8 +331,10 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
             val minor=allocations.fold(0L) {total,item->Math.addExact(total,LocalizedNumbers.cents(item.amount))}
             require(minor>0)
             val receipt=PaymentV11(requestId,LocalizedNumbers.amount(minor),receivedDate,selected.first().toString(),sourceId=source.id,paymentMethodId=method,allocations=allocations,cashBookAccountId=requireNotNull(account))
-            review=db.copy(incomeSources=if(existingSource==null) db.incomeSources+source else db.incomeSources,payments=db.payments+receipt,auditLog=db.auditLog+AuditEntryV11(UUID.randomUUID().toString(),"PAYMENT_ADD","payment",requestId,"Entitlement receipt reviewed and confirmed"))
+            val confirmed=db.copy(incomeSources=if(existingSource==null) db.incomeSources+source else db.incomeSources,payments=db.payments+receipt,auditLog=db.auditLog+AuditEntryV11(UUID.randomUUID().toString(),"PAYMENT_ADD","payment",requestId,"Entitlement receipt reviewed and confirmed"))
             error=null
-        } catch(failure:Exception) {error=failure.message ?: "راجع الأشهر والمبالغ والتاريخ / Check months, amounts and date"}
-    }) {Text(neoLabel("مراجعة","Review"))}},dismissButton={TextButton(onClick=onDismiss) {Text(neoLabel("إلغاء","Cancel"))}})
+            submitted=true
+            onSave(confirmed)
+        } catch(failure:Exception) {submitted=false;error=failure.message ?: "راجع الأشهر والمبالغ والتاريخ / Check months, amounts and date"}
+    }) {Text(neoLabel("تأكيد الاستلام","Confirm receipt"))}},dismissButton={TextButton(onClick=onDismiss) {Text(neoLabel("إلغاء","Cancel"))}})
 }

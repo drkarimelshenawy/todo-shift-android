@@ -29,6 +29,7 @@ class CashBookViewModel @JvmOverloads constructor(app: Application, private val 
     fun navigationHandled(){requested.value=null}
     init { CashBookText.initialize(app);reload() }
     fun clearMessage() { mutable.value = mutable.value.copy(error = null, message = null) }
+    private var reloadPending = false
     private fun run(message: String? = null, done: () -> Unit = {}, failureMessage: String? = null, action: () -> Unit) {
         if (mutable.value.busy) return
         mutable.value = mutable.value.copy(busy = true, error = null, message = null)
@@ -56,10 +57,18 @@ class CashBookViewModel @JvmOverloads constructor(app: Application, private val 
                     error = failureMessage ?: if (e is IllegalArgumentException || e is ArithmeticException)
                         tr(R.string.cb_080)
                     else tr(R.string.cb_081))
+            } finally {
+                if (reloadPending && !mutable.value.busy) {
+                    reloadPending = false
+                    reload()
+                }
             }
         }
     }
-    fun reload() = run(action = { ledger.load() })
+    fun reload() {
+        if (mutable.value.busy) { reloadPending = true; return }
+        run(action = {}) // run already loads the latest persisted ledger under the shared lock.
+    }
     fun account(name: String, opening: String, openingDate: String, done: () -> Unit) = run(tr(R.string.cb_082), done) {
         ledger.addAccount(name, "EGP", com.todoshift.cashbook.core.WholeMoney.parse(opening.ifBlank{"0"},true,null), openingDate)
     }

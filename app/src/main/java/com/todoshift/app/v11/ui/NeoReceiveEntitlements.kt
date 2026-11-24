@@ -1,6 +1,8 @@
 package com.todoshift.app.v11.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -243,6 +245,8 @@ internal fun NeoReceiveEntitlementsDialog(db:V11Database,workplaces:List<Workpla
             OutlinedTextField(
                 amounts[month.toString()].orEmpty(),
                 {amounts=amounts+(month.toString() to it)},
+                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
+                singleLine=true,
                 label={Text(neoLabel("مبلغ الاستلام: ","Received amount: ")+month)},
                 supportingText={Text(neoLabel("المتبقي: ","Remaining: ")+LocalizedNumbers.amount(workplace?.let {remainingWorkEntitlement(db,it,month)} ?: 0L))}
             )

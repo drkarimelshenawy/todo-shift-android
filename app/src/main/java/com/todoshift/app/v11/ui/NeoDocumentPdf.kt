@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
+import android.graphics.text.LineBreaker
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
@@ -127,7 +128,7 @@ internal object NeoDocumentPdf {
                 })
                 .setIncludePad(false)
             if(resolved=="justify")
-                builder.setJustificationMode(Layout.JUSTIFICATION_MODE_INTER_WORD)
+                builder.setJustificationMode(LineBreaker.JUSTIFICATION_MODE_INTER_WORD)
             return builder.build()
         }
         fun printText(sourceText:CharSequence,size:Float=NeoA4PrintMetrics.BODY_PT,

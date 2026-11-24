@@ -59,13 +59,14 @@ object CashBookText{
 internal fun tr(id:Int,vararg args:Any)=CashBookText.get(id,*args)
 @androidx.compose.runtime.NonSkippableComposable @Composable internal fun LanguageDialog(dismiss:()->Unit){
  val vm=LocalCashBookVM.current
+ val selectedLanguage by CashBookText.language.collectAsState()
  AlertDialog(onDismissRequest=dismiss,title={Text(tr(R.string.cb_250))},text={Column{
   listOf("AUTO" to tr(R.string.cb_251),"ar" to tr(R.string.cb_252),"en" to tr(R.string.cb_lang_english)).forEach{(id,label)->
    TextButton({CashBookText.select(id);vm.reload()},modifier=Modifier.fillMaxWidth().then(Modifier.testTag("language_$id"))){
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)){
      Icon(Icons.Rounded.Language,null)
      Text(label,Modifier.weight(1f))
-     if(CashBookText.language.value==id)Icon(Icons.Rounded.Check,null)
+     if(selectedLanguage==id)Icon(Icons.Rounded.Check,null)
     }
    }
   }

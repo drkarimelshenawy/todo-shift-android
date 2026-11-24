@@ -45,8 +45,8 @@ object CashBookText{
  val language=MutableStateFlow("AUTO")
  private var host:Locale?=null
  private val revision=mutableIntStateOf(0)
- private val contexts=mutableMapOf<String,Context>()
- @Synchronized private fun context(locale:Locale):Context=contexts.getOrPut(locale.toLanguageTag()){val cfg=Configuration(app.resources.configuration);cfg.setLocale(locale);app.createConfigurationContext(cfg)}
+ // Configuration contexts must reflect current density, locale and configuration.
+ private fun context(locale:Locale):Context { val cfg=Configuration(app.resources.configuration);cfg.setLocale(locale);return app.createConfigurationContext(cfg) }
  fun initialize(context:Context){app=context.applicationContext;val prefs=app.getSharedPreferences("cashbook-language",0);if(!prefs.contains("language"))prefs.edit().putString("language",if(java.io.File(app.noBackupFilesDir,"cashbook-v1.bin").exists())"ar"else"AUTO").apply();language.value=prefs.getString("language","AUTO")?:"AUTO"}
  fun hostLocale(locale:Locale?){if(host!=locale){host=locale;revision.intValue++}}
  fun select(value:String){require(value in listOf("AUTO","ar","en"));app.getSharedPreferences("cashbook-language",0).edit().putString("language",value).apply();language.value=value;revision.intValue++}

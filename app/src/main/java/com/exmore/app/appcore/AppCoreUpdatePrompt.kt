@@ -12,11 +12,12 @@ object AppCoreUpdatePrompt {
     private val executor = Executors.newSingleThreadExecutor()
     private val checked = AtomicBoolean(false)
     fun check(activity: Activity) {
+        if (AppCoreConfig.maintenance() || AppCoreConfig.flag("disable_update_prompt")) return
         if (!checked.compareAndSet(false, true)) return
         executor.execute {
             val release = runCatching { AppCoreReleaseClient.check(BuildConfig.VERSION_CODE) }.getOrNull() ?: return@execute
             activity.runOnUiThread {
-                if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
+                if (activity.isFinishing || activity.isDestroyed || AppCoreConfig.maintenance() || AppCoreConfig.flag("disable_update_prompt")) return@runOnUiThread
                 val arabic = java.util.Locale.getDefault().language == "ar"
                 AlertDialog.Builder(activity)
                     .setTitle(if (arabic) "تحديث اختياري" else "Optional update")

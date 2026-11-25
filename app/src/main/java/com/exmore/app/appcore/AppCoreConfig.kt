@@ -30,7 +30,7 @@ object AppCoreConfig {
             expiry > now && expiry <= now + 86400000L && value.opt("maintenance") is Boolean &&
             flags.length() <= 50 && flags.keys().asSequence().all { it.matches(Regex("[a-z][a-z0-9_]{0,39}")) && it !in setOf("constructor", "prototype") && flags.opt(it) is Boolean }
     }
-    fun refresh(context: Context) {
+    fun refresh(context: Context, onComplete: (() -> Unit)? = null) {
         val app = context.applicationContext
         if (!refreshing.compareAndSet(false, true)) return
         executor.execute {
@@ -63,7 +63,10 @@ object AppCoreConfig {
                     }
                 } finally { conn.disconnect() }
             }
-            } finally { refreshing.set(false) }
+            } finally {
+                refreshing.set(false)
+                onComplete?.invoke()
+            }
         }
     }
 }

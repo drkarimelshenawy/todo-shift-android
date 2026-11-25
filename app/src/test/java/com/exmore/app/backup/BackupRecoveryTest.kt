@@ -81,8 +81,9 @@ class BackupRecoveryTest {
     @Test
     fun unrelatedPackageBackupIsRejectedBeforeWriting() {
         val prefs = context.getSharedPreferences("todo_shift_v11", Context.MODE_PRIVATE)
+        val unrelatedArchive = withApplicationId(archive(), "com.example.other")
         val before = prefs.getString("database", null)
-        fails { backup().preview(withApplicationId(archive(), "com.example.other").inputStream()) }
+        fails { backup().preview(unrelatedArchive.inputStream()) }
         assertEquals(before, prefs.getString("database", null))
     }
 

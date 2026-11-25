@@ -13,7 +13,7 @@ val integrityTasks = listOf(
     tasks.register<JavaExec>("run$suite") {
         dependsOn(tasks.testClasses)
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("com.todoshift.cashbook.core.$suite")
+        mainClass.set("com.exmore.cashbook.core.$suite")
     }
 }
 tasks.check { dependsOn(integrityTasks) }

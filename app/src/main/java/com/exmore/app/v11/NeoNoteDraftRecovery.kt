@@ -1,0 +1,76 @@
+package com.exmore.app.v11
+
+import android.content.Context
+
+/**
+ * A recovered copy has its own attachment ownership and names.
+ * The original note and all of its media remain untouched.
+ */
+internal object NeoNoteDraftRecovery {
+    // Match only complete document image blocks, never filenames mentioned in prose.
+    private val imageBlock=Regex("""(?m)^\[\[neo-image:(neo-attachment-[A-Za-z0-9-]+\.(?:png|jpg|pdf|txt|m4a)):([0-9]{1,3}):(left|center|right)\]\](?=\r?$)""")
+
+    internal fun referencedImageNames(source:String):Set<String> =
+        imageBlock.findAll(source).map { it.groupValues[1] }.toSet()
+
+    internal fun replaceImageReference(source:String,oldName:String,newName:String):String {
+        require(NeoAttachmentStore.safeName(oldName) && NeoAttachmentStore.safeName(newName))
+        return imageBlock.replace(source) { match ->
+            if(match.groupValues[1]==oldName)
+                "[[neo-image:$newName:${match.groupValues[2]}:${match.groupValues[3]}]]"
+            else match.value
+        }
+    }
+
+    internal fun missingImageNames(referenced:Set<String>,available:Set<String>):Set<String> =
+        referenced - available
+
+    // Validate the final document before exposing a recovered copy. A partial
+    // rewrite would otherwise leave references to attachments owned by another note.
+    internal fun allReferencesRemapped(original:Set<String>, recovered:String):Boolean =
+        referencedImageNames(recovered).intersect(original).isEmpty()
+
+    fun copyMedia(context:Context,oldId:String,newId:String,source:String):String {
+        require(oldId.isNotBlank() && newId.isNotBlank() && oldId!=newId)
+        val store=NeoAttachmentStore(context.applicationContext)
+        var text=source
+        // A failed import must not leave a partially recovered media owner.
+        // The new owner is unique to this recovery operation.
+        // Only import files actually referenced by the recovered draft: stale
+        // owner attachments must not consume quota or cause recovery to fail.
+        try {
+            val referencedNames = referencedImageNames(source)
+            // Parse the document once rather than rescanning it for every
+            // attachment owned by the original note. An image-free draft
+            // needs no attachment enumeration or copying at all.
+            if (referencedNames.isNotEmpty()) {
+                val mediaToCopy = store.list()
+                    .filter { it.owner == oldId && it.name in referencedNames }
+                val missing = missingImageNames(referencedNames, mediaToCopy.map { it.name }.toSet())
+                // Never report a recovered copy as complete when image blocks
+                // still point at the original owner or at missing files.
+                check(missing.isEmpty()) { "Recovery source attachments are missing" }
+                mediaToCopy.forEach { media ->
+                    val imported=store.import(newId,store.uri(media.name))
+                    check(imported.name != media.name && NeoAttachmentStore.safeName(imported.name)) {
+                        "Recovery attachment was not assigned a new safe name"
+                    }
+                    text=replaceImageReference(text,media.name,imported.name)
+                }
+                check(allReferencesRemapped(referencedNames,text)) {
+                    "Recovery left references to original attachments"
+                }
+            }
+        } catch (failure:Exception) {
+            try {
+                store.purgeOwners(setOf(newId))
+            } catch (cleanupFailure:Exception) {
+                failure.addSuppressed(cleanupFailure)
+            }
+            throw failure
+        }
+        // Linked checklist task ids belong to the original note. This copy
+        // keeps the visible checklist but does not silently relink tasks.
+        return text.replace(Regex(" ?<!--task:[A-Za-z0-9_-]+-->"),"")
+    }
+}

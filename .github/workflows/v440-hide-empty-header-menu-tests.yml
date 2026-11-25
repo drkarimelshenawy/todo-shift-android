@@ -27,7 +27,7 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          d=Path("app/src/main/java/com/todoshift/app/v11")
+          d=Path("app/src/main/java/com/exmore/app/v11")
           hub=(d/"ui/NeoModernHub.kt").read_text()
           home=(d/"ui/V11Home.kt").read_text()
           assert 'fun canUseFinance() = latestFinancial && (rootFinance?.invoke() ?: true)' in hub
@@ -41,7 +41,7 @@ jobs:
           assert "if (monthly) validAmount(salary) else shiftRates.all(::validAmount)" in editor
           assert "if (monthly == null)" in edit
           dialog=(d/"ui/NeoReceiveEntitlements.kt").read_text()
-          bridge=Path("cashbook-feature/src/main/java/com/todoshift/cashbook/ui/SalaryIncomeLedgerBridge.kt").read_text()
+          bridge=Path("cashbook-feature/src/main/java/com/exmore/cashbook/ui/SalaryIncomeLedgerBridge.kt").read_text()
           home=(d/"ui/V11Home.kt").read_text()
           assert "receiptDraftMinor(" in dialog and "createReceivingAccount(" in dialog
           assert "createReceivingAccount(" in bridge and "snapshot.balance(it.id)" in bridge
@@ -71,7 +71,7 @@ jobs:
           set -o pipefail
           for attempt in 1 2 3; do
             if gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
-              :app:testDebugUnitTest --tests com.todoshift.app.v11.ui.NeoHeaderMenuVisibilityTest --tests com.todoshift.app.v11.ui.NeoNavigationFixedOrderTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/rate-unit-test-${attempt}.log"; then exit 0; fi
+              :app:testDebugUnitTest --tests com.exmore.app.v11.ui.NeoHeaderMenuVisibilityTest --tests com.exmore.app.v11.ui.NeoNavigationFixedOrderTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/rate-unit-test-${attempt}.log"; then exit 0; fi
             if ! grep -Eq 'Received status code 429|Too Many Requests' "$RUNNER_TEMP/rate-unit-test-${attempt}.log" || [ "$attempt" = 3 ]; then exit 1; fi
             sleep $((attempt * 35))
           done

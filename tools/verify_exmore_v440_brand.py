@@ -105,16 +105,16 @@ real = {x.attrib.get(ANDROID + "shortcutId"): x.attrib.get(ANDROID + "icon") for
 verify(set(real) == set(expected_shortcuts), "Previously supported static shortcut IDs changed")
 for key, suffix in expected_shortcuts.items():
     verify(real[key] == "@drawable/exmore_shortcut_" + suffix, f"Wrong static shortcut: {key}")
-controls = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui/NeoShortcutControls.kt").read_text()
+controls = (ROOT / "app/src/main/java/com/exmore/app/v11/ui/NeoShortcutControls.kt").read_text()
 verify('Triple("settings",neoLabel("الإعدادات","Settings"),3)' in controls,
        "Settings pinned launcher shortcut does not target root tab 3")
 for asset in ["calendar_work", "cash_book", "notes", "tasks", "settings"]:
     verify("R.drawable.exmore_shortcut_" + asset in controls, f"Missing dynamic shortcut artwork: {asset}")
 
 for file in ["Neo4Shell.kt", "V11Home.kt", "V11CalendarUi.kt"]:
-    txt = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui" / file).read_text()
+    txt = (ROOT / "app/src/main/java/com/exmore/app/v11/ui" / file).read_text()
     verify("exmore_header_icon" in txt, f"Approved small header icon not used by {file}")
-home = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt").read_text()
+home = (ROOT / "app/src/main/java/com/exmore/app/v11/ui/V11Home.kt").read_text()
 verify("ExMoreBootSplash()" in home,
        "Boot-time branded splash composition missing")
 verify("if (bootFailure)" in home and "SafeStorageRecovery(" in home,
@@ -126,7 +126,7 @@ verify(app is not None and app.attrib.get(ANDROID + "label") == "@string/app_nam
 verify(app.attrib.get(ANDROID + "icon") == "@mipmap/ic_launcher", "Launcher resource path changed")
 verify(app.attrib.get(ANDROID + "roundIcon") == "@mipmap/ic_launcher_round", "Round launcher path changed")
 gradle = (ROOT / "app/build.gradle.kts").read_text()
-verify('applicationId = "com.todoshift.app"' in gradle, "Application ID changed: update safety violation")
+verify('applicationId = "com.exmore.app"' in gradle, "Application ID changed: update safety violation")
 verify(re.search(r"\bversionCode\s*=\s*79\b", gradle) is not None, "v4.4.0 versionCode not 79")
 verify('versionName = "4.4.0"' in gradle, "v4.4.0 versionName mismatched")
 print("ExMore v4.4.0 brand QA PASS: approved SHA-256 images, full splash variants, launcher densities,"
@@ -137,13 +137,13 @@ for locale in ["values", "values-ar", "values-en"]:
     strings = ET.parse(RES / locale / "strings.xml").getroot()
     names = [e.text for e in strings if e.attrib.get("name") == "app_name"]
     verify(names == ["ExMore — Life Planner"], f"Launcher label not complete in {locale}")
-header = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui/Neo4Shell.kt").read_text()
+header = (ROOT / "app/src/main/java/com/exmore/app/v11/ui/Neo4Shell.kt").read_text()
 verify('"Life Planner"' in header and 'append("More")' in header,
        "Split header not showing the complete ExMore Life Planner brand")
 for name in ["V11Home.kt", "V11CalendarUi.kt"]:
-    source = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui" / name).read_text()
+    source = (ROOT / "app/src/main/java/com/exmore/app/v11/ui" / name).read_text()
     verify('"ExMore — Life Planner"' in source, f"Full brand missing from {name}")
-splash = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui/ExMoreBootSplash.kt").read_text()
+splash = (ROOT / "app/src/main/java/com/exmore/app/v11/ui/ExMoreBootSplash.kt").read_text()
 for item in ('text = "ExMore"', '"LIFE PLANNER"', '"Your Day. Your Work. Your Money."',
              "WindowInsets.safeDrawing", "R.drawable.exmore_splash_center"):
     verify(item in splash, f"Splash typography or safe-area missing: {item}")

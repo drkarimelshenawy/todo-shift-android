@@ -93,7 +93,7 @@ for shortcut, icon in expected.items():
     check(actual[shortcut] == "@drawable/exmore_shortcut_" + icon,
           "wrong icon for shortcut " + shortcut)
 check("R.drawable.exmore_shortcut_notes" in (
-      ROOT / "app/src/main/java/com/todoshift/app/v11/ui/NeoShortcutControls.kt").read_text(),
+      ROOT / "app/src/main/java/com/exmore/app/v11/ui/NeoShortcutControls.kt").read_text(),
       "dynamic Notes icon missing")
 
 gradle = (ROOT / "app/build.gradle.kts").read_text()

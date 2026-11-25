@@ -45,7 +45,7 @@ jobs:
           test -n "$TODOSHIFT_SIGNING_PASSWORD"
           for attempt in 1 2 3; do
             if gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
-              :app:testDebugUnitTest --tests com.todoshift.app.v11.NeoCalendarPresentationTest --tests com.todoshift.app.v11.ui.CalendarUiRegressionTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/calendar-tests-attempt-$attempt.log"; then
+              :app:testDebugUnitTest --tests com.exmore.app.v11.NeoCalendarPresentationTest --tests com.exmore.app.v11.ui.CalendarUiRegressionTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/calendar-tests-attempt-$attempt.log"; then
               exit 0
             fi
             if ! grep -Eq 'Received status code 429|Too Many Requests|HTTP/1.1 429|HTTP/2 429' "$RUNNER_TEMP/calendar-tests-attempt-$attempt.log"; then

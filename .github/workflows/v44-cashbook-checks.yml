@@ -60,25 +60,25 @@ jobs:
         run: |
           test -n "$TODOSHIFT_SIGNING_PASSWORD"
           gradle --no-daemon -I tools/premium_qa.init.gradle :cashbook-core:check :app:testDebugUnitTest \
-            --tests 'com.todoshift.app.integration.SalaryCashPostingCoordinatorTest' \
-            --tests 'com.todoshift.app.v11.SalaryReceiptOperationsTest' \
-            --tests 'com.todoshift.app.v11.FixedSalaryIntegrityTest' \
-            --tests 'com.todoshift.app.v11.NeoRatePolicyTest' \
-            --tests 'com.todoshift.app.v11.FinanceCalendarFilterTest' \
-            --tests 'com.todoshift.app.v11.NeoCalendarPresentationTest' \
-            --tests 'com.todoshift.app.v11.ReminderDeliveryPolicyTest' \
-            --tests 'com.todoshift.app.v11.ModernSafetyTest' \
-            --tests 'com.todoshift.app.v11.ReminderPublicVersionTest' \
-            --tests 'com.todoshift.app.v11.CompletedTaskWidgetTest' \
-            --tests 'com.todoshift.app.v11.WidgetPresentationSafetyTest' \
-            --tests 'com.todoshift.app.v11.SecurityAttemptLimitTest' \
-            --tests 'com.todoshift.app.v11.NoteTransactionTest' \
-            --tests 'com.todoshift.app.backup.EncryptedBackupTest' \
-            --tests 'com.todoshift.app.backup.SelectiveRestoreTest' \
-            --tests 'com.todoshift.app.backup.FinancialRestoreValidationTest' \
-            --tests 'com.todoshift.app.backup.MigrationTransactionTest' \
-            --tests 'com.todoshift.app.backup.BackupRecoveryTest' \
-            --tests 'com.todoshift.app.storage.SafePersistenceTest' \
+            --tests 'com.exmore.app.integration.SalaryCashPostingCoordinatorTest' \
+            --tests 'com.exmore.app.v11.SalaryReceiptOperationsTest' \
+            --tests 'com.exmore.app.v11.FixedSalaryIntegrityTest' \
+            --tests 'com.exmore.app.v11.NeoRatePolicyTest' \
+            --tests 'com.exmore.app.v11.FinanceCalendarFilterTest' \
+            --tests 'com.exmore.app.v11.NeoCalendarPresentationTest' \
+            --tests 'com.exmore.app.v11.ReminderDeliveryPolicyTest' \
+            --tests 'com.exmore.app.v11.ModernSafetyTest' \
+            --tests 'com.exmore.app.v11.ReminderPublicVersionTest' \
+            --tests 'com.exmore.app.v11.CompletedTaskWidgetTest' \
+            --tests 'com.exmore.app.v11.WidgetPresentationSafetyTest' \
+            --tests 'com.exmore.app.v11.SecurityAttemptLimitTest' \
+            --tests 'com.exmore.app.v11.NoteTransactionTest' \
+            --tests 'com.exmore.app.backup.EncryptedBackupTest' \
+            --tests 'com.exmore.app.backup.SelectiveRestoreTest' \
+            --tests 'com.exmore.app.backup.FinancialRestoreValidationTest' \
+            --tests 'com.exmore.app.backup.MigrationTransactionTest' \
+            --tests 'com.exmore.app.backup.BackupRecoveryTest' \
+            --tests 'com.exmore.app.storage.SafePersistenceTest' \
             :app:assembleRelease --stacktrace
       - name: Verify APK signature and identity
         run: |

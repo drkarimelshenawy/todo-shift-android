@@ -1,13 +1,13 @@
-package com.todoshift.app.v11.ui
+package com.exmore.app.v11.ui
 
 import android.graphics.Bitmap
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import com.todoshift.app.MainActivity
-import com.todoshift.app.data.AppStorage
-import com.todoshift.app.data.Workplace
-import com.todoshift.app.v11.*
+import com.exmore.app.MainActivity
+import com.exmore.app.data.AppStorage
+import com.exmore.app.data.Workplace
+import com.exmore.app.v11.*
 import java.io.File
 import java.time.LocalDate
 import org.junit.Assert.*

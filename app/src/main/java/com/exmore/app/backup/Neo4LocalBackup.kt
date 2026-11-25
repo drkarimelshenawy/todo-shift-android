@@ -1,0 +1,1225 @@
+package com.exmore.app.backup
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.AtomicFile
+import android.util.Base64
+import com.exmore.cashbook.core.Ledger
+import com.exmore.cashbook.ui.AndroidLedgerStore
+import com.exmore.app.data.AppStorage
+import com.exmore.app.reminders.ToDoShiftReminder
+import com.exmore.app.storage.requireLoaded
+import com.exmore.app.v11.*
+import com.exmore.app.widget.Neo4WidgetRefresh
+import java.io.*
+import java.time.Instant
+import java.time.LocalDate
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
+import org.json.JSONArray
+import org.json.JSONObject
+
+/**
+ * All methods are blocking IO APIs. UI and future workers must invoke them on Dispatchers.IO.
+ * Transaction journal covers preference writes; PINs, biometrics, OAuth tokens and keys are
+ * excluded.
+ */
+class Neo4LocalBackup(context: Context) :
+    BackupExport, BackupImport, BackupValidation, RestoreCoordinator {
+    companion object {
+        /** New exports use ExMore; the former package remains accepted for user-controlled migration. */
+        internal val COMPATIBLE_APPLICATION_IDS =
+            setOf("com.exmore.app", "com.todoshift.app")
+    }
+    private val app = context.applicationContext
+    private val storage = V11Storage(app)
+    private val legacy = AppStorage(app)
+    private val uiPreferences =
+        listOf(
+            "todo_shift_v11_ui",
+            "todo_shift_v11_ui_state",
+            "todo_shift_neo3_appearance",
+            "todo_shift_neo4_profiles",
+            "todo_shift_neo4_widgets",
+            "todo_shift_cloud_readiness",
+            "todo_shift_launch_v44",
+            NeoSmartStore.NAME,
+        )
+    internal var restoreCheckpoint: (String) -> Unit = {}
+    private val journal = AtomicFile(File(app.filesDir, "neo4-restore-journal.json"))
+    private val NOTE_HISTORY_SECTION="data/note-history-v54.json"
+
+    private fun prefs(name: String) = app.getSharedPreferences(name, Context.MODE_PRIVATE)
+
+    private inline fun <T> dataGate(block: () -> T): T = synchronized(Neo4DataGate.monitor) { synchronized(Ledger::class.java) { block() } }
+
+    private fun emptyCashSnapshot(): ByteArray = Ledger(object : Ledger.Store {
+        override fun read(): ByteArray? = null
+        override fun write(snapshot: ByteArray) {}
+    }).also { it.load() }.backup()
+
+    private fun bytes(text: String) = text.toByteArray(Charsets.UTF_8)
+
+    private fun json(data: ByteArray) = JSONObject(String(data, Charsets.UTF_8))
+
+    override fun export(database: V11Database, output: OutputStream) = export(database, output, BackupSection.entries.toSet())
+
+    fun export(database: V11Database, output: OutputStream, requestedScope: Set<BackupSection>) =
+        exportWithHistory(database,output,requestedScope,false)
+
+    private fun exportWithHistory(
+        database:V11Database,output:OutputStream,
+        requestedScope:Set<BackupSection>,includeHistory:Boolean
+    ) = dataGate {
+            val scope = if (BackupSection.CASHBOOK in requestedScope) requestedScope + BackupSection.SALARY else requestedScope
+            recoverIfNeeded()
+            val confirmedDatabase = storage.load()
+            check(confirmedDatabase == database) { "Data changed; reopen before exporting" }
+            val sections = linkedMapOf<String, ByteArray>()
+            require(scope.isNotEmpty()) { "Select at least one backup section" }
+            sections["data/v11.json"] = bytes(SelectiveRestore.filtered(JSONObject(storage.exportJson(database)), scope).toString())
+            val legacyJson = JSONObject(legacy.exportJson(legacy.load()))
+            if (scope != BackupSection.entries.toSet()) {
+                if (BackupSection.CALENDAR !in scope) listOf("shifts", "dayDetails", "templates").forEach { legacyJson.put(it, JSONArray()) }
+                if (BackupSection.SALARY !in scope) legacyJson.put("payments", JSONArray())
+            }
+            sections["data/legacy.json"] = bytes(legacyJson.toString())
+            if(includeHistory && BackupSection.TASKS in scope) {
+                val ids=database.dayItems.filter {it.type==DayItemTypeV11.NOTE}
+                    .map {it.id}
+                val history=NeoNoteHistoryStore(app).portableSnapshot(ids)
+                sections[NOTE_HISTORY_SECTION]=bytes(history.toString())
+            }
+            if (BackupSection.CASHBOOK in scope) synchronized(Ledger::class.java) {
+                val ledger = Ledger(AndroidLedgerStore(app)); ledger.load()
+                sections["data/cashbook.bin"] = ledger.backup()
+            }
+            uiPreferences.filter { BackupSection.SETTINGS in scope || (BackupSection.TASKS in scope && it == NeoSmartStore.NAME) }.forEach {
+                var captured = capture(prefs(it))
+                if (it == NeoSmartStore.NAME && BackupSection.SETTINGS !in scope) {
+                    val original = NeoSmartStore(app).snapshot()
+                    val noteMetadata = JSONObject().put("version", 1)
+                    listOf("noteColors", "noteBorders", "notePageBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites", "notePresentations").forEach { key -> original.opt(key)?.let { value -> noteMetadata.put(key, value) } }
+                    captured = JSONObject().put("data", typed(noteMetadata.toString()))
+                }
+                sections["prefs/$it.json"] = bytes(captured.toString())
+            }
+            val appearances =
+                listOf(NeoAppearanceStore(app).load()) +
+                    Neo4Profiles(app).list().map { it.appearance }
+            appearances.filter { BackupSection.SETTINGS in scope }
+                .map { it.customImageFile }
+                .filter { it.matches(Regex("neo4-theme-[a-zA-Z0-9-]+[.]jpg")) }
+                .distinct()
+                .forEach { name ->
+                    val file = File(app.filesDir, name)
+                    if (file.isFile)
+                        sections["themes/$name"] =
+                            file.inputStream().use { readBounded(it, 4 * 1024 * 1024) }
+                }
+            val validOwners = if (BackupSection.TASKS in scope) database.tasks.map { it.id }.toSet() + database.dayItems.map { it.id } else emptySet()
+            NeoAttachmentStore(app)
+                .list()
+                .filter { it.owner in validOwners }
+                .forEach { attachment ->
+                    val file = File(app.filesDir, "attachments/${attachment.name}")
+                    require(file.isFile) { "Missing referenced attachment: ${attachment.name}" }
+                    sections["attachments/${attachment.name}"] =
+                        file.inputStream().use { readBounded(it, NeoAttachmentStore.MAX_FILE) }
+                }
+            require(sections.values.sumOf { it.size.toLong() } <= Neo4BackupFormat.MAX_BYTES) {
+                "Backup exceeds 32 MiB"
+            }
+            val manifest =
+                JSONObject()
+                    .put("selectedSections", JSONArray(scope.map { it.name }))
+                    .put("formatVersion", Neo4BackupFormat.FORMAT)
+                    .put("applicationId", "com.exmore.app")
+                    .put(
+                        "appVersion",
+                        app.packageManager.getPackageInfo(app.packageName, 0).versionName
+                            ?: "unknown",
+                    )
+                    .put("neoEdition", "4.1")
+                    .put("createdAt", Instant.now().toString())
+                    .put("databaseSchema", 13)
+                    .put(
+                        "compatibility",
+                        JSONObject().put("minReaderFormat", 2).put("legacySchema", 9),
+                    )
+                    .put("encrypted", false)
+                    .put("securityCredentialsIncluded", false)
+                    .put(
+                        "dataManifest",
+                        JSONObject()
+                            .put("calendars", database.calendars.size)
+                            .put("days", database.days.size)
+                            .put("tasks", database.tasks.size)
+                            .put("payments", database.payments.size),
+                    )
+                    .put(
+                        "sections",
+                        JSONArray().apply {
+                            sections.forEach { (name, data) ->
+                                put(
+                                    JSONObject()
+                                        .put("name", name)
+                                        .put("bytes", data.size)
+                                        .put("sha256", Neo4BackupFormat.sha256(data))
+                                )
+                            }
+                        },
+                    )
+            ZipOutputStream(output).use { zip ->
+                (linkedMapOf("manifest.json" to bytes(manifest.toString(2))) + sections).forEach {
+                    (name, data) ->
+                    require(data.size <= Neo4BackupFormat.MAX_SECTION)
+                    zip.putNextEntry(ZipEntry(name))
+                    zip.write(data)
+                    zip.closeEntry()
+                }
+            }
+        }
+
+    fun exportEncrypted(database: V11Database, output: OutputStream, scope: Set<BackupSection>, password: CharArray) {
+        require(EncryptedBackup.validPassword(password)) { "Use a backup passphrase of at least 12 characters with at least four distinct characters" }
+        val archive = ByteArrayOutputStream()
+        exportWithHistory(database,archive,scope,true)
+        val plain = archive.toByteArray()
+        try { output.write(EncryptedBackup.encrypt(plain, password)); output.flush() }
+        finally { plain.fill(0) }
+    }
+
+    override fun preview(input: InputStream): Neo4PreparedRestore = preview(input, null)
+
+    fun preview(input: InputStream, password: CharArray?): Neo4PreparedRestore {
+        val inputBytes = readBounded(input, Neo4BackupFormat.MAX_BYTES + 128)
+        val raw = if (EncryptedBackup.isEncrypted(inputBytes)) {
+            if (password == null) throw BackupPasswordRequired(inputBytes)
+            EncryptedBackup.decrypt(inputBytes, password)
+        } else inputBytes
+        require(raw.size <= Neo4BackupFormat.MAX_BYTES) { "Backup exceeds limit" }
+        val parsed = parse(raw)
+        return Neo4PreparedRestore(Neo4BackupFormat.sha256(raw), parsed.preview, raw)
+    }
+
+    override fun validate(prepared: Neo4PreparedRestore): Neo4RestorePreview {
+        require(Neo4BackupFormat.sha256(prepared.bytes) == prepared.token) {
+            "Backup changed after preview"
+        }
+        return parse(prepared.bytes).preview
+    }
+
+    private data class Parsed(
+        val sections: Map<String, ByteArray>,
+        val database: V11Database,
+        val preview: Neo4RestorePreview,
+    )
+
+    private fun parse(raw: ByteArray): Parsed {
+        if (raw.firstOrNull { it.toInt().toChar() !in " \r\n\t" }?.toInt()?.toChar() == '{') {
+            val database = validateDatabase(raw)
+            return Parsed(
+                mapOf("data/v11.json" to raw),
+                database,
+                Neo4RestorePreview(
+                    "Legacy JSON",
+                    "unknown",
+                    database.calendars.size,
+                    database.days.size,
+                    database.tasks.size,
+                    database.payments.size,
+                    0,
+                    true,
+                    notes=database.dayItems.count {it.type==DayItemTypeV11.NOTE},shifts=database.days.sumOf {it.segments.size},events=database.dayItems.count {it.type!=DayItemTypeV11.NOTE},
+                ),
+            )
+        }
+        val all = linkedMapOf<String, ByteArray>()
+        var total = 0L
+        ZipInputStream(ByteArrayInputStream(raw)).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                val name = entry.name
+                require(!entry.isDirectory && all.size < 70 && !all.containsKey(name)) {
+                    "Duplicate or invalid archive entry"
+                }
+                require(
+                    name == "manifest.json" ||
+                        name == "data/v11.json" ||
+                        name == "data/legacy.json" ||
+                        name == "data/cashbook.bin" ||
+                        name == NOTE_HISTORY_SECTION ||
+                        uiPreferences.any { name == "prefs/$it.json" } ||
+                        (Neo4BackupFormat.safeAsset(name) || NeoAttachmentStore.safePath(name))
+                ) {
+                    "Unsupported archive path"
+                }
+                val data =
+                    readBounded(
+                        zip,
+                        if (name == "manifest.json") 128 * 1024
+                        else if(name==NOTE_HISTORY_SECTION)
+                            NeoNoteHistoryStore.MAX_PORTABLE_BYTES
+                        else if (
+                            Neo4BackupFormat.safeAsset(name) || NeoAttachmentStore.safePath(name)
+                        )
+                            4 * 1024 * 1024
+                        else Neo4BackupFormat.MAX_SECTION,
+                    )
+                total += data.size
+                require(total <= Neo4BackupFormat.MAX_BYTES) { "Expanded backup exceeds 32 MiB" }
+                all[name] = data
+                zip.closeEntry()
+            }
+        }
+        val manifest = json(all.remove("manifest.json") ?: error("Missing manifest"))
+        require(
+            manifest.getInt("formatVersion") == Neo4BackupFormat.FORMAT &&
+                manifest.getInt("databaseSchema") == 13
+        ) {
+            "Unsupported backup version"
+        }
+        require(manifest.getString("applicationId") in COMPATIBLE_APPLICATION_IDS) {
+            "Backup belongs to another app"
+        }
+        require(!manifest.optBoolean("encrypted", false)) {
+            "Encrypted backups are not supported by this version"
+        }
+        val sections = manifest.getJSONArray("sections")
+        val expected = mutableSetOf<String>()
+        for (i in 0 until sections.length()) {
+            val item = sections.getJSONObject(i)
+            val name = item.getString("name")
+            require(expected.add(name)) { "Duplicate manifest entry" }
+            val data = all[name] ?: error("Missing data section: $name")
+            require(
+                item.getLong("bytes") == data.size.toLong() &&
+                    item.getString("sha256") == Neo4BackupFormat.sha256(data)
+            ) {
+                "Checksum mismatch: $name"
+            }
+        }
+        require(
+            all.keys == expected &&
+                "data/v11.json" in all &&
+                "data/legacy.json" in all
+        ) {
+            "Incomplete data manifest"
+        }
+        require(
+            manifest.getJSONObject("compatibility").getInt("minReaderFormat") <=
+                Neo4BackupFormat.FORMAT
+        )
+        Instant.parse(manifest.getString("createdAt"))
+        all.filterKeys { Neo4BackupFormat.safeAsset(it) }
+            .forEach { (_, data) ->
+                val bounds =
+                    android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeByteArray(data, 0, data.size, bounds)
+                require(bounds.outWidth in 1..1600 && bounds.outHeight in 1..1600) {
+                    "Invalid or oversized theme image"
+                }
+            }
+        val database = validateDatabase(all.getValue("data/v11.json"))
+        val old = json(all.getValue("data/legacy.json"))
+        require(
+            old.optInt("schemaVersion") == 9 &&
+                listOf("workplaces", "shifts", "payments", "dayDetails", "templates").all {
+                    old.optJSONArray(it) != null
+                }
+        ) {
+            "Invalid legacy data section"
+        }
+        listOf("workplaces", "payments", "templates").forEach { key ->
+            val array = old.getJSONArray(key)
+            val ids = mutableSetOf<String>()
+            for (i in 0 until array.length()) {
+                val id = array.getJSONObject(i).getString("id")
+                require(id.isNotBlank() && ids.add(id)) { "Invalid legacy record ID" }
+            }
+        }
+        val legacyData =
+            legacy.parseImport(
+                old.toString()
+            ) // Pure parse only; never imports or writes before confirmation.
+        val legacyAmounts =
+            legacyData.payments.map { it.amount } +
+                legacyData.dayDetails.map { it.extraAmount } +
+                legacyData.shifts.mapNotNull { it.customAmount } +
+                legacyData.templates.mapNotNull { it.customAmount } +
+                legacyData.workplaces.flatMap {
+                    listOf(
+                        it.fullDayRate,
+                        it.longRate,
+                        it.nightRate,
+                        it.morningRate,
+                        it.eveningRate,
+                    )
+                }
+        FinancialDataValidation.validateMoneyRange(legacyAmounts)
+        uiPreferences.forEach { name ->
+            all["prefs/$name.json"]?.let { validateUiPreferences(name, json(it)) }
+        }
+        all["prefs/${NeoSmartStore.NAME}.json"]?.let { section ->
+            val saved = json(section).optJSONObject("data")
+            if (saved != null) {
+                require(saved.getString("type") == "string")
+                val smart = JSONObject(saved.getString("value"))
+                NeoSmartStore.validate(smart)
+                smart.optJSONArray("attachments")?.let { attachments ->
+                    for (index in 0 until attachments.length()) {
+                        val attachment = attachments.getJSONObject(index)
+                        val name = attachment.getString("name")
+                        require(NeoAttachmentStore.safeName(name))
+                        if (
+                            attachment.getString("owner") in
+                                (database.tasks.map { it.id } + database.dayItems.map { it.id })
+                        )
+                            require("attachments/$name" in all) { "Missing attachment section" }
+                    }
+                }
+            }
+        }
+        all[NOTE_HISTORY_SECTION]?.let {history ->
+            NeoNoteHistoryStore(app).validatePortable(
+                json(history),
+                database.dayItems.filter {it.type==DayItemTypeV11.NOTE}
+                    .map {it.id}.toSet()
+            )
+        }
+        all["data/cashbook.bin"]?.let { validateCashSnapshot(it, null, RestoreMode.REPLACE) }
+        val appearancePrefs = all["prefs/todo_shift_neo3_appearance.json"]?.let { json(it) } ?: JSONObject()
+        appearancePrefs.optJSONObject("neo4Appearance")?.optString("value")?.let {
+            Neo4AppearanceCodec.decode(JSONObject(it))
+        }
+        return Parsed(
+            all,
+            database,
+            Neo4RestorePreview(
+                manifest.getString("createdAt"),
+                manifest.getString("appVersion"),
+                database.calendars.size,
+                database.days.size,
+                database.tasks.size,
+                database.payments.size,
+                all.keys.count { Neo4BackupFormat.safeAsset(it) },
+                false,
+                manifest.optJSONArray("selectedSections")?.let { a -> (0 until a.length()).map { BackupSection.valueOf(a.getString(it)) }.toSet() }
+                    ?: BackupSection.entries.filter { it != BackupSection.CASHBOOK || "data/cashbook.bin" in all }.toSet(),
+                notes=database.dayItems.count {it.type==DayItemTypeV11.NOTE},shifts=database.days.sumOf {it.segments.size},events=database.dayItems.count {it.type!=DayItemTypeV11.NOTE},
+            ),
+        )
+    }
+
+    /** Validate and merge in memory before touching either persistent store. */
+    private fun validateCashSnapshot(incoming: ByteArray, previous: ByteArray?, mode: RestoreMode): ByteArray {
+        var data = previous
+        val memory = object : Ledger.Store {
+            override fun read(): ByteArray? = data
+            override fun write(snapshot: ByteArray) { data = snapshot }
+        }
+        val ledger = Ledger(memory); ledger.load()
+        if (mode == RestoreMode.MERGE) ledger.mergeBackup(incoming) else ledger.restore(incoming)
+        return ledger.backup()
+    }
+
+    private fun currentFingerprint(): String = Neo4BackupFormat.sha256(
+        bytes(storage.exportJson(storage.load())) + bytes(legacy.exportJson(legacy.load())) + (AndroidLedgerStore(app).read() ?: byteArrayOf())
+    )
+
+    fun inspect(prepared: Neo4PreparedRestore, scope: Set<BackupSection>, mode: RestoreMode): RestoreInspection = dataGate {
+        validate(prepared)
+        require(scope.all { it in prepared.preview.availableSections }) { "Section unavailable in this backup" }
+        val incoming = parse(prepared.bytes)
+        val plan = SelectiveRestore.plan(JSONObject(storage.exportJson(storage.load())), JSONObject(storage.exportJson(incoming.database)), scope, mode, mode == RestoreMode.REPLACE && scope == prepared.preview.availableSections && scope.containsAll(setOf(BackupSection.CALENDAR, BackupSection.TASKS, BackupSection.SALARY, BackupSection.SETTINGS))).second.copy(currentFingerprint = currentFingerprint())
+        if (BackupSection.CASHBOOK in scope && incoming.sections["data/cashbook.bin"] != null) {
+            val bytes = incoming.sections.getValue("data/cashbook.bin")
+            val candidate = Ledger(object : Ledger.Store { override fun read() = bytes; override fun write(snapshot: ByteArray) {} }).load()
+            plan.copy(cashAccounts = candidate.accounts.size, cashTransactions = candidate.entries.size, cashDebts = candidate.debts.size)
+        } else plan
+    }
+
+    private fun validateDatabase(data: ByteArray): V11Database {
+        val o = json(data)
+        o.getJSONArray("days").let { days ->
+            for (i in 0 until days.length()) {
+                val segments = days.getJSONObject(i).getJSONArray("segments")
+                for (j in 0 until segments.length()) ShiftKind.valueOf(
+                    segments.getJSONObject(j).getString("kind")
+                )
+            }
+        }
+        val database = storage.importJson(o.toString()) // V11 importJson is a pure parser.
+        require(database.schemaVersion == 13)
+        listOf(
+                "calendars",
+                "days",
+                "rates",
+                "incomeSources",
+                "paymentMethods",
+                "payments",
+                "settlements",
+                "monthSnapshots",
+                "auditLog",
+                "dayItems",
+                "tasks",
+                "obligations",
+                "obligationPayments",
+            )
+            .forEach { key ->
+                val array = o.getJSONArray(key)
+                val ids = mutableSetOf<String>()
+                for (i in 0 until array.length()) {
+                    val item = array.getJSONObject(i)
+                    val id = item.getString("id")
+                    require(id.isNotBlank() && ids.add(id)) {
+                        "Invalid or duplicate record ID in $key"
+                    }
+                }
+            }
+        database.days.forEach { day ->
+            LocalDate.parse(day.date)
+            val ids = mutableSetOf<String>()
+            day.segments.forEach { s ->
+                require(s.id.isNotBlank() && ids.add(s.id)) { "Duplicate shift ID" }
+                if (s.startMinute != null || s.endMinute != null)
+                    require(
+                        s.startMinute != null &&
+                            s.endMinute != null &&
+                            s.startMinute in 0..1439 &&
+                            s.endMinute in 1..2879 &&
+                            s.endMinute > s.startMinute
+                    ) {
+                        "Invalid shift time"
+                    }
+            }
+        }
+        database.tasks.forEach { LocalDate.parse(it.date) }
+        FinancialDataValidation.validate(database)
+        return database
+    }
+
+    override fun restore(prepared: Neo4PreparedRestore, confirmedToken: String): Neo4RestoredState =
+        restoreChecked(prepared, confirmedToken, false, prepared.preview.availableSections, RestoreMode.REPLACE)
+
+    fun restore(prepared: Neo4PreparedRestore, confirmedToken: String, scope: Set<BackupSection>, mode: RestoreMode, expectedCurrentFingerprint: String? = null): Neo4RestoredState =
+        restoreChecked(prepared, confirmedToken, false, scope, mode, expectedCurrentFingerprint)
+
+    /**
+     * Only the authenticated boot recovery UI may explicitly request replacement of a failed store.
+     */
+    fun recoverFromBackup(
+        prepared: Neo4PreparedRestore,
+        confirmedToken: String,
+    ): Neo4RestoredState = restoreChecked(prepared, confirmedToken, true, prepared.preview.availableSections, RestoreMode.REPLACE)
+
+    private fun restoreChecked(
+        prepared: Neo4PreparedRestore,
+        confirmedToken: String,
+        recovery: Boolean,
+        scope: Set<BackupSection>,
+        mode: RestoreMode,
+        expectedCurrentFingerprint: String? = null,
+    ): Neo4RestoredState =
+        dataGate {
+            require(confirmedToken == prepared.token) {
+                "Restore confirmation does not match preview"
+            }
+            validate(prepared)
+            recoverIfNeeded()
+            if (expectedCurrentFingerprint != null) check(expectedCurrentFingerprint == currentFingerprint()) { "Data changed since preview; inspect the backup again" }
+            val originalParsed = parse(prepared.bytes)
+            require(scope.isNotEmpty() && scope.all { it in prepared.preview.availableSections }) { "Invalid restore scope" }
+            val currentRead = storage.read()
+            val oldDatabase =
+                if (recovery) (currentRead as? com.exmore.app.storage.StorageRead.Loaded)?.data
+                else currentRead.requireLoaded()
+            val fullReplace = mode == RestoreMode.REPLACE && scope == prepared.preview.availableSections && scope.containsAll(setOf(BackupSection.CALENDAR, BackupSection.TASKS, BackupSection.SALARY, BackupSection.SETTINGS))
+            val plan = if (oldDatabase == null) null else SelectiveRestore.plan(JSONObject(storage.exportJson(oldDatabase)), JSONObject(storage.exportJson(originalParsed.database)), scope, mode, fullReplace)
+            require(mode != RestoreMode.MERGE || plan?.second?.conflicts == 0) { "Backup has conflicting records. Review and select Replace." }
+            val nextDatabase = if (recovery || fullReplace) originalParsed.database else validateDatabase(bytes(plan!!.first.toString()))
+            val selectedSections = originalParsed.sections.filterKeys { name ->
+                when {
+                    name == "data/cashbook.bin" -> BackupSection.CASHBOOK in scope
+                    name.startsWith("prefs/") -> BackupSection.SETTINGS in scope || (BackupSection.TASKS in scope && name == "prefs/${NeoSmartStore.NAME}.json")
+                    name.startsWith("themes/") -> BackupSection.SETTINGS in scope
+                    name.startsWith("attachments/") -> BackupSection.TASKS in scope
+                    name==NOTE_HISTORY_SECTION -> BackupSection.TASKS in scope
+                    else -> true
+                }
+            }.toMutableMap()
+            selectedSections["data/v11.json"] = bytes(storage.exportJson(nextDatabase))
+            if (!fullReplace && !recovery) {
+                // Preserve all unrelated legacy records. Workplaces are shared dependencies.
+                val currentLegacy = JSONObject(legacy.exportJson(legacy.load()))
+                originalParsed.sections["data/legacy.json"]?.let { raw ->
+                    val from = json(raw)
+                    listOf("workplaces", "templates").forEach { key ->
+                        val retained = currentLegacy.getJSONArray(key)
+                        val ids = (0 until retained.length()).map { retained.getJSONObject(it).getString("id") }.toSet()
+                        val incoming = from.getJSONArray(key)
+                        for (i in 0 until incoming.length()) if (incoming.getJSONObject(i).getString("id") !in ids) retained.put(incoming.getJSONObject(i))
+                    }
+                }
+                selectedSections["data/legacy.json"] = bytes(currentLegacy.toString())
+            }
+            if (BackupSection.TASKS in scope && BackupSection.SETTINGS !in scope) {
+                selectedSections["prefs/${NeoSmartStore.NAME}.json"]?.let { raw ->
+                    val incoming = JSONObject(json(raw).getJSONObject("data").getString("value"))
+                    val retained = NeoSmartStore(app).snapshot()
+                    listOf("noteColors", "noteBorders", "notePageBorders", "attachments", "categories", "taskCategories", "noteCategories", "noteFolders", "noteFolderAssignments", "noteFavorites", "notePresentations").forEach { key ->
+                        incoming.opt(key)?.let { value ->
+                            if (key == "noteFolders" && value is JSONArray && mode == RestoreMode.MERGE) {
+                                val old = retained.optJSONArray(key) ?: JSONArray()
+                                val ids = (0 until old.length()).map { old.getJSONObject(it).getString("id") }.toSet()
+                                for (index in 0 until value.length()) {
+                                    val folder = value.getJSONObject(index)
+                                    if (folder.getString("id") !in ids) old.put(folder)
+                                }
+                                retained.put(key, old)
+                            } else if (value is JSONObject && retained.optJSONObject(key) != null) {
+                                val old = retained.getJSONObject(key)
+                                value.keys().forEach { id -> if (mode == RestoreMode.REPLACE || !old.has(id)) old.put(id, value.get(id)) }
+                            } else retained.put(key, value)
+                        }
+                    }
+                    selectedSections["prefs/${NeoSmartStore.NAME}.json"] = bytes(JSONObject().put("data", typed(retained.toString())).toString())
+                }
+            }
+            val parsed = originalParsed.copy(sections = selectedSections, database = nextDatabase)
+            val cashStore = AndroidLedgerStore(app)
+            val oldCash = cashStore.read()
+            var nextCash = selectedSections["data/cashbook.bin"]?.let { validateCashSnapshot(it, oldCash, mode) }
+            if (nextDatabase.payments.any { it.cashBookAccountId != null }) {
+                val persistedCash = cashStore.read()
+                var memoryCash = nextCash ?: persistedCash
+                val memoryLedger = Ledger(object : Ledger.Store {
+                    override fun read(): ByteArray? = memoryCash
+                    override fun write(snapshot: ByteArray) { memoryCash = snapshot }
+                })
+                memoryLedger.load()
+                nextDatabase.payments.filter { it.cashBookAccountId != null }.forEach { payment ->
+                    memoryLedger.reconcileSalaryIncome(payment.id, payment.cashBookAccountId!!, LocalizedNumbers.cents(payment.amount), payment.receivedDate, payment.cashBookRevision, payment.reversedAt != null)
+                }
+                nextCash = memoryLedger.backup()
+            }
+            if (oldDatabase != null) {
+                com.exmore.app.integration.SalaryCashSync.validateTransition(
+                    oldDatabase, validateDatabase(parsed.sections.getValue("data/v11.json"))
+                )
+            }
+            if (recovery && parsed.preview.legacyJson) legacy.load()
+            val targets = linkedMapOf<String, JSONObject>()
+            targets["todo_shift_v11"] =
+                capture(prefs("todo_shift_v11"))
+                    .put(
+                        "database",
+                        typed(String(parsed.sections.getValue("data/v11.json"), Charsets.UTF_8)),
+                    )
+                    .put("migrated_from_rc1", typed(true))
+            parsed.sections["data/legacy.json"]?.let {
+                targets["todo_shift_data"] =
+                    capture(prefs("todo_shift_data"))
+                        .put("database", typed(String(it, Charsets.UTF_8)))
+            }
+            uiPreferences.forEach { name ->
+                parsed.sections["prefs/$name.json"]?.let { targets[name] = json(it) }
+            }
+            val previous = JSONObject()
+            targets.keys.forEach { name -> previous.put(name, capture(prefs(name))) }
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
+            if (nextCash != null) previous.put("__cashbook", Base64.encodeToString(oldCash ?: emptyCashSnapshot(), Base64.NO_WRAP))
+            val createdAssets = JSONArray()
+            parsed.sections
+                .filterKeys { Neo4BackupFormat.safeAsset(it) || NeoAttachmentStore.safePath(it) }
+                .forEach { (path, data) ->
+                    val file =
+                        if (NeoAttachmentStore.safePath(path)) File(app.filesDir, path)
+                        else File(app.filesDir, path.substringAfter('/'))
+                    if (!file.exists())
+                        createdAssets.put(
+                            JSONObject()
+                                .put("path", path)
+                                .put("sha256", Neo4BackupFormat.sha256(data))
+                        )
+                }
+            val journalBytes =
+                bytes(
+                    JSONObject()
+                        .put("format", 1)
+                        .put("previous", previous)
+                        .put("createdAssets", createdAssets)
+                        .toString()
+                )
+            require(journalBytes.size <= 48 * 1024 * 1024) {
+                "Rollback snapshot exceeds recovery limit"
+            }
+            if (recovery) {
+                // Preserve exact raw preference values, including malformed payloads; never
+                // auto-delete.
+                val quarantine =
+                    AtomicFile(
+                        File(
+                            app.filesDir,
+                            "neo41-before-recovery-${java.util.UUID.randomUUID()}.json",
+                        )
+                    )
+                writeAtomic(quarantine, journalBytes)
+            }
+            if (!recovery && oldDatabase != null) {
+                createNeoSafetyCopy(app,oldDatabase)
+            }
+            writeAtomic(journal, journalBytes)
+            try {
+                restoreCheckpoint("journal")
+                nextCash?.let { cashStore.write(it) }
+                restoreCheckpoint("cashbook")
+                NeoCommittedEffects(app).prepare(oldDatabase ?: V11Database(), parsed.database)
+                restoreCheckpoint("effects")
+                // Stage image files before changing data. Existing files with different content are
+                // rejected.
+                parsed.sections
+                    .filterKeys {
+                        Neo4BackupFormat.safeAsset(it) || NeoAttachmentStore.safePath(it)
+                    }
+                    .forEach { (path, data) ->
+                        val file =
+                            if (NeoAttachmentStore.safePath(path)) File(app.filesDir, path)
+                            else File(app.filesDir, path.substringAfter('/'))
+                        check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs())
+                        if (file.exists())
+                            require(
+                                Neo4BackupFormat.sha256(file.readBytes()) ==
+                                    Neo4BackupFormat.sha256(data)
+                            ) {
+                                "Image filename collision"
+                            }
+                        else writeAtomic(AtomicFile(file), data)
+                    }
+                restoreCheckpoint("assets")
+                targets.forEach { (name, data) ->
+                    writePreferences(prefs(name), data)
+                    restoreCheckpoint("prefs:$name")
+                }
+                // Encrypt restored protected content before finalizing the rollback journal.
+                storage.protectLegacyNotes(storage.load())
+                // Success becomes durable only after every preference commit has completed.
+                journal.delete()
+                check(!journal.baseFile.exists()) { "Unable to finalize restore journal" }
+            } catch (failure: Exception) {
+                try {
+                    recoverIfNeeded()
+                } catch (rollback: Exception) {
+                    failure.addSuppressed(rollback)
+                }
+                throw failure
+            }
+            val warnings = mutableListOf<String>()
+            // Revision history is optional and is restored only after the
+            // core transaction has committed. Every version is encrypted
+            // immediately using the destination device's Keystore.
+            selectedSections[NOTE_HISTORY_SECTION]?.let {raw ->
+                runCatching {
+                    val ids=parsed.database.dayItems
+                        .filter{it.type==DayItemTypeV11.NOTE}
+                        .map{it.id}.toSet()
+                    val records=NeoNoteHistoryStore(app).validatePortable(json(raw),ids)
+                    NeoNoteHistoryStore(app).mergePortable(records)
+                }.onFailure {
+                    warnings += "Core data restored, but note history could not be re-encrypted; retry the encrypted restore"
+                }
+            }
+            runCatching {
+                    oldDatabase?.tasks?.forEach { ToDoShiftReminder.cancel(app, it.id) }
+                    oldDatabase?.dayItems?.forEach { ToDoShiftReminder.cancel(app, it.id) }
+                    ToDoShiftReminder.rescheduleAll(app, parsed.database)
+                }
+                .onFailure { warnings += "Reminder scheduling requires review in Android settings" }
+            runCatching { Neo4WidgetRefresh.schedule(app) }
+            Neo4RestoredState(
+                parsed.database,
+                legacy.load(),
+                V11UiSettingsStore(app).load(),
+                NeoAppearanceStore(app).load(),
+                V11ActiveCalendarStore(app).load(),
+                warnings,
+            )
+        }
+
+    fun updateWorkplaces(
+        expectedLegacy: com.exmore.app.data.AppData,
+        expected: V11Database,
+        workplaces: List<com.exmore.app.data.Workplace>,
+        proposed: V11Database? = null,
+    ): Pair<com.exmore.app.data.AppData, V11Database> =
+        dataGate {
+            recoverIfNeeded()
+            check(legacy.load() == expectedLegacy && storage.load() == expected) {
+                "Data changed; reopen before editing workplaces"
+            }
+            NeoNewReferenceGuard.validateWorkplaceRemoval(
+                expected,
+                expectedLegacy.workplaces.map { it.id }.toSet(),
+                workplaces.map { it.id }.toSet(),
+            )
+            val updatedLegacy = expectedLegacy.copy(workplaces = workplaces)
+            val newPlaces =
+                workplaces.filter { place -> expectedLegacy.workplaces.none { it.id == place.id } }
+            val updated =
+                NeoWorkplaceSources.ensure(NeoRatePolicy.reconcile(proposed ?: expected, workplaces), newPlaces)
+            FinancialDataValidation.validate(updated)
+            val previous =
+                JSONObject()
+                    .put("todo_shift_data", capture(prefs("todo_shift_data")))
+                    .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
+            val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+            require(snapshot.size <= 48 * 1024 * 1024)
+            writeAtomic(journal, snapshot)
+            try {
+                NeoCommittedEffects(app).prepare(expected, updated)
+                legacy.save(updatedLegacy)
+                storage.save(updated)
+                journal.delete()
+                check(!journal.baseFile.exists()) { "Unable to finalize workplace update" }
+            } catch (failure: Exception) {
+                try {
+                    previous.keys().forEach {
+                        writePreferences(prefs(it), previous.getJSONObject(it))
+                    }
+                    journal.delete()
+                } catch (rollback: Exception) {
+                    failure.addSuppressed(rollback)
+                }
+                throw failure
+            }
+            runCatching { Neo4WidgetRefresh.schedule(app) }
+            updatedLegacy to updated
+        }
+
+    /** Journaled single-store save: failure cannot be mistaken for a durable cache-only update. */
+    /** Legacy data remains untouched; a failed migration cannot become a confirmed memory-only DB. */
+    internal fun migrateLegacy(
+        oldData: com.exmore.app.data.AppData,
+        effectiveFrom: String,
+        checkpoint: (String) -> Unit = {},
+    ): V11Database = dataGate {
+        recoverIfNeeded()
+        if (storage.hasDatabase()) return@dataGate storage.load()
+        check(!storage.wasMigrated()) { "Previously migrated database is missing" }
+        val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+        val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+        require(snapshot.size <= 48 * 1024 * 1024)
+        writeAtomic(journal, snapshot)
+        try {
+            checkpoint("journal")
+            val migrated = storage.migrateIfNeeded(oldData, effectiveFrom)
+            checkpoint("database")
+            journal.delete()
+            check(!journal.baseFile.exists()) { "Unable to finalize migration" }
+            migrated
+        } catch (failure: Exception) {
+            try { recoverIfNeeded() }
+            catch (rollback: Exception) { failure.addSuppressed(rollback) }
+            throw failure
+        }
+    }
+
+    internal fun commitDatabase(
+        expected: V11Database,
+        next: V11Database,
+        checkpoint: (String) -> Unit = {},
+    ): V11Database =
+        dataGate {
+            recoverIfNeeded()
+            check(storage.load() == expected) { "Data changed; draft retained" }
+            NeoNewReferenceGuard.validate(expected, next) {
+                legacy.load().workplaces.map { it.id }.toSet()
+            }
+            FinancialDataValidation.validate(next)
+            com.exmore.app.integration.SalaryCashSync.validateWrite(expected, next)
+            val previous = JSONObject().put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
+            val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+            require(snapshot.size <= 48 * 1024 * 1024)
+            writeAtomic(journal, snapshot)
+            try {
+                checkpoint("journal")
+                NeoCommittedEffects(app).prepare(expected, next)
+                checkpoint("effects")
+                storage.save(next)
+                checkpoint("database")
+                journal.delete()
+                check(!journal.baseFile.exists()) { "Unable to finalize database commit" }
+            } catch (failure: Exception) {
+                try {
+                    recoverIfNeeded()
+                } catch (rollback: Exception) {
+                    failure.addSuppressed(rollback)
+                }
+                throw failure
+            }
+            next
+        }
+
+    /** Text and decorative metadata share the existing rollback journal and restore gate. */
+    internal fun saveNote(
+        expected: V11Database,
+        expectedMetadata: String,
+        note: DayItemV11,
+        color: String,
+        border: Boolean,
+        presentation:NeoNotePresentation?=null,
+        pageBorderStyle: String? = null,
+        linkedTasks: List<TaskV11> = emptyList(),
+        detachedTaskIds: Set<String> = emptySet(),
+        checkpoint: (String) -> Unit = {},
+    ): V11Database =
+        dataGate {
+            recoverIfNeeded()
+            require(note.type == DayItemTypeV11.NOTE)
+            require(color.matches(Regex("#[0-9a-fA-F]{6}")))
+            val smart = NeoSmartStore(app)
+            check(storage.load() == expected && smart.snapshot().toString() == expectedMetadata) {
+                "Data changed; reopen before saving the note. Draft retained."
+            }
+            val next =
+                expected.copy(
+                    dayItems = expected.dayItems.filterNot { it.id == note.id } + note,
+                    tasks = expected.tasks.map { task ->
+                        if(task.id in detachedTaskIds) task.copy(linkedNoteId=null)
+                        else linkedTasks.firstOrNull {it.id==task.id} ?: task
+                    } + linkedTasks.filter { candidate -> expected.tasks.none { it.id == candidate.id } },
+                )
+            require(detachedTaskIds.all {id -> expected.tasks.any {it.id==id && it.linkedNoteId==note.id}}) {"Cannot unlink another note's task"}
+            require(linkedTasks.all { it.linkedNoteId == note.id }) { "Checklist task must reference its source note" }
+            require(linkedTasks.map { it.id }.distinct().size == linkedTasks.size) { "Duplicate checklist task identifiers" }
+            require(linkedTasks.none { candidate -> expected.tasks.any { stored -> stored.id == candidate.id && stored.linkedNoteId != null && stored.linkedNoteId != note.id } }) {
+                "Checklist task identity conflicts with another record; no note or task was changed"
+            }
+            NeoNewReferenceGuard.validate(expected, next) {
+                legacy.load().workplaces.map { it.id }.toSet()
+            }
+            val previous =
+                JSONObject()
+                    .put("todo_shift_v11", capture(prefs("todo_shift_v11")))
+                    .put(NeoSmartStore.NAME, capture(prefs(NeoSmartStore.NAME)))
+            previous.put(
+                NeoCommittedEffects.STORE_NAME,
+                capture(prefs(NeoCommittedEffects.STORE_NAME)),
+            )
+            val snapshot = bytes(JSONObject().put("format", 1).put("previous", previous).toString())
+            require(snapshot.size <= 48 * 1024 * 1024)
+            writeAtomic(journal, snapshot)
+            try {
+                checkpoint("journal")
+                NeoCommittedEffects(app).prepare(expected, next)
+                checkpoint("effects")
+                storage.save(next)
+                checkpoint("text")
+                smart.update { o ->
+                    val colors = o.optJSONObject("noteColors") ?: JSONObject()
+                    colors.put(note.id, color)
+                    o.put("noteColors", colors)
+                    val borders = o.optJSONObject("noteBorders") ?: JSONObject()
+                    borders.put(note.id, border)
+                    o.put("noteBorders", borders)
+                    if (pageBorderStyle != null) {
+                        require(com.exmore.app.v11.ui.NeoPageBorders.valid(pageBorderStyle))
+                        val pageBorders = o.optJSONObject("notePageBorders") ?: JSONObject()
+                        if (pageBorderStyle == com.exmore.app.v11.ui.NeoPageBorders.NONE)
+                            pageBorders.remove(note.id)
+                        else pageBorders.put(note.id, pageBorderStyle)
+                        o.put("notePageBorders", pageBorders)
+                    }
+                    if(presentation!=null) {
+                        require(NeoNotePresentation.validFont(presentation.arabicFont) &&
+                            NeoNotePresentation.validFont(presentation.englishFont))
+                        val all=o.optJSONObject("notePresentations") ?: JSONObject()
+                        val current=JSONObject()
+                        presentation.ruled?.let {current.put("ruled",it)}
+                        presentation.arabicFont?.let {current.put("ar",it)}
+                        presentation.englishFont?.let {current.put("en",it)}
+                        if(current.length()==0) all.remove(note.id)
+                        else all.put(note.id,current)
+                        o.put("notePresentations",all)
+                    }
+                }
+                checkpoint("style")
+                journal.delete()
+                check(!journal.baseFile.exists()) { "Unable to finalize note transaction" }
+            } catch (failure: Exception) {
+                try {
+                    recoverIfNeeded()
+                } catch (rollback: Exception) {
+                    failure.addSuppressed(rollback)
+                }
+                throw failure
+            }
+            runCatching { Neo4WidgetRefresh.schedule(app) }
+            next
+        }
+
+    fun recoverIfNeeded() =
+        dataGate {
+            val raw =
+                try {
+                    journal.openRead().use { readBounded(it, 48 * 1024 * 1024) }
+                } catch (_: FileNotFoundException) {
+                    return@dataGate
+                }
+            val o = json(raw)
+            require(o.getInt("format") == 1) { "Unsupported restore recovery journal" }
+            val previous = o.getJSONObject("previous")
+            require(
+                previous.keys().asSequence().all {
+                    it in uiPreferences ||
+                        it == "todo_shift_v11" ||
+                        it == "todo_shift_data" ||
+                        it == NeoCommittedEffects.STORE_NAME || it == "__cashbook"
+                }
+            )
+            val created = o.optJSONArray("createdAssets") ?: JSONArray()
+            for (i in 0 until created.length()) {
+                val asset = created.getJSONObject(i)
+                val path = asset.getString("path")
+                require(Neo4BackupFormat.safeAsset(path) || NeoAttachmentStore.safePath(path))
+                require(asset.getString("sha256").matches(Regex("[0-9a-f]{64}")))
+            }
+            previous.optString("__cashbook").takeIf { it.isNotBlank() }?.let { AndroidLedgerStore(app).write(Base64.decode(it, Base64.NO_WRAP)) }
+            previous.keys().forEach { name ->
+                if (name != "__cashbook") writePreferences(prefs(name), previous.getJSONObject(name))
+            }
+            for (i in 0 until created.length()) {
+                val asset = created.getJSONObject(i)
+                val path = asset.getString("path")
+                val file =
+                    if (NeoAttachmentStore.safePath(path)) File(app.filesDir, path)
+                    else File(app.filesDir, path.substringAfter('/'))
+                // Keep anything referenced by the restored snapshot, preexisting, or modified.
+                if (
+                    !previous.toString().contains(file.name) &&
+                        file.isFile &&
+                        Neo4BackupFormat.sha256(file.readBytes()) == asset.getString("sha256")
+                ) {
+                    check(file.delete()) { "Unable to remove interrupted staged asset" }
+                }
+            }
+            journal.delete()
+        }
+
+    private fun capture(preferences: SharedPreferences): JSONObject =
+        JSONObject().apply {
+            preferences.all.forEach { (key, value) -> if (value != null) put(key, typed(value)) }
+        }
+
+    private fun typed(value: Any): JSONObject =
+        JSONObject().apply {
+            when (value) {
+                is String -> {
+                    put("type", "string")
+                    put("value", value)
+                }
+                is Boolean -> {
+                    put("type", "boolean")
+                    put("value", value)
+                }
+                is Int -> {
+                    put("type", "int")
+                    put("value", value)
+                }
+                is Long -> {
+                    put("type", "long")
+                    put("value", value)
+                }
+                is Float -> {
+                    require(value.isFinite())
+                    put("type", "float")
+                    put("value", value)
+                }
+                is Set<*> -> {
+                    require(value.all { it is String })
+                    put("type", "strings")
+                    put("value", JSONArray(value.toList()))
+                }
+                else -> error("Unsupported preference type")
+            }
+        }
+
+    /** Known preference keys must retain the type consumed by existing readers. */
+    private fun validateUiPreferences(name: String, o: JSONObject) {
+        validatePreferences(o)
+        val expected =
+            when (name) {
+                "todo_shift_v11_ui" ->
+                    mapOf("showWorkplaceNames" to "boolean").withDefault { "string" }
+                NeoSmartStore.NAME -> mapOf("data" to "string")
+                "todo_shift_v11_ui_state" -> mapOf("active_calendar_id" to "string")
+                "todo_shift_neo3_appearance" ->
+                    mapOf(
+                        "intensity" to "float",
+                        "fontScale" to "float",
+                        "cornerRadius" to "int",
+                        "motion" to "int",
+                        "glass" to "boolean",
+                        "glow" to "boolean",
+                        "reduceMotion" to "boolean",
+                        "dashboardExpanded" to "boolean",
+                        "showShiftNotes" to "boolean",
+                        "showFinanceChart" to "boolean",
+                        "hiddenCards" to "strings",
+                        "quickActions" to "strings",
+                    )
+                "todo_shift_neo4_profiles" -> mapOf("profiles" to "string")
+                "todo_shift_neo4_widgets" ->
+                    com.exmore.app.widget.Neo4WidgetKind.entries.associate {
+                        it.name to "string"
+                    }
+                "todo_shift_cloud_readiness" ->
+                    mapOf("frequency" to "string", "wifiOnly" to "boolean")
+                "todo_shift_launch_v44" -> mapOf("landing" to "int", "notes" to "boolean")
+                else -> emptyMap()
+            }
+        o.keys().forEach { key ->
+            val type =
+                when (name) {
+                    "todo_shift_v11_ui" ->
+                        if (key == "showWorkplaceNames") "boolean"
+                        else if (
+                            key in
+                                listOf(
+                                    "todayHighlightStyle",
+                                    "todayHighlightColor",
+                                    "fabSide",
+                                    "appTheme",
+                                    "calendarStyle",
+                                    "widgetTheme",
+                                    "experience",
+                                    "premiumBrightness",
+                                )
+                        )
+                            "string"
+                        else null
+                    "todo_shift_neo3_appearance" ->
+                        expected[key]
+                            ?: if (
+                                key in
+                                    listOf(
+                                        "neo4Appearance",
+                                        "brightness",
+                                        "palette",
+                                        "accentHex",
+                                        "cardStyle",
+                                        "density",
+                                        "typeface",
+                                        "iconStyle",
+                                        "calendarView",
+                                        "calendarDensity",
+                                        "language",
+                                        "dashboardOrder",
+                                        "timelineFilter",
+                                    )
+                            )
+                                "string"
+                            else null
+                    "todo_shift_neo4_widgets" -> if (key.substringBefore(':') in com.exmore.app.widget.Neo4WidgetKind.entries.map { it.name }) "string" else null
+                    else -> expected[key]
+                }
+            if (type != null)
+                require(o.getJSONObject(key).getString("type") == type) {
+                    "Invalid preference type in $name/$key"
+                }
+        }
+        if (name == "todo_shift_neo4_profiles" && o.has("profiles")) {
+            Neo4Profiles.decode(o.getJSONObject("profiles").getString("value"))
+        }
+    }
+
+    private fun validatePreferences(o: JSONObject) {
+        require(o.length() <= 256)
+        o.keys().forEach { key ->
+            require(key.length <= 160)
+            val v = o.getJSONObject(key)
+            when (v.getString("type")) {
+                "string" -> v.getString("value")
+                "boolean" -> v.getBoolean("value")
+                "int" -> v.getInt("value")
+                "long" -> v.getLong("value")
+                "float" ->
+                    require(
+                        v.getDouble("value").isFinite() && v.getDouble("value").toFloat().isFinite()
+                    )
+                "strings" -> {
+                    val a = v.getJSONArray("value")
+                    require(a.length() <= 256)
+                    for (i in 0 until a.length()) a.getString(i)
+                }
+                else -> error("Unsupported preference type")
+            }
+        }
+    }
+
+    private fun writePreferences(preferences: SharedPreferences, o: JSONObject) {
+        validatePreferences(o)
+        val editor = preferences.edit().clear()
+        o.keys().forEach { key ->
+            val v = o.getJSONObject(key)
+            when (v.getString("type")) {
+                "string" -> editor.putString(key, v.getString("value"))
+                "boolean" -> editor.putBoolean(key, v.getBoolean("value"))
+                "int" -> editor.putInt(key, v.getInt("value"))
+                "long" -> editor.putLong(key, v.getLong("value"))
+                "float" -> editor.putFloat(key, v.getDouble("value").toFloat())
+                "strings" -> {
+                    val a = v.getJSONArray("value")
+                    editor.putStringSet(key, (0 until a.length()).map { a.getString(it) }.toSet())
+                }
+            }
+        }
+        check(editor.commit()) { "Unable to persist restored data" }
+    }
+
+    private fun writeAtomic(file: AtomicFile, data: ByteArray) {
+        val output = file.startWrite()
+        try {
+            output.write(data)
+            file.finishWrite(output)
+            // AtomicFile can log a failed rename/sync without throwing. Never start the
+            // business transaction unless its rollback bytes are actually readable.
+            check(
+                file.baseFile.isFile &&
+                    file.openRead().use { readBounded(it, data.size + 1) }.contentEquals(data)
+            ) {
+                "Transaction journal was not confirmed; draft retained"
+            }
+        } catch (failure: Throwable) {
+            file.failWrite(output)
+            throw failure
+        }
+    }
+
+    private fun readBounded(input: InputStream, limit: Int): ByteArray {
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        var total = 0
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            total += count
+            require(total <= limit) { "Backup section exceeds limit" }
+            output.write(buffer, 0, count)
+        }
+        return output.toByteArray()
+    }
+}

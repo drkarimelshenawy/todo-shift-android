@@ -4,9 +4,9 @@ No APK build, signing, version changes or data migrations.
 """
 from pathlib import Path
 root = Path(__file__).resolve().parent.parent
-neo = (root / "app/src/main/java/com/todoshift/app/v11/ui/NeoCalendar.kt").read_text()
-legacy = (root / "app/src/main/java/com/todoshift/app/v11/ui/V11CalendarUi.kt").read_text()
-coverage = (root / "app/src/main/java/com/todoshift/app/v11/Neo4ShiftPaint.kt").read_text()
+neo = (root / "app/src/main/java/com/exmore/app/v11/ui/NeoCalendar.kt").read_text()
+legacy = (root / "app/src/main/java/com/exmore/app/v11/ui/V11CalendarUi.kt").read_text()
+coverage = (root / "app/src/main/java/com/exmore/app/v11/Neo4ShiftPaint.kt").read_text()
 month = neo.split("    Surface(\n        modifier\n            .alpha(if (muted)", 1)[1].split("\nfun neoHexColor(hex: String)", 1)[0]
 for required in ("Neo4ShiftFill(", "Modifier.fillMaxSize()", "val overlayShadow", "shadow = overlayShadow", "Date is a transparent overlay"):
     assert required in month, "missing overlay rule: " + required

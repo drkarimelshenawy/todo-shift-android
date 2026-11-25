@@ -11,15 +11,15 @@ failures = []
 def require(value, message):
     if not value: failures.append(message)
 def text(path): return (ROOT / path).read_text()
-critical = ['app/src/main/java/com/todoshift/app/v11/' + name for name in [
+critical = ['app/src/main/java/com/exmore/app/v11/' + name for name in [
     'V11Models.kt', 'V11Storage.kt', 'V11MigrationEngine.kt', 'V11RateEngine.kt',
     'V11SettlementEngine.kt', 'V11ObligationEngine.kt', 'V11ShiftConflictEngine.kt', 'V11WorkplaceSync.kt']]
-critical += ['app/src/main/java/com/todoshift/app/data/AppStorage.kt', 'app/src/main/java/com/todoshift/app/storage/StorageRead.kt', 'app/src/main/java/com/todoshift/app/storage/StorageValidation.kt']
+critical += ['app/src/main/java/com/exmore/app/data/AppStorage.kt', 'app/src/main/java/com/exmore/app/storage/StorageRead.kt', 'app/src/main/java/com/exmore/app/storage/StorageValidation.kt']
 for p in critical: require(unchanged(p), 'Protected baseline changed: ' + p)
 build = text('app/build.gradle.kts')
-require('applicationId = "com.todoshift.app"' in build, 'Application ID changed')
+require('applicationId = "com.exmore.app"' in build, 'Application ID changed')
 candidate = json.loads(text('tools/PREMIUM_CANDIDATE.json'))
-require(candidate['applicationId'] == 'com.todoshift.app', 'Candidate application ID changed')
+require(candidate['applicationId'] == 'com.exmore.app', 'Candidate application ID changed')
 require(candidate['versionCode'] > 31, 'Candidate does not exceed baseline version')
 require(int(re.search(r'versionCode = (\d+)', build)[1]) == candidate['versionCode'], 'Wrong candidate version code')
 require(f'versionName = "{candidate["versionName"]}"' in build, 'Wrong candidate version name')

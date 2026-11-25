@@ -105,16 +105,16 @@ real = {x.attrib.get(ANDROID + "shortcutId"): x.attrib.get(ANDROID + "icon") for
 verify(set(real) == set(expected_shortcuts), "Previously supported static shortcut IDs changed")
 for key, suffix in expected_shortcuts.items():
     verify(real[key] == "@drawable/exmore_shortcut_" + suffix, f"Wrong static shortcut: {key}")
-controls = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui/NeoShortcutControls.kt").read_text()
+controls = (ROOT / "app/src/main/java/com/exmore/app/v11/ui/NeoShortcutControls.kt").read_text()
 verify('Triple("settings",neoLabel("الإعدادات","Settings"),3)' in controls,
        "Settings pinned launcher shortcut does not target root tab 3")
 for asset in ["calendar_work", "cash_book", "notes", "tasks", "settings"]:
     verify("R.drawable.exmore_shortcut_" + asset in controls, f"Missing dynamic shortcut artwork: {asset}")
 
 for file in ["Neo4Shell.kt", "V11Home.kt", "V11CalendarUi.kt"]:
-    txt = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui" / file).read_text()
+    txt = (ROOT / "app/src/main/java/com/exmore/app/v11/ui" / file).read_text()
     verify("exmore_header_icon" in txt, f"Approved small header icon not used by {file}")
-home = (ROOT / "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt").read_text()
+home = (ROOT / "app/src/main/java/com/exmore/app/v11/ui/V11Home.kt").read_text()
 verify("R.drawable.exmore_splash_full_dark" in home and "R.drawable.exmore_splash_full_light" in home,
        "Boot-time light/dark splash image missing")
 verify("if (bootFailure)" in home and "SafeStorageRecovery(" in home,
@@ -126,7 +126,7 @@ verify(app is not None and app.attrib.get(ANDROID + "label") == "ExMore", "App d
 verify(app.attrib.get(ANDROID + "icon") == "@mipmap/ic_launcher", "Launcher resource path changed")
 verify(app.attrib.get(ANDROID + "roundIcon") == "@mipmap/ic_launcher_round", "Round launcher path changed")
 gradle = (ROOT / "app/build.gradle.kts").read_text()
-verify('applicationId = "com.todoshift.app"' in gradle, "Application ID changed: update safety violation")
+verify('applicationId = "com.exmore.app"' in gradle, "Application ID changed: update safety violation")
 verify(re.search(r"\bversionCode\s*=\s*78\b", gradle) is not None, "v72 versionCode not 78")
 verify('versionName = "4.34.0-premium-v72-brand-identity"' in gradle, "v72 versionName mismatched")
 print("ExMore v72 Premium brand QA PASS: approved SHA-256 images, full splash variants, launcher densities,"

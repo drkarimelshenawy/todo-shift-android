@@ -1,4 +1,4 @@
-# Google Cloud Setup Guide — ToDo Shift Neo Luxury 4.0
+# Google Cloud Setup Guide — ExMore
 
 أُعد في 4 نوفمبر 2026 بعد مراجعة وثائق Google وAndroid الرسمية. هذا دليل تفعيل لمرحلة لاحقة، وليس إعلانًا بأن ربط Google يعمل في السورس الحالي.
 
@@ -16,8 +16,9 @@
 
 ## 1. جهّز بيانات التطبيق
 
-- الاسم: **ToDo Shift**.
-- Package Name: **`com.todoshift.app`**.
+- الاسم: **ExMore**.
+- Package Name: **`com.exmore.app`**.
+- احتفظ بتسجيل Android القديم `com.todoshift.app` داخل مشروع Firebase/Google الحالي حتى اكتمال نقل المستخدمين؛ لا تعِد استخدامه كتسجيل للحزمة الجديدة.
 - أبقِ شهادة التوقيع الأصلية. لا تنشئ مفتاحًا بديلًا لتحديث نسخة المستخدم الحالية.
 - للحصول على بصمتي SHA-1 وSHA-256 من المفتاح الموجود، شغّل في بيئة المطور الأمر التالي؛ يطلب كلمة المرور تفاعليًا ولا يحفظها في الملف:
 
@@ -51,7 +52,7 @@ keytool -list -v -keystore "$TODOSHIFT_SIGNING_FILE"
 
 ## 4. أنشئ OAuth Clients الصحيحة
 
-1. أنشئ **Android Client** باسم الحزمة `com.todoshift.app` وبصمة SHA-1 الصحيحة لشهادة البناء الذي ستختبره.
+1. أنشئ **Android Client** باسم الحزمة `com.exmore.app` وبصمة SHA-1 الصحيحة لشهادة البناء الذي ستختبره، واترك عميل `com.todoshift.app` القديم دون حذف أثناء الترحيل.
 2. أنشئ عملاء Android إضافيين للشهادات المختلفة التي يلزم دعمها، مثل اختبار ومفتاح Play، داخل المشروع المناسب.
 3. أنشئ **Web Client** عند استخدامه كـServer Client ID / audience ضمن مسار Credential Manager الموصى به.
 4. لا تضع Web Client Secret داخل Android، ولا ترفع مفاتيح التوقيع أو ملفات أسرار إلى السورس.

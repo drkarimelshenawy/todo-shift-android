@@ -63,7 +63,7 @@ for path in kt_files:
         require(name in resources[kind], f'Missing R.{kind}.{name} in {path.name}')
 checked('resources', f'{len(xml_files)} XML files parsed and local Kotlin resource references checked; AAPT NOT RUN')
 
-v11 = ROOT / 'app/src/main/java/com/todoshift/app/v11'
+v11 = ROOT / 'app/src/main/java/com/exmore/app/v11'
 model = (v11 / 'NeoAppearance.kt').read_text().split('data class NeoAppearance(', 1)[1].split(') {', 1)[0]
 fields = re.findall(r'val (\w+):', model)
 codec = (v11 / 'Neo4AppearanceCodec.kt').read_text()
@@ -88,21 +88,21 @@ checked('calendar_source', 'Mandatory coverage constants, full-cell renderer, gr
 
 build = ROOT / 'app/build.gradle.kts'
 require(hashlib.sha256(build.read_bytes()).hexdigest() == manifest['original_files']['app/build.gradle.kts'], 'Build dependencies/signing/version changed')
-require('applicationId = "com.todoshift.app"' in build.read_text(), 'Application ID changed')
+require('applicationId = "com.exmore.app"' in build.read_text(), 'Application ID changed')
 manifest_tree = ET.parse(ROOT / 'app/src/main/AndroidManifest.xml')
 permissions = {el.get('{http://schemas.android.com/apk/res/android}name') for el in manifest_tree.getroot().findall('uses-permission')}
 require(not permissions.intersection({'android.permission.READ_EXTERNAL_STORAGE', 'android.permission.MANAGE_EXTERNAL_STORAGE', 'android.permission.INTERNET'}), 'Unexpected broad storage/network permission')
 require('PickVisualMedia' in (v11 / 'ui/Neo4StudioUi.kt').read_text(), 'Photo Picker path missing')
-cloud = (ROOT / 'app/src/main/java/com/todoshift/app/cloud/CloudContracts.kt').read_text()
+cloud = (ROOT / 'app/src/main/java/com/exmore/app/cloud/CloudContracts.kt').read_text()
 require('override val configured = false' in cloud, 'Cloud readiness is unexpectedly enabled')
-backup = (ROOT / 'app/src/main/java/com/todoshift/app/backup/Neo4LocalBackup.kt').read_text()
+backup = (ROOT / 'app/src/main/java/com/exmore/app/backup/Neo4LocalBackup.kt').read_text()
 whitelist = backup.split('private val uiPreferences =', 1)[1].split('\n', 1)[0]
 require('security' not in whitelist and 'token' not in whitelist, 'Security data in backup allow-list')
 require('confirmedToken == prepared.token' in backup and 'validate(prepared)' in backup, 'Restore confirmation/revalidation missing')
 require('writeAtomic(journal' in backup and 'editor.commit()' in backup and 'recoverIfNeeded' in backup, 'Durable rollback path missing')
-widget = (ROOT / 'app/src/main/java/com/todoshift/app/widget/Neo4SummaryWidgets.kt').read_text()
+widget = (ROOT / 'app/src/main/java/com/exmore/app/widget/Neo4SummaryWidgets.kt').read_text()
 require('security.protectAccounts || security.hideAmounts' in widget and 'Neo4WidgetPrivacy.amountsHidden' in widget, 'Finance widget privacy guard missing')
-require('Neo4WidgetPainter.render' in (ROOT / 'app/src/main/java/com/todoshift/app/widget/CalendarWidgetFactory.kt').read_text(), 'Calendar widget geometry renderer missing')
+require('Neo4WidgetPainter.render' in (ROOT / 'app/src/main/java/com/exmore/app/widget/CalendarWidgetFactory.kt').read_text(), 'Calendar widget geometry renderer missing')
 checked('identity_and_safety_source', 'Build/signing preserved, no added permissions/dependencies, disabled cloud, explicit restore/rollback and widget privacy guards found; runtime NOT TESTED')
 
 class Links(HTMLParser):

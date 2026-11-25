@@ -93,7 +93,7 @@ jobs:
           cp "$RUNNER_TEMP/apk-badging.txt" delivery/APK-BADGING.txt
           "$APKSIGNER" verify --verbose --print-certs "$APK" > delivery/APK-SIGNATURE.txt
           git rev-parse HEAD > delivery/SOURCE-COMMIT.txt
-          printf '%s\n' "Package: com.todoshift.app" "Version: see APK-BADGING.txt" "Certificate SHA-256: $CERT_SHA" "Installed-app certificate: NOT VERIFIED" "Upgrade safety: requires matching installed certificate; do not uninstall or clear data" > delivery/BUILD-IDENTITY.txt
+          printf '%s\n' "Package: com.exmore.app" "Version: see APK-BADGING.txt" "Certificate SHA-256: $CERT_SHA" "Installed-app certificate: NOT VERIFIED" "Upgrade safety: requires matching installed certificate; do not uninstall or clear data" > delivery/BUILD-IDENTITY.txt
           (cd delivery && sha256sum *.apk *.txt > SHA256SUMS)
 
       - name: Preserve functional QA evidence

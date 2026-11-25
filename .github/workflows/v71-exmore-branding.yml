@@ -130,15 +130,15 @@ jobs:
             set -e
             mkdir -p delivery/device-evidence
             adb install -r delivery/ExMore-v71-Branding.apk
-            adb shell dumpsys package com.todoshift.app | grep -q 'versionCode=77'
-            adb shell am force-stop com.todoshift.app
+            adb shell dumpsys package com.exmore.app | grep -q 'versionCode=77'
+            adb shell am force-stop com.exmore.app
             adb logcat -c
             adb shell screenrecord --time-limit 7 /sdcard/exmore-v71-startup.mp4 >/dev/null 2>&1 &
             RECORDER=$!
             sleep 1
-            adb shell am start -W -n com.todoshift.app/.MainActivity
+            adb shell am start -W -n com.exmore.app/.MainActivity
             sleep 5
-            adb shell pidof com.todoshift.app
+            adb shell pidof com.exmore.app
             adb exec-out screencap -p > delivery/device-evidence/android35-after-start.png
             wait "$RECORDER" || true
             adb pull /sdcard/exmore-v71-startup.mp4 delivery/device-evidence/android35-startup.mp4 || true

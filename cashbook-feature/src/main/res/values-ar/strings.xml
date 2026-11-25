@@ -299,6 +299,6 @@
     <string name="cb_section_debts">المديونيات</string>
     <string name="cb_section_salary">مستحقات العمل</string>
     <string name="cb_debts_empty">لا توجد مديونيات بعد</string>
-    <string name="cb_salary_unlinked">ستظهر مستحقات العمل بعد الربط مع ToDo Shift. لا توجد بيانات تجريبية.</string>
+    <string name="cb_salary_unlinked">ستظهر مستحقات العمل بعد الربط مع ExMore. لا توجد بيانات تجريبية.</string>
 <string name="cb_salary_manage">إدارة الدفعة المرتبطة في مستحقات العمل</string>
 </resources>

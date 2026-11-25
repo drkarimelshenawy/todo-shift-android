@@ -26,8 +26,8 @@ jobs:
             -o /tmp/cashbook-source.zip
           unzip -t /tmp/cashbook-source.zip >/dev/null
           unzip -q /tmp/cashbook-source.zip -d /tmp/cashbook-source
-          test -f /tmp/cashbook-source/CashBook-Android-Test/cashbook-core/src/main/java/com/todoshift/cashbook/core/Ledger.java
-          test -f /tmp/cashbook-source/CashBook-Android-Test/cashbook-feature/src/main/java/com/todoshift/cashbook/ui/CashBookRoute.kt
+          test -f /tmp/cashbook-source/CashBook-Android-Test/cashbook-core/src/main/java/com/exmore/cashbook/core/Ledger.java
+          test -f /tmp/cashbook-source/CashBook-Android-Test/cashbook-feature/src/main/java/com/exmore/cashbook/ui/CashBookRoute.kt
       - name: Copy source and resource trees without overwriting integration build scripts
         shell: bash
         run: |
@@ -35,8 +35,8 @@ jobs:
           source_dir=/tmp/cashbook-source/CashBook-Android-Test
           cp -a "$source_dir/cashbook-core/src" cashbook-core/
           cp -a "$source_dir/cashbook-feature/src" cashbook-feature/
-          test -f cashbook-core/src/main/java/com/todoshift/cashbook/core/Ledger.java
-          test -f cashbook-feature/src/main/java/com/todoshift/cashbook/ui/CashBookRoute.kt
+          test -f cashbook-core/src/main/java/com/exmore/cashbook/core/Ledger.java
+          test -f cashbook-feature/src/main/java/com/exmore/cashbook/ui/CashBookRoute.kt
       - name: Commit imported source on isolated v44 branch
         shell: bash
         run: |

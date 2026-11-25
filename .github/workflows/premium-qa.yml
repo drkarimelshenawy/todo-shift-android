@@ -76,7 +76,7 @@ jobs:
       - name: Optional native diagnostics (must succeed when requested)
         if: inputs.native_diagnostics
         run: |
-          gradle --no-daemon -I tools/premium_qa.init.gradle -I tools/visual_capture.init.gradle testDebugUnitTest --tests com.todoshift.app.v11.ui.NeoVisualProbeTest
+          gradle --no-daemon -I tools/premium_qa.init.gradle -I tools/visual_capture.init.gradle testDebugUnitTest --tests com.exmore.app.v11.ui.NeoVisualProbeTest
           test -n "$(find app/build/ux-visual-evidence -name '*.png' -print -quit)"
           cp -R app/build/ux-visual-evidence delivery/native-diagnostics
           cp -R app/build/test-results/testDebugUnitTest delivery/native-junit

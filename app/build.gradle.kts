@@ -5,17 +5,17 @@ plugins {
 }
 
 android {
-    namespace = "com.todoshift.app"
+    namespace = "com.exmore.app"
     compileSdk = 35
     buildToolsVersion = "35.0.0"
 
     defaultConfig {
-        applicationId = "com.todoshift.app"
+        applicationId = "com.exmore.app"
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 80
-        versionName = "4.4.1"
+        versionCode = 81
+        versionName = "4.4.2"
         // Keep this release identity synchronized with tools/PREMIUM_CANDIDATE.json.
     }
 

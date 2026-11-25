@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Android update/startup smoke using fresh UIAutomator node bounds."""
 import json, pathlib, re, subprocess, sys, time, xml.etree.ElementTree as ET
-APP = "com.todoshift.app"
+APP = "com.exmore.app"
 OUT = pathlib.Path("device-smoke")
 OUT.mkdir(exist_ok=True)
 def adb(*args, binary=False):

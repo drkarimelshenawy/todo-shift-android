@@ -2,7 +2,7 @@
     <string name="shortcut_new_task">مهمة جديدة</string>
     <string name="shortcut_new_note">ملاحظة جديدة</string>
     <string name="tasks_widget_empty_text">لا توجد مهام حالياً</string>
-    <string name="app_name">ExMore — Life Planner</string>
+    <string name="app_name">ExMore</string>
     <string name="widget_description">تقويم ExMore للشيفتات</string>
 
     <string name="tasks_widget_label">مهامي - ExMore</string>

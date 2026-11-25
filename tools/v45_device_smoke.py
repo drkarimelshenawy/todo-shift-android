@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Isolated emulator acceptance of the actual signed release APK and a v44 update."""
 import json, pathlib, subprocess, sys, time, re, xml.etree.ElementTree as ET
-APP='com.todoshift.app'
+APP='com.exmore.app'
 OUT=pathlib.Path('device-smoke');OUT.mkdir(exist_ok=True)
 PREF='/data/user/0/'+APP+'/shared_prefs/todo_shift_v11.xml'
 def adb(*args,binary=False):

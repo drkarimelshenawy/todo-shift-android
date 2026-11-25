@@ -65,7 +65,7 @@ jobs:
             adb shell ime list -s
             adb shell settings get secure show_ime_with_hard_keyboard
             mkdir -p device-evidence
-            bash -c 'gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.todoshift.app.v11.ui.NeoDocumentPdfDeviceTest,com.todoshift.app.v11.ui.NeoA4EditingDeviceTest,com.todoshift.app.v11.ui.NeoThemeDeviceTest --stacktrace; result=$?; if [ "$result" -ne 0 ]; then adb pull /sdcard/Download/nile-jade/. device-evidence/; exit "$result"; fi; adb pull /sdcard/Download/nile-jade/. device-evidence/'
+            bash -c 'gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.exmore.app.v11.ui.NeoDocumentPdfDeviceTest,com.exmore.app.v11.ui.NeoA4EditingDeviceTest,com.exmore.app.v11.ui.NeoThemeDeviceTest --stacktrace; result=$?; if [ "$result" -ne 0 ]; then adb pull /sdcard/Download/nile-jade/. device-evidence/; exit "$result"; fi; adb pull /sdcard/Download/nile-jade/. device-evidence/'
             test -s device-evidence/en-0.png && test -s device-evidence/ar-4.png
             if [ "${{ matrix.api-level }}" = "35" ]; then bash tools/check_v65_apk_update.sh; fi
       - name: Publish screenshot evidence

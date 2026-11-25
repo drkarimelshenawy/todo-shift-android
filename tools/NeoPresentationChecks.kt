@@ -1,4 +1,4 @@
-package com.todoshift.app.v11
+package com.exmore.app.v11
 
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -59,7 +59,7 @@ fun main() {
     check(NeoAppearance().withPreset(NeoLayoutPreset.MINIMAL).dashboardExpanded == false)
     check(NeoAppearance().withPreset(NeoLayoutPreset.RICH).showFinanceSummary)
     check(NeoAppearance(optionalTransitions = false, reduceMotion = false, motion = 2).motionMillis == 0)
-    check(com.todoshift.app.cloud.BackupSchedulePlanner.nextDue(java.time.Instant.parse("2026-01-31T00:00:00Z"),
-        com.todoshift.app.cloud.BackupSchedule(com.todoshift.app.cloud.BackupFrequency.MONTHLY), java.time.ZoneId.of("UTC")) == java.time.Instant.parse("2026-02-28T00:00:00Z"))
+    check(com.exmore.app.cloud.BackupSchedulePlanner.nextDue(java.time.Instant.parse("2026-01-31T00:00:00Z"),
+        com.exmore.app.cloud.BackupSchedule(com.exmore.app.cloud.BackupFrequency.MONTHLY), java.time.ZoneId.of("UTC")) == java.time.Instant.parse("2026-02-28T00:00:00Z"))
     println("PASS: overnight, 24h, visibility, immutability, overlap, finance, palettes and reduced motion")
 }

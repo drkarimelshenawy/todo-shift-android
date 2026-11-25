@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.todoshift.cashbook"
+    namespace = "com.exmore.cashbook"
     compileSdk = 35
     buildToolsVersion = "35.0.0"
     defaultConfig { minSdk = 26 }

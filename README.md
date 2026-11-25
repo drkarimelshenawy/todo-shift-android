@@ -1,6 +1,6 @@
-# ToDo Shift
+# ExMore
 
-Current repair candidate: **4.4.0-premium-ux-test / versionCode 38**, package **com.todoshift.app**, on `fix/premium-financial-restore`.
+Official identity release candidate: **4.4.2 / versionCode 81**, package **com.exmore.app**, on `feat/exmore-official-identity-migration`.
 
 - [Validated APK and Android update evidence](https://github.com/drkarimelshenawy/todo-shift-android/actions/workflows/premium-device-validation.yml): choose the latest successful run, download **Premium-UX-vc38-VALIDATED**, extract it, then open **candidate-apk/ToDoShift-4.4.0-premium-ux-test-vc38.apk**.
 - [Source tests, lint and signed builds](https://github.com/drkarimelshenawy/todo-shift-android/actions/workflows/financial-restore-validation.yml?query=branch%3Afix%2Fpremium-financial-restore)
@@ -11,7 +11,7 @@ Financial restore validation checks tests and Android lint before building the A
 
 Calendar cell sizing and day taps, calendar widget layout/opacity, completed-task styling, task filters/order/density, shared task editing, and template management/use are covered by this candidate. Existing Classic/Neo preference is retained; select **Neo Luxury** in Appearance & Design if Classic is selected. Today lives in Tasks; calendar Today navigates to the date. Cash Book remains separate.
 
-This is a test candidate on the repair branch. Earlier P01, recovery and ux-rescue reports describe historical checkpoints. Physical-phone/launcher acceptance and release approval remain separate; no protected-branch merge or release publication is included.
+This is the independent ExMore package. The former `com.todoshift.app` installation is intentionally retained during migration. Export a complete encrypted backup from the former app, inspect it in ExMore, restore with Replace on the fresh ExMore installation, verify all data and attachments, and only then decide whether to remove the former app.
 
 ## Build and verify
 

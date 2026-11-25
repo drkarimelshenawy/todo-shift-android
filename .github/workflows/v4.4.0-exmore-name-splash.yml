@@ -131,16 +131,16 @@ jobs:
             mkdir -p delivery/device-evidence
             curl --fail --location --retry 3 --silent --show-error -o /tmp/exmore-v72-baseline.apk https://github.com/drkarimelshenawy/todo-shift-android/releases/download/v72-premium-brand-candidate-6f7ded3e437d/ExMore-v72-Premium-Brand.apk
             adb install /tmp/exmore-v72-baseline.apk
-            adb shell dumpsys package com.todoshift.app | grep -q 'versionCode=78'
+            adb shell dumpsys package com.exmore.app | grep -q 'versionCode=78'
             adb install -r delivery/ExMore-4.4.0-Life-Planner.apk
-            adb shell dumpsys package com.todoshift.app | grep -q 'versionCode=79'
-            adb shell am force-stop com.todoshift.app
+            adb shell dumpsys package com.exmore.app | grep -q 'versionCode=79'
+            adb shell am force-stop com.exmore.app
             adb logcat -c
             adb shell screenrecord --time-limit 7 /sdcard/exmore-v72-startup.mp4 >/dev/null 2>&1 &
             sleep 1
-            adb shell am start -W -n com.todoshift.app/.MainActivity
+            adb shell am start -W -n com.exmore.app/.MainActivity
             sleep 5
-            adb shell pidof com.todoshift.app
+            adb shell pidof com.exmore.app
             adb shell uiautomator dump /sdcard/exmore-v440-ui.xml >/dev/null
             adb shell cat /sdcard/exmore-v440-ui.xml > delivery/device-evidence/android35-ui.xml
             ! grep -Eiq 'isn.t responding' delivery/device-evidence/android35-ui.xml

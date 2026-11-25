@@ -6,7 +6,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-APP = "com.todoshift.app"
+APP = "com.exmore.app"
 PREF = f"/data/user/0/{APP}/shared_prefs/todo_shift_v11.xml"
 
 

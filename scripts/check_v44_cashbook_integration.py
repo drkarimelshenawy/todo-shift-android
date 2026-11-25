@@ -3,17 +3,17 @@
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-home = (root / "app/src/main/java/com/todoshift/app/v11/ui/V11Home.kt").read_text()
-host = (root / "app/src/main/java/com/todoshift/app/integration/EmbeddedCashBookScreen.kt").read_text()
+home = (root / "app/src/main/java/com/exmore/app/v11/ui/V11Home.kt").read_text()
+host = (root / "app/src/main/java/com/exmore/app/integration/EmbeddedCashBookScreen.kt").read_text()
 settings = (root / "settings.gradle.kts").read_text()
 app = (root / "app/build.gradle.kts").read_text()
-gateway = (root / "app/src/main/java/com/todoshift/app/integration/SalaryCashPostingGateway.kt").read_text()
+gateway = (root / "app/src/main/java/com/exmore/app/integration/SalaryCashPostingGateway.kt").read_text()
 
 assert 'include(":app", ":cashbook-core", ":cashbook-feature")' in settings
 assert 'implementation(project(":cashbook-feature"))' in app
 assert 'lifecycle-viewmodel-compose' in app
 assert 'CashBookRoute(vm = vm' in host
-assert 'com.todoshift.app.integration.EmbeddedCashBookScreen(' in home
+assert 'com.exmore.app.integration.EmbeddedCashBookScreen(' in home
 assert 'neoLiteral("الإدارة المالية", "Cash Book")' in home
 assert 'neoLabel("الإدارة المالية", "Cash Book")' in home
 

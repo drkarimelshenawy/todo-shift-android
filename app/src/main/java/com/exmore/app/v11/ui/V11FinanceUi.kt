@@ -1,0 +1,1929 @@
+package com.exmore.app.v11.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.exmore.app.data.Workplace
+import com.exmore.app.v11.*
+import java.time.LocalDate
+import java.time.YearMonth
+
+@Composable
+fun V11FinanceScreen(
+    month: YearMonth,
+    db: V11Database,
+    workplaces: List<Workplace>,
+    moneyVisible: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onToggleMoney: () -> Unit,
+    securitySettings: V11SecuritySettings,
+    securityStore: V11SecurityStore,
+    onDatabaseChange: (V11Database) -> Unit,
+) {
+    val commit = rememberNeoCommit(onDatabaseChange)
+    val result = remember(db, month) { V11FinanceEngine.month(db = db, month = month) }
+
+    var receiveOpen by rememberSaveable {mutableStateOf(false)}
+    var receiveWorkplace by rememberSaveable {mutableStateOf<String?>(null)}
+    if(receiveOpen) NeoReceiveEntitlementsDialog(db,workplaces,receiveWorkplace,listOf(month),{receiveOpen=false}) {next -> commit(next) {receiveOpen=false}}
+    var paymentOpen by rememberSaveable { mutableStateOf(false) }
+
+    var obligationOpen by rememberSaveable { mutableStateOf(false) }
+
+    var sourceManagerOpen by rememberSaveable { mutableStateOf(false) }
+
+    var methodManagerOpen by rememberSaveable { mutableStateOf(false) }
+
+    var payingObligationId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    var workplaceDetailsId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    var paymentDetailsId by rememberSaveable { mutableStateOf<String?>(null) }
+    val paymentDetails = db.payments.firstOrNull { it.id == paymentDetailsId }
+
+    var reversingPaymentId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    var editingPaymentId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingPayment = db.payments.firstOrNull { it.id == editingPaymentId }
+
+    var editingObligationId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingObligation = db.obligations.firstOrNull { it.id == editingObligationId }
+
+    var pendingProtectedAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    var financeSection by rememberSaveable { mutableIntStateOf(0) }
+    var salaryQuery by rememberSaveable {mutableStateOf("")}
+    val visibleWorkplaces=result.byWorkplace.filter {row->salaryQuery.isBlank()||month.toString().contains(salaryQuery)||workplaces.firstOrNull {it.id==row.workplaceId}?.name?.contains(salaryQuery,true)==true}
+    val obligationDue = V11AccountsController.monthObligationDue(db, month)
+    if (LocalV11NeoEnabled.current) {
+        val navigator = LocalNeoFeatures.current
+        NeoSalaryDashboard(
+            month = month,
+            db = db,
+            workplaces = workplaces,
+            moneyVisible = moneyVisible,
+            onPrevious = onPrevious,
+            onNext = onNext,
+            onReceive = { workplaceId ->
+                receiveWorkplace = workplaceId
+                receiveOpen = true
+            },
+            onRecordPayment = { paymentOpen = true },
+            onOpenWorkplace = { workplaceDetailsId = it },
+            onPaymentDetails = { paymentDetailsId = it },
+            onIncomeSources = { sourceManagerOpen = true },
+            onPaymentMethods = { methodManagerOpen = true },
+            onRates = { navigator.open("RATES") },
+            onStatement = { workplaceId -> navigator.open("STATEMENT", workplaceId) },
+            onReview = { navigator.open("MONTH_REVIEW") },
+        )
+    } else {
+    Column(
+        modifier =
+            Modifier.fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(if (LocalV11NeoEnabled.current) neoSpacing() else 14.dp)
+    ) {
+        if (LocalV11NeoEnabled.current) {
+            V11NeoSectionHero(
+                neoLabel(neoLiteral("نظرة مالية", "Financial overview"), "Financial overview"),
+                neoLabel("الحسابات والمدفوعات • $month", "Income and payments • $month"),
+            )
+        }
+        if (LocalV11NeoEnabled.current) Column {
+            NeoPremiumMonth(neoMonthTitle(month, LocalNeoEnglish.current), onPrevious, onNext)
+            OutlinedTextField(salaryQuery,{salaryQuery=it},label={Text(neoLabel("بحث في أماكن العمل والفترات والدفعات","Search workplaces, periods and payments"))},singleLine=true,modifier=Modifier.fillMaxWidth())
+        }
+        else {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            FilledTonalButton(onClick = onPrevious) { Text(if(LocalNeoEnglish.current) "‹" else "›", fontSize = 25.sp) }
+
+            Text(neoMonthTitle(month, LocalNeoEnglish.current), fontWeight = FontWeight.Bold)
+
+            FilledTonalButton(onClick = onNext) { Text(if(LocalNeoEnglish.current) "›" else "‹", fontSize = 25.sp) }
+        }
+
+        }
+        Spacer(Modifier.height(12.dp))
+
+        if (LocalV11NeoEnabled.current) {
+            NeoFinanceOverview(result, moneyVisible)
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                AccountCard(
+                    neoLiteral("المتبقي", "Remaining"),
+                    result.difference,
+                    moneyVisible,
+                    Modifier.weight(1f),
+                )
+
+                AccountCard(
+                    neoLiteral("المستلم", "Received"),
+                    result.received,
+                    moneyVisible,
+                    Modifier.weight(1f),
+                )
+
+                AccountCard(
+                    neoLiteral("المستحق", "Expected"),
+                    result.expected,
+                    moneyVisible,
+                    Modifier.weight(1f),
+                )
+            }
+        }
+
+        if (LocalV11NeoEnabled.current) {
+            ListItem(
+                headlineContent = { Text(neoLabel("التزامات الشهر", "Upcoming obligations")) },
+                trailingContent = { Text(money(obligationDue, moneyVisible)) },
+            )
+            val nav = LocalNeoFeatures.current
+            NeoPremiumTabs(
+                listOf(neoLabel("الملخص", "Summary"), neoLabel("الدفعات", "Payments"), neoLabel("كشف الحساب", "Statement"), neoLabel("المراجعة", "Review")),
+                financeSection,
+                { index ->
+                    financeSection = index
+                    if (index == 2) nav.open("STATEMENT")
+                    if (index == 3) nav.open("MONTH_REVIEW")
+                },
+            )
+            if (financeSection == 0) {
+                NeoSettingsRow(neoLabel("أسعار الورديات", "Shift rates")) { nav.open("RATES") }
+            }
+            if (financeSection == 2) {
+                NeoSettingsRow(neoLabel("كشف مكان العمل وتصديره", "Workplace statement and export")) { nav.open("STATEMENT") }
+            }
+            if (financeSection == 3) {
+                NeoSettingsRow(neoLabel("مراجعة وإقفال الشهر", "Review and close month")) { nav.open("MONTH_REVIEW") }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+
+        if (!LocalV11NeoEnabled.current || LocalNeoAppearance.current.showSecondaryCards)
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        neoLiteral("ملخص الشهر", "Monthly overview"),
+                        fontWeight = FontWeight.Black,
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
+                    AccountLine(
+                        neoLiteral("عدد الشيفتات", "Shift count"),
+                        result.shiftCount.toString(),
+                    )
+
+                    AccountLine(
+                        neoLiteral("حالة المستحقات", "Income status"),
+                        when {
+                            result.difference > 0 -> neoLiteral("متبقي", "Remaining")
+                            result.difference < 0 -> neoLiteral("دفع زائد", "Overpaid")
+                            result.expected > 0 -> neoLiteral("مسدد", "Paid")
+                            else -> neoLiteral("لا توجد مستحقات", "No expected income")
+                        },
+                    )
+
+                    AccountLine(
+                        neoLiteral("التزامات الشهر", "Monthly obligations"),
+                        money(obligationDue, moneyVisible),
+                    )
+
+                    AccountLine(
+                        neoLiteral("الصافي بعد الالتزامات", "Net after obligations"),
+                        money(result.expected - obligationDue, moneyVisible),
+                    )
+                }
+            }
+
+        if (LocalV11NeoEnabled.current && financeSection == 0) {
+            Card(Modifier.fillMaxWidth().padding(top=12.dp)) {
+                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text(neoLabel("المستحق حسب مكان العمل","Expected by workplace"),style=MaterialTheme.typography.titleMedium)
+                    if(result.byWorkplace.isEmpty()) NeoEmptyState(neoLabel("لا توجد مستحقات","No expected income"),neoLabel("تظهر هنا مستحقات الورديات المسجلة","Recorded shift income appears here"))
+                    visibleWorkplaces.forEach { summary ->
+                        val place=workplaces.firstOrNull {it.id==summary.workplaceId}
+                        val count=summary.count
+                        Surface(onClick={workplaceDetailsId=summary.workplaceId},shape=MaterialTheme.shapes.medium,color=MaterialTheme.colorScheme.surfaceVariant) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                                Text(place?.name ?: neoLabel("غير محدد","Unspecified"),fontWeight=FontWeight.Bold)
+                                Text(neoLabel("$count شيفت","$count shifts")+" · "+money(summary.amount,moneyVisible),style=MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+
+        Button(onClick=neoWriteAction {receiveWorkplace=null;receiveOpen=true},modifier=Modifier.fillMaxWidth()) {Text(neoLabel("استلام المستحقات","Receive entitlements"))}
+        Button(
+            onClick = neoWriteAction { paymentOpen = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Default.Add, null)
+            Spacer(Modifier.width(5.dp))
+            Text(neoLiteral("تسجيل مبلغ مستلم", "Record received payment"))
+        }
+
+        if (!LocalV11NeoEnabled.current || financeSection == 1) {
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilledTonalButton(
+                    onClick = neoWriteAction { sourceManagerOpen = true },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(neoLiteral("مصادر الدخل", "Income sources"))
+                }
+
+                FilledTonalButton(
+                    onClick = neoWriteAction { methodManagerOpen = true },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(neoLiteral("طرق الدفع", "Payment methods"))
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text(
+                neoLiteral("المستحق حسب مكان العمل", "Expected by workplace"),
+                fontWeight = FontWeight.Black,
+                fontSize = 17.sp,
+            )
+
+            visibleWorkplaces.forEach { summary ->
+                val name =
+                    workplaces.firstOrNull { it.id == summary.workplaceId }?.name
+                        ?: neoLiteral("غير محدد", "Unspecified")
+
+                Surface(
+                    onClick = neoWriteAction { workplaceDetailsId = summary.workplaceId },
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                ) {
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(name, fontWeight = FontWeight.Bold)
+
+                        Text(money(summary.amount, moneyVisible), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text(
+                neoLiteral("المبالغ المستلمة", "Received payments"),
+                fontWeight = FontWeight.Black,
+                fontSize = 17.sp,
+            )
+
+            val monthPayments =
+                db.payments.filter { payment ->
+                    (payment.accrualMonth == month.toString() || payment.allocations.any {it.accrualMonth==month.toString()}) &&
+                        (salaryQuery.isBlank() || listOf(payment.receivedDate,payment.accrualMonth,payment.note,db.incomeSources.firstOrNull {it.id==payment.sourceId}?.name.orEmpty()).any {it.contains(salaryQuery,true)} || payment.allocations.any {a->a.accrualMonth.contains(salaryQuery)||db.incomeSources.firstOrNull {it.id==a.sourceId}?.name?.contains(salaryQuery,true)==true})
+                }
+
+            if (monthPayments.isEmpty()) {
+                Text(
+                    neoLiteral("لا توجد دفعات مسجلة", "No payments recorded"),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 10.dp),
+                )
+            }
+
+            monthPayments
+                .sortedByDescending { it.receivedDate }
+                .forEach { payment ->
+                    val source = db.incomeSources.firstOrNull { it.id == payment.sourceId }
+
+                    val method = db.paymentMethods.firstOrNull { it.id == payment.paymentMethodId }
+
+                    Card(
+                        onClick = neoWriteAction { paymentDetailsId = payment.id },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    (if (payment.reversedAt != null) neoLiteral("ملغاة • ", "Reversed • ") else "") + money(payment.amount, moneyVisible),
+                                    fontWeight = FontWeight.Black,
+                                )
+
+                                Text(payment.receivedDate, fontWeight = FontWeight.Bold)
+                            }
+
+                            Text(
+                                listOfNotNull(source?.name, method?.name).joinToString(" • "),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+
+                            if (payment.note.isNotBlank()) {
+                                Text(payment.note, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
+        }
+        if (!LocalV11NeoEnabled.current || financeSection == 0) {
+            Spacer(Modifier.height(22.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FilledTonalButton(onClick = neoWriteAction { obligationOpen = true }) {
+                    Icon(Icons.Default.Add, null)
+                    Text(neoLiteral("إضافة", "Add"))
+                }
+
+                Spacer(Modifier.weight(1f))
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        neoLiteral("الالتزامات", "Obligations"),
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Black,
+                    )
+
+                    Text(
+                        neoLiteral(
+                            "أقساط • ديون • مدفوعات دورية",
+                            "Installments • debts • recurring payments",
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            if (db.obligations.isEmpty()) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        neoLiteral("لا توجد التزامات مسجلة", "No obligations recorded"),
+                        modifier = Modifier.padding(14.dp),
+                    )
+                }
+            }
+
+            db.obligations.forEach { obligation ->
+                val paid = V11AccountsController.obligationPaid(db, obligation.id)
+
+                val totalRemaining = V11AccountsController.obligationRemaining(db, obligation)
+
+                val monthInfo = V11ObligationEngine.monthInfo(db, obligation, month)
+
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(obligation.name, fontWeight = FontWeight.Black)
+
+                                Text(
+                                    obligationLabel(obligation.type),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+
+                            IconButton(
+                                onClick = neoWriteAction { editingObligationId = obligation.id }
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription =
+                                        neoLiteral("تعديل الالتزام", "Edit obligation"),
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(6.dp))
+
+                        AccountLine(
+                            neoLiteral("حالة هذا الشهر", "This month's status"),
+                            neoObligationState(monthInfo.state),
+                        )
+
+                        monthInfo.dueDate?.let {
+                            AccountLine(neoLiteral("تاريخ الاستحقاق", "Due date"), it.toString())
+                        }
+
+                        if (monthInfo.expected > 0.0) {
+                            AccountLine(
+                                neoLiteral("مستحق الشهر", "Month expected"),
+                                money(monthInfo.expected, moneyVisible),
+                            )
+
+                            AccountLine(
+                                neoLiteral("المسدد للشهر", "Paid for month"),
+                                money(monthInfo.paid, moneyVisible),
+                            )
+
+                            AccountLine(
+                                neoLiteral("متبقي الشهر", "Month remaining"),
+                                money(monthInfo.remaining, moneyVisible),
+                            )
+                        }
+
+                        AccountLine(
+                            neoLiteral("إجمالي المدفوع", "Total paid"),
+                            money(paid, moneyVisible),
+                        )
+
+                        totalRemaining?.let {
+                            AccountLine(
+                                neoLiteral("إجمالي المتبقي", "Total remaining"),
+                                money(it, moneyVisible),
+                            )
+                        }
+
+                        Button(
+                            onClick = neoWriteAction { payingObligationId = obligation.id },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled =
+                                obligation.status == ObligationStatusV11.ACTIVE &&
+                                    monthInfo.remaining > 0.0,
+                        ) {
+                            Text(
+                                if (monthInfo.paid > 0.0) {
+                                    neoLiteral("استكمال / سداد جزئي", "Continue / partial payment")
+                                } else {
+                                    neoLiteral("تسجيل سداد", "Record payment")
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(30.dp))
+    }
+    }
+
+    workplaceDetailsId?.let { workplaceId ->
+        V11WorkplaceDueDetailsDialog(
+            workplaceId = workplaceId,
+            month = month,
+            db = db,
+            workplaces = workplaces,
+            moneyVisible = moneyVisible,
+            onDismiss = { workplaceDetailsId = null },
+            onReceive = {receiveWorkplace=workplaceId;workplaceDetailsId=null;receiveOpen=true},
+        )
+    }
+
+    val financeNavigator = LocalNeoFeatures.current
+    paymentDetails?.let { payment ->
+        V11PaymentDetailsDialog(
+            payment = payment,
+            db = db,
+            workplaceName =
+                payment.sourceId
+                    ?.let { sourceId ->
+                        db.incomeSources.firstOrNull { it.id == sourceId }?.workplaceId
+                    }
+                    ?.let { workplaceId -> workplaces.firstOrNull { it.id == workplaceId }?.name },
+            moneyVisible = moneyVisible,
+            onDismiss = { paymentDetailsId = null },
+            onEdit = {
+                paymentDetailsId = null
+                editingPaymentId = payment.id
+            },
+            onReverse = { paymentDetailsId = null; reversingPaymentId = payment.id },
+            onAllocate = { paymentDetailsId = null; financeNavigator.open("PAYMENTS", payment.id) },
+        )
+    }
+
+    reversingPaymentId?.let { id ->
+        val unchanged = rememberNeoDraftUnchanged(id, db.payments.firstOrNull { it.id == id })
+        val reject = LocalNeoRejectWrite.current
+        AlertDialog(
+            onDismissRequest = { reversingPaymentId = null },
+            title = { Text(neoLiteral("عكس الدفعة", "Reverse receipt")) },
+            text = { Text(neoLiteral("سيُعكس الاستلام في المستحقات وكاش بوك مع الاحتفاظ بالسجل. هل تريد المتابعة؟", "Reverse this receipt in Salary and Cash Book while retaining its history?")) },
+            confirmButton = {
+                TextButton(onClick = neoWriteAction {
+                    if (!unchanged) {
+                        reject("Receipt changed; reopen and review before reversing")
+                        return@neoWriteAction
+                    }
+                    val action = { commit(SalaryReceiptOperations.reverse(db, id)) { reversingPaymentId = null } }
+                    if (securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled)
+                        pendingProtectedAction = action
+                    else action()
+                }) { Text(neoLiteral("عكس الدفعة", "Reverse receipt")) }
+            },
+            dismissButton = { TextButton(onClick = { reversingPaymentId = null }) { Text(neoLiteral("إلغاء", "Cancel")) } },
+        )
+    }
+
+    editingPayment?.let { payment ->
+        val unchanged = rememberNeoDraftUnchanged(payment.id, payment)
+        val reject = LocalNeoRejectWrite.current
+        V11EditPaymentDialog(
+            payment = payment,
+            db = db,
+            onDismiss = { editingPaymentId = null },
+            onSave = { updated ->
+                if (!unchanged) {
+                    reject(
+                        "Record changed. Draft retained; reopen after reviewing the stored value."
+                    )
+                    return@V11EditPaymentDialog
+                }
+                val saveAction = {
+                    commit(
+                        SalaryReceiptOperations.update(db, updated)
+                    ) {
+                        editingPaymentId = null
+                    }
+                }
+
+                val securityEnabled =
+                    securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled
+
+                if (securityEnabled) {
+                    pendingProtectedAction = saveAction
+                } else {
+                    saveAction()
+                }
+            },
+        )
+    }
+
+    editingObligation?.let { obligation ->
+        val unchanged = rememberNeoDraftUnchanged(obligation.id, obligation)
+        val reject = LocalNeoRejectWrite.current
+        V11EditObligationDialog(
+            db = db,
+            obligation = obligation,
+            onDismiss = { editingObligationId = null },
+            onSave = { updated ->
+                if (!unchanged) {
+                    reject(
+                        "Record changed. Draft retained; reopen after reviewing the stored value."
+                    )
+                    return@V11EditObligationDialog
+                }
+                val saveAction = {
+                    commit(
+                        db.copy(
+                            obligations =
+                                db.obligations.map { if (it.id == updated.id) updated else it }
+                        )
+                    ) {
+                        editingObligationId = null
+                    }
+                }
+
+                val securityEnabled =
+                    securitySettings.mode != V11LockMode.NONE || securitySettings.biometricEnabled
+
+                if (securityEnabled) {
+                    pendingProtectedAction = saveAction
+                } else {
+                    saveAction()
+                }
+            },
+        )
+    }
+
+    pendingProtectedAction?.let { action ->
+        V11FinancialVerificationDialog(
+            settings = securitySettings,
+            store = securityStore,
+            onDismiss = { pendingProtectedAction = null },
+            onVerified = {
+                pendingProtectedAction = null
+                action()
+            },
+        )
+    }
+
+    if (paymentOpen) {
+        V11PaymentDialog(
+            month = month,
+            db = db,
+            onDismiss = { paymentOpen = false },
+            onSave = { commit(it) { paymentOpen = false } },
+        )
+    }
+
+    if (obligationOpen) {
+        V11ObligationDialog(
+            db = db,
+            onDismiss = { obligationOpen = false },
+            onSave = { commit(it) { obligationOpen = false } },
+        )
+    }
+
+    if (sourceManagerOpen) {
+        V11IncomeSourcesDialog(
+            db = db,
+            workplaces = workplaces,
+            onDismiss = { sourceManagerOpen = false },
+            onDatabaseChange = onDatabaseChange,
+        )
+    }
+
+    if (methodManagerOpen) {
+        V11PaymentMethodsDialog(
+            db = db,
+            onDismiss = { methodManagerOpen = false },
+            onDatabaseChange = onDatabaseChange,
+        )
+    }
+
+    payingObligationId?.let { obligationId ->
+        val obligation = db.obligations.firstOrNull { it.id == obligationId }
+
+        if (obligation != null) {
+            val info = V11ObligationEngine.monthInfo(db, obligation, month)
+
+            V11ObligationPaymentDialog(
+                obligation = obligation,
+                month = month,
+                remaining = info.remaining,
+                db = db,
+                onDismiss = { payingObligationId = null },
+                onSave = { amount, methodId, recordId ->
+                    commit(
+                        V11AccountsController.payObligation(
+                            db = db,
+                            obligationId = obligation.id,
+                            month = month.toString(),
+                            amount = amount,
+                            methodId = methodId,
+                            recordId = recordId,
+                        )
+                    ) {
+                        payingObligationId = null
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun V11WorkplaceDueDetailsDialog(
+    workplaceId: String?,
+    month: YearMonth,
+    db: V11Database,
+    workplaces: List<Workplace>,
+    moneyVisible: Boolean,
+    onDismiss: () -> Unit,
+    onReceive: () -> Unit,
+) {
+    val context=androidx.compose.ui.platform.LocalContext.current
+    val workplaceName =
+        workplaces.firstOrNull { it.id == workplaceId }?.name
+            ?: neoLiteral("غير محدد", "Unspecified")
+
+    val rows =
+        db.days
+            .filter { it.date.startsWith(month.toString()) }
+            .flatMap { day -> day.segments.map { day to it } }
+            .filter { it.second.kind != ShiftKind.OFF && it.second.workplaceId == workplaceId }
+
+    val groups = rows.groupBy { it.second.kind }
+
+    val total=V11FinanceEngine.month(db,month).byWorkplace.firstOrNull {it.workplaceId==workplaceId}?.amount ?: 0.0
+    val monthlySalary=db.incomeSources.any {it.workplaceId==workplaceId && (if(it.compensationHistory.isEmpty()) it.fixedMonthlyAmount!=null else it.compensationHistory.filter {p->p.effectiveMonth<=month.toString()}.maxByOrNull {p->p.effectiveMonth}?.shiftBased==false)}
+    val remaining=workplaceId?.let {remainingWorkEntitlement(db,it,month)} ?: 0L
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(workplaceName) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                AccountLine(neoLiteral("عدد الشفتات", "Shift count"), rows.size.toString())
+
+                HorizontalDivider()
+
+                ShiftKind.entries
+                    .filter { it != ShiftKind.OFF }
+                    .forEach { kind ->
+                        val kindRows = groups[kind].orEmpty()
+
+                        if (kindRows.isNotEmpty()) {
+                            val subtotal =
+                                kindRows.sumOf { (day, segment) ->
+                                    V11RateEngine.segmentAmount(segment, day.date, db.rates)
+                                }
+
+                            val unitRates =
+                                kindRows
+                                    .map { (day, segment) ->
+                                        V11RateEngine.segmentAmount(segment, day.date, db.rates)
+                                    }
+                                    .distinct()
+
+                            Text(
+                                shiftKindLabelV11(kind),
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(top = 10.dp),
+                            )
+
+                            AccountLine(neoLiteral("العدد", "Count"), kindRows.size.toString())
+
+                            if(!monthlySalary) AccountLine(
+                                neoLiteral("قيمة الوحدة", "Unit value"),
+                                if (unitRates.size == 1) {
+                                    money(unitRates.first(), moneyVisible)
+                                } else {
+                                    neoLiteral("متغيرة", "Variable")
+                                },
+                            )
+
+                            if(!monthlySalary) AccountLine(
+                                neoLiteral("الإجمالي", "Total"),
+                                money(subtotal, moneyVisible),
+                            )
+                        }
+                    }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                AccountLine(neoLiteral("الإجمالي الكلي", "Grand total"), money(total, moneyVisible))
+                if(monthlySalary) Text(neoLabel("راتب شهري ثابت؛ عدد الورديات للإحصاء فقط","Fixed monthly salary; shifts are counted for statistics only"))
+                AccountLine(neoLabel("المتبقي","Remaining"),money(LocalizedNumbers.amount(remaining),moneyVisible))
+                Button(enabled=remaining>0 && workplaceId!=null,onClick=onReceive,modifier=Modifier.fillMaxWidth()) {Text(if(remaining>0) neoLabel("استلام مستحقات هذا الكشف","Receive this statement") else neoLabel("تم استلام المستحقات بالكامل","Entitlements fully received"))}
+                TextButton(enabled=workplaceId!=null,onClick={
+                    val csv=ModernOperations.statementCsv(db,requireNotNull(workplaceId),month.atDay(1),month.atEndOfMonth())
+                    (context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(workplaceName,csv))
+                }) {Text(neoLabel("نسخ الكشف بصيغة CSV","Copy statement as CSV"))}
+
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(neoLiteral("إغلاق", "Close")) } },
+    )
+}
+
+@Composable
+private fun V11PaymentDetailsDialog(
+    payment: PaymentV11,
+    db: V11Database,
+    workplaceName: String?,
+    moneyVisible: Boolean,
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit,
+    onReverse: () -> Unit,
+    onAllocate: () -> Unit,
+) {
+    val source = db.incomeSources.firstOrNull { it.id == payment.sourceId }
+
+    val method = db.paymentMethods.firstOrNull { it.id == payment.paymentMethodId }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(neoLiteral("تفاصيل المبلغ المستلم", "Payment details")) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                AccountLine(neoLiteral("المبلغ", "Amount"), money(payment.amount, moneyVisible))
+
+                AccountLine(neoLiteral("تاريخ الاستلام", "Received date"), payment.receivedDate)
+
+                AccountLine(neoLiteral("شهر الاستحقاق", "Accrual month"), payment.accrualMonth)
+
+                source?.let { AccountLine(neoLiteral("مصدر الدخل", "Income source"), it.name) }
+
+                workplaceName?.let { name ->
+                    AccountLine(neoLiteral("مكان العمل", "Workplace"), name)
+                }
+
+                method?.let { AccountLine(neoLiteral("طريقة الدفع", "Payment method"), it.name) }
+
+                if (payment.note.isNotBlank()) {
+                    AccountLine(neoLiteral("ملاحظة", "Note"), payment.note)
+                }
+
+                if (payment.allocations.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        neoLiteral("توزيع الدفعة", "Payment allocation"),
+                        fontWeight = FontWeight.Black,
+                    )
+
+                    payment.allocations.forEach {
+                        AccountLine(it.accrualMonth, money(it.amount, moneyVisible))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Column {
+                if (payment.reversedAt == null) {
+                    Button(onClick = onEdit) {
+                        Icon(Icons.Default.Edit, null)
+                        Spacer(Modifier.width(5.dp))
+                        Text(neoLiteral("تعديل", "Edit"))
+                    }
+                    TextButton(onClick = onAllocate) { Text(neoLiteral("توزيع على أشهر", "Allocate across months")) }
+                    TextButton(onClick = onReverse) { Text(neoLiteral("عكس الدفعة", "Reverse receipt")) }
+                } else Text(neoLiteral("تم عكس الدفعة؛ السجل محفوظ", "Receipt reversed; history retained"))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(neoLiteral("إغلاق", "Close")) } },
+    )
+}
+
+@Composable
+internal fun V11EditPaymentDialog(
+    payment: PaymentV11,
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onSave: (PaymentV11) -> Unit,
+) {
+    NeoPaymentForm(db, YearMonth.parse(payment.accrualMonth), payment, onDismiss, onSave)
+}
+
+@Composable
+private fun V11EditObligationDialog(
+    db: V11Database,
+    obligation: ObligationV11,
+    onDismiss: () -> Unit,
+    onSave: (ObligationV11) -> Unit,
+) {
+    if (LocalV11NeoEnabled.current) {
+        NeoObligationForm(
+            db,
+            onDismiss,
+            { candidate -> onSave(candidate.obligations.single { it.id == obligation.id }) },
+            existing = obligation,
+        )
+        return
+    }
+
+    var name by rememberSaveable(obligation.id) { mutableStateOf(obligation.name) }
+
+    var total by
+        rememberSaveable(obligation.id) {
+            mutableStateOf(obligation.totalAmount?.toString().orEmpty())
+        }
+
+    var installment by
+        rememberSaveable(obligation.id) {
+            mutableStateOf(obligation.installmentAmount?.toString().orEmpty())
+        }
+
+    var dueDay by
+        rememberSaveable(obligation.id) { mutableStateOf(obligation.dueDay?.toString().orEmpty()) }
+
+    var count by
+        rememberSaveable(obligation.id) {
+            mutableStateOf(obligation.installmentCount?.toString().orEmpty())
+        }
+
+    var note by rememberSaveable(obligation.id) { mutableStateOf(obligation.note) }
+
+    var type by rememberSaveable(obligation.id) { mutableStateOf(obligation.type) }
+
+    val totalInput = MoneyInput.parse(total)
+    val installmentInput = MoneyInput.parse(installment)
+    val leave =
+        rememberNeoEditorExit(
+            listOf(name, total, installment, dueDay, count, note, type),
+            onDismiss,
+        )
+    AlertDialog(
+        onDismissRequest = leave,
+        title = { Text(neoLiteral("تعديل الالتزام", "Edit obligation")) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(neoLiteral("اسم الالتزام", "Obligation name")) },
+                )
+
+                OutlinedTextField(
+                    value = total,
+                    isError = total.isNotBlank() && totalInput.amount == null,
+                    keyboardOptions =
+                        androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                    supportingText = {
+                        if (total.isNotBlank() && totalInput.amount == null)
+                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                    },
+                    onValueChange = { total = it },
+                    label = { Text(neoLiteral("إجمالي المبلغ", "Total amount")) },
+                )
+
+                OutlinedTextField(
+                    value = installment,
+                    isError = installment.isNotBlank() && installmentInput.amount == null,
+                    keyboardOptions =
+                        androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                    supportingText = {
+                        if (installment.isNotBlank() && installmentInput.amount == null)
+                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                    },
+                    onValueChange = { installment = it },
+                    label = { Text(neoLiteral("قيمة القسط", "Installment amount")) },
+                )
+
+                OutlinedTextField(
+                    value = dueDay,
+                    onValueChange = { dueDay = it.filter(Char::isDigit) },
+                    label = { Text(neoLiteral("يوم الاستحقاق", "Due day")) },
+                )
+
+                OutlinedTextField(
+                    value = count,
+                    onValueChange = { count = it.filter(Char::isDigit) },
+                    label = { Text(neoLiteral("عدد الأقساط", "Installment count")) },
+                )
+
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text(neoLiteral("ملاحظة", "Note")) },
+                )
+
+                ObligationTypeV11.entries.forEach { item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = type == item,
+                            onClick = neoWriteAction { type = item },
+                        )
+                        Text(obligationLabel(item))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            leave.SaveButton(
+                onClick =
+                    neoWriteAction {
+                        onSave(
+                            obligation.copy(
+                                name = name,
+                                type = type,
+                                totalAmount = totalInput.amount,
+                                installmentAmount = installmentInput.amount,
+                                dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
+                                installmentCount = count.toLocalizedIntOrNull(),
+                                note = note,
+                            )
+                        )
+                    },
+                enabled =
+                    name.isNotBlank() && totalInput.optionalValid && installmentInput.optionalValid,
+            ) {
+                Text(neoLiteral("حفظ التعديل", "Save change"))
+            }
+        },
+        dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
+    )
+}
+
+private fun shiftKindLabelV11(kind: ShiftKind): String =
+    when (kind) {
+        ShiftKind.FULL_DAY -> neoLiteral("يوم كامل", "Full day")
+        ShiftKind.LONG -> neoLiteral("طويل", "Long")
+        ShiftKind.NIGHT -> neoLiteral("ليلي", "Night")
+        ShiftKind.MORNING -> neoLiteral("صباحي", "Morning")
+        ShiftKind.EVENING -> neoLiteral("مسائي", "Evening")
+        ShiftKind.OFF -> neoLiteral("إجازة", "Off")
+    }
+
+@Composable
+private fun AccountCard(title: String, value: Double, visible: Boolean, modifier: Modifier) {
+    Card(modifier = modifier) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(9.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(title, fontSize = 11.sp)
+
+            Text(money(value, visible), fontWeight = FontWeight.Black, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun AccountLine(title: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(value)
+
+        Text(title, fontWeight = FontWeight.Bold)
+    }
+
+    HorizontalDivider()
+}
+
+private fun money(value: Double, visible: Boolean): String =
+    if (!visible) "••••••"
+    else if (NeoLegacyLocale.premium)
+        "\u2066" +
+            String.format(java.util.Locale.US, "%,.2f", value) +
+            "\u2069 " +
+            neoLiteral("ج.م", "EGP")
+    else "${"%.2f".format(value)} ج"
+
+@Composable
+internal fun V11PaymentDialog(
+    month: YearMonth,
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onSave: (V11Database) -> Unit,
+) {
+    NeoPaymentForm(db, month, null, onDismiss) { payment ->
+        check(db.payments.none { it.id == payment.id }) {
+            "This payment request was already saved. Review the stored record before opening a new entry."
+        }
+        onSave(
+            db.copy(
+                payments = db.payments + payment,
+                auditLog =
+                    db.auditLog +
+                        AuditEntryV11(
+                            java.util.UUID.randomUUID().toString(),
+                            "PAYMENT_ADD",
+                            "payment",
+                            payment.id,
+                            "Received payment added",
+                        ),
+            )
+        )
+    }
+}
+
+@Composable
+private fun V11IncomeSourcesDialog(
+    db: V11Database,
+    workplaces: List<Workplace>,
+    onDismiss: () -> Unit,
+    onDatabaseChange: (V11Database) -> Unit,
+) {
+    val commit = rememberNeoCommit(onDatabaseChange)
+    var recordId by rememberSaveable { mutableStateOf(java.util.UUID.randomUUID().toString()) }
+    var newName by rememberSaveable { mutableStateOf("") }
+
+    var fixedAmount by rememberSaveable { mutableStateOf("") }
+    var sourceWorkplace by rememberSaveable { mutableStateOf("") }
+    var sourceCalendar by rememberSaveable { mutableStateOf("") }
+
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = db.incomeSources.firstOrNull { it.id == editingId }
+
+    val fixedAmountInput = MoneyInput.parse(fixedAmount)
+    val leave = rememberNeoEditorExit(listOf(newName, fixedAmount), onDismiss)
+    AlertDialog(
+        onDismissRequest = leave,
+        title = { Text(neoLiteral("مصادر الدخل", "Income sources")) },
+        text = {
+            Column(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .heightIn(max = 520.dp)
+                        .verticalScroll(rememberScrollState())
+            ) {
+                val ordered = db.incomeSources.sortedBy { it.order }
+
+                ordered.forEachIndexed { index, source ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                        Column(modifier = Modifier.padding(7.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick =
+                                        neoWriteAction {
+                                            onDatabaseChange(
+                                                V11AccountsController.deleteIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                )
+                                            )
+                                        }
+                                ) {
+                                    Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))
+                                }
+
+                                IconButton(onClick = neoWriteAction { editingId = source.id }) {
+                                    Icon(Icons.Default.Edit, neoLiteral("تعديل", "Edit"))
+                                }
+
+                                Spacer(Modifier.weight(1f))
+
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(source.name, fontWeight = FontWeight.Bold)
+
+                                    source.fixedMonthlyAmount?.let {
+                                        Text(
+                                            neoLiteral(
+                                                    "ثابت شهريا: %.2f ج",
+                                                    "Fixed monthly: %.2f EGP",
+                                                )
+                                                .format(it),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                            ) {
+                                IconButton(
+                                    onClick =
+                                        neoWriteAction {
+                                            onDatabaseChange(
+                                                V11AccountsController.moveIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                    -1,
+                                                )
+                                            )
+                                        },
+                                    enabled = index > 0,
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowUp, neoLiteral("لأعلى", "Up"))
+                                }
+
+                                Text(
+                                    neoLiteral("ترتيب ${index + 1}", "Order ${index + 1}"),
+                                    modifier = Modifier.align(Alignment.CenterVertically),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+
+                                IconButton(
+                                    onClick =
+                                        neoWriteAction {
+                                            onDatabaseChange(
+                                                V11AccountsController.moveIncomeSource(
+                                                    db,
+                                                    source.id,
+                                                    1,
+                                                )
+                                            )
+                                        },
+                                    enabled = index < ordered.lastIndex,
+                                ) {
+                                    Icon(
+                                        Icons.Default.KeyboardArrowDown,
+                                        neoLiteral("لأسفل", "Down"),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    neoLiteral("إضافة مصدر دخل", "Add income source"),
+                    fontWeight = FontWeight.Black,
+                )
+
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(neoLiteral("اسم المصدر", "Source name")) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                OutlinedTextField(
+                    value = fixedAmount,
+                    isError = fixedAmount.isNotBlank() && fixedAmountInput.amount == null,
+                    keyboardOptions =
+                        androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                    supportingText = {
+                        if (fixedAmount.isNotBlank() && fixedAmountInput.amount == null)
+                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                    },
+                    onValueChange = { fixedAmount = it },
+                    label = {
+                        Text(
+                            neoLiteral(
+                                "راتب/دخل شهري ثابت - اختياري",
+                                "Fixed monthly income - optional",
+                            )
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                NeoChoice(
+                    neoLiteral("مكان العمل", "Workplace"),
+                    listOf("") + workplaces.map { it.id },
+                    sourceWorkplace,
+                    { id -> workplaces.firstOrNull { it.id == id }?.name ?: neoLiteral("بدون ربط", "Unlinked") },
+                    { sourceWorkplace = it },
+                )
+                NeoChoice(
+                    neoLiteral("التقويم", "Calendar"),
+                    listOf("") + db.calendars.map { it.id },
+                    sourceCalendar,
+                    { id -> db.calendars.firstOrNull { it.id == id }?.name ?: neoLiteral("كل التقاويم", "All calendars") },
+                    { sourceCalendar = it },
+                )
+                leave.SaveButton(
+                    onClick =
+                        neoWriteAction {
+                            if (newName.isNotBlank() && fixedAmountInput.optionalValid) {
+                                commit(
+                                    V11AccountsController.addIncomeSource(
+                                        db = db,
+                                        name = newName.trim(),
+                                        type = IncomeSourceTypeV11.OTHER,
+                                        fixedAmount = fixedAmountInput.amount,
+                                        recordId = recordId,
+                                        workplaceId = sourceWorkplace.ifBlank { null },
+                                        calendarId = sourceCalendar.ifBlank { null },
+                                    )
+                                ) {
+                                    newName = ""
+                                    recordId = java.util.UUID.randomUUID().toString()
+                                    fixedAmount = ""
+                                }
+                            }
+                        },
+                    enabled = newName.isNotBlank() && fixedAmountInput.optionalValid,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(neoLiteral("إضافة المصدر", "Add source"))
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = leave) { Text(neoLiteral("تم", "Done")) } },
+    )
+
+    editing?.let { source ->
+        val unchanged = rememberNeoDraftUnchanged(source.id, source)
+        val reject = LocalNeoRejectWrite.current
+        V11EditIncomeSourceDialog(
+            source = source,
+            onDismiss = { editingId = null },
+            onSave = { updated, effectiveMonth ->
+                if (!unchanged) {
+                    reject("Income source changed. Draft retained; review before reopening.")
+                    return@V11EditIncomeSourceDialog
+                }
+                commit(V11AccountsController.updateIncomeSource(db, updated, effectiveMonth)) { editingId = null }
+            },
+        )
+    }
+}
+
+@Composable
+internal fun V11EditIncomeSourceDialog(
+    source: IncomeSourceV11,
+    onDismiss: () -> Unit,
+    onSave: (IncomeSourceV11, String) -> Unit,
+) {
+    var effectiveMonth by rememberSaveable(source.id) { mutableStateOf(java.time.YearMonth.now().toString()) }
+    val validMonth = runCatching { java.time.YearMonth.parse(effectiveMonth) }.isSuccess
+    var name by rememberSaveable(source.id) { mutableStateOf(source.name) }
+
+    var amount by
+        rememberSaveable(source.id) { mutableStateOf(source.fixedMonthlyAmount?.toString() ?: "") }
+
+    val amountInput = MoneyInput.parse(amount)
+    val leave = rememberNeoEditorExit(listOf(name, amount, effectiveMonth), onDismiss)
+    AlertDialog(
+        onDismissRequest = leave,
+        title = { Text(neoLiteral("تعديل مصدر الدخل", "Edit income source")) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(neoLiteral("الاسم", "Name")) },
+                    singleLine = true,
+                )
+
+                OutlinedTextField(
+                    value = amount,
+                    isError = amount.isNotBlank() && amountInput.amount == null,
+                    keyboardOptions =
+                        androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                    supportingText = {
+                        if (amount.isNotBlank() && amountInput.amount == null)
+                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                    },
+                    onValueChange = { amount = it },
+                    label = { Text(neoLiteral("الدخل الشهري الثابت", "Fixed monthly income")) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = effectiveMonth,
+                    onValueChange = { effectiveMonth = it.take(7) },
+                    label = { Text(neoLiteral("شهر السريان YYYY-MM", "Effective earning month YYYY-MM")) },
+                    isError = !validMonth,
+                    singleLine = true,
+                )
+                Text(neoLiteral("يُحسب مرة واحدة شهريًا. تبقى الفترات السابقة محفوظة.", "Earned once per month. Previous compensation periods are retained."), style = MaterialTheme.typography.labelSmall)
+                source.compensationHistory.sortedByDescending { it.effectiveMonth }.take(4).forEach { period ->
+                    Text("${period.effectiveMonth} • ${period.amount}", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        },
+        confirmButton = {
+            leave.SaveButton(
+                onClick =
+                    neoWriteAction {
+                        onSave(
+                            source.copy(name = name.trim(), fixedMonthlyAmount = amountInput.amount), effectiveMonth
+                        )
+                    },
+                enabled = name.isNotBlank() && amountInput.optionalValid && validMonth,
+            ) {
+                Text(neoLiteral("حفظ", "Save"))
+            }
+        },
+        dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
+    )
+}
+
+@Composable
+private fun V11PaymentMethodsDialog(
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onDatabaseChange: (V11Database) -> Unit,
+) {
+    val commit = rememberNeoCommit(onDatabaseChange)
+    var recordId by rememberSaveable { mutableStateOf(java.util.UUID.randomUUID().toString()) }
+    var newName by rememberSaveable { mutableStateOf("") }
+
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = db.paymentMethods.firstOrNull { it.id == editingId }
+
+    val leave = rememberNeoEditorExit(listOf(newName), onDismiss)
+    AlertDialog(
+        onDismissRequest = leave,
+        title = { Text(neoLiteral("طرق الدفع", "Payment methods")) },
+        text = {
+            Column(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .heightIn(max = 500.dp)
+                        .verticalScroll(rememberScrollState())
+            ) {
+                val ordered = db.paymentMethods.sortedBy { it.order }
+
+                ordered.forEachIndexed { index, method ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                        Row(
+                            modifier = Modifier.padding(5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(
+                                onClick =
+                                    neoWriteAction {
+                                        onDatabaseChange(
+                                            V11AccountsController.deletePaymentMethod(db, method.id)
+                                        )
+                                    }
+                            ) {
+                                Icon(Icons.Default.Delete, neoLiteral("حذف", "Delete"))
+                            }
+
+                            IconButton(onClick = neoWriteAction { editingId = method.id }) {
+                                Icon(Icons.Default.Edit, neoLiteral("تعديل", "Edit"))
+                            }
+
+                            IconButton(
+                                onClick =
+                                    neoWriteAction {
+                                        onDatabaseChange(
+                                            V11AccountsController.movePaymentMethod(
+                                                db,
+                                                method.id,
+                                                -1,
+                                            )
+                                        )
+                                    },
+                                enabled = index > 0,
+                            ) {
+                                Icon(Icons.Default.KeyboardArrowUp, neoLiteral("لأعلى", "Up"))
+                            }
+
+                            IconButton(
+                                onClick =
+                                    neoWriteAction {
+                                        onDatabaseChange(
+                                            V11AccountsController.movePaymentMethod(
+                                                db,
+                                                method.id,
+                                                1,
+                                            )
+                                        )
+                                    },
+                                enabled = index < ordered.lastIndex,
+                            ) {
+                                Icon(Icons.Default.KeyboardArrowDown, neoLiteral("لأسفل", "Down"))
+                            }
+
+                            Spacer(Modifier.weight(1f))
+
+                            Text(method.name, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(neoLiteral("طريقة دفع جديدة", "New payment method")) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                leave.SaveButton(
+                    onClick =
+                        neoWriteAction {
+                            if (newName.isNotBlank()) {
+                                commit(
+                                    V11AccountsController.addPaymentMethod(
+                                        db,
+                                        newName.trim(),
+                                        recordId,
+                                    )
+                                ) {
+                                    newName = ""
+                                    recordId = java.util.UUID.randomUUID().toString()
+                                }
+                            }
+                        },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(neoLiteral("إضافة طريقة الدفع", "Add payment method"))
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = leave) { Text(neoLiteral("تم", "Done")) } },
+    )
+
+    editing?.let { method ->
+        var name by rememberSaveable(method.id) { mutableStateOf(method.name) }
+
+        val leaveMethod = rememberNeoEditorExit(listOf(name), { editingId = null })
+        AlertDialog(
+            onDismissRequest = leaveMethod,
+            title = { Text(neoLiteral("تعديل طريقة الدفع", "Edit payment method")) },
+            text = {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(neoLiteral("الاسم", "Name")) },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                leaveMethod.SaveButton(
+                    onClick =
+                        neoWriteAction {
+                            if (name.isNotBlank()) {
+                                commit(
+                                    V11AccountsController.updatePaymentMethod(
+                                        db,
+                                        method.copy(name = name.trim()),
+                                    )
+                                ) {
+                                    editingId = null
+                                }
+                            }
+                        }
+                ) {
+                    Text(neoLiteral("حفظ", "Save"))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = leaveMethod) { Text(neoLiteral("إلغاء", "Cancel")) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun V11ObligationDialog(
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onSave: (V11Database) -> Unit,
+) {
+    if (LocalV11NeoEnabled.current) {
+        NeoObligationForm(db, onDismiss, onSave)
+        return
+    }
+
+    val recordId = rememberSaveable { java.util.UUID.randomUUID().toString() }
+    var name by rememberSaveable { mutableStateOf("") }
+
+    var total by rememberSaveable { mutableStateOf("") }
+
+    var installment by rememberSaveable { mutableStateOf("") }
+
+    var dueDay by rememberSaveable { mutableStateOf("") }
+
+    var count by rememberSaveable { mutableStateOf("") }
+
+    var type by rememberSaveable { mutableStateOf(ObligationTypeV11.INSTALLMENT) }
+
+    val totalInput = MoneyInput.parse(total)
+    val installmentInput = MoneyInput.parse(installment)
+    val leave =
+        rememberNeoEditorExit(listOf(name, total, installment, dueDay, count, type), onDismiss)
+    AlertDialog(
+        onDismissRequest = leave,
+        title = { Text(neoLiteral("إضافة التزام", "Add obligation")) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(neoLiteral("اسم الالتزام", "Obligation name")) },
+                )
+
+                OutlinedTextField(
+                    value = total,
+                    isError = total.isNotBlank() && totalInput.amount == null,
+                    keyboardOptions =
+                        androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                    supportingText = {
+                        if (total.isNotBlank() && totalInput.amount == null)
+                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                    },
+                    onValueChange = { total = it },
+                    label = { Text(neoLiteral("إجمالي المبلغ", "Total amount")) },
+                )
+
+                OutlinedTextField(
+                    value = installment,
+                    isError = installment.isNotBlank() && installmentInput.amount == null,
+                    keyboardOptions =
+                        androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                    supportingText = {
+                        if (installment.isNotBlank() && installmentInput.amount == null)
+                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                    },
+                    onValueChange = { installment = it },
+                    label = { Text(neoLiteral("قيمة القسط", "Installment amount")) },
+                )
+
+                OutlinedTextField(
+                    value = dueDay,
+                    onValueChange = { dueDay = it.filter(Char::isDigit) },
+                    label = { Text(neoLiteral("يوم الاستحقاق", "Due day")) },
+                )
+
+                OutlinedTextField(
+                    value = count,
+                    onValueChange = { count = it.filter(Char::isDigit) },
+                    label = { Text(neoLiteral("عدد الأقساط", "Installment count")) },
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                ObligationTypeV11.entries.forEach {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = type == it, onClick = neoWriteAction { type = it })
+
+                        Text(obligationLabel(it))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            leave.SaveButton(
+                onClick =
+                    neoWriteAction {
+                        onSave(
+                            V11AccountsController.addObligation(
+                                db = db,
+                                name = name,
+                                type = type,
+                                totalAmount = totalInput.amount,
+                                installmentAmount = installmentInput.amount,
+                                startDate = LocalDate.now().toString(),
+                                dueDay = dueDay.toLocalizedIntOrNull()?.coerceIn(1, 31),
+                                installmentCount = count.toLocalizedIntOrNull(),
+                                reminderDaysBefore = 3,
+                                note = "",
+                                recordId = recordId,
+                            )
+                        )
+                    },
+                enabled =
+                    name.isNotBlank() && totalInput.optionalValid && installmentInput.optionalValid,
+            ) {
+                Text(neoLiteral("حفظ", "Save"))
+            }
+        },
+        dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
+    )
+}
+
+private fun obligationLabel(type: ObligationTypeV11): String =
+    when (type) {
+        ObligationTypeV11.INSTALLMENT -> neoLiteral("قسط", "Installment")
+        ObligationTypeV11.DEBT -> neoLiteral("دين", "Debt")
+        ObligationTypeV11.LOAN -> neoLiteral("قرض", "Loan")
+        ObligationTypeV11.CREDIT_CARD -> neoLiteral("بطاقة ائتمان", "Credit card")
+        ObligationTypeV11.ASSOCIATION -> neoLiteral("جمعية", "Savings group")
+        ObligationTypeV11.RECURRING_BILL -> neoLiteral("مدفوع دوري", "Recurring payment")
+        ObligationTypeV11.OTHER -> neoLiteral("أخرى", "Other")
+    }
+
+@Composable
+private fun V11ObligationPaymentDialog(
+    obligation: ObligationV11,
+    month: YearMonth,
+    remaining: Double,
+    db: V11Database,
+    onDismiss: () -> Unit,
+    onSave: (Double, String?, String) -> Unit,
+) {
+    val recordId = rememberSaveable { java.util.UUID.randomUUID().toString() }
+    var amount by
+        rememberSaveable(obligation.id, month) {
+            mutableStateOf(if (remaining > 0.0) "%.2f".format(remaining) else "")
+        }
+
+    var methodId by rememberSaveable {
+        mutableStateOf(db.paymentMethods.firstOrNull { it.active }?.id)
+    }
+
+    val amountInput = MoneyInput.parse(amount)
+    val leave = rememberNeoEditorExit(listOf(amount, methodId), onDismiss)
+    AlertDialog(
+        onDismissRequest = leave,
+        title = { Text(neoLiteral("سداد ${obligation.name}", "Payment for ${obligation.name}")) },
+        text = {
+            Column {
+                Text(
+                    neoLiteral(
+                        "المتبقي لهذا الشهر: ${
+                        "%.2f".format(
+                            remaining
+                        )
+                    } ج",
+                        "Remaining this month: ${
+                        "%.2f".format(
+                            remaining
+                        )
+                    } EGP",
+                    )
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = amount,
+                    isError = amount.isNotBlank() && amountInput.amount == null,
+                    keyboardOptions =
+                        androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                    supportingText = {
+                        if (amount.isNotBlank() && amountInput.amount == null)
+                            Text(neoLiteral("أدخل مبلغًا صحيحًا", "Enter a valid amount"))
+                    },
+                    onValueChange = { amount = it },
+                    label = { Text(neoLiteral("المبلغ", "Amount")) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                if (db.paymentMethods.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(neoLiteral("طريقة الدفع", "Payment method"), fontWeight = FontWeight.Bold)
+
+                    db.paymentMethods
+                        .filter { it.active }
+                        .forEach { method ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(
+                                    selected = methodId == method.id,
+                                    onClick = neoWriteAction { methodId = method.id },
+                                )
+
+                                Text(method.name)
+                            }
+                        }
+                }
+            }
+        },
+        confirmButton = {
+            leave.SaveButton(
+                onClick =
+                    neoWriteAction {
+                        val parsed = amountInput.amount ?: return@neoWriteAction
+
+                        onSave(parsed, methodId, recordId)
+                    },
+                enabled = amountInput.positive,
+            ) {
+                Text(neoLiteral("حفظ السداد", "Save payment"))
+            }
+        },
+        dismissButton = { TextButton(onClick = leave) { Text(neoLiteral("إلغاء", "Cancel")) } },
+    )
+}
+
+/**
+ * Compatibility surface for obligation records created before Cash Book Debts.
+ * They remain in the existing V11 database and are never silently migrated,
+ * duplicated in the ledger or deleted. The owner now lives under Debts, not Salary.
+ */
+@Composable
+internal fun V11ObligationsPanel(
+    month: YearMonth,
+    db: V11Database,
+    moneyVisible: Boolean,
+    securitySettings: V11SecuritySettings,
+    securityStore: V11SecurityStore,
+    onDatabaseChange: (V11Database) -> Unit,
+) {
+    val commit = rememberNeoCommit(onDatabaseChange)
+    var adding by rememberSaveable { mutableStateOf(false) }
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var payingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingProtected by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val securityEnabled = securitySettings.mode != V11LockMode.NONE ||
+        securitySettings.biometricEnabled
+    fun saveSafely(action: () -> Unit) {
+        if (securityEnabled) pendingProtected = action else action()
+    }
+
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(neoLabel("التزامات محفوظة", "Saved obligations"),
+            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(neoLabel("أقساط وديون ومدفوعات دورية من سجلات التطبيق الحالية. لا تُنسخ إلى Cash Book تلقائيًا.",
+            "Installments, debts and recurring bills in the existing app ledger; never duplicated into Cash Book."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Button(onClick = neoWriteAction { adding = true },
+            modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.Add, null)
+            Spacer(Modifier.width(6.dp))
+            Text(neoLabel("إضافة التزام", "Add obligation"))
+        }
+        if (db.obligations.isEmpty()) {
+            Card(Modifier.fillMaxWidth()) {
+                Text(neoLabel("لا توجد التزامات مسجلة", "No saved obligations"),
+                    modifier = Modifier.padding(16.dp))
+            }
+        } else {
+            db.obligations.forEach { obligation ->
+                val info = remember(db, month, obligation.id) {
+                    V11ObligationEngine.monthInfo(db, obligation, month)
+                }
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(obligation.name, fontWeight = FontWeight.SemiBold)
+                                Text(obligationLabel(obligation.type),
+                                    style = MaterialTheme.typography.labelSmall)
+                            }
+                            IconButton(onClick = neoWriteAction { editingId = obligation.id }) {
+                                Icon(Icons.Default.Edit,
+                                    neoLabel("تعديل الالتزام", "Edit obligation"))
+                            }
+                        }
+                        AccountLine(neoLabel("حالة الشهر", "Month status"),
+                            neoObligationState(info.state))
+                        if (info.expected > 0.0) {
+                            AccountLine(neoLabel("المستحق", "Due"),
+                                money(info.expected, moneyVisible))
+                            AccountLine(neoLabel("المسدد", "Paid"),
+                                money(info.paid, moneyVisible))
+                            AccountLine(neoLabel("المتبقي", "Remaining"),
+                                money(info.remaining, moneyVisible))
+                        }
+                        Button(onClick = neoWriteAction { payingId = obligation.id },
+                            enabled = obligation.status == ObligationStatusV11.ACTIVE &&
+                                info.remaining > 0.0,
+                            modifier = Modifier.fillMaxWidth()) {
+                            Text(neoLabel("تسجيل سداد", "Record payment"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (adding) V11ObligationDialog(
+        db = db,
+        onDismiss = { adding = false },
+        onSave = { updated ->
+            saveSafely { commit(updated) { adding = false } }
+        }
+    )
+    editingId?.let { id ->
+        db.obligations.firstOrNull { it.id == id }?.let { obligation ->
+            val unchanged = rememberNeoDraftUnchanged(obligation.id, obligation)
+            val reject = LocalNeoRejectWrite.current
+            V11EditObligationDialog(
+                db = db, obligation = obligation,
+                onDismiss = { editingId = null },
+                onSave = { updated ->
+                    if (!unchanged) {
+                        reject("Obligation changed; reopen before saving")
+                    } else {
+                        saveSafely {
+                            commit(db.copy(obligations = db.obligations.map {
+                                if (it.id == updated.id) updated else it
+                            })) { editingId = null }
+                        }
+                    }
+                }
+            )
+        }
+    }
+    payingId?.let { id ->
+        db.obligations.firstOrNull { it.id == id }?.let { obligation ->
+            val info = V11ObligationEngine.monthInfo(db, obligation, month)
+            V11ObligationPaymentDialog(
+                obligation = obligation, month = month, remaining = info.remaining,
+                db = db, onDismiss = { payingId = null },
+                onSave = { amount, methodId, recordId ->
+                    saveSafely {
+                        commit(V11AccountsController.payObligation(
+                            db = db, obligationId = obligation.id,
+                            month = month.toString(), amount = amount,
+                            methodId = methodId, recordId = recordId
+                        )) { payingId = null }
+                    }
+                }
+            )
+        }
+    }
+    pendingProtected?.let { action ->
+        V11FinancialVerificationDialog(
+            settings = securitySettings, store = securityStore,
+            onDismiss = { pendingProtected = null },
+            onVerified = { pendingProtected = null; action() }
+        )
+    }
+}

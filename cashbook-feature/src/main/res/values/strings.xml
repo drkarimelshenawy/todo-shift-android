@@ -299,6 +299,6 @@
     <string name="cb_section_debts">Debts</string>
     <string name="cb_section_salary">Salary</string>
     <string name="cb_debts_empty">No debts yet</string>
-    <string name="cb_salary_unlinked">Work entitlements will appear after connecting ToDo Shift. No sample data is stored.</string>
+    <string name="cb_salary_unlinked">Work entitlements will appear after connecting ExMore. No sample data is stored.</string>
 <string name="cb_salary_manage">Manage linked receipt in Salary</string>
 </resources>

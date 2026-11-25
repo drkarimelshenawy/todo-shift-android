@@ -8,6 +8,7 @@ import java.util.concurrent.Executors
 
 /** Optional connected features only. Never gates local startup or storage. */
 object AppCoreConfig {
+    private val refreshing = java.util.concurrent.atomic.AtomicBoolean(false)
     private val executor = Executors.newSingleThreadExecutor()
     private const val endpoint = "https://appcore-poc.dr-karimelshenawy.workers.dev/api/v1/apps/exmore/android/config"
     @Volatile private var current: JSONObject? = null
@@ -31,7 +32,9 @@ object AppCoreConfig {
     }
     fun refresh(context: Context) {
         val app = context.applicationContext
+        if (!refreshing.compareAndSet(false, true)) return
         executor.execute {
+            try {
             val prefs = app.getSharedPreferences("appcore_config_v1", Context.MODE_PRIVATE)
             val cached = runCatching { JSONObject(prefs.getString("config", "{}") ?: "{}") }.getOrNull()
             current = cached?.takeIf { valid(it) && it.optLong("revision") >= prefs.getLong("revision", 0) }
@@ -60,6 +63,7 @@ object AppCoreConfig {
                     }
                 } finally { conn.disconnect() }
             }
+            } finally { refreshing.set(false) }
         }
     }
 }

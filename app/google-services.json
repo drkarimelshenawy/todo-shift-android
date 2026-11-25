@@ -1,0 +1,23 @@
+{
+  "project_info": {
+    "project_number": "316863421809",
+    "project_id": "appcore-2026",
+    "storage_bucket": "appcore-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:316863421809:android:65ce4eb0f7ea7bd34f2ad0",
+        "android_client_info": {
+          "package_name": "com.exmore.app"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHAU7L6tX7XlWTFzdlBg2PpyFmkhyPWhY"
+        }
+      ]
+    }
+  ],
+  "configuration_version": "1"
+}

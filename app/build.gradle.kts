@@ -1,4 +1,6 @@
 plugins {
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -59,6 +61,10 @@ android {
 }
 
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-crashlytics")
     implementation(project(":cashbook-feature"))
     implementation(project(":cashbook-core"))
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")

@@ -93,6 +93,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ToDoShiftReminder.createChannel(applicationContext)
+        if (savedInstanceState == null) com.todoshift.app.appcore.AppCoreUpdatePrompt.check(this)
         if (savedInstanceState?.getBoolean("neo_entry_consumed") != true) {
             incoming = com.todoshift.app.v11.ui.NeoEntry.routed(intent, System.nanoTime())
         }

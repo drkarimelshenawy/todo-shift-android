@@ -14,6 +14,12 @@
         android:roundIcon="@mipmap/ic_launcher_round">
 
 
+        <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_ad_personalization_signals" android:value="false" />
+
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.attachments" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/neo_attachment_paths" /></provider>
         <activity android:name=".reminders.ReminderSnoozeActivity" android:exported="false" android:excludeFromRecents="true" android:theme="@style/Theme.ToDoShift" />
         <activity android:name=".QuickTaskActivity" android:taskAffinity="com.exmore.app.quicktask" android:exported="true" android:excludeFromRecents="true" android:theme="@style/Theme.ToDoShift.QuickTask" />

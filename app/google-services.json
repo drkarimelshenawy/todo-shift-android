@@ -7,16 +7,69 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:316863421809:android:fd62e50bbf0f6da44f2ad0",
+        "android_client_info": {
+          "package_name": "com.altabloh.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "316863421809-fhjbra0e6d4vf10gnnc6bcj0rodvaegp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHAU7L6tX7XlWTFzdlBg2PpyFmkhyPWhY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "316863421809-fhjbra0e6d4vf10gnnc6bcj0rodvaegp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:316863421809:android:65ce4eb0f7ea7bd34f2ad0",
         "android_client_info": {
           "package_name": "com.exmore.app"
         }
       },
+      "oauth_client": [
+        {
+          "client_id": "316863421809-1uu5nf9jk24fd2n4outae6kgu395k2aa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.exmore.app",
+            "certificate_hash": "20800a20913c168e08408020fca373dbf84dcba2"
+          }
+        },
+        {
+          "client_id": "316863421809-fhjbra0e6d4vf10gnnc6bcj0rodvaegp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAHAU7L6tX7XlWTFzdlBg2PpyFmkhyPWhY"
         }
-      ]
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "316863421809-fhjbra0e6d4vf10gnnc6bcj0rodvaegp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

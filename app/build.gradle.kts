@@ -24,14 +24,14 @@ android {
 
     signingConfigs {
         create("persistentDebug") {
-            val keyPath = System.getenv("TODOSHIFT_SIGNING_FILE")
-            val signingPassword = System.getenv("TODOSHIFT_SIGNING_PASSWORD")
+            val keyPath = System.getenv("EXMORE_SIGNING_FILE")
+            val signingPassword = System.getenv("EXMORE_SIGNING_PASSWORD")
 
             if (!keyPath.isNullOrBlank() &&
                 !signingPassword.isNullOrBlank()) {
                 storeFile = file(keyPath)
                 storePassword = signingPassword
-                keyAlias = "todoshift"
+                keyAlias = "exmore"
                 keyPassword = signingPassword
             }
         }

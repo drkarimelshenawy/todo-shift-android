@@ -53,12 +53,12 @@ jobs:
         run: |
           TEST_KEY_PASSWORD=$(openssl rand -hex 24)
           echo "::add-mask::$TEST_KEY_PASSWORD"
-          echo "TODOSHIFT_SIGNING_PASSWORD=$TEST_KEY_PASSWORD" >> "$GITHUB_ENV"
-          echo "TODOSHIFT_SIGNING_FILE=$RUNNER_TEMP/premium-test.jks" >> "$GITHUB_ENV"
+          echo "EXMORE_SIGNING_PASSWORD=$TEST_KEY_PASSWORD" >> "$GITHUB_ENV"
+          echo "EXMORE_SIGNING_FILE=$RUNNER_TEMP/premium-test.jks" >> "$GITHUB_ENV"
           export TEST_KEY_PASSWORD
-          keytool -genkeypair -keystore "$RUNNER_TEMP/premium-test.jks" -storetype JKS -alias todoshift -keyalg RSA -keysize 2048 -validity 30 -dname 'CN=Premium Ephemeral CI Test' -storepass:env TEST_KEY_PASSWORD -keypass:env TEST_KEY_PASSWORD >/dev/null 2>&1
+          keytool -genkeypair -keystore "$RUNNER_TEMP/premium-test.jks" -storetype JKS -alias exmore -keyalg RSA -keysize 2048 -validity 30 -dname 'CN=Premium Ephemeral CI Test' -storepass:env TEST_KEY_PASSWORD -keypass:env TEST_KEY_PASSWORD >/dev/null 2>&1
           chmod 600 "$RUNNER_TEMP/premium-test.jks"
-          keytool -exportcert -keystore "$RUNNER_TEMP/premium-test.jks" -alias todoshift -storepass:env TEST_KEY_PASSWORD > "$RUNNER_TEMP/public-cert.der"
+          keytool -exportcert -keystore "$RUNNER_TEMP/premium-test.jks" -alias exmore -storepass:env TEST_KEY_PASSWORD > "$RUNNER_TEMP/public-cert.der"
           echo "TEST_CERT_SHA=$(sha256sum "$RUNNER_TEMP/public-cert.der" | cut -d' ' -f1)" >> "$GITHUB_ENV"
       - name: Source, tests, lint and debug
         run: |

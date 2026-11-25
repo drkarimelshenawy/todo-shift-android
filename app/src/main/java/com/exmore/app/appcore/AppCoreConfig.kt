@@ -13,21 +13,28 @@ object AppCoreConfig {
     @Volatile private var current: JSONObject? = null
     fun maintenance(): Boolean = current?.takeIf { valid(it) }?.optBoolean("maintenance") ?: false
     fun flag(key: String): Boolean = current?.takeIf { valid(it) }?.optJSONObject("flags")?.optBoolean(key) ?: false
+    private fun integer(value: Any?): Long? = when (value) {
+        is Int -> value.toLong()
+        is Long -> value.takeIf { it in -9007199254740991L..9007199254740991L }
+        else -> null
+    }
     private fun valid(value: JSONObject): Boolean {
         val now = System.currentTimeMillis()
-        val expiry = value.optLong("expiresAt", 0)
+        val expiry = integer(value.opt("expiresAt")) ?: return false
+        val revision = integer(value.opt("revision")) ?: return false
+        if (value.keys().asSequence().toSet() != setOf("schemaVersion", "projectId", "platform", "revision", "expiresAt", "maintenance", "flags")) return false
         val flags = value.optJSONObject("flags") ?: return false
-        return value.optInt("schemaVersion") == 1 && value.optString("projectId") == "exmore" &&
-            value.optString("platform") == "android" && value.optLong("revision") > 0 &&
+        return integer(value.opt("schemaVersion")) == 1L && value.opt("projectId") == "exmore" &&
+            value.opt("platform") == "android" && revision > 0 &&
             expiry > now && expiry <= now + 86400000L && value.opt("maintenance") is Boolean &&
-            flags.length() <= 50 && flags.keys().asSequence().all { it.matches(Regex("[a-z][a-z0-9_]{0,39}")) && flags.opt(it) is Boolean }
+            flags.length() <= 50 && flags.keys().asSequence().all { it.matches(Regex("[a-z][a-z0-9_]{0,39}")) && it !in setOf("constructor", "prototype") && flags.opt(it) is Boolean }
     }
     fun refresh(context: Context) {
         val app = context.applicationContext
         executor.execute {
             val prefs = app.getSharedPreferences("appcore_config_v1", Context.MODE_PRIVATE)
             val cached = runCatching { JSONObject(prefs.getString("config", "{}") ?: "{}") }.getOrNull()
-            current = cached?.takeIf { valid(it) }
+            current = cached?.takeIf { valid(it) && it.optLong("revision") >= prefs.getLong("revision", 0) }
             runCatching {
                 val conn = URL(endpoint).openConnection() as HttpsURLConnection
                 try {

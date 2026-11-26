@@ -95,6 +95,7 @@ class MainActivity : FragmentActivity() {
             runOnUiThread {
                 if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
                     com.exmore.app.appcore.AppCoreUpdatePrompt.check(this)
+                    com.exmore.app.appcore.AppCoreBulletin.check(this)
                 }
             }
         }

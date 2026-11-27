@@ -65,6 +65,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
     implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-perf")
     implementation(project(":cashbook-feature"))
     implementation(project(":cashbook-core"))
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")

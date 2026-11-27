@@ -65,6 +65,7 @@ object AppCorePilot {
             value to generation
         }
         worker.execute {
+            val trace = AppCoreDiagnostics.startHeartbeatTrace(app)
             var success = false
             try {
                 val conn = URL("https://firestore.googleapis.com/v1/projects/appcore-2026/databases/(default)/documents:commit").openConnection() as HttpsURLConnection
@@ -83,6 +84,7 @@ object AppCorePilot {
                 } finally { conn.disconnect() }
             } catch (_: Exception) { /* fail offline; no credentials or payloads in logs */ }
             finally {
+                runCatching { trace?.stop() }
                 val changed = synchronized(lock) {
                     busy = false
                     if (generation == job.second) {

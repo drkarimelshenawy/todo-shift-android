@@ -76,6 +76,19 @@ fun AppCorePilotSettings(arabic: Boolean) {
             else subscribe(true)
         }) { Text(label("تفعيل إشعارات الاختبار", "Enable test notifications")) }
         OutlinedButton(enabled = !fcmBusy, onClick = { subscribe(false) }) { Text(label("إيقاف إشعارات الاختبار", "Disable test notifications")) }
+        Text(label("التشخيص الاختياري", "Optional diagnostics"), style = MaterialTheme.typography.titleSmall)
+        Text(label("بموافقتك تُرسل إحصائيات الاستخدام وتقارير الأعطال وقياسات الأداء إلى Firebase. لا يضيف AppCore محتوى المهام أو الملاحظات أو المال إلى التقارير. قد تتضمن تقارير SDK معلومات تقنية عن الجهاز والأخطاء.", "With consent, usage statistics, crash reports and performance measurements are sent to Firebase. AppCore does not attach task, note or financial content; SDK reports may contain technical device and error details."))
+        var diagnosticsEnabled by remember { mutableStateOf(AppCoreDiagnostics.enabled(app)) }
+        OutlinedButton(onClick = {
+            val enable = !diagnosticsEnabled
+            runCatching { AppCoreDiagnostics.setEnabled(app, enable) }.onSuccess {
+                diagnosticsEnabled = enable
+                message = if (enable) label("تم طلب تفعيل التشخيص", "Diagnostics enabled") else label("تم طلب إيقاف التشخيص؛ قد يلزم إعادة التشغيل", "Diagnostics disable requested; restart may be required")
+            }.onFailure {
+                diagnosticsEnabled = AppCoreDiagnostics.enabled(app)
+                message = label("تعذر تغيير التشخيص بالكامل", "Could not change all diagnostic settings")
+            }
+        }) { Text(if (diagnosticsEnabled) label("إيقاف التشخيص", "Disable diagnostics") else label("أوافق على تفعيل التشخيص", "Consent and enable diagnostics")) }
         if (message.isNotEmpty()) Text(message)
     }
     if (open) AlertDialog(onDismissRequest = { input = ""; open = false },

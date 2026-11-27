@@ -32,7 +32,11 @@ public final class AppCoreRegistry {
     private static FirebaseApp instance(Context c) {
         FirebaseApp base=FirebaseApp.getInstance();
         if(!"appcore-2026".equals(base.getOptions().getProjectId()))throw new IllegalStateException("Wrong Firebase project");
-        try{return FirebaseApp.getInstance(INSTANCE);}catch(IllegalStateException ignored){return FirebaseApp.initializeApp(c,base.getOptions(),INSTANCE);}
+        try{return FirebaseApp.getInstance(INSTANCE);}catch(IllegalStateException ignored){
+            FirebaseApp isolated=FirebaseApp.initializeApp(c,base.getOptions(),INSTANCE);
+            com.google.firebase.appcheck.FirebaseAppCheck.getInstance(isolated).installAppCheckProviderFactory(com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance());
+            return isolated;
+        }
     }
     private static void done(Callback cb,String result) { if(cb!=null)new Handler(Looper.getMainLooper()).post(()->cb.complete(result)); }
     private static boolean save(Context c,boolean enabled,boolean pending) { return prefs(c).edit().putBoolean("enabled",enabled).putBoolean("deletePending",pending).commit(); }

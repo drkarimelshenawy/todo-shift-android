@@ -89,6 +89,25 @@ fun AppCorePilotSettings(arabic: Boolean) {
                 message = label("تعذر تغيير التشخيص بالكامل", "Could not change all diagnostic settings")
             }
         }) { Text(if (diagnosticsEnabled) label("إيقاف التشخيص", "Disable diagnostics") else label("أوافق على تفعيل التشخيص", "Consent and enable diagnostics")) }
+        Text(label("تسجيل التثبيت الاختياري", "Optional installation registration"), style = MaterialTheme.typography.titleSmall)
+        Text(label("يرسل معرف Firebase عشوائيًا ورقم الإصدار ووقت الاتصال؛ لا يرسل محتوى التطبيق. يمكنك طلب حذف التسجيل.", "Uses an anonymous Firebase ID, version and last-seen time; no app content. You may request deletion."))
+        var registered by remember { mutableStateOf(AppCoreRegistry.enabled(app)) }
+        var pendingDeletion by remember { mutableStateOf(AppCoreRegistry.deletionPending(app)) }
+        var registryBusy by remember { mutableStateOf(false) }
+        OutlinedButton(enabled = !registryBusy, onClick = {
+            registryBusy = true
+            AppCoreRegistry.consent(app, !registered && !pendingDeletion, com.exmore.app.BuildConfig.VERSION_CODE) { result ->
+                registryBusy = false
+                registered = AppCoreRegistry.enabled(app)
+                pendingDeletion = AppCoreRegistry.deletionPending(app)
+                message = when(result) {
+                    "accepted" -> label("أكد الخادم التسجيل", "Server accepted registration")
+                    "removed" -> label("تم حذف التسجيل", "Registration removed")
+                    "delete_pending" -> label("توقف التسجيل؛ أعد طلب الحذف عند الاتصال", "Registration stopped; retry deletion online")
+                    else -> label("العملية لم تتأكد؛ راجع الاتصال وإعداد Firebase", "Not confirmed; check connection and Firebase settings")
+                }
+            }
+        }) { Text(if(registered || pendingDeletion) label("إيقاف وحذف التسجيل", "Stop and delete registration") else label("أوافق على التسجيل الاختياري", "Consent to registration")) }
         if (message.isNotEmpty()) Text(message)
     }
     if (open) AlertDialog(onDismissRequest = { input = ""; open = false },

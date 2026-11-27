@@ -1,0 +1,43 @@
+name: AppCore ExMore pilot QA (no release)
+on:
+  push:
+    branches: [feat/exmore-official-identity-migration]
+    paths:
+      - 'app/src/main/java/com/exmore/app/appcore/**'
+      - 'app/src/main/java/com/exmore/app/MainActivity.kt'
+      - 'app/src/main/java/com/exmore/app/v11/ui/NeoRescueSettings.kt'
+      - 'app/src/test/java/com/exmore/app/appcore/**'
+      - '.github/workflows/appcore-pilot-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: appcore-exmore-pilot-qa
+  cancel-in-progress: false
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile and test on supported JVM (no signing or release)
+        run: gradle --no-daemon :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exmore-pilot-qa-evidence
+          path: |
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+          retention-days: 7

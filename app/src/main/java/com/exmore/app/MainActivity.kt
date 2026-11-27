@@ -91,6 +91,7 @@ import com.exmore.app.data.ShiftPainterEngine
 class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
+        com.exmore.app.appcore.AppCorePilot.heartbeat(applicationContext)
         com.exmore.app.appcore.AppCoreConfig.refresh(applicationContext) {
             runOnUiThread {
                 if (!isFinishing && !isDestroyed && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {

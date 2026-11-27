@@ -285,6 +285,7 @@ private fun NeoRescueSettingsContent(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (groupId == "ADVANCED") com.exmore.app.appcore.AppCorePilotSettings(arabic = !LocalNeoEnglish.current)
                 NeoSettingsHierarchy.children(groupId).forEachIndexed { index, id ->
                     if (groupId == "ADVANCED" && index == 0) Text(
                         neoLabel("حول التطبيق", "About the app"), style = MaterialTheme.typography.titleSmall)

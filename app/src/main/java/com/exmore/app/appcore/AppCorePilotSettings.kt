@@ -127,6 +127,15 @@ fun AppCorePilotSettings(arabic: Boolean) {
                 }
             }
         }) { Text(if(registered || pendingDeletion) label("إيقاف وحذف التسجيل", "Stop and delete registration") else label("أوافق على التسجيل الاختياري", "Consent to registration")) }
+        var attestationBusy by remember { mutableStateOf(false) }
+        if (paired) OutlinedButton(enabled = !attestationBusy, onClick = {
+            attestationBusy = true
+            AppCoreRegistry.checkAttestation(app) { result ->
+                attestationBusy = false
+                message = if (result == "token_received") label("استلم SDK رمز تحقق؛ فرض الحماية غير مختبر", "SDK returned a token; enforcement not verified")
+                else label("لم يتأكد الرمز؛ راجع إعدادات App Check", "Token not confirmed; check App Check settings")
+            }
+        }) { Text(label("اختبار App Check", "Test App Check")) }
         if (message.isNotEmpty()) Text(message)
     }
     if (open) AlertDialog(onDismissRequest = { input = ""; open = false },

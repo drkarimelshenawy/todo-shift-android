@@ -38,6 +38,17 @@ public final class AppCoreRegistry {
             return isolated;
         }
     }
+    public static void checkAttestation(Context context,Callback cb) {
+        Context c=context.getApplicationContext();
+        if(!BUSY.compareAndSet(false,true)){done(cb,"busy");return;}
+        EXEC.execute(()->{
+            String result="unavailable";
+            try {
+                com.google.firebase.appcheck.AppCheckToken token=Tasks.await(com.google.firebase.appcheck.FirebaseAppCheck.getInstance(instance(c)).getAppCheckToken(true),20,TimeUnit.SECONDS);
+                if(token!=null&&token.getToken()!=null&&!token.getToken().isEmpty())result="token_received";
+            } catch(Exception ignored){} finally {BUSY.set(false);done(cb,result);}
+        });
+    }
     private static void done(Callback cb,String result) { if(cb!=null)new Handler(Looper.getMainLooper()).post(()->cb.complete(result)); }
     private static boolean save(Context c,boolean enabled,boolean pending) { return prefs(c).edit().putBoolean("enabled",enabled).putBoolean("deletePending",pending).commit(); }
     public static void consent(Context context,boolean enable,int version,Callback cb) {

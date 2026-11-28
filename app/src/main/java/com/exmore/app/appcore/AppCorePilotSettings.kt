@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** An explicit pilot control, not global notifications or automatic telemetry consent. */
 @Composable
@@ -28,6 +31,8 @@ fun AppCorePilotSettings(arabic: Boolean) {
     var state by remember { mutableStateOf(AppCorePilot.status) }
     var message by remember { mutableStateOf("") }
     var fcmBusy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var releaseBusy by remember { mutableStateOf(false) }
     fun subscribe(enable: Boolean) {
         fcmBusy = true
         message = ""
@@ -69,6 +74,20 @@ fun AppCorePilotSettings(arabic: Boolean) {
         if (paired) OutlinedButton(onClick = {
             runCatching { AppCorePilot.setToken(app, "") }.onSuccess { paired = false; state = "idle" }.onFailure { message = label("تعذر إلغاء الربط", "Could not disconnect") }
         }) { Text(label("إلغاء الربط محليًا", "Disconnect locally")) }
+        if (paired) OutlinedButton(enabled = !releaseBusy, onClick = {
+            releaseBusy = true
+            scope.launch {
+                try {
+                    val release = withContext(Dispatchers.IO) { AppCoreReleaseClient.check(com.exmore.app.BuildConfig.VERSION_CODE) }
+                    message = if (release == null) label("لا يوجد إصدار أحدث منشور", "No newer published release")
+                    else label("إصدار اختياري متاح: ", "Optional release available: ") + release.version + " (" + release.code + ")"
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    message = label("تعذر التحقق من الإصدار؛ التطبيق المحلي يعمل", "Release check unavailable; local app still works")
+                } finally { releaseBusy = false }
+            }
+        }) { Text(label("اختبار التحقق من التحديث", "Test release lookup")) }
         Text(label("إشعارات الاختبار اختيارية ومستقلة عن ربط الجهاز؛ لا تستخدمها لبيانات خاصة.", "Test notifications are optional and independent of pairing; do not use for private information."))
         OutlinedButton(enabled = !fcmBusy, onClick = {
             if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)

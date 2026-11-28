@@ -78,9 +78,9 @@ fun AppCorePilotSettings(arabic: Boolean) {
             releaseBusy = true
             scope.launch {
                 try {
-                    val release = withContext(Dispatchers.IO) { AppCoreReleaseClient.check(com.exmore.app.BuildConfig.VERSION_CODE) }
-                    message = if (release == null) label("لا يوجد إصدار أحدث منشور", "No newer published release")
-                    else label("إصدار اختياري متاح: ", "Optional release available: ") + release.version + " (" + release.code + ")"
+                    val release = withContext(Dispatchers.IO) { AppCoreReleaseClient.checkPilot(com.exmore.app.BuildConfig.VERSION_CODE) }
+                    message = if (release == null) label("لا يوجد سجل تحديث تجريبي", "No pilot update fixture")
+                    else label("سجل تجريبي فقط: ", "Synthetic fixture only: ") + release.version + " (" + release.code + ")"
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

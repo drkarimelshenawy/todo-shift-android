@@ -24,9 +24,12 @@ object AppCoreReleaseClient {
         require(url.protocol == "https" && url.userInfo == null && url.host.isNotBlank() && url.port in setOf(-1, 443))
         return if (code > currentCode) Release(code, version, url.toExternalForm()) else null
     }
-    fun check(currentCode: Int): Release? {
+    fun check(currentCode: Int): Release? = lookup(currentCode, false)
+    fun checkPilot(currentCode: Int): Release? = lookup(currentCode, true)
+    private fun lookup(currentCode: Int, pilot: Boolean): Release? {
         require(currentCode >= 0)
-        val connection = URL("https://firestore.googleapis.com/v1/projects/appcore-2026/databases/(default)/documents/publishedReleases/$PROJECT_ID").openConnection() as HttpsURLConnection
+        val collection = if (pilot) "pilotReleases" else "publishedReleases"
+        val connection = URL("https://firestore.googleapis.com/v1/projects/appcore-2026/databases/(default)/documents/$collection/$PROJECT_ID").openConnection() as HttpsURLConnection
         try {
             connection.connectTimeout = 5000
             connection.readTimeout = 5000
@@ -44,7 +47,12 @@ object AppCoreReleaseClient {
                 require(size <= 65536)
                 String(buffer, 0, size, Charsets.UTF_8)
             }
-            return decode(JSONObject(bytes).getJSONObject("fields"), currentCode)
+            val fields = JSONObject(bytes).getJSONObject("fields")
+            if (pilot) {
+                require(fields.getJSONObject("version").getString("stringValue") == "PILOT-ONLY")
+                require(fields.getJSONObject("url").getString("stringValue") == "https://appcore-2026.web.app/")
+            }
+            return decode(fields, currentCode)
         } finally {
             connection.disconnect()
         }

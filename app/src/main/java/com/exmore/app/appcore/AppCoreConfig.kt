@@ -10,8 +10,16 @@ import java.util.concurrent.Executors
 object AppCoreConfig {
     private val refreshing = java.util.concurrent.atomic.AtomicBoolean(false)
     private val executor = Executors.newSingleThreadExecutor()
-    private const val endpoint = "https://appcore-poc.dr-karimelshenawy.workers.dev/api/v1/apps/exmore/android/config"
+    private const val base = "https://appcore-poc.dr-karimelshenawy.workers.dev/api/v1/"
+    private val scopeLock = Any()
+    private var epoch = 0L
     @Volatile private var current: JSONObject? = null
+    internal fun endpoint(pilot: Boolean) = base + (if (pilot) "pilot/" else "") + "apps/exmore/android/config"
+    internal fun storageKey(pilot: Boolean) = "appcore_config_v1" + if (pilot) "_pilot" else ""
+    fun invalidateScope() = synchronized(scopeLock) { epoch++; current = null }
+    private fun update(value: JSONObject?, ticket: Long) = synchronized(scopeLock) {
+        if (ticket == epoch) current = value
+    }
     fun maintenance(): Boolean = current?.takeIf { valid(it) }?.optBoolean("maintenance") ?: false
     fun flag(key: String): Boolean = current?.takeIf { valid(it) }?.optJSONObject("flags")?.optBoolean(key) ?: false
     private fun integer(value: Any?): Long? = when (value) {
@@ -33,13 +41,15 @@ object AppCoreConfig {
     fun refresh(context: Context, onComplete: (() -> Unit)? = null) {
         val app = context.applicationContext
         if (!refreshing.compareAndSet(false, true)) return
+        val ticket = synchronized(scopeLock) { epoch }
+        val pilot = AppCorePilot.isPaired(app)
         executor.execute {
             try {
-            val prefs = app.getSharedPreferences("appcore_config_v1", Context.MODE_PRIVATE)
+            val prefs = app.getSharedPreferences(storageKey(pilot), Context.MODE_PRIVATE)
             val cached = runCatching { JSONObject(prefs.getString("config", "{}") ?: "{}") }.getOrNull()
-            current = cached?.takeIf { valid(it) && it.optLong("revision") >= prefs.getLong("revision", 0) }
+            update(cached?.takeIf { valid(it) && it.optLong("revision") >= prefs.getLong("revision", 0) }, ticket)
             runCatching {
-                val conn = URL(endpoint).openConnection() as HttpsURLConnection
+                val conn = URL(endpoint(pilot)).openConnection() as HttpsURLConnection
                 try {
                     conn.connectTimeout = 5000
                     conn.readTimeout = 5000
@@ -59,13 +69,13 @@ object AppCoreConfig {
                     val value = JSONObject(bytes)
                     if (valid(value) && value.optLong("revision") >= prefs.getLong("revision", 0)) {
                         prefs.edit().putString("config", value.toString()).putLong("revision", value.optLong("revision")).apply()
-                        current = value
+                        update(value, ticket)
                     }
                 } finally { conn.disconnect() }
             }
             } finally {
                 refreshing.set(false)
-                onComplete?.invoke()
+                if (synchronized(scopeLock) { epoch == ticket }) onComplete?.invoke()
             }
         }
     }

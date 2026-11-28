@@ -43,6 +43,8 @@ object AppCorePilot {
             next = 0L
             status = if (value.isEmpty()) "idle" else "pending"
         }
+        AppCoreConfig.invalidateScope()
+        AppCoreConfig.refresh(app)
         if (value.isNotEmpty()) heartbeat(app)
     }
     internal fun requestBody(token: String, code: Int): JSONObject {

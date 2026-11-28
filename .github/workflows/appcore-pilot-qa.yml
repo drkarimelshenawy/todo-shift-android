@@ -35,7 +35,26 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Compile and test on supported JVM (no signing or release)
-        run: gradle --no-daemon :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug
+        run: |
+          gradle --no-daemon --max-workers=2 -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs='-Xmx3584m -Dfile.encoding=UTF-8' -I tools/premium_qa.init.gradle \
+            :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug --stacktrace
+      - name: Report every failed test and full suite counts
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          totals = dict(tests=0, failures=0, errors=0, skipped=0)
+          files = glob.glob('app/build/test-results/testDebugUnitTest/TEST-*.xml')
+          for file in files:
+              root = ET.parse(file).getroot()
+              for key in totals:
+                  totals[key] += int(root.get(key, '0'))
+              for case in root.iter('testcase'):
+                  for failure in list(case.findall('failure')) + list(case.findall('error')):
+                      print('FAILED', case.get('classname'), case.get('name'))
+                      print((failure.text or failure.get('message', ''))[:2500])
+          print('JUnit result:', totals, 'XML files:', len(files))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
